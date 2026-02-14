@@ -1,5 +1,5 @@
 ﻿<?xml version='1.0' encoding='utf-8'?>
-<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="ArtaznIT.Properties" GeneratedClassName="Settings">
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="NecessaryAdminTool.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
     <Setting Name="LastUser" Type="System.String" Scope="User">
@@ -46,6 +46,9 @@
     </Setting>
     <Setting Name="ADQueryMethod" Type="System.String" Scope="User">
       <Value Profile="(Default)">DirectorySearcher</Value>
+    </Setting>
+    <Setting Name="LastUpdateCheck" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
     </Setting>
   </Settings>
 </SettingsFile>

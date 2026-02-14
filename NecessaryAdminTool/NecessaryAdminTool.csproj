@@ -207,6 +207,9 @@
     <Compile Include="AssetTagManager.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="UpdateManager.cs">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs">

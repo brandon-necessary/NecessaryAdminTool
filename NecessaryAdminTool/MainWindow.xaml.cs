@@ -2293,6 +2293,14 @@ namespace NecessaryAdminTool
                 // Hide loading overlay before showing login
                 HideLoadingOverlay();
 
+                // TAG: #AUTO_UPDATE #VERSION_1_1
+                // Check for updates in background (weekly automatic check)
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(3000); // Wait 3 seconds after startup
+                    await UpdateManager.PerformAutomaticUpdateCheckAsync();
+                });
+
                 // ⚡ INSTANT STARTUP: Show login immediately, check domain in background
                 // The LoginWindow will check domain availability and handle the DC unavailable dialog if needed
                 _ = ShowLoginDialog();  // Fire-and-forget async login
@@ -8442,6 +8450,28 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             {
                 LogManager.LogError("About dialog error", ex);
                 MessageBox.Show($"Error displaying about information: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Check for Updates button click handler
+        /// TAG: #AUTO_UPDATE #VERSION_1_1
+        /// </summary>
+        private async void BtnCheckUpdates_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                LogManager.LogInfo("Manual update check initiated");
+                await UpdateManager.CheckForUpdatesAsync(silent: false);
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Manual update check failed", ex);
+                MessageBox.Show(
+                    $"Failed to check for updates:\n\n{ex.Message}",
+                    "Update Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
             }
         }
 
