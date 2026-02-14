@@ -111,6 +111,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="SetupWizardWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Compile Include="AboutWindow.xaml.cs">
       <DependentUpon>AboutWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -208,6 +212,34 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="UpdateManager.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="SetupWizardWindow.xaml.cs">
+      <DependentUpon>SetupWizardWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Data\IDataProvider.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Data\SqliteDataProvider.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Data\SqlServerDataProvider.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Data\AccessDataProvider.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Data\CsvDataProvider.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Data\DataProviderFactory.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Security\EncryptionKeyManager.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="LogManager.cs">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
