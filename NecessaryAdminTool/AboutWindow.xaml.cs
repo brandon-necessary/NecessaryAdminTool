@@ -33,17 +33,17 @@ namespace NecessaryAdminTool
                 TxtVersion.Text = LogoConfig.FULL_VERSION.TrimStart('v'); // Remove 'v' prefix for full version display
                 TxtBuildDate.Text = $"{LogoConfig.COMPILED_DATE_SHORT} {new FileInfo(Assembly.GetExecutingAssembly().Location).LastWriteTime:HH:mm}";
 
-                // Get copyright attribute
+                // Get copyright attribute - TAG: #COPYRIGHT #DYNAMIC
                 var copyrightAttr = (AssemblyCopyrightAttribute)
                     Attribute.GetCustomAttribute(Assembly.GetExecutingAssembly(), typeof(AssemblyCopyrightAttribute));
-                TxtCopyright.Text = copyrightAttr?.Copyright ?? "Copyright © Artazn LLC 2026";
+                TxtCopyright.Text = copyrightAttr?.Copyright ?? LogoConfig.COPYRIGHT;
             }
             catch (Exception ex)
             {
-                // Fallback to LogoConfig if something fails
+                // Fallback to LogoConfig if something fails - TAG: #COPYRIGHT #DYNAMIC
                 TxtVersion.Text = LogoConfig.FULL_VERSION.TrimStart('v');
                 TxtBuildDate.Text = LogoConfig.COMPILED_DATE_SHORT;
-                TxtCopyright.Text = "Copyright © Artazn LLC 2026";
+                TxtCopyright.Text = LogoConfig.COPYRIGHT;
 
                 LogManager.LogError("About window version load failed", ex);
             }

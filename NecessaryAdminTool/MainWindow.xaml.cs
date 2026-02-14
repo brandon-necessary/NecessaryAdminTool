@@ -12620,10 +12620,21 @@ runas /user:{adminUsername} /savecred ""{exePath}""
     // LOGO_CONFIG: Change these values to update the logo across the entire application
     public static class LogoConfig
     {
+        // TAG: #DYNAMIC_BRANDING #SINGLE_SOURCE_OF_TRUTH
         // Branding Text
         public const string COMPANY_NAME = "NecessaryAdmin";
         public const string COMPANY_SUFFIX = "";
         public const string TAGLINE = "I T   M A N A G E M E N T   S U I T E";
+
+        // Legal & Copyright - TAG: #COPYRIGHT #LEGAL
+        public const string COPYRIGHT_HOLDER = "Brandon Necessary";
+        public const string LEGAL_ENTITY = "Brandon Necessary";
+        public const string SUPPORT_CONTACT = "Contact your NecessaryAdminTool administrator";
+        public const string LEGAL_EMAIL = "support@necessaryadmintool.com";
+
+        // Product Name - TAG: #PRODUCT_NAME
+        public const string PRODUCT_NAME = "NecessaryAdminTool";
+        public const string PRODUCT_FULL_NAME = "NecessaryAdminTool Suite";
 
         /// <summary>
         /// Gets version in CalVer format: Major.YYMM.Minor
@@ -12655,7 +12666,32 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         }
 
         /// <summary>
-        /// Gets human-readable version: "Version 6, February 2026 (6.2602.1)"
+        /// Gets User-Agent version string for HTTP requests
+        /// TAG: #USER_AGENT #HTTP #DYNAMIC_VERSION
+        /// </summary>
+        public static string USER_AGENT_VERSION
+        {
+            get
+            {
+                var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+                return $"{version.Major}.{version.Minor:D4}";
+            }
+        }
+
+        /// <summary>
+        /// Gets copyright string with dynamic year and holder
+        /// TAG: #COPYRIGHT #DYNAMIC
+        /// </summary>
+        public static string COPYRIGHT
+        {
+            get
+            {
+                return $"Copyright © {COPYRIGHT_HOLDER} {DateTime.Now.Year}";
+            }
+        }
+
+        /// <summary>
+        /// Gets human-readable version: "Version 1, February 2026 (1.2602.0)"
         /// TAG: #MODULAR #VERSION #CALVER
         /// </summary>
         public static string VERSION_READABLE

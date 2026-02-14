@@ -164,8 +164,9 @@
                                     <GradientStop Color="#FFA1A1AA" Offset="0.7"/>
                                 </LinearGradientBrush>
                             </TextBlock.Foreground>
-                            <Run Text="Artazn" FontSize="36" FontWeight="ExtraBold"/>
-                            <Run Text=" LLC" FontSize="28" FontWeight="Light"/>
+                            <!-- TAG: #DYNAMIC_BRANDING - Branding set programmatically in code-behind -->
+                            <Run x:Name="RunCompanyName" Text="NecessaryAdmin" FontSize="36" FontWeight="ExtraBold"/>
+                            <Run x:Name="RunCompanySuffix" Text="" FontSize="28" FontWeight="Light"/>
                         </TextBlock>
 
                         <TextBlock Text="I T   M A N A G E M E N T   S U I T E"
