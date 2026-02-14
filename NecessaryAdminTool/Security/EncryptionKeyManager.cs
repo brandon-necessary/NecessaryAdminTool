@@ -22,7 +22,7 @@ namespace NecessaryAdminTool.Security
             try
             {
                 // Try to retrieve existing key
-                var existingKey = SecureCredentialManager.RetrieveCredential(DATABASE_KEY_NAME);
+                var existingKey = SecureCredentialManager.RetrieveCredential(DATABASE_KEY_NAME, "EncryptionKey");
                 if (!string.IsNullOrEmpty(existingKey))
                 {
                     LogManager.LogInfo("Retrieved existing database encryption key");
@@ -37,7 +37,7 @@ namespace NecessaryAdminTool.Security
                     var key = Convert.ToBase64String(keyBytes);
 
                     // Store in Windows Credential Manager
-                    SecureCredentialManager.StoreCredential(DATABASE_KEY_NAME, key);
+                    SecureCredentialManager.StoreCredential(DATABASE_KEY_NAME, "EncryptionKey", key);
 
                     LogManager.LogInfo("Generated new database encryption key (256-bit AES)");
                     return key;
@@ -58,7 +58,7 @@ namespace NecessaryAdminTool.Security
             try
             {
                 // Try to retrieve existing key
-                var existingKey = SecureCredentialManager.RetrieveCredential(CSV_KEY_NAME);
+                var existingKey = SecureCredentialManager.RetrieveCredential(CSV_KEY_NAME, "EncryptionKey");
                 if (!string.IsNullOrEmpty(existingKey))
                 {
                     return existingKey;
@@ -72,7 +72,7 @@ namespace NecessaryAdminTool.Security
                     var key = Convert.ToBase64String(keyBytes);
 
                     // Store in Windows Credential Manager
-                    SecureCredentialManager.StoreCredential(CSV_KEY_NAME, key);
+                    SecureCredentialManager.StoreCredential(CSV_KEY_NAME, "EncryptionKey", key);
 
                     LogManager.LogInfo("Generated new CSV encryption key");
                     return key;
@@ -93,7 +93,7 @@ namespace NecessaryAdminTool.Security
             try
             {
                 // Delete old key
-                SecureCredentialManager.DeleteCredential(DATABASE_KEY_NAME);
+                SecureCredentialManager.DeleteCredential(DATABASE_KEY_NAME, "EncryptionKey");
 
                 // Generate new key
                 return GetDatabaseKey();
@@ -112,8 +112,8 @@ namespace NecessaryAdminTool.Security
         {
             try
             {
-                SecureCredentialManager.DeleteCredential(DATABASE_KEY_NAME);
-                SecureCredentialManager.DeleteCredential(CSV_KEY_NAME);
+                SecureCredentialManager.DeleteCredential(DATABASE_KEY_NAME, "EncryptionKey");
+                SecureCredentialManager.DeleteCredential(CSV_KEY_NAME, "EncryptionKey");
                 LogManager.LogWarning("All encryption keys deleted");
             }
             catch (Exception ex)

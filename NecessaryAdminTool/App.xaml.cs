@@ -35,7 +35,7 @@ namespace NecessaryAdminTool
             }
 
             // Check if first-run setup is needed
-            if (!Properties.Settings.Default.SetupCompleted)
+            if (!NecessaryAdminTool.Properties.Settings.Default.SetupCompleted)
             {
                 LogManager.LogInfo("First run detected - launching Setup Wizard");
 
@@ -82,12 +82,12 @@ namespace NecessaryAdminTool
                     // Save scan history
                     var scanHistory = new Data.ScanHistory
                     {
-                        ScanDate = DateTime.Now,
-                        ScanType = "Automatic",
-                        ComputersFound = 0,
-                        ErrorCount = 0,
-                        DurationSeconds = 0,
-                        Notes = "Automatic scan triggered by scheduled task"
+                        StartTime = DateTime.Now,
+                        EndTime = DateTime.Now,
+                        ComputersScanned = 0,
+                        SuccessCount = 0,
+                        FailureCount = 0,
+                        DurationSeconds = 0
                     };
 
                     // await provider.SaveScanHistoryAsync(scanHistory);

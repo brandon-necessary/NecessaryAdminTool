@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 // TAG: #LOGGING #DIAGNOSTICS #VERSION_1_2
 
@@ -160,7 +161,7 @@ namespace NecessaryAdminTool
 
                 var allLines = File.ReadAllLines(LogFile, Encoding.UTF8);
                 var recentLines = allLines.Length > lines
-                    ? allLines[(allLines.Length - lines)..]
+                    ? allLines.Skip(allLines.Length - lines).ToArray()
                     : allLines;
 
                 return string.Join(Environment.NewLine, recentLines);
@@ -190,6 +191,22 @@ namespace NecessaryAdminTool
             {
                 LogError("Failed to clear log files", ex);
             }
+        }
+
+        /// <summary>
+        /// Get the current log file path
+        /// </summary>
+        public static string GetDebugLogPath()
+        {
+            return LogFile;
+        }
+
+        /// <summary>
+        /// Get the runtime log path (alias for GetDebugLogPath for compatibility)
+        /// </summary>
+        public static string GetRuntimeLogPath()
+        {
+            return LogFile;
         }
     }
 }

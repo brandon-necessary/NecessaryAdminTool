@@ -287,11 +287,244 @@ namespace NecessaryAdminTool.Data
             }
         }
 
+        public async Task<ComputerInfo> GetComputerAsync(string hostname)
+        {
+            try
+            {
+                var query = "SELECT * FROM Computers WHERE Hostname = ?";
+                using (var cmd = new OleDbCommand(query, _connection))
+                {
+                    cmd.Parameters.AddWithValue("?", hostname);
+                    return await Task.Run(() =>
+                    {
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                return MapReaderToComputer(reader);
+                            }
+                        }
+                        return null;
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to get computer {hostname} from Access database", ex);
+                return null;
+            }
+        }
+
+        public async Task DeleteComputerAsync(string hostname)
+        {
+            try
+            {
+                var query = "DELETE FROM Computers WHERE Hostname = ?";
+                using (var cmd = new OleDbCommand(query, _connection))
+                {
+                    cmd.Parameters.AddWithValue("?", hostname);
+                    await Task.Run(() => cmd.ExecuteNonQuery());
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to delete computer {hostname} from Access database", ex);
+                throw;
+            }
+        }
+
+        public async Task<List<ComputerInfo>> SearchComputersAsync(string searchTerm)
+        {
+            var computers = new List<ComputerInfo>();
+
+            try
+            {
+                var query = @"SELECT * FROM Computers
+                    WHERE Hostname LIKE ? OR OS LIKE ? OR Manufacturer LIKE ? OR Model LIKE ? OR IPAddress LIKE ?
+                    ORDER BY Hostname";
+
+                var searchPattern = $"%{searchTerm}%";
+
+                using (var cmd = new OleDbCommand(query, _connection))
+                {
+                    cmd.Parameters.AddWithValue("?", searchPattern);
+                    cmd.Parameters.AddWithValue("?", searchPattern);
+                    cmd.Parameters.AddWithValue("?", searchPattern);
+                    cmd.Parameters.AddWithValue("?", searchPattern);
+                    cmd.Parameters.AddWithValue("?", searchPattern);
+
+                    await Task.Run(() =>
+                    {
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                computers.Add(MapReaderToComputer(reader));
+                            }
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to search computers with term '{searchTerm}' from Access database", ex);
+            }
+
+            return computers;
+        }
+
+        public async Task<List<string>> GetComputerTagsAsync(string hostname)
+        {
+            LogManager.LogWarning($"GetComputerTagsAsync not yet implemented in {GetType().Name}");
+            return await Task.FromResult(new List<string>());
+        }
+
+        public async Task AddTagAsync(string hostname, string tagName)
+        {
+            LogManager.LogWarning($"AddTagAsync not yet implemented in {GetType().Name}");
+            await Task.CompletedTask;
+        }
+
+        public async Task RemoveTagAsync(string hostname, string tagName)
+        {
+            LogManager.LogWarning($"RemoveTagAsync not yet implemented in {GetType().Name}");
+            await Task.CompletedTask;
+        }
+
+        public async Task<List<string>> GetAllTagsAsync()
+        {
+            LogManager.LogWarning($"GetAllTagsAsync not yet implemented in {GetType().Name}");
+            return await Task.FromResult(new List<string>());
+        }
+
+        public async Task<ScanHistory> GetLastScanAsync()
+        {
+            LogManager.LogWarning($"GetLastScanAsync not yet implemented in {GetType().Name}");
+            return await Task.FromResult<ScanHistory>(null);
+        }
+
+        public async Task SaveScanHistoryAsync(ScanHistory scan)
+        {
+            LogManager.LogWarning($"SaveScanHistoryAsync not yet implemented in {GetType().Name}");
+            await Task.CompletedTask;
+        }
+
+        public async Task<List<ScanHistory>> GetScanHistoryAsync(int limit = 10)
+        {
+            LogManager.LogWarning($"GetScanHistoryAsync not yet implemented in {GetType().Name}");
+            return await Task.FromResult(new List<ScanHistory>());
+        }
+
+        public async Task<string> GetSettingAsync(string key, string defaultValue = null)
+        {
+            LogManager.LogWarning($"GetSettingAsync not yet implemented in {GetType().Name}");
+            return await Task.FromResult(defaultValue);
+        }
+
+        public async Task SaveSettingAsync(string key, string value)
+        {
+            LogManager.LogWarning($"SaveSettingAsync not yet implemented in {GetType().Name}");
+            await Task.CompletedTask;
+        }
+
+        public async Task<List<ScriptInfo>> GetAllScriptsAsync()
+        {
+            LogManager.LogWarning($"GetAllScriptsAsync not yet implemented in {GetType().Name}");
+            return await Task.FromResult(new List<ScriptInfo>());
+        }
+
+        public async Task SaveScriptAsync(ScriptInfo script)
+        {
+            LogManager.LogWarning($"SaveScriptAsync not yet implemented in {GetType().Name}");
+            await Task.CompletedTask;
+        }
+
+        public async Task DeleteScriptAsync(int scriptId)
+        {
+            LogManager.LogWarning($"DeleteScriptAsync not yet implemented in {GetType().Name}");
+            await Task.CompletedTask;
+        }
+
+        public async Task<List<BookmarkInfo>> GetAllBookmarksAsync()
+        {
+            LogManager.LogWarning($"GetAllBookmarksAsync not yet implemented in {GetType().Name}");
+            return await Task.FromResult(new List<BookmarkInfo>());
+        }
+
+        public async Task SaveBookmarkAsync(BookmarkInfo bookmark)
+        {
+            LogManager.LogWarning($"SaveBookmarkAsync not yet implemented in {GetType().Name}");
+            await Task.CompletedTask;
+        }
+
+        public async Task DeleteBookmarkAsync(string hostname)
+        {
+            LogManager.LogWarning($"DeleteBookmarkAsync not yet implemented in {GetType().Name}");
+            await Task.CompletedTask;
+        }
+
+        public async Task OptimizeDatabaseAsync()
+        {
+            LogManager.LogWarning($"OptimizeDatabaseAsync not yet implemented in {GetType().Name}");
+            await Task.CompletedTask;
+        }
+
+        public async Task<bool> VerifyIntegrityAsync()
+        {
+            LogManager.LogWarning($"VerifyIntegrityAsync not yet implemented in {GetType().Name}");
+            return await Task.FromResult(false);
+        }
+
+        public async Task<bool> BackupDatabaseAsync(string backupPath)
+        {
+            try
+            {
+                if (File.Exists(_databasePath))
+                {
+                    await Task.Run(() => File.Copy(_databasePath, backupPath, true));
+                    LogManager.LogInfo($"Access database backed up to: {backupPath}");
+                    return true;
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to backup Access database to {backupPath}", ex);
+                return false;
+            }
+        }
+
+        public async Task<bool> RestoreDatabaseAsync(string backupPath)
+        {
+            try
+            {
+                if (File.Exists(backupPath))
+                {
+                    _connection?.Close();
+                    await Task.Run(() => File.Copy(backupPath, _databasePath, true));
+                    LogManager.LogInfo($"Access database restored from: {backupPath}");
+
+                    // Reconnect
+                    var connectionString = $"Provider=Microsoft.ACE.OLEDB.12.0;Data Source={_databasePath};Persist Security Info=False;";
+                    _connection = new OleDbConnection(connectionString);
+                    await Task.Run(() => _connection.Open());
+
+                    return true;
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to restore Access database from {backupPath}", ex);
+                return false;
+            }
+        }
+
         public async Task<DatabaseStats> GetDatabaseStatsAsync()
         {
             try
             {
-                var stats = new DatabaseStats { DatabaseType = "Microsoft Access" };
+                var stats = new DatabaseStats();
 
                 // Get counts from each table
                 stats.TotalComputers = await GetTableCountAsync("Computers");
@@ -303,7 +536,7 @@ namespace NecessaryAdminTool.Data
                 if (File.Exists(_databasePath))
                 {
                     var fileInfo = new FileInfo(_databasePath);
-                    stats.DatabaseSizeMB = fileInfo.Length / (1024 * 1024);
+                    stats.SizeBytes = fileInfo.Length;
                 }
 
                 return stats;
@@ -311,7 +544,7 @@ namespace NecessaryAdminTool.Data
             catch (Exception ex)
             {
                 LogManager.LogError("Failed to get Access database stats", ex);
-                return new DatabaseStats { DatabaseType = "Microsoft Access" };
+                return new DatabaseStats();
             }
         }
 

@@ -200,6 +200,287 @@ namespace NecessaryAdminTool.Data
             }
         }
 
+        public async Task<ComputerInfo> GetComputerAsync(string hostname)
+        {
+            try
+            {
+                var query = "SELECT * FROM Computers WHERE Hostname = @Hostname";
+                using (var cmd = new SqlCommand(query, _connection))
+                {
+                    cmd.Parameters.AddWithValue("@Hostname", hostname);
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            return MapReaderToComputer(reader);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to get computer {hostname} from SQL Server", ex);
+            }
+
+            return null;
+        }
+
+        public async Task DeleteComputerAsync(string hostname)
+        {
+            try
+            {
+                var query = "DELETE FROM Computers WHERE Hostname = @Hostname";
+                using (var cmd = new SqlCommand(query, _connection))
+                {
+                    cmd.Parameters.AddWithValue("@Hostname", hostname);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to delete computer {hostname} from SQL Server", ex);
+                throw;
+            }
+        }
+
+        public async Task<List<ComputerInfo>> SearchComputersAsync(string searchTerm)
+        {
+            var computers = new List<ComputerInfo>();
+
+            try
+            {
+                var query = @"SELECT * FROM Computers
+                    WHERE Hostname LIKE @Search OR OS LIKE @Search OR Manufacturer LIKE @Search
+                        OR Model LIKE @Search OR IPAddress LIKE @Search
+                    ORDER BY Hostname";
+
+                var searchPattern = $"%{searchTerm}%";
+
+                using (var cmd = new SqlCommand(query, _connection))
+                {
+                    cmd.Parameters.AddWithValue("@Search", searchPattern);
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            computers.Add(MapReaderToComputer(reader));
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to search computers with term '{searchTerm}' from SQL Server", ex);
+            }
+
+            return computers;
+        }
+
+        public async Task<List<string>> GetComputerTagsAsync(string hostname)
+        {
+            LogManager.LogWarning($"GetComputerTagsAsync not yet implemented in {GetType().Name}");
+            return await Task.FromResult(new List<string>());
+        }
+
+        public async Task AddTagAsync(string hostname, string tagName)
+        {
+            LogManager.LogWarning($"AddTagAsync not yet implemented in {GetType().Name}");
+            await Task.CompletedTask;
+        }
+
+        public async Task RemoveTagAsync(string hostname, string tagName)
+        {
+            LogManager.LogWarning($"RemoveTagAsync not yet implemented in {GetType().Name}");
+            await Task.CompletedTask;
+        }
+
+        public async Task<List<string>> GetAllTagsAsync()
+        {
+            LogManager.LogWarning($"GetAllTagsAsync not yet implemented in {GetType().Name}");
+            return await Task.FromResult(new List<string>());
+        }
+
+        public async Task<ScanHistory> GetLastScanAsync()
+        {
+            LogManager.LogWarning($"GetLastScanAsync not yet implemented in {GetType().Name}");
+            return await Task.FromResult<ScanHistory>(null);
+        }
+
+        public async Task SaveScanHistoryAsync(ScanHistory scan)
+        {
+            LogManager.LogWarning($"SaveScanHistoryAsync not yet implemented in {GetType().Name}");
+            await Task.CompletedTask;
+        }
+
+        public async Task<List<ScanHistory>> GetScanHistoryAsync(int limit = 10)
+        {
+            LogManager.LogWarning($"GetScanHistoryAsync not yet implemented in {GetType().Name}");
+            return await Task.FromResult(new List<ScanHistory>());
+        }
+
+        public async Task<string> GetSettingAsync(string key, string defaultValue = null)
+        {
+            LogManager.LogWarning($"GetSettingAsync not yet implemented in {GetType().Name}");
+            return await Task.FromResult(defaultValue);
+        }
+
+        public async Task SaveSettingAsync(string key, string value)
+        {
+            LogManager.LogWarning($"SaveSettingAsync not yet implemented in {GetType().Name}");
+            await Task.CompletedTask;
+        }
+
+        public async Task<List<ScriptInfo>> GetAllScriptsAsync()
+        {
+            LogManager.LogWarning($"GetAllScriptsAsync not yet implemented in {GetType().Name}");
+            return await Task.FromResult(new List<ScriptInfo>());
+        }
+
+        public async Task SaveScriptAsync(ScriptInfo script)
+        {
+            LogManager.LogWarning($"SaveScriptAsync not yet implemented in {GetType().Name}");
+            await Task.CompletedTask;
+        }
+
+        public async Task DeleteScriptAsync(int scriptId)
+        {
+            LogManager.LogWarning($"DeleteScriptAsync not yet implemented in {GetType().Name}");
+            await Task.CompletedTask;
+        }
+
+        public async Task<List<BookmarkInfo>> GetAllBookmarksAsync()
+        {
+            LogManager.LogWarning($"GetAllBookmarksAsync not yet implemented in {GetType().Name}");
+            return await Task.FromResult(new List<BookmarkInfo>());
+        }
+
+        public async Task SaveBookmarkAsync(BookmarkInfo bookmark)
+        {
+            LogManager.LogWarning($"SaveBookmarkAsync not yet implemented in {GetType().Name}");
+            await Task.CompletedTask;
+        }
+
+        public async Task DeleteBookmarkAsync(string hostname)
+        {
+            LogManager.LogWarning($"DeleteBookmarkAsync not yet implemented in {GetType().Name}");
+            await Task.CompletedTask;
+        }
+
+        public async Task OptimizeDatabaseAsync()
+        {
+            try
+            {
+                var query = @"
+                    -- Update statistics
+                    EXEC sp_updatestats;
+
+                    -- Rebuild indexes
+                    DECLARE @TableName NVARCHAR(255)
+                    DECLARE TableCursor CURSOR FOR
+                    SELECT table_name FROM information_schema.tables WHERE table_type = 'BASE TABLE'
+
+                    OPEN TableCursor
+                    FETCH NEXT FROM TableCursor INTO @TableName
+
+                    WHILE @@FETCH_STATUS = 0
+                    BEGIN
+                        EXEC('ALTER INDEX ALL ON ' + @TableName + ' REBUILD')
+                        FETCH NEXT FROM TableCursor INTO @TableName
+                    END
+
+                    CLOSE TableCursor
+                    DEALLOCATE TableCursor";
+
+                using (var cmd = new SqlCommand(query, _connection))
+                {
+                    cmd.CommandTimeout = 300; // 5 minutes
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                LogManager.LogInfo("SQL Server database optimized successfully");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to optimize SQL Server database", ex);
+            }
+        }
+
+        public async Task<bool> VerifyIntegrityAsync()
+        {
+            try
+            {
+                var query = "DBCC CHECKDB WITH NO_INFOMSGS";
+                using (var cmd = new SqlCommand(query, _connection))
+                {
+                    cmd.CommandTimeout = 300; // 5 minutes
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                LogManager.LogInfo("SQL Server database integrity verified");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("SQL Server database integrity check failed", ex);
+                return false;
+            }
+        }
+
+        public async Task<bool> BackupDatabaseAsync(string backupPath)
+        {
+            try
+            {
+                var builder = new SqlConnectionStringBuilder(_connectionString);
+                var databaseName = builder.InitialCatalog;
+
+                var query = $"BACKUP DATABASE [{databaseName}] TO DISK = @BackupPath WITH FORMAT, INIT";
+                using (var cmd = new SqlCommand(query, _connection))
+                {
+                    cmd.Parameters.AddWithValue("@BackupPath", backupPath);
+                    cmd.CommandTimeout = 600; // 10 minutes
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                LogManager.LogInfo($"SQL Server database backed up to: {backupPath}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to backup SQL Server database to {backupPath}", ex);
+                return false;
+            }
+        }
+
+        public async Task<bool> RestoreDatabaseAsync(string backupPath)
+        {
+            try
+            {
+                var builder = new SqlConnectionStringBuilder(_connectionString);
+                var databaseName = builder.InitialCatalog;
+
+                var query = $@"
+                    USE master;
+                    ALTER DATABASE [{databaseName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+                    RESTORE DATABASE [{databaseName}] FROM DISK = @BackupPath WITH REPLACE;
+                    ALTER DATABASE [{databaseName}] SET MULTI_USER;";
+
+                using (var cmd = new SqlCommand(query, _connection))
+                {
+                    cmd.Parameters.AddWithValue("@BackupPath", backupPath);
+                    cmd.CommandTimeout = 600; // 10 minutes
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                LogManager.LogInfo($"SQL Server database restored from: {backupPath}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to restore SQL Server database from {backupPath}", ex);
+                return false;
+            }
+        }
+
         public async Task<DatabaseStats> GetDatabaseStatsAsync()
         {
             try
@@ -222,8 +503,7 @@ namespace NecessaryAdminTool.Data
                             TotalScans = reader.GetInt32(1),
                             TotalScripts = reader.GetInt32(2),
                             TotalBookmarks = reader.GetInt32(3),
-                            DatabaseType = "SQL Server",
-                            DatabaseSizeMB = await GetDatabaseSizeAsync()
+                            SizeBytes = await GetDatabaseSizeAsync()
                         };
                     }
                 }
@@ -233,7 +513,7 @@ namespace NecessaryAdminTool.Data
                 LogManager.LogError("Failed to get database stats", ex);
             }
 
-            return new DatabaseStats { DatabaseType = "SQL Server" };
+            return new DatabaseStats();
         }
 
         private async Task<long> GetDatabaseSizeAsync()
@@ -241,7 +521,7 @@ namespace NecessaryAdminTool.Data
             try
             {
                 var query = @"
-                    SELECT SUM(size) * 8 / 1024 AS SizeMB
+                    SELECT SUM(size) * 8 * 1024 AS SizeBytes
                     FROM sys.database_files";
 
                 using (var cmd = new SqlCommand(query, _connection))

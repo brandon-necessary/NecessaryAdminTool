@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{5C1271CB-C617-4F6D-BD00-E860D7D03AB7}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>NecessaryAdminTool</RootNamespace>
-    <AssemblyName>NecessaryAdminTool</AssemblyName>
+    <RootNamespace>ArtaznIT</RootNamespace>
+    <AssemblyName>ArtaznIT</AssemblyName>
     <TargetFrameworkVersion>v4.8.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -41,17 +41,12 @@
     <Reference Include="System.Data" />
     <Reference Include="System.DirectoryServices" />
     <Reference Include="System.Management" />
-    <Reference Include="System.Management.Automation">
-      <HintPath>C:\Windows\Microsoft.NET\assembly\GAC_MSIL\System.Management.Automation\v4.0_3.0.0.0__31bf3856ad364e35\System.Management.Automation.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
+    <Reference Include="System.Management.Automation" />
     <Reference Include="Microsoft.Management.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>C:\Windows\Microsoft.NET\assembly\GAC_MSIL\Microsoft.Management.Infrastructure\v4.0_1.0.0.0__31bf3856ad364e35\Microsoft.Management.Infrastructure.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System.Drawing" />
-    <Reference Include="System.IO.Compression" />
-    <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
@@ -113,10 +108,6 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="ScriptExecutorWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="SetupWizardWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -214,40 +205,6 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="AssetTagManager.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="UpdateManager.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="SetupWizardWindow.xaml.cs">
-      <DependentUpon>SetupWizardWindow.xaml</DependentUpon>
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Data\IDataProvider.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Data\SqliteDataProvider.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Data\SqlServerDataProvider.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Data\AccessDataProvider.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Data\CsvDataProvider.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Data\DataProviderFactory.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Security\EncryptionKeyManager.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="LogManager.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="ScheduledTaskManager.cs">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>

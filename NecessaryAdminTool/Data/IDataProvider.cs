@@ -182,16 +182,34 @@ namespace NecessaryAdminTool.Data
     {
         public string Hostname { get; set; }
         public string OS { get; set; }
+        public string OSVersion { get; set; }
         public DateTime LastSeen { get; set; }
         public string Status { get; set; } // ONLINE, OFFLINE, UNKNOWN
         public string IPAddress { get; set; }
+        public string MACAddress { get; set; }
         public string Manufacturer { get; set; }
         public string Model { get; set; }
         public string SerialNumber { get; set; }
+        public string AssetTag { get; set; }
         public string ChassisType { get; set; }
         public DateTime? LastBootTime { get; set; }
+        public DateTime InstallDate { get; set; }
         public long? Uptime { get; set; } // Seconds
+        public string Domain { get; set; }
         public string DomainController { get; set; }
+        public string LastLoggedOnUser { get; set; }
+        public int RAM_GB { get; set; }
+        public string CPU { get; set; }
+        public int DiskSize_GB { get; set; }
+        public int DiskFree_GB { get; set; }
+        public string BitLockerStatus { get; set; }
+        public string TPMVersion { get; set; }
+        public string AntivirusProduct { get; set; }
+        public string AntivirusStatus { get; set; }
+        public string FirewallStatus { get; set; }
+        public int PendingRebootCount { get; set; }
+        public DateTime LastPatchDate { get; set; }
+        public string Notes { get; set; }
         public string RawDataJson { get; set; } // Full WMI data as JSON
     }
 
@@ -239,6 +257,8 @@ namespace NecessaryAdminTool.Data
     public class DatabaseStats
     {
         public long SizeBytes { get; set; }
+        public long DatabaseSizeMB { get; set; }
+        public string DatabaseType { get; set; }
         public int TotalComputers { get; set; }
         public int TotalTags { get; set; }
         public int TotalScans { get; set; }

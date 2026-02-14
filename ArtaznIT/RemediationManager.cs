@@ -1,0 +1,354 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Management;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace ArtaznIT
+{
+    // TAG: #VERSION_7.1 #REMEDIATION #AUTOMATION
+    /// <summary>
+    /// Manages automated remediation actions for common IT issues
+    /// Provides one-click fixes for Windows Update, DNS, Print Spooler, WinRM, Time Sync, Event Logs
+    /// </summary>
+    public class RemediationManager
+    {
+        /// <summary>
+        /// Available remediation actions
+        /// </summary>
+        public enum RemediationAction
+        {
+            RestartWindowsUpdate,
+            ClearDNSCache,
+            RestartPrintSpooler,
+            EnableWinRM,
+            FixTimeSync,
+            ClearEventLogs
+        }
+
+        /// <summary>
+        /// Result of a remediation action on a single computer
+        /// </summary>
+        public class RemediationResult
+        {
+            public string Hostname { get; set; }
+            public RemediationAction Action { get; set; }
+            public bool Success { get; set; }
+            public string Message { get; set; }
+            public DateTime Timestamp { get; set; }
+            public TimeSpan Duration { get; set; }
+        }
+
+        /// <summary>
+        /// Execute remediation action on a single computer
+        /// TAG: #VERSION_7.1 #REMEDIATION
+        /// </summary>
+        public static async Task<RemediationResult> ExecuteRemediationAsync(
+            string hostname,
+            RemediationAction action,
+            string username = null,
+            string password = null,
+            CancellationToken ct = default)
+        {
+            var startTime = DateTime.Now;
+            var result = new RemediationResult
+            {
+                Hostname = hostname,
+                Action = action,
+                Timestamp = startTime
+            };
+
+            try
+            {
+                await Task.Run(() =>
+                {
+                    switch (action)
+                    {
+                        case RemediationAction.RestartWindowsUpdate:
+                            RestartWindowsUpdateService(hostname, username, password);
+                            result.Success = true;
+                            result.Message = "Windows Update service restarted and cache cleared";
+                            break;
+
+                        case RemediationAction.ClearDNSCache:
+                            ClearDNSCache(hostname, username, password);
+                            result.Success = true;
+                            result.Message = "DNS cache flushed successfully";
+                            break;
+
+                        case RemediationAction.RestartPrintSpooler:
+                            RestartPrintSpooler(hostname, username, password);
+                            result.Success = true;
+                            result.Message = "Print Spooler service restarted";
+                            break;
+
+                        case RemediationAction.EnableWinRM:
+                            EnableWinRM(hostname, username, password);
+                            result.Success = true;
+                            result.Message = "WinRM enabled and configured";
+                            break;
+
+                        case RemediationAction.FixTimeSync:
+                            FixTimeSync(hostname, username, password);
+                            result.Success = true;
+                            result.Message = "Time synchronized with domain";
+                            break;
+
+                        case RemediationAction.ClearEventLogs:
+                            ClearEventLogs(hostname, username, password);
+                            result.Success = true;
+                            result.Message = "Event logs cleared (Application, System, Security)";
+                            break;
+                    }
+                }, ct);
+
+                result.Duration = DateTime.Now - startTime;
+                LogManager.LogInfo($"[Remediation] {action} completed on {hostname} in {result.Duration.TotalSeconds:F1}s");
+            }
+            catch (Exception ex)
+            {
+                result.Success = false;
+                result.Message = $"Error: {ex.Message}";
+                result.Duration = DateTime.Now - startTime;
+                LogManager.LogError($"[Remediation] {action} failed on {hostname}", ex);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Restart Windows Update service and clear cache
+        /// TAG: #VERSION_7.1 #REMEDIATION #WINDOWS_UPDATE
+        /// </summary>
+        private static void RestartWindowsUpdateService(string hostname, string username, string password)
+        {
+            var scope = GetWmiScope(hostname, username, password);
+
+            // Stop Windows Update service
+            StopService(scope, "wuauserv");
+            Thread.Sleep(2000); // Wait for service to stop
+
+            // Clear SoftwareDistribution folder (optional - requires file access)
+            try
+            {
+                var deleteCmd = new ManagementClass(scope, new ManagementPath("Win32_Process"), null);
+                var inParams = deleteCmd.GetMethodParameters("Create");
+                inParams["CommandLine"] = "cmd.exe /c rd /s /q C:\\Windows\\SoftwareDistribution\\Download";
+                deleteCmd.InvokeMethod("Create", inParams, null);
+                Thread.Sleep(1000);
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogWarning($"[Remediation] Could not clear SoftwareDistribution cache: {ex.Message}");
+            }
+
+            // Start Windows Update service
+            StartService(scope, "wuauserv");
+        }
+
+        /// <summary>
+        /// Clear DNS cache via ipconfig /flushdns
+        /// TAG: #VERSION_7.1 #REMEDIATION #DNS
+        /// </summary>
+        private static void ClearDNSCache(string hostname, string username, string password)
+        {
+            var scope = GetWmiScope(hostname, username, password);
+
+            // Execute ipconfig /flushdns
+            var processClass = new ManagementClass(scope, new ManagementPath("Win32_Process"), null);
+            var inParams = processClass.GetMethodParameters("Create");
+            inParams["CommandLine"] = "ipconfig /flushdns";
+
+            var outParams = processClass.InvokeMethod("Create", inParams, null);
+            if (outParams["ReturnValue"].ToString() != "0")
+            {
+                throw new Exception($"Failed to execute ipconfig /flushdns (Return code: {outParams["ReturnValue"]})");
+            }
+        }
+
+        /// <summary>
+        /// Restart Print Spooler service
+        /// TAG: #VERSION_7.1 #REMEDIATION #PRINT_SPOOLER
+        /// </summary>
+        private static void RestartPrintSpooler(string hostname, string username, string password)
+        {
+            var scope = GetWmiScope(hostname, username, password);
+
+            StopService(scope, "spooler");
+            Thread.Sleep(2000);
+            StartService(scope, "spooler");
+        }
+
+        /// <summary>
+        /// Enable WinRM for remote management
+        /// TAG: #VERSION_7.1 #REMEDIATION #WINRM
+        /// </summary>
+        private static void EnableWinRM(string hostname, string username, string password)
+        {
+            var scope = GetWmiScope(hostname, username, password);
+
+            // Execute winrm quickconfig -force
+            var processClass = new ManagementClass(scope, new ManagementPath("Win32_Process"), null);
+            var inParams = processClass.GetMethodParameters("Create");
+            inParams["CommandLine"] = "winrm quickconfig -force -quiet";
+
+            var outParams = processClass.InvokeMethod("Create", inParams, null);
+            if (outParams["ReturnValue"].ToString() != "0")
+            {
+                throw new Exception($"Failed to enable WinRM (Return code: {outParams["ReturnValue"]})");
+            }
+
+            Thread.Sleep(3000); // Wait for WinRM to configure
+        }
+
+        /// <summary>
+        /// Fix time synchronization with domain controller
+        /// TAG: #VERSION_7.1 #REMEDIATION #TIME_SYNC
+        /// </summary>
+        private static void FixTimeSync(string hostname, string username, string password)
+        {
+            var scope = GetWmiScope(hostname, username, password);
+
+            // Stop Windows Time service
+            StopService(scope, "w32time");
+            Thread.Sleep(1000);
+
+            // Resync time
+            var processClass = new ManagementClass(scope, new ManagementPath("Win32_Process"), null);
+            var inParams = processClass.GetMethodParameters("Create");
+            inParams["CommandLine"] = "w32tm /resync /force";
+
+            processClass.InvokeMethod("Create", inParams, null);
+            Thread.Sleep(1000);
+
+            // Start Windows Time service
+            StartService(scope, "w32time");
+        }
+
+        /// <summary>
+        /// Clear Windows Event Logs (Application, System, Security)
+        /// TAG: #VERSION_7.1 #REMEDIATION #EVENT_LOGS
+        /// </summary>
+        private static void ClearEventLogs(string hostname, string username, string password)
+        {
+            var scope = GetWmiScope(hostname, username, password);
+
+            string[] logNames = { "Application", "System", "Security" };
+
+            foreach (var logName in logNames)
+            {
+                try
+                {
+                    var query = $"SELECT * FROM Win32_NTEventLogFile WHERE LogfileName='{logName}'";
+                    var searcher = new ManagementObjectSearcher(scope, new ObjectQuery(query));
+
+                    foreach (ManagementObject log in searcher.Get())
+                    {
+                        log.InvokeMethod("ClearEventLog", null);
+                        log.Dispose();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LogManager.LogWarning($"[Remediation] Could not clear {logName} log: {ex.Message}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Stop a Windows service via WMI
+        /// </summary>
+        private static void StopService(ManagementScope scope, string serviceName)
+        {
+            var query = $"SELECT * FROM Win32_Service WHERE Name='{serviceName}'";
+            var searcher = new ManagementObjectSearcher(scope, new ObjectQuery(query));
+
+            foreach (ManagementObject service in searcher.Get())
+            {
+                if (service["State"].ToString() == "Running")
+                {
+                    service.InvokeMethod("StopService", null);
+                }
+                service.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Start a Windows service via WMI
+        /// </summary>
+        private static void StartService(ManagementScope scope, string serviceName)
+        {
+            var query = $"SELECT * FROM Win32_Service WHERE Name='{serviceName}'";
+            var searcher = new ManagementObjectSearcher(scope, new ObjectQuery(query));
+
+            foreach (ManagementObject service in searcher.Get())
+            {
+                if (service["State"].ToString() != "Running")
+                {
+                    service.InvokeMethod("StartService", null);
+                }
+                service.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Create WMI scope with credentials
+        /// </summary>
+        private static ManagementScope GetWmiScope(string hostname, string username, string password)
+        {
+            var options = new ConnectionOptions
+            {
+                Timeout = TimeSpan.FromSeconds(30),
+                EnablePrivileges = true,
+                Authentication = AuthenticationLevel.PacketPrivacy,
+                Impersonation = ImpersonationLevel.Impersonate
+            };
+
+            if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
+            {
+                options.Username = username;
+                options.Password = password;
+            }
+
+            var scope = new ManagementScope($"\\\\{hostname}\\root\\cimv2", options);
+            scope.Connect();
+
+            return scope;
+        }
+
+        /// <summary>
+        /// Get friendly name for remediation action
+        /// </summary>
+        public static string GetActionName(RemediationAction action)
+        {
+            return action switch
+            {
+                RemediationAction.RestartWindowsUpdate => "Restart Windows Update",
+                RemediationAction.ClearDNSCache => "Clear DNS Cache",
+                RemediationAction.RestartPrintSpooler => "Restart Print Spooler",
+                RemediationAction.EnableWinRM => "Enable WinRM",
+                RemediationAction.FixTimeSync => "Fix Time Sync",
+                RemediationAction.ClearEventLogs => "Clear Event Logs",
+                _ => action.ToString()
+            };
+        }
+
+        /// <summary>
+        /// Get icon for remediation action
+        /// </summary>
+        public static string GetActionIcon(RemediationAction action)
+        {
+            return action switch
+            {
+                RemediationAction.RestartWindowsUpdate => "🔄",
+                RemediationAction.ClearDNSCache => "🌐",
+                RemediationAction.RestartPrintSpooler => "🖨️",
+                RemediationAction.EnableWinRM => "⚡",
+                RemediationAction.FixTimeSync => "🕐",
+                RemediationAction.ClearEventLogs => "🗑️",
+                _ => "🔧"
+            };
+        }
+    }
+}

@@ -36,7 +36,7 @@ using System.Runtime.CompilerServices;
 using System.Windows.Data;
 using System.Windows.Threading;
 
-namespace NecessaryAdminTool
+namespace ArtaznIT
 {
     // ############################################################################
     // REGION: SECURE MEMORY UTILITIES
@@ -214,7 +214,7 @@ namespace NecessaryAdminTool
     {
         private static readonly string _configPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "NecessaryAdmin_Config_v2.xml");
+            "Artazn_Config_v2.xml");
 
         public static string SharedLogPath { get; set; } = @"G:\PUBLIC\BNIT\01_Software\04_Update Logs\Master_Update_Log.csv";
         public static string InventoryDbPath { get; set; } = @"G:\PUBLIC\BNIT\01_Software\04_Update Logs\Master_Inventory.csv";
@@ -267,8 +267,50 @@ namespace NecessaryAdminTool
     // ############################################################################
     // REGION: LOG MANAGER
     // ############################################################################
-    // ############################################################################
-    // NOTE: LogManager is now in LogManager.cs (separate file)
+
+    public static class LogManager
+    {
+        private static readonly object _logLock = new object();
+        private static readonly string _debugLogPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Artazn_Debug.log");
+        private static readonly string _runtimeLogPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Artazn_Runtime.log");
+        private const long MAX_LOG_SIZE = 10 * 1024 * 1024;
+
+        public static void LogDebug(string message, Exception ex = null) => WriteLog(_debugLogPath, "DEBUG", message, ex);
+        public static void LogInfo(string message) => WriteLog(_runtimeLogPath, "INFO", message, null);
+        public static void LogError(string message, Exception ex) => WriteLog(_debugLogPath, "ERROR", message, ex);
+        public static void LogWarning(string message) => WriteLog(_debugLogPath, "WARN", message, null);
+
+        private static void WriteLog(string path, string level, string message, Exception ex)
+        {
+            lock (_logLock)
+            {
+                try
+                {
+                    if (File.Exists(path) && new FileInfo(path).Length > MAX_LOG_SIZE)
+                    {
+                        string backup = path + ".old";
+                        if (File.Exists(backup)) File.Delete(backup);
+                        File.Move(path, backup);
+                    }
+                    string entry = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} [{level}] {message}";
+                    if (ex != null)
+                        entry += $"\n  Exception: {ex.GetType().Name}\n  Message: {ex.Message}\n  StackTrace: {ex.StackTrace}";
+                    File.AppendAllText(path, entry + "\n");
+                }
+                catch (Exception logEx)
+                {
+                    // Fallback: Write to Debug output if file logging fails
+                    Debug.WriteLine($"[LogManager] Failed to write log: {logEx.Message}");
+                }
+            }
+        }
+
+        public static string GetDebugLogPath() => _debugLogPath;
+        public static string GetRuntimeLogPath() => _runtimeLogPath;
+    }
+
     // ############################################################################
     // REGION: WMI CONNECTION POOL
     // ############################################################################
@@ -647,7 +689,7 @@ namespace NecessaryAdminTool
     {
         private static string ConfigPath => Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "NecessaryAdmin_DCConfiguration.xml");
+            "Artazn_DCConfiguration.xml");
 
         public class DCInfo
         {
@@ -1987,7 +2029,7 @@ namespace NecessaryAdminTool
         private DispatcherTimer _refreshTimer;
 
         private string _xmlConfigPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "NecessaryAdmin_UserConfig.xml");
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Artazn_UserConfig.xml");
 
         // ── PowerShell Scripts ──
 
@@ -2122,7 +2164,7 @@ namespace NecessaryAdminTool
 
             // Set window title with version from AssemblyInfo (modular)
             // TAG: #MODULAR #VERSION
-            Title = $"NecessaryAdminTool Suite {LogoConfig.VERSION}";
+            Title = $"ArtaznIT Suite {LogoConfig.VERSION}";
 
             // Set version badge in header (will be set after InitializeComponent loads controls)
             Loaded += (s, e) => {
@@ -2197,7 +2239,7 @@ namespace NecessaryAdminTool
             try
             {
                 // ⚡ Loading overlay is visible by default in XAML
-                UpdateLoadingStatus("Initializing NecessaryAdminTool Suite...", "Checking system configuration");
+                UpdateLoadingStatus("Initializing ArtaznIT Suite...", "Checking system configuration");
 
                 if (IntPtr.Size == 4)
                 {
@@ -2243,21 +2285,13 @@ namespace NecessaryAdminTool
 
                 UpdateLoadingStatus("Applying Restrictions...", "Checking permissions");
                 ApplyRoleRestrictions(); // Lock down UI for non-admins
-                AppendTerminal($"NecessaryAdminTool Suite {LogoConfig.VERSION} (Kerberos Edition) initialized.", false);
+                AppendTerminal($"ArtaznIT Suite {LogoConfig.VERSION} (Kerberos Edition) initialized.", false);
 
                 UpdateLoadingStatus("Ready", "Launching login dialog");
                 await Task.Delay(300); // Brief pause so user sees "Ready" status
 
                 // Hide loading overlay before showing login
                 HideLoadingOverlay();
-
-                // TAG: #AUTO_UPDATE #VERSION_1_1
-                // Check for updates in background (weekly automatic check)
-                _ = Task.Run(async () =>
-                {
-                    await Task.Delay(3000); // Wait 3 seconds after startup
-                    await UpdateManager.PerformAutomaticUpdateCheckAsync();
-                });
 
                 // ⚡ INSTANT STARTUP: Show login immediately, check domain in background
                 // The LoginWindow will check domain availability and handle the DC unavailable dialog if needed
@@ -4623,7 +4657,7 @@ namespace NecessaryAdminTool
                         "Remote WMI queries require admin credentials.\n" +
                         "Scanning may fail or show limited information.\n\n" +
                         "For full access:\n" +
-                        "• Use the desktop shortcut: \"NecessaryAdminTool Suite (Admin)\"\n" +
+                        "• Use the desktop shortcut: \"ArtaznIT Suite (Admin)\"\n" +
                         "• Or create it via: About → Debugging & Admin Tools\n\n" +
                         "Continue anyway with current user credentials?",
                         "Admin Credentials Recommended",
@@ -5342,8 +5376,8 @@ if ($connection) {{
                             MessageBox.Show(
                                 "Failed to restart with elevation.\n\n" +
                                 "Please manually:\n" +
-                                "1. Close NecessaryAdminTool Suite\n" +
-                                "2. Right-click NecessaryAdminTool.exe\n" +
+                                "1. Close ArtaznIT Suite\n" +
+                                "2. Right-click ArtaznIT.exe\n" +
                                 "3. Select 'Run as Administrator'",
                                 "Elevation Failed",
                                 MessageBoxButton.OK,
@@ -5523,7 +5557,7 @@ if ($connection) {{
                                     AppendTerminal($"[DIAG] Your account needs one of these groups:", true);
                                     foreach (var reqGroup in requiredGroups)
                                         AppendTerminal($"  • {reqGroup}", true);
-                                    AppendTerminal($"[DIAG] Add your account to one of these groups and re-login to NecessaryAdminTool Suite.", true);
+                                    AppendTerminal($"[DIAG] Add your account to one of these groups and re-login to ArtaznIT Suite.", true);
                                 }
                             }
                         }
@@ -5589,7 +5623,7 @@ if ($connection) {{
                 {
                     // Already elevated - use current elevated context (can't use alternate credentials)
                     AppendTerminal($"[LAUNCH] Using current elevated context (Windows user: {Environment.UserName})");
-                    AppendTerminal($"[LAUNCH] Note: Cannot use NecessaryAdminTool credentials when elevated - Windows limitation", false);
+                    AppendTerminal($"[LAUNCH] Note: Cannot use ArtaznIT credentials when elevated - Windows limitation", false);
 
                     var psi = new ProcessStartInfo
                     {
@@ -6989,8 +7023,8 @@ if ($rebootPending) {
                         MessageBox.Show(
                             "Failed to restart with elevation.\n\n" +
                             "Please manually:\n" +
-                            "1. Close NecessaryAdminTool Suite\n" +
-                            "2. Right-click NecessaryAdminTool.exe\n" +
+                            "1. Close ArtaznIT Suite\n" +
+                            "2. Right-click ArtaznIT.exe\n" +
                             "3. Select 'Run as Administrator'",
                             "Elevation Failed",
                             MessageBoxButton.OK,
@@ -7134,7 +7168,7 @@ if ($rebootPending) {
                 // Create batch file with runas /savecred
                 string batContent = $@"@echo off
 echo ========================================
-echo  NecessaryAdminTool Suite - Admin Launcher
+echo  ArtaznIT Suite - Admin Launcher
 echo ========================================
 echo.
 echo Launching as: {adminUsername}
@@ -7150,14 +7184,14 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
                 // Create desktop shortcut using IWshRuntimeLibrary
                 string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                string shortcutPath = Path.Combine(desktopPath, "NecessaryAdminTool Suite (Admin).lnk");
+                string shortcutPath = Path.Combine(desktopPath, "ArtaznIT Suite (Admin).lnk");
 
                 Type shellType = Type.GetTypeFromProgID("WScript.Shell");
                 dynamic shell = Activator.CreateInstance(shellType);
                 var shortcut = shell.CreateShortcut(shortcutPath);
                 shortcut.TargetPath = batPath;
                 shortcut.WorkingDirectory = exeDir;
-                shortcut.Description = $"Launch NecessaryAdminTool Suite as {adminUsername}";
+                shortcut.Description = $"Launch ArtaznIT Suite as {adminUsername}";
                 shortcut.IconLocation = exePath + ",0";
                 shortcut.Save();
 
@@ -7193,8 +7227,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 {
                     cbSize = Marshal.SizeOf(typeof(CREDUI_INFO)),
                     hwndParent = new System.Windows.Interop.WindowInteropHelper(this).Handle,
-                    pszMessageText = "Enter your domain administrator credentials to run NecessaryAdminTool Suite with full privileges.",
-                    pszCaptionText = "NecessaryAdminTool Suite - Administrator Login"
+                    pszMessageText = "Enter your domain administrator credentials to run ArtaznIT Suite with full privileges.",
+                    pszCaptionText = "ArtaznIT Suite - Administrator Login"
                 };
 
                 uint authPackage = 0;
@@ -8296,8 +8330,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     // Script definitions
                     var scripts = new[]
                     {
-                        new { ResourceName = "GeneralUpdate.ps1", FileName = "NecessaryAdminTool_GeneralUpdate.ps1" },
-                        new { ResourceName = "FeatureUpdate.ps1", FileName = "NecessaryAdminTool_FeatureUpdate.ps1" }
+                        new { ResourceName = "GeneralUpdate.ps1", FileName = "ArtaznIT_GeneralUpdate.ps1" },
+                        new { ResourceName = "FeatureUpdate.ps1", FileName = "ArtaznIT_FeatureUpdate.ps1" }
                     };
 
                     foreach (var script in scripts)
@@ -8330,8 +8364,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                         MessageBox.Show(
                             $"Successfully downloaded {filesWritten} PowerShell script(s) to:\n{targetFolder}\n\n" +
                             "Scripts included:\n" +
-                            "• NecessaryAdminTool_GeneralUpdate.ps1 (Windows Updates + Firmware)\n" +
-                            "• NecessaryAdminTool_FeatureUpdate.ps1 (Major OS Upgrades)\n\n" +
+                            "• ArtaznIT_GeneralUpdate.ps1 (Windows Updates + Firmware)\n" +
+                            "• ArtaznIT_FeatureUpdate.ps1 (Major OS Upgrades)\n\n" +
                             "These scripts are compatible with ManageEngine Endpoint Central.",
                             "Scripts Downloaded",
                             MessageBoxButton.OK,
@@ -8408,28 +8442,6 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             {
                 LogManager.LogError("About dialog error", ex);
                 MessageBox.Show($"Error displaying about information: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        /// <summary>
-        /// Check for Updates button click handler
-        /// TAG: #AUTO_UPDATE #VERSION_1_1
-        /// </summary>
-        private async void BtnCheckUpdates_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                LogManager.LogInfo("Manual update check initiated");
-                await UpdateManager.CheckForUpdatesAsync(silent: false);
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError("Manual update check failed", ex);
-                MessageBox.Show(
-                    $"Failed to check for updates:\n\n{ex.Message}",
-                    "Update Error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
             }
         }
 
@@ -8526,7 +8538,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 sb.AppendLine("Hostname,Status,User,OS,Version,Chassis,BitLocker");
                 foreach (var line in csvLines) sb.AppendLine(line);
 
-                string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), $"NecessaryAdminTool_Inventory_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
+                string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), $"ArtaznIT_Inventory_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
                 File.WriteAllText(path, sb.ToString());
                 MessageBox.Show($"Exported to:\n{path}", "Export Complete");
                 AddLog("local", "EXPORT", path, "OK");
@@ -8987,7 +8999,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 // Auto-save inventory to backup location
                 string backupDir = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                    "NecessaryAdminTool",
+                    "ArtaznIT",
                     "AutoSave");
 
                 Directory.CreateDirectory(backupDir);
@@ -10951,8 +10963,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                         using (var client = new System.Net.Http.HttpClient())
                         {
                             client.Timeout = TimeSpan.FromSeconds(5);
-                            // TAG: #USER_AGENT #DYNAMIC_VERSION
-                            client.DefaultRequestHeaders.Add("User-Agent", $"NecessaryAdminTool-Monitor/{LogoConfig.USER_AGENT_VERSION}");
+                            client.DefaultRequestHeaders.Add("User-Agent", "ArtaznIT-Monitor/6.0");
 
                             var response = await client.GetAsync(service.Endpoint);
                             stopwatch.Stop();
@@ -11125,7 +11136,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             _authUser = authUser;
             _authPass = authPass;
 
-            Title = "Device Monitor - NecessaryAdminTool Suite";
+            Title = "Device Monitor - ArtaznIT Suite";
             Width = 1100;
             Height = 700;
             WindowStartupLocation = WindowStartupLocation.CenterOwner;
@@ -12574,30 +12585,19 @@ runas /user:{adminUsername} /savecred ""{exePath}""
     // ############################################################################
 
     // ══════════════════════════════════════════════════════════════
-    // TAG: #DYNAMIC_BRANDING #WHITE_LABEL - All branding pulls from LogoConfig constants
+    // MODULAR LOGO COMPONENT - Artazn LLC Branding
     // ══════════════════════════════════════════════════════════════
     // LOGO_CONFIG: Change these values to update the logo across the entire application
     public static class LogoConfig
     {
-        // TAG: #DYNAMIC_BRANDING #SINGLE_SOURCE_OF_TRUTH
         // Branding Text
-        public const string COMPANY_NAME = "NecessaryAdmin";
-        public const string COMPANY_SUFFIX = "";
+        public const string COMPANY_NAME = "Artazn";
+        public const string COMPANY_SUFFIX = " LLC";
         public const string TAGLINE = "I T   M A N A G E M E N T   S U I T E";
-
-        // Legal & Copyright - TAG: #COPYRIGHT #LEGAL
-        public const string COPYRIGHT_HOLDER = "Brandon Necessary";
-        public const string LEGAL_ENTITY = "Brandon Necessary";
-        public const string SUPPORT_CONTACT = "Contact your NecessaryAdminTool administrator";
-        public const string LEGAL_EMAIL = "support@necessaryadmintool.com";
-
-        // Product Name - TAG: #PRODUCT_NAME
-        public const string PRODUCT_NAME = "NecessaryAdminTool";
-        public const string PRODUCT_FULL_NAME = "NecessaryAdminTool Suite";
 
         /// <summary>
         /// Gets version in CalVer format: Major.YYMM.Minor
-        /// Example: v1.2602.0 = Version 1, February 2026, release 0
+        /// Example: v6.2602.1 = Version 6, February 2026, iteration 1
         /// TAG: #MODULAR #VERSION #CALVER
         /// </summary>
         public static string VERSION
@@ -12606,7 +12606,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             {
                 var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
                 // Format: Major.YYMM.Minor
-                // AssemblyVersion: 1.2602.0.0 (NecessaryAdminTool v1.0)
+                // AssemblyVersion should be: 6.2602.1.0
                 return $"v{version.Major}.{version.Minor:D4}.{version.Build}";
             }
         }
@@ -12625,32 +12625,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         }
 
         /// <summary>
-        /// Gets User-Agent version string for HTTP requests
-        /// TAG: #USER_AGENT #HTTP #DYNAMIC_VERSION
-        /// </summary>
-        public static string USER_AGENT_VERSION
-        {
-            get
-            {
-                var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-                return $"{version.Major}.{version.Minor:D4}";
-            }
-        }
-
-        /// <summary>
-        /// Gets copyright string with dynamic year and holder
-        /// TAG: #COPYRIGHT #DYNAMIC
-        /// </summary>
-        public static string COPYRIGHT
-        {
-            get
-            {
-                return $"Copyright © {COPYRIGHT_HOLDER} {DateTime.Now.Year}";
-            }
-        }
-
-        /// <summary>
-        /// Gets human-readable version: "Version 1, February 2026 (1.2602.0)"
+        /// Gets human-readable version: "Version 6, February 2026 (6.2602.1)"
         /// TAG: #MODULAR #VERSION #CALVER
         /// </summary>
         public static string VERSION_READABLE
@@ -12921,7 +12896,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             });
             textPanel.Children.Add(new TextBlock
             {
-                Text = "Would you like to restart NecessaryAdminTool Suite as Administrator?",
+                Text = "Would you like to restart ArtaznIT Suite as Administrator?",
                 Foreground = new SolidColorBrush(Color.FromRgb(161, 161, 170)), // Zinc #FFA1A1AA
                 FontSize = 11,
                 TextWrapping = TextWrapping.Wrap,
@@ -13698,7 +13673,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
             contentPanel.Children.Add(new TextBlock
             {
-                Text = "NecessaryAdminTool could not connect to domain controllers. This may be caused by:",
+                Text = "ArtaznIT could not connect to domain controllers. This may be caused by:",
                 Foreground = Brushes.White,
                 FontSize = 12,
                 TextWrapping = TextWrapping.Wrap,

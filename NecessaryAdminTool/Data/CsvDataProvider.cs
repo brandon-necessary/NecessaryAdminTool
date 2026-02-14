@@ -66,7 +66,7 @@ namespace NecessaryAdminTool.Data
         {
             if (!File.Exists(filePath))
             {
-                await File.WriteAllTextAsync(filePath, defaultContent, Encoding.UTF8);
+                await Task.Run(() => File.WriteAllText(filePath, defaultContent, Encoding.UTF8));
                 LogManager.LogInfo($"Created data file: {Path.GetFileName(filePath)}");
             }
         }
@@ -80,7 +80,7 @@ namespace NecessaryAdminTool.Data
                     return new List<ComputerInfo>();
                 }
 
-                var json = await File.ReadAllTextAsync(_computersFile, Encoding.UTF8);
+                var json = await Task.Run(() => File.ReadAllText(_computersFile, Encoding.UTF8));
                 var computers = _serializer.Deserialize<List<ComputerInfo>>(json);
                 return computers ?? new List<ComputerInfo>();
             }
@@ -113,7 +113,7 @@ namespace NecessaryAdminTool.Data
 
                 // Save back to file
                 var json = _serializer.Serialize(computers);
-                await File.WriteAllTextAsync(_computersFile, json, Encoding.UTF8);
+                await Task.Run(() => File.WriteAllText(_computersFile, json, Encoding.UTF8));
             }
             catch (Exception ex)
             {
@@ -122,11 +122,252 @@ namespace NecessaryAdminTool.Data
             }
         }
 
+        public async Task<ComputerInfo> GetComputerAsync(string hostname)
+        {
+            try
+            {
+                var computers = await GetAllComputersAsync();
+                return computers.FirstOrDefault(c =>
+                    c.Hostname?.Equals(hostname, StringComparison.OrdinalIgnoreCase) == true);
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to get computer {hostname} from JSON file", ex);
+                return null;
+            }
+        }
+
+        public async Task DeleteComputerAsync(string hostname)
+        {
+            try
+            {
+                var computers = await GetAllComputersAsync();
+                var removed = computers.RemoveAll(c =>
+                    c.Hostname?.Equals(hostname, StringComparison.OrdinalIgnoreCase) == true);
+
+                if (removed > 0)
+                {
+                    var json = _serializer.Serialize(computers);
+                    await Task.Run(() => File.WriteAllText(_computersFile, json, Encoding.UTF8));
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to delete computer {hostname} from JSON file", ex);
+                throw;
+            }
+        }
+
+        public async Task<List<ComputerInfo>> SearchComputersAsync(string searchTerm)
+        {
+            try
+            {
+                var computers = await GetAllComputersAsync();
+                var searchLower = searchTerm?.ToLower() ?? string.Empty;
+
+                return computers.Where(c =>
+                    (c.Hostname?.ToLower().Contains(searchLower) == true) ||
+                    (c.OS?.ToLower().Contains(searchLower) == true) ||
+                    (c.Manufacturer?.ToLower().Contains(searchLower) == true) ||
+                    (c.Model?.ToLower().Contains(searchLower) == true) ||
+                    (c.IPAddress?.ToLower().Contains(searchLower) == true)
+                ).ToList();
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to search computers with term '{searchTerm}' from JSON file", ex);
+                return new List<ComputerInfo>();
+            }
+        }
+
+        public async Task<List<string>> GetComputerTagsAsync(string hostname)
+        {
+            LogManager.LogWarning($"GetComputerTagsAsync not yet implemented in {GetType().Name}");
+            return await Task.FromResult(new List<string>());
+        }
+
+        public async Task AddTagAsync(string hostname, string tagName)
+        {
+            LogManager.LogWarning($"AddTagAsync not yet implemented in {GetType().Name}");
+            await Task.CompletedTask;
+        }
+
+        public async Task RemoveTagAsync(string hostname, string tagName)
+        {
+            LogManager.LogWarning($"RemoveTagAsync not yet implemented in {GetType().Name}");
+            await Task.CompletedTask;
+        }
+
+        public async Task<List<string>> GetAllTagsAsync()
+        {
+            LogManager.LogWarning($"GetAllTagsAsync not yet implemented in {GetType().Name}");
+            return await Task.FromResult(new List<string>());
+        }
+
+        public async Task<ScanHistory> GetLastScanAsync()
+        {
+            LogManager.LogWarning($"GetLastScanAsync not yet implemented in {GetType().Name}");
+            return await Task.FromResult<ScanHistory>(null);
+        }
+
+        public async Task SaveScanHistoryAsync(ScanHistory scan)
+        {
+            LogManager.LogWarning($"SaveScanHistoryAsync not yet implemented in {GetType().Name}");
+            await Task.CompletedTask;
+        }
+
+        public async Task<List<ScanHistory>> GetScanHistoryAsync(int limit = 10)
+        {
+            LogManager.LogWarning($"GetScanHistoryAsync not yet implemented in {GetType().Name}");
+            return await Task.FromResult(new List<ScanHistory>());
+        }
+
+        public async Task<string> GetSettingAsync(string key, string defaultValue = null)
+        {
+            LogManager.LogWarning($"GetSettingAsync not yet implemented in {GetType().Name}");
+            return await Task.FromResult(defaultValue);
+        }
+
+        public async Task SaveSettingAsync(string key, string value)
+        {
+            LogManager.LogWarning($"SaveSettingAsync not yet implemented in {GetType().Name}");
+            await Task.CompletedTask;
+        }
+
+        public async Task<List<ScriptInfo>> GetAllScriptsAsync()
+        {
+            LogManager.LogWarning($"GetAllScriptsAsync not yet implemented in {GetType().Name}");
+            return await Task.FromResult(new List<ScriptInfo>());
+        }
+
+        public async Task SaveScriptAsync(ScriptInfo script)
+        {
+            LogManager.LogWarning($"SaveScriptAsync not yet implemented in {GetType().Name}");
+            await Task.CompletedTask;
+        }
+
+        public async Task DeleteScriptAsync(int scriptId)
+        {
+            LogManager.LogWarning($"DeleteScriptAsync not yet implemented in {GetType().Name}");
+            await Task.CompletedTask;
+        }
+
+        public async Task<List<BookmarkInfo>> GetAllBookmarksAsync()
+        {
+            LogManager.LogWarning($"GetAllBookmarksAsync not yet implemented in {GetType().Name}");
+            return await Task.FromResult(new List<BookmarkInfo>());
+        }
+
+        public async Task SaveBookmarkAsync(BookmarkInfo bookmark)
+        {
+            LogManager.LogWarning($"SaveBookmarkAsync not yet implemented in {GetType().Name}");
+            await Task.CompletedTask;
+        }
+
+        public async Task DeleteBookmarkAsync(string hostname)
+        {
+            LogManager.LogWarning($"DeleteBookmarkAsync not yet implemented in {GetType().Name}");
+            await Task.CompletedTask;
+        }
+
+        public async Task OptimizeDatabaseAsync()
+        {
+            LogManager.LogWarning($"OptimizeDatabaseAsync not yet implemented in {GetType().Name}");
+            await Task.CompletedTask;
+        }
+
+        public async Task<bool> VerifyIntegrityAsync()
+        {
+            try
+            {
+                // Verify all JSON files are valid
+                await GetAllComputersAsync();
+                await CountRecordsAsync(_scanHistoryFile);
+                await CountRecordsAsync(_scriptsFile);
+                await CountRecordsAsync(_bookmarksFile);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("CSV/JSON data integrity check failed", ex);
+                return false;
+            }
+        }
+
+        public async Task<bool> BackupDatabaseAsync(string backupPath)
+        {
+            try
+            {
+                if (!Directory.Exists(_dataDirectory))
+                {
+                    return false;
+                }
+
+                // Create backup directory
+                var backupDir = Path.GetDirectoryName(backupPath);
+                if (!Directory.Exists(backupDir))
+                {
+                    Directory.CreateDirectory(backupDir);
+                }
+
+                // Copy all JSON files
+                var files = Directory.GetFiles(_dataDirectory, "*.json");
+                foreach (var file in files)
+                {
+                    var fileName = Path.GetFileName(file);
+                    var destFile = Path.Combine(backupPath, fileName);
+                    await Task.Run(() => File.Copy(file, destFile, true));
+                }
+
+                LogManager.LogInfo($"CSV/JSON data backed up to: {backupPath}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to backup CSV/JSON data to {backupPath}", ex);
+                return false;
+            }
+        }
+
+        public async Task<bool> RestoreDatabaseAsync(string backupPath)
+        {
+            try
+            {
+                if (!Directory.Exists(backupPath))
+                {
+                    return false;
+                }
+
+                // Create data directory if needed
+                if (!Directory.Exists(_dataDirectory))
+                {
+                    Directory.CreateDirectory(_dataDirectory);
+                }
+
+                // Copy all JSON files from backup
+                var files = Directory.GetFiles(backupPath, "*.json");
+                foreach (var file in files)
+                {
+                    var fileName = Path.GetFileName(file);
+                    var destFile = Path.Combine(_dataDirectory, fileName);
+                    await Task.Run(() => File.Copy(file, destFile, true));
+                }
+
+                LogManager.LogInfo($"CSV/JSON data restored from: {backupPath}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to restore CSV/JSON data from {backupPath}", ex);
+                return false;
+            }
+        }
+
         public async Task<DatabaseStats> GetDatabaseStatsAsync()
         {
             try
             {
-                var stats = new DatabaseStats { DatabaseType = "CSV/JSON" };
+                var stats = new DatabaseStats();
 
                 // Count records in each file
                 stats.TotalComputers = await CountRecordsAsync(_computersFile);
@@ -140,7 +381,7 @@ namespace NecessaryAdminTool.Data
                     var dirInfo = new DirectoryInfo(_dataDirectory);
                     var totalSize = dirInfo.GetFiles("*.json", SearchOption.AllDirectories)
                         .Sum(f => f.Length);
-                    stats.DatabaseSizeMB = totalSize / (1024 * 1024);
+                    stats.SizeBytes = totalSize;
                 }
 
                 return stats;
@@ -148,7 +389,7 @@ namespace NecessaryAdminTool.Data
             catch (Exception ex)
             {
                 LogManager.LogError("Failed to get CSV/JSON data stats", ex);
-                return new DatabaseStats { DatabaseType = "CSV/JSON" };
+                return new DatabaseStats();
             }
         }
 
@@ -161,7 +402,7 @@ namespace NecessaryAdminTool.Data
                     return 0;
                 }
 
-                var json = await File.ReadAllTextAsync(filePath, Encoding.UTF8);
+                var json = await Task.Run(() => File.ReadAllText(filePath, Encoding.UTF8));
                 var array = _serializer.Deserialize<List<object>>(json);
                 return array?.Count ?? 0;
             }
@@ -218,7 +459,7 @@ namespace NecessaryAdminTool.Data
                         $"{EscapeCsv(computer.Notes)}");
                 }
 
-                await File.WriteAllTextAsync(outputPath, csv.ToString(), Encoding.UTF8);
+                await Task.Run(() => File.WriteAllText(outputPath, csv.ToString(), Encoding.UTF8));
                 LogManager.LogInfo($"Exported {computers.Count} computers to CSV: {outputPath}");
             }
             catch (Exception ex)
@@ -235,7 +476,7 @@ namespace NecessaryAdminTool.Data
         {
             try
             {
-                var lines = await File.ReadAllLinesAsync(csvPath, Encoding.UTF8);
+                var lines = await Task.Run(() => File.ReadAllLines(csvPath, Encoding.UTF8));
                 if (lines.Length < 2)
                 {
                     throw new InvalidOperationException("CSV file is empty or has no data rows");
@@ -285,7 +526,7 @@ namespace NecessaryAdminTool.Data
 
                 // Save imported data
                 var json = _serializer.Serialize(computers);
-                await File.WriteAllTextAsync(_computersFile, json, Encoding.UTF8);
+                await Task.Run(() => File.WriteAllText(_computersFile, json, Encoding.UTF8));
 
                 LogManager.LogInfo($"Imported {computers.Count} computers from CSV: {csvPath}");
             }
