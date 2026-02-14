@@ -1,0 +1,213 @@
+<Window x:Class="NecessaryAdminTool.RemediationDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:NecessaryAdminTool"
+        Title="Automated Remediation" Height="600" Width="800"
+        WindowStartupLocation="CenterOwner"
+        Background="#FF0D0D0D" ResizeMode="CanResize">
+
+    <!-- TAG: #VERSION_7.1 #REMEDIATION #UI -->
+
+    <Window.Resources>
+        <SolidColorBrush x:Key="AccentOrange" Color="#FFFF8533"/>
+        <SolidColorBrush x:Key="TextMuted" Color="#FFA1A1AA"/>
+
+        <!-- Pulse Animation for Progress -->
+        <Storyboard x:Key="PulseAnimation" RepeatBehavior="Forever">
+            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                             From="1.0" To="0.3" Duration="0:0:1" AutoReverse="True"/>
+        </Storyboard>
+    </Window.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#FF1E1E1E" BorderBrush="{StaticResource AccentOrange}"
+                BorderThickness="0,0,0,2" Padding="16,12" Margin="0,0,0,16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="🔧 AUTOMATED REMEDIATION" Foreground="{StaticResource AccentOrange}"
+                               FontSize="16" FontWeight="Bold"/>
+                    <TextBlock x:Name="TxtActionName" Text="Action: Restart Windows Update"
+                               Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,4,0,0"/>
+                </StackPanel>
+
+                <Border Grid.Column="1" Background="#FF2A2A2A" BorderBrush="#FF3C3C3C"
+                        BorderThickness="1" CornerRadius="4" Padding="12,8">
+                    <StackPanel>
+                        <TextBlock Text="PROGRESS" Foreground="{StaticResource TextMuted}"
+                                   FontSize="9" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <TextBlock x:Name="TxtProgress" Text="0 / 0" Foreground="White"
+                                   FontSize="14" FontWeight="Bold" TextAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- Overall Progress Bar -->
+        <Border Grid.Row="1" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
+                BorderThickness="1" CornerRadius="8" Padding="16,12" Margin="0,0,0,16">
+            <StackPanel>
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="Overall Progress" Foreground="White"
+                               FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1" x:Name="TxtPercentage" Text="0%"
+                               Foreground="{StaticResource AccentOrange}" FontSize="12" FontWeight="Bold"/>
+                </Grid>
+
+                <ProgressBar x:Name="ProgressBarOverall" Height="24" Background="#FF2A2A2A"
+                             BorderBrush="#FF3C3C3C" BorderThickness="1" Maximum="100">
+                    <ProgressBar.Foreground>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                            <GradientStop Color="#FFFF8533" Offset="0"/>
+                            <GradientStop Color="#FFCC6B29" Offset="1"/>
+                        </LinearGradientBrush>
+                    </ProgressBar.Foreground>
+                </ProgressBar>
+
+                <TextBlock x:Name="TxtCurrentStatus" Text="Ready to start..."
+                           Foreground="{StaticResource TextMuted}" FontSize="10"
+                           FontStyle="Italic" Margin="0,8,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Results List -->
+        <Border Grid.Row="2" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
+                BorderThickness="1" CornerRadius="8" Padding="0" Margin="0,0,0,16">
+            <DataGrid x:Name="GridResults" AutoGenerateColumns="False" IsReadOnly="True"
+                      Background="#FF1A1A1A" Foreground="White"
+                      GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#FF2A2A2A"
+                      BorderThickness="0" HeadersVisibility="Column"
+                      SelectionMode="Single">
+
+                <DataGrid.ColumnHeaderStyle>
+                    <Style TargetType="DataGridColumnHeader">
+                        <Setter Property="Background" Value="#FF2A2A2A"/>
+                        <Setter Property="Foreground" Value="{StaticResource AccentOrange}"/>
+                        <Setter Property="FontWeight" Value="Bold"/>
+                        <Setter Property="FontSize" Value="10"/>
+                        <Setter Property="Padding" Value="12,10"/>
+                        <Setter Property="BorderBrush" Value="#FF3C3C3C"/>
+                        <Setter Property="BorderThickness" Value="0,0,1,1"/>
+                    </Style>
+                </DataGrid.ColumnHeaderStyle>
+
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow">
+                        <Setter Property="Background" Value="#FF1A1A1A"/>
+                        <Setter Property="Foreground" Value="White"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#FF252525"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.RowStyle>
+
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Status" Width="60">
+                        <DataGridTextColumn.Binding>
+                            <Binding Path="Success">
+                                <Binding.Converter>
+                                    <local:BoolToIconConverter/>
+                                </Binding.Converter>
+                            </Binding>
+                        </DataGridTextColumn.Binding>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Computer" Binding="{Binding Hostname}" Width="*" MinWidth="150"/>
+                    <DataGridTextColumn Header="Result" Binding="{Binding Message}" Width="2*" MinWidth="250"/>
+                    <DataGridTextColumn Header="Duration" Binding="{Binding Duration, StringFormat='{}{0:mm\\:ss}'}" Width="80"/>
+                    <DataGridTextColumn Header="Time" Binding="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss}'}" Width="80"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <!-- Summary Statistics -->
+        <Border Grid.Row="3" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
+                BorderThickness="1" CornerRadius="8" Padding="16,12" Margin="0,0,0,16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Total -->
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="TOTAL" Foreground="{StaticResource TextMuted}"
+                               FontSize="9" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <TextBlock x:Name="TxtTotalCount" Text="0" Foreground="White"
+                               FontSize="20" FontWeight="Bold"/>
+                </StackPanel>
+
+                <!-- Success -->
+                <StackPanel Grid.Column="1">
+                    <TextBlock Text="SUCCESS" Foreground="LimeGreen"
+                               FontSize="9" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <TextBlock x:Name="TxtSuccessCount" Text="0" Foreground="LimeGreen"
+                               FontSize="20" FontWeight="Bold"/>
+                </StackPanel>
+
+                <!-- Failed -->
+                <StackPanel Grid.Column="2">
+                    <TextBlock Text="FAILED" Foreground="#FFFF6B6B"
+                               FontSize="9" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <TextBlock x:Name="TxtFailedCount" Text="0" Foreground="#FFFF6B6B"
+                               FontSize="20" FontWeight="Bold"/>
+                </StackPanel>
+
+                <!-- Avg Duration -->
+                <StackPanel Grid.Column="3">
+                    <TextBlock Text="AVG TIME" Foreground="{StaticResource TextMuted}"
+                               FontSize="9" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <TextBlock x:Name="TxtAvgDuration" Text="0s" Foreground="{StaticResource AccentOrange}"
+                               FontSize="20" FontWeight="Bold"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Action Buttons -->
+        <Grid Grid.Row="4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="1" Content="⏸️ CANCEL" x:Name="BtnCancel"
+                    Click="BtnCancel_Click"
+                    Background="#FFFF6B6B" Foreground="White" BorderThickness="0"
+                    Padding="20,10" FontSize="11" FontWeight="SemiBold"
+                    Margin="0,0,8,0" Visibility="Collapsed"/>
+
+            <Button Grid.Column="2" Content="✅ CLOSE" x:Name="BtnClose"
+                    Click="BtnClose_Click"
+                    BorderThickness="0" Foreground="White"
+                    Padding="20,10" FontSize="11" FontWeight="SemiBold">
+                <Button.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="#FFFF8533" Offset="0"/>
+                        <GradientStop Color="#FFCC6B29" Offset="1"/>
+                    </LinearGradientBrush>
+                </Button.Background>
+            </Button>
+        </Grid>
+    </Grid>
+</Window>

@@ -1,0 +1,16 @@
+C:\Users\brandon.necessary\source\repos\ArtaznIT\ArtaznIT\obj\Release\ArtaznIT.csproj.AssemblyReference.cache
+C:\Users\brandon.necessary\source\repos\ArtaznIT\ArtaznIT\obj\Release\ArtaznIT.Properties.Resources.resources
+C:\Users\brandon.necessary\source\repos\ArtaznIT\ArtaznIT\obj\Release\ArtaznIT.csproj.GenerateResource.cache
+C:\Users\brandon.necessary\source\repos\ArtaznIT\ArtaznIT\obj\Release\ArtaznIT.csproj.CoreCompileInputs.cache
+C:\Users\brandon.necessary\source\repos\ArtaznIT\ArtaznIT\bin\Release\ArtaznIT.exe.config
+C:\Users\brandon.necessary\source\repos\ArtaznIT\ArtaznIT\bin\Release\ArtaznIT.exe
+C:\Users\brandon.necessary\source\repos\ArtaznIT\ArtaznIT\bin\Release\ArtaznIT.pdb
+C:\Users\brandon.necessary\source\repos\ArtaznIT\ArtaznIT\obj\Release\AboutWindow.baml
+C:\Users\brandon.necessary\source\repos\ArtaznIT\ArtaznIT\obj\Release\MainWindow.baml
+C:\Users\brandon.necessary\source\repos\ArtaznIT\ArtaznIT\obj\Release\AboutWindow.g.cs
+C:\Users\brandon.necessary\source\repos\ArtaznIT\ArtaznIT\obj\Release\MainWindow.g.cs
+C:\Users\brandon.necessary\source\repos\ArtaznIT\ArtaznIT\obj\Release\App.g.cs
+C:\Users\brandon.necessary\source\repos\ArtaznIT\ArtaznIT\obj\Release\ArtaznIT_MarkupCompile.cache
+C:\Users\brandon.necessary\source\repos\ArtaznIT\ArtaznIT\obj\Release\ArtaznIT.g.resources
+C:\Users\brandon.necessary\source\repos\ArtaznIT\ArtaznIT\obj\Release\ArtaznIT.exe
+C:\Users\brandon.necessary\source\repos\ArtaznIT\ArtaznIT\obj\Release\ArtaznIT.pdb

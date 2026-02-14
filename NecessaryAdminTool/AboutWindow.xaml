@@ -1,0 +1,738 @@
+<Window x:Class="NecessaryAdminTool.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="About NecessaryAdminTool Suite"
+        Height="650" Width="520"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#FF0D0D0D"
+        WindowStyle="None"
+        AllowsTransparency="True">
+
+    <Window.Resources>
+        <!-- Colors -->
+        <Color x:Key="BgDarkest">#FF0D0D0D</Color>
+        <Color x:Key="BgCard">#FF1E1E1E</Color>
+        <Color x:Key="BorderDim">#FF3C3C3C</Color>
+        <Color x:Key="AccentOrange">#FFFF8533</Color>
+        <Color x:Key="AccentZinc">#FFA1A1AA</Color>
+        <SolidColorBrush x:Key="BgDarkestBrush" Color="{StaticResource BgDarkest}"/>
+        <SolidColorBrush x:Key="BgCardBrush" Color="{StaticResource BgCard}"/>
+        <SolidColorBrush x:Key="BorderDimBrush" Color="{StaticResource BorderDim}"/>
+        <SolidColorBrush x:Key="AccentOrangeBrush" Color="{StaticResource AccentOrange}"/>
+        <SolidColorBrush x:Key="AccentZincBrush" Color="{StaticResource AccentZinc}"/>
+
+        <!-- Close Button Style -->
+        <Style x:Key="CloseButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#FF888888"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}"
+                                CornerRadius="3" Padding="8,4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FFFF3333"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Expander Style -->
+        <Style TargetType="Expander">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="{StaticResource BgCardBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderDimBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <!-- ToggleButton Style for Expander -->
+        <Style x:Key="ExpanderToggleButton" TargetType="ToggleButton">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border Background="Transparent" Padding="8,6">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="Arrow" Grid.Column="0" Text="▶"
+                                          Foreground="{StaticResource AccentOrangeBrush}"
+                                          FontSize="10" Margin="0,0,8,0"
+                                          RenderTransformOrigin="0.5,0.5">
+                                    <TextBlock.RenderTransform>
+                                        <RotateTransform Angle="0"/>
+                                    </TextBlock.RenderTransform>
+                                </TextBlock>
+                                <ContentPresenter Grid.Column="1" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Arrow"
+                                                           Storyboard.TargetProperty="(TextBlock.RenderTransform).(RotateTransform.Angle)"
+                                                           To="90" Duration="0:0:0.2"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Arrow"
+                                                           Storyboard.TargetProperty="(TextBlock.RenderTransform).(RotateTransform.Angle)"
+                                                           To="0" Duration="0:0:0.2"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Arrow" Property="Foreground" Value="#FFFFAA66"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border BorderBrush="{StaticResource AccentOrangeBrush}" BorderThickness="2" CornerRadius="8">
+        <Grid>
+            <!-- Header with gradient background -->
+            <Grid.RowDefinitions>
+                <RowDefinition Height="180"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header Section with Logo -->
+            <Border Grid.Row="0" CornerRadius="6,6,0,0">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#FF1A1A1A" Offset="0"/>
+                        <GradientStop Color="#FF2A2A2A" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+
+                <Grid>
+                    <!-- Close Button -->
+                    <Button Content="✕" HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Style="{StaticResource CloseButton}" Click="CloseButton_Click"
+                            Margin="0,8,8,0" Width="32" Height="32"/>
+
+                    <!-- Logo and Branding -->
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,20,0,0">
+                        <!-- Icon with Orange/Zinc Gradient -->
+                        <Border Width="64" Height="64" CornerRadius="12" Margin="0,0,0,16">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                    <GradientStop Color="#FFFF8533" Offset="0"/>
+                                    <GradientStop Color="#FFCC6B29" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <Border.Effect>
+                                <DropShadowEffect Color="#FFFF8533" BlurRadius="20" ShadowDepth="0" Opacity="0.6"/>
+                            </Border.Effect>
+                            <Viewbox Width="36" Height="36">
+                                <Canvas Width="24" Height="24">
+                                    <!-- A Letter Icon -->
+                                    <Path Fill="White" Data="M12,2 L20,22 L16,22 L14.5,18 L9.5,18 L8,22 L4,22 Z M10.5,14 L13.5,14 L12,9 Z"/>
+                                </Canvas>
+                            </Viewbox>
+                        </Border>
+
+                        <!-- Brand Text with Gradient -->
+                        <TextBlock HorizontalAlignment="Center" Margin="0,0,0,4">
+                            <TextBlock.Effect>
+                                <DropShadowEffect Color="Black" BlurRadius="6" ShadowDepth="2" Opacity="0.7"/>
+                            </TextBlock.Effect>
+                            <TextBlock.Foreground>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                    <GradientStop Color="#FFFF8533" Offset="0"/>
+                                    <GradientStop Color="#FFA1A1AA" Offset="0.7"/>
+                                </LinearGradientBrush>
+                            </TextBlock.Foreground>
+                            <Run Text="Artazn" FontSize="36" FontWeight="ExtraBold"/>
+                            <Run Text=" LLC" FontSize="28" FontWeight="Light"/>
+                        </TextBlock>
+
+                        <TextBlock Text="I T   M A N A G E M E N T   S U I T E"
+                                   FontSize="9" Foreground="{StaticResource AccentOrangeBrush}"
+                                   FontWeight="Bold" HorizontalAlignment="Center" Opacity="0.8"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Content Section -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="30,20">
+                <StackPanel>
+                    <!-- Version Info -->
+                    <Border Background="{StaticResource BgCardBrush}"
+                            BorderBrush="{StaticResource BorderDimBrush}"
+                            BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,0,0,12">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition/>
+                                <RowDefinition/>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Version:"
+                                       Foreground="#FF888888" FontSize="12" Margin="0,0,12,6"/>
+                            <TextBlock x:Name="TxtVersion" Grid.Row="0" Grid.Column="1" Text="5.2.0.0"
+                                       Foreground="White" FontSize="12" FontWeight="Bold" Margin="0,0,0,6"/>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Build Date:"
+                                       Foreground="#FF888888" FontSize="12" Margin="0,0,12,6"/>
+                            <TextBlock x:Name="TxtBuildDate" Grid.Row="1" Grid.Column="1" Text="2026-02-11"
+                                       Foreground="White" FontSize="12" FontWeight="Bold" Margin="0,0,0,6"/>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Developer:"
+                                       Foreground="#FF888888" FontSize="12" Margin="0,0,12,0"/>
+                            <TextBlock Grid.Row="2" Grid.Column="1" Text="Brandon Necessary"
+                                       Foreground="White" FontSize="12" FontWeight="Bold"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Features -->
+                    <TextBlock Text="KEY FEATURES" Foreground="{StaticResource AccentOrangeBrush}"
+                               FontSize="11" FontWeight="Bold" Margin="0,8,0,8"/>
+                    <StackPanel Margin="0,0,0,12">
+                        <TextBlock Text="• Active Directory Fleet Management" Foreground="White" FontSize="11" Margin="0,2"/>
+                        <TextBlock Text="• Remote WMI &amp; PowerShell Control" Foreground="White" FontSize="11" Margin="0,2"/>
+                        <TextBlock Text="• Multicore Parallel Processing" Foreground="White" FontSize="11" Margin="0,2"/>
+                        <TextBlock Text="• Real-time System Monitoring" Foreground="White" FontSize="11" Margin="0,2"/>
+                        <TextBlock Text="• Comprehensive Audit Logging" Foreground="White" FontSize="11" Margin="0,2"/>
+                        <TextBlock Text="• Automated Deployment &amp; Updates" Foreground="White" FontSize="11" Margin="0,2"/>
+                    </StackPanel>
+
+                    <!-- Technology Stack -->
+                    <TextBlock Text="TECHNOLOGY STACK" Foreground="{StaticResource AccentOrangeBrush}"
+                               FontSize="11" FontWeight="Bold" Margin="0,8,0,8"/>
+                    <StackPanel Margin="0,0,0,12">
+                        <TextBlock Text="• WPF / .NET Framework 4.8.1" Foreground="White" FontSize="11" Margin="0,2"/>
+                        <TextBlock Text="• WMI &amp; CIM Integration" Foreground="White" FontSize="11" Margin="0,2"/>
+                        <TextBlock Text="• PowerShell Remoting (WinRM)" Foreground="White" FontSize="11" Margin="0,2"/>
+                        <TextBlock Text="• Task.WhenAll &amp; PLINQ Optimization" Foreground="White" FontSize="11" Margin="0,2"/>
+                        <TextBlock Text="• Active Directory Services" Foreground="White" FontSize="11" Margin="0,2"/>
+                    </StackPanel>
+
+                    <!-- Legal Information (Expandable) -->
+                    <Expander Header="Software License &amp; Legal Terms"
+                              Background="{StaticResource BgCardBrush}"
+                              BorderBrush="{StaticResource BorderDimBrush}"
+                              BorderThickness="1"
+                              Margin="0,12,0,0" Padding="0">
+                        <Expander.HeaderTemplate>
+                            <DataTemplate>
+                                <Grid Background="Transparent" Cursor="Hand">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="⚖" FontSize="14" Margin="0,0,8,0"
+                                              Foreground="#FFFF8533" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="Software License &amp; Legal Terms"
+                                              Foreground="White" FontSize="11" FontWeight="Bold"
+                                              VerticalAlignment="Center"/>
+                                </Grid>
+                            </DataTemplate>
+                        </Expander.HeaderTemplate>
+
+                        <Border Background="#FF0D0D0D" BorderBrush="#FF2A2A2A" BorderThickness="0,1,0,0"
+                                Padding="16,12,16,8" CornerRadius="0,0,6,6">
+                            <StackPanel>
+                                <!-- Export Button -->
+                                <Border Background="#FF1A1A1A" BorderBrush="#FF3C3C3C" BorderThickness="1"
+                                        CornerRadius="4" Padding="10,8" Margin="0,0,0,12" Cursor="Hand"
+                                        MouseEnter="ExportButton_MouseEnter" MouseLeave="ExportButton_MouseLeave"
+                                        MouseLeftButtonDown="ExportLegalTerms_Click">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="🌐" FontSize="16" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock x:Name="ExportButtonText" Text="View Full Legal Terms in Browser"
+                                                      Foreground="#FFFF8533" FontSize="11" FontWeight="Bold"/>
+                                            <TextBlock Text="Opens a formatted HTML document for easier reading and printing"
+                                                      Foreground="#FF888888" FontSize="9" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="2" Text="→" FontSize="16" Foreground="#FFFF8533" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Scrollable Legal Text -->
+                                <ScrollViewer MaxHeight="350" VerticalScrollBarVisibility="Auto">
+                                    <TextBlock TextWrapping="Wrap" Foreground="#FFCCCCCC" FontSize="10" LineHeight="16">
+                                    <Run FontWeight="Bold" Foreground="#FFFF8533" FontSize="11">END-USER LICENSE AGREEMENT (EULA)</Run>
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">1. GRANT OF LICENSE</Run>
+                                    <LineBreak/>
+                                    This software product, NecessaryAdminTool Suite ("Software"), is licensed, not sold, to you by Artazn LLC ("Licensor") for use strictly in accordance with the terms of this Agreement. This license grants you the right to install and use the Software solely for internal business operations within your organization's authorized IT infrastructure management activities.
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">2. RESTRICTIONS ON USE</Run>
+                                    <LineBreak/>
+                                    You may NOT, under any circumstances:
+                                    <LineBreak/>
+                                    • Reproduce, copy, or duplicate the Software or any portion thereof for distribution, sale, or commercial purposes outside of your authorized business use case;
+                                    <LineBreak/>
+                                    • Reverse engineer, decompile, disassemble, or attempt to derive the source code of the Software, except to the extent expressly permitted by applicable law;
+                                    <LineBreak/>
+                                    • Modify, adapt, translate, rent, lease, loan, resell, distribute, or create derivative works based upon the Software or any part thereof;
+                                    <LineBreak/>
+                                    • Remove, obscure, or alter any proprietary notices (including copyright and trademark notices) that may be affixed to or contained within the Software;
+                                    <LineBreak/>
+                                    • Use the Software for any purpose outside of authorized IT management within your organization;
+                                    <LineBreak/>
+                                    • Transfer, sublicense, or assign your rights under this license to any third party without prior written consent from Artazn LLC;
+                                    <LineBreak/>
+                                    • Use the Software in any manner that violates applicable local, state, national, or international law;
+                                    <LineBreak/>
+                                    • Deploy the Software on systems you do not own or have explicit authorization to manage.
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">3. PROPRIETARY RIGHTS</Run>
+                                    <LineBreak/>
+                                    The Software is protected by copyright laws and international copyright treaties, as well as other intellectual property laws and treaties. Artazn LLC retains all rights, title, and interest in and to the Software, including all copyrights, patents, trade secrets, trademarks, and other intellectual property rights therein. This Agreement does not grant you any rights to trademarks, service marks, or trade names of Artazn LLC.
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">4. CONFIDENTIALITY</Run>
+                                    <LineBreak/>
+                                    The Software contains proprietary and confidential information of Artazn LLC. You agree to maintain the confidentiality of the Software and to not disclose, provide, or otherwise make available such proprietary and confidential information to any third party without the prior written consent of Artazn LLC.
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">5. WARRANTY DISCLAIMER</Run>
+                                    <LineBreak/>
+                                    THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. ARTAZN LLC DOES NOT WARRANT THAT THE SOFTWARE WILL MEET YOUR REQUIREMENTS OR THAT THE OPERATION OF THE SOFTWARE WILL BE UNINTERRUPTED OR ERROR-FREE.
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">6. LIMITATION OF LIABILITY</Run>
+                                    <LineBreak/>
+                                    IN NO EVENT SHALL ARTAZN LLC BE LIABLE FOR ANY SPECIAL, INCIDENTAL, INDIRECT, OR CONSEQUENTIAL DAMAGES WHATSOEVER (INCLUDING, WITHOUT LIMITATION, DAMAGES FOR LOSS OF BUSINESS PROFITS, BUSINESS INTERRUPTION, LOSS OF BUSINESS INFORMATION, OR ANY OTHER PECUNIARY LOSS) ARISING OUT OF THE USE OF OR INABILITY TO USE THE SOFTWARE, EVEN IF ARTAZN LLC HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">7. TERMINATION</Run>
+                                    <LineBreak/>
+                                    This license is effective until terminated. Your rights under this license will terminate automatically without notice from Artazn LLC if you fail to comply with any term(s) of this Agreement. Upon termination, you shall cease all use of the Software and destroy all copies, full or partial, of the Software.
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">8. COMMERCIAL USE PROHIBITION</Run>
+                                    <LineBreak/>
+                                    This Software is licensed exclusively for use within the internal operations of the organization to which it has been provided. Any commercial use, resale, redistribution, or deployment of this Software for third-party benefit or monetary gain is strictly prohibited without a separate commercial licensing agreement with Artazn LLC.
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">9. GOVERNING LAW</Run>
+                                    <LineBreak/>
+                                    This Agreement shall be governed by and construed in accordance with the laws of the jurisdiction in which Artazn LLC operates, without regard to its conflict of law provisions.
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">10. ENTIRE AGREEMENT</Run>
+                                    <LineBreak/>
+                                    This Agreement constitutes the entire agreement between you and Artazn LLC concerning the Software and supersedes all prior or contemporaneous oral or written communications, proposals, and representations with respect to the Software or any other subject matter covered by this Agreement.
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">11. DATA PRIVACY &amp; SECURITY POLICY</Run>
+                                    <LineBreak/>
+                                    The Software may collect, process, and store system information, performance metrics, audit logs, and user authentication data necessary for its operation. By using this Software, you acknowledge and consent to such data collection strictly for the purposes of system management, diagnostic logging, and security auditing. Artazn LLC commits to maintaining the confidentiality and security of collected data in accordance with applicable data protection regulations. No personally identifiable information (PII) or sensitive business data will be transmitted to external servers without explicit user consent. All authentication credentials are encrypted and stored locally using industry-standard cryptographic methods (AES-256, SecureString, and RtlSecureZeroMemory).
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">12. NETWORK ACCESS &amp; SECURITY RESPONSIBILITIES</Run>
+                                    <LineBreak/>
+                                    The Software requires network access, WMI (Windows Management Instrumentation), WinRM (Windows Remote Management), and Active Directory connectivity to function properly. You acknowledge that the Software will initiate connections to domain controllers, remote workstations, and network resources within your infrastructure. You are solely responsible for:
+                                    <LineBreak/>
+                                    • Ensuring appropriate network security policies, firewalls, and access controls are in place;
+                                    <LineBreak/>
+                                    • Configuring proper authentication mechanisms and role-based access controls;
+                                    <LineBreak/>
+                                    • Monitoring and auditing all actions performed through the Software;
+                                    <LineBreak/>
+                                    • Preventing unauthorized access to systems managed by the Software;
+                                    <LineBreak/>
+                                    • Compliance with your organization's IT security policies and procedures;
+                                    <LineBreak/>
+                                    • Ensuring all remote management activities are authorized and documented.
+                                    <LineBreak/>
+                                    Artazn LLC is not liable for any security breaches, data loss, or unauthorized access resulting from improper configuration, weak authentication, or misuse of the Software.
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">13. AUDIT &amp; COMPLIANCE OBLIGATIONS</Run>
+                                    <LineBreak/>
+                                    The Software maintains comprehensive audit logs of all administrative actions, system modifications, remote access sessions, and deployment activities. You are responsible for retaining these logs in accordance with your organization's data retention policies and applicable regulatory requirements (including but not limited to SOX, HIPAA, PCI-DSS, GDPR, and other industry-specific compliance frameworks). Artazn LLC reserves the right to audit your use of the Software to ensure compliance with this Agreement. You agree to provide reasonable cooperation and access to records upon request for compliance verification purposes.
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">14. SOFTWARE UPDATES &amp; MAINTENANCE</Run>
+                                    <LineBreak/>
+                                    Artazn LLC may, at its sole discretion, provide updates, patches, bug fixes, or new versions of the Software. You acknowledge that updates may modify, add, or remove features without prior notice. Installation of updates is recommended but not mandatory unless critical security vulnerabilities are addressed. Artazn LLC is under no obligation to provide updates, technical support, or maintenance services unless otherwise specified in a separate support agreement. Failure to install critical security updates may result in security vulnerabilities for which Artazn LLC shall not be held liable.
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">15. USER RESPONSIBILITIES &amp; ACCEPTABLE USE</Run>
+                                    <LineBreak/>
+                                    You are solely responsible for:
+                                    <LineBreak/>
+                                    • Ensuring all users of the Software are properly trained and authorized to perform administrative functions;
+                                    <LineBreak/>
+                                    • Implementing strong password policies, multi-factor authentication where applicable, and principle of least privilege;
+                                    <LineBreak/>
+                                    • Verifying the legitimacy and safety of all PowerShell scripts, WMI queries, and remote commands executed through the Software;
+                                    <LineBreak/>
+                                    • Maintaining current backups of all systems prior to performing mass deployments, updates, or system modifications;
+                                    <LineBreak/>
+                                    • Testing all deployment scripts and update packages in non-production environments before production deployment;
+                                    <LineBreak/>
+                                    • Ensuring compliance with Microsoft licensing terms for Windows, Active Directory, and other Microsoft technologies accessed through the Software;
+                                    <LineBreak/>
+                                    • Immediately revoking access credentials for any users who no longer require access to the Software.
+                                    <LineBreak/>
+                                    You agree NOT to use the Software for any unlawful, malicious, or unauthorized purposes, including but not limited to unauthorized network scanning, data exfiltration, denial-of-service attacks, or deployment of malicious code.
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">16. THIRD-PARTY COMPONENTS &amp; DEPENDENCIES</Run>
+                                    <LineBreak/>
+                                    The Software may incorporate or depend upon third-party libraries, frameworks, and technologies, including but not limited to: Microsoft .NET Framework, Windows Presentation Foundation (WPF), Windows Management Instrumentation (WMI), PowerShell, Active Directory Services, and other Microsoft Windows components. These components are subject to their respective license agreements and terms of use. You acknowledge that use of the Software constitutes acceptance of all applicable third-party license terms. Artazn LLC makes no warranties regarding third-party components and disclaims all liability for issues arising from third-party dependencies.
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">17. BACKUP &amp; DISASTER RECOVERY</Run>
+                                    <LineBreak/>
+                                    THE SOFTWARE DOES NOT PROVIDE AUTOMATED BACKUP OR DISASTER RECOVERY CAPABILITIES. You are solely responsible for implementing and maintaining appropriate backup procedures, disaster recovery plans, and business continuity strategies for all systems managed by the Software. Artazn LLC strongly recommends creating full system backups and recovery points before performing any mass deployments, operating system upgrades, or system modifications. Artazn LLC shall not be liable for any data loss, system failures, or recovery costs resulting from use of the Software.
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">18. INDEMNIFICATION</Run>
+                                    <LineBreak/>
+                                    You agree to indemnify, defend, and hold harmless Artazn LLC, its officers, directors, employees, agents, and affiliates from and against any and all claims, liabilities, damages, losses, costs, expenses, or fees (including reasonable attorneys' fees) arising from:
+                                    <LineBreak/>
+                                    • Your use or misuse of the Software;
+                                    <LineBreak/>
+                                    • Your violation of this Agreement or any applicable law or regulation;
+                                    <LineBreak/>
+                                    • Your violation of any rights of any third party;
+                                    <LineBreak/>
+                                    • Any unauthorized access to systems or data facilitated through the Software;
+                                    <LineBreak/>
+                                    • Any deployment, modification, or deletion actions performed through the Software;
+                                    <LineBreak/>
+                                    • Any breach of security, confidentiality, or data protection obligations.
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">19. EXPORT CONTROL &amp; COMPLIANCE</Run>
+                                    <LineBreak/>
+                                    The Software may be subject to export control laws and regulations of the United States and other jurisdictions. You agree to comply with all applicable export and import laws, including but not limited to the U.S. Export Administration Regulations (EAR) and International Traffic in Arms Regulations (ITAR). You represent and warrant that you are not located in, under the control of, or a national or resident of any country to which the United States has embargoed goods, and that you are not on any U.S. government list of prohibited or restricted parties. You shall not export, re-export, or transfer the Software in violation of applicable export control laws.
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">20. SYSTEM REQUIREMENTS &amp; COMPATIBILITY</Run>
+                                    <LineBreak/>
+                                    The Software is designed to operate on Windows 10/11 systems with .NET Framework 4.8.1 or later, in Active Directory domain environments. Minimum system requirements include: 4-core processor, 8GB RAM, network connectivity, and administrator privileges. Artazn LLC makes no warranty that the Software will function correctly on systems not meeting these requirements or in non-domain environments. Performance may vary based on network topology, domain size, hardware specifications, and configuration settings. Artazn LLC is not responsible for compatibility issues with third-party security software, group policies, or custom system configurations that interfere with Software operation.
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">21. TELEMETRY &amp; DIAGNOSTIC DATA</Run>
+                                    <LineBreak/>
+                                    The Software may collect anonymous telemetry and diagnostic data including error reports, performance metrics, feature usage statistics, and system configuration information to improve product quality and user experience. All telemetry data is anonymized and does not include personally identifiable information, credentials, or sensitive business data. You may disable telemetry collection through the Software's configuration settings, though this may impact the quality of support services. Artazn LLC uses collected data solely for product improvement, bug fixes, and feature development purposes.
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">22. INTELLECTUAL PROPERTY CLAIMS</Run>
+                                    <LineBreak/>
+                                    If you believe that the Software infringes upon any patent, copyright, trademark, or other intellectual property right, you must promptly notify Artazn LLC in writing with detailed information regarding the alleged infringement. Artazn LLC reserves the right to modify or replace allegedly infringing components, obtain necessary licenses, or terminate this Agreement at its sole discretion. This section constitutes your sole and exclusive remedy for any intellectual property infringement claims related to the Software.
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">23. FORCE MAJEURE</Run>
+                                    <LineBreak/>
+                                    Artazn LLC shall not be liable for any failure or delay in performance of its obligations under this Agreement due to causes beyond its reasonable control, including but not limited to: acts of God, war, terrorism, civil unrest, labor disputes, natural disasters, government actions, pandemics, epidemics, cyber-attacks, power failures, telecommunications failures, or other unforeseeable circumstances. In such events, Artazn LLC's obligations shall be suspended for the duration of the force majeure event.
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">24. SEVERABILITY &amp; WAIVER</Run>
+                                    <LineBreak/>
+                                    If any provision of this Agreement is found to be invalid, illegal, or unenforceable by a court of competent jurisdiction, the remaining provisions shall continue in full force and effect. The invalid provision shall be modified to the minimum extent necessary to make it valid and enforceable while preserving the original intent. No waiver of any breach of this Agreement shall constitute a waiver of any subsequent breach. Failure by Artazn LLC to enforce any provision of this Agreement shall not be construed as a waiver of that or any other provision.
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">25. AMENDMENT &amp; MODIFICATION RIGHTS</Run>
+                                    <LineBreak/>
+                                    Artazn LLC reserves the right to modify, amend, or update this Agreement at any time without prior notice. Continued use of the Software following any such modifications constitutes your acceptance of the revised terms. Material changes to this Agreement will be communicated through the Software interface, email notification, or posted to the Artazn LLC website. It is your responsibility to review this Agreement periodically for changes. If you do not agree to modified terms, you must immediately cease using the Software and uninstall it from all systems.
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">26. DISPUTE RESOLUTION &amp; ARBITRATION</Run>
+                                    <LineBreak/>
+                                    Any disputes, claims, or controversies arising out of or relating to this Agreement or the Software shall first be subject to good-faith negotiation between the parties. If negotiation fails to resolve the dispute within thirty (30) days, the dispute shall be resolved through binding arbitration in accordance with the rules of the American Arbitration Association. The arbitration shall be conducted in the jurisdiction where Artazn LLC is headquartered. Each party shall bear its own costs and expenses related to arbitration. The arbitrator's decision shall be final and binding, and judgment may be entered in any court of competent jurisdiction. Notwithstanding the foregoing, either party may seek injunctive or other equitable relief in court to prevent irreparable harm or protect intellectual property rights.
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">27. SURVIVAL OF TERMS</Run>
+                                    <LineBreak/>
+                                    The following sections shall survive termination or expiration of this Agreement: Proprietary Rights, Confidentiality, Warranty Disclaimer, Limitation of Liability, Indemnification, Governing Law, Dispute Resolution, and any other provisions which by their nature are intended to survive termination. Upon termination, you must immediately cease all use of the Software, destroy all copies, and certify in writing to Artazn LLC that you have complied with these obligations.
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold">28. ACKNOWLEDGMENT &amp; ACCEPTANCE</Run>
+                                    <LineBreak/>
+                                    BY INSTALLING, COPYING, ACCESSING, OR OTHERWISE USING THE SOFTWARE, YOU ACKNOWLEDGE THAT:
+                                    <LineBreak/>
+                                    • You have read and understood this entire Agreement in its entirety;
+                                    <LineBreak/>
+                                    • You have the authority to bind your organization to these terms;
+                                    <LineBreak/>
+                                    • You agree to be legally bound by all terms, conditions, restrictions, and obligations set forth herein;
+                                    <LineBreak/>
+                                    • You have been given adequate opportunity to review this Agreement with legal counsel;
+                                    <LineBreak/>
+                                    • You acknowledge that this Agreement constitutes a binding legal contract between you (individually and/or on behalf of your organization) and Artazn LLC.
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold" Foreground="#FFFF8533" FontSize="10">IMPORTANT NOTICE</Run>
+                                    <LineBreak/>
+                                    <Run Foreground="#FFDDDDDD" FontSize="10">
+                                    This Software is a powerful administrative tool capable of making system-wide changes, deploying updates to multiple computers simultaneously, modifying Active Directory objects, and executing remote commands. Improper use can result in system failures, data loss, network disruptions, or security vulnerabilities. Always test in non-production environments first. Maintain current backups. Verify all actions before execution. Use with caution and only if you are a trained IT professional with appropriate authorization.
+                                    </Run>
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run FontWeight="Bold" Foreground="#FF888888" FontSize="9">For licensing inquiries, permission requests, legal questions, or to report violations of this EULA, please contact:</Run>
+                                    <LineBreak/>
+                                    <Run FontWeight="Bold" Foreground="#FF888888" FontSize="9">Artazn LLC - Legal Department</Run>
+                                    <LineBreak/>
+                                    <Run FontWeight="Bold" Foreground="#FF888888" FontSize="9">Email: brandon.necessary@jadexinc.com</Run>
+                                    <LineBreak/>
+                                    <Run FontWeight="Bold" Foreground="#FF888888" FontSize="9">Phone: Contact your authorized Artazn LLC representative</Run>
+                                    <LineBreak/><LineBreak/>
+
+                                    <Run Foreground="#FF666666" FontSize="9" FontStyle="Italic">END-USER LICENSE AGREEMENT - Document Version: 2.0 | Effective Date: 2026-02-11</Run>
+                                    <LineBreak/>
+                                    <Run Foreground="#FF666666" FontSize="9" FontStyle="Italic">NecessaryAdminTool Suite v5.2 | Artazn LLC - All Rights Reserved | Confidential &amp; Proprietary</Run>
+                                    <LineBreak/>
+                                    <Run Foreground="#FF666666" FontSize="9" FontStyle="Italic">This document contains 28 sections and constitutes a legally binding agreement.</Run>
+                                </TextBlock>
+                            </ScrollViewer>
+                        </StackPanel>
+                        </Border>
+                    </Expander>
+
+                    <!-- Debugging Tools (Expandable) -->
+                    <Expander Header="🔧 Debugging &amp; Admin Tools"
+                              Background="{StaticResource BgCardBrush}"
+                              BorderBrush="{StaticResource BorderDimBrush}"
+                              BorderThickness="1"
+                              Margin="0,8,0,0" Padding="0">
+                        <Expander.HeaderTemplate>
+                            <DataTemplate>
+                                <Grid Background="Transparent" Cursor="Hand">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="🔧" FontSize="14" Margin="0,0,8,0"
+                                              Foreground="#FFFF8533" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="Debugging &amp; Admin Tools"
+                                              Foreground="White" FontSize="11" FontWeight="Bold"
+                                              VerticalAlignment="Center"/>
+                                </Grid>
+                            </DataTemplate>
+                        </Expander.HeaderTemplate>
+
+                        <Border Background="#FF0D0D0D" BorderBrush="#FF2A2A2A" BorderThickness="0,1,0,0"
+                                Padding="16,12" CornerRadius="0,0,6,6">
+                            <StackPanel>
+                                <TextBlock Text="ADMIN LAUNCHER SETUP" Foreground="{StaticResource AccentOrangeBrush}"
+                                           FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
+
+                                <!-- Create Shortcut Button -->
+                                <Border Background="#FF1A1A1A" BorderBrush="{StaticResource AccentOrangeBrush}"
+                                        BorderThickness="1" CornerRadius="4" Padding="12,10" Margin="0,0,0,8"
+                                        Cursor="Hand" MouseEnter="DebugButton_MouseEnter" MouseLeave="DebugButton_MouseLeave"
+                                        MouseLeftButtonDown="CreateShortcut_Click">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="🚀" FontSize="18" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock x:Name="DebugButtonText" Text="Create Admin Launcher Shortcut"
+                                                      Foreground="{StaticResource AccentOrangeBrush}" FontSize="11" FontWeight="Bold"/>
+                                            <TextBlock Text="Creates a desktop shortcut to launch NecessaryAdminTool Suite as domain admin"
+                                                      Foreground="#FF888888" FontSize="9" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+
+                                <TextBlock Text="ℹ️ This tool creates a secure launcher that remembers your admin credentials using Windows Credential Manager. Perfect for testing or if you accidentally deleted the shortcut."
+                                           Foreground="#FF888888" FontSize="9" TextWrapping="Wrap" LineHeight="14"/>
+                            </StackPanel>
+                        </Border>
+                    </Expander>
+
+                    <!-- Global Services Configuration (Expandable) -->
+                    <Expander x:Name="GlobalServicesExpander" Header="🌐 Global Services Configuration"
+                              Background="{StaticResource BgCardBrush}"
+                              BorderBrush="{StaticResource BorderDimBrush}"
+                              BorderThickness="1"
+                              Margin="0,8,0,0" Padding="0">
+                        <Expander.HeaderTemplate>
+                            <DataTemplate>
+                                <Grid Background="Transparent" Cursor="Hand">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="🌐" FontSize="14" Margin="0,0,8,0"
+                                              Foreground="#FFFF8533" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="Global Services Configuration"
+                                              Foreground="White" FontSize="11" FontWeight="Bold"
+                                              VerticalAlignment="Center"/>
+                                </Grid>
+                            </DataTemplate>
+                        </Expander.HeaderTemplate>
+
+                        <Border Background="#FF0D0D0D" BorderBrush="#FF2A2A2A" BorderThickness="0,1,0,0"
+                                Padding="16,12" CornerRadius="0,0,6,6">
+                            <StackPanel>
+                                <TextBlock Text="Configure which cloud services to monitor for status and uptime. You can use the visual editor or edit the raw JSON configuration."
+                                           Foreground="#FF888888" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="14"/>
+
+                                <!-- Tab Selector -->
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Button x:Name="BtnVisualEditor" Content="📋 VISUAL EDITOR" Grid.Column="0"
+                                            Background="#FFFF8533" Foreground="White" BorderThickness="0"
+                                            Padding="8,6" FontSize="10" FontWeight="Bold" Margin="0,0,2,0"
+                                            Click="BtnVisualEditor_Click" Cursor="Hand"/>
+                                    <Button x:Name="BtnJsonEditor" Content="{}{} JSON EDITOR" Grid.Column="1"
+                                            Background="#FF2A2A2A" Foreground="#FF888888" BorderThickness="0"
+                                            Padding="8,6" FontSize="10" FontWeight="Bold" Margin="2,0,0,0"
+                                            Click="BtnJsonEditor_Click" Cursor="Hand"/>
+                                </Grid>
+
+                                <!-- Visual Editor Panel -->
+                                <StackPanel x:Name="VisualEditorPanel" Margin="0,0,0,0">
+                                    <TextBlock Text="SERVICES LIST" Foreground="{StaticResource AccentOrangeBrush}"
+                                               FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
+
+                                    <!-- Services DataGrid -->
+                                    <DataGrid x:Name="GridServicesConfig"
+                                              AutoGenerateColumns="False"
+                                              CanUserAddRows="True"
+                                              CanUserDeleteRows="True"
+                                              HeadersVisibility="Column"
+                                              GridLinesVisibility="Horizontal"
+                                              Background="#FF1E1E1E"
+                                              BorderBrush="#FF3C3C3C"
+                                              BorderThickness="1"
+                                              RowBackground="#FF2A2A2A"
+                                              AlternatingRowBackground="#FF252525"
+                                              FontSize="10"
+                                              Height="200"
+                                              Margin="0,0,0,12">
+                                        <DataGrid.ColumnHeaderStyle>
+                                            <Style TargetType="DataGridColumnHeader">
+                                                <Setter Property="Background" Value="#FF1A1A1A"/>
+                                                <Setter Property="Foreground" Value="#FFFF8533"/>
+                                                <Setter Property="FontWeight" Value="Bold"/>
+                                                <Setter Property="FontSize" Value="10"/>
+                                                <Setter Property="Padding" Value="8,4"/>
+                                            </Style>
+                                        </DataGrid.ColumnHeaderStyle>
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="Service Name" Binding="{Binding ServiceName}" Width="140"/>
+                                            <DataGridTextColumn Header="API Endpoint / IP" Binding="{Binding Endpoint}" Width="*"/>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+
+                                    <TextBlock Text="💡 TIP: Use 'ping:IP' for simple ping checks (e.g., ping:8.8.8.8) or full HTTPS URLs for status APIs"
+                                               Foreground="#FFFF8533" FontSize="8" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="12"/>
+                                </StackPanel>
+
+                                <!-- JSON Editor Panel -->
+                                <StackPanel x:Name="JsonEditorPanel" Visibility="Collapsed">
+                                    <TextBlock Text="RAW JSON CONFIGURATION" Foreground="{StaticResource AccentOrangeBrush}"
+                                               FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
+
+                                    <TextBox x:Name="TxtJsonConfig"
+                                             AcceptsReturn="True"
+                                             TextWrapping="Wrap"
+                                             VerticalScrollBarVisibility="Auto"
+                                             Background="#FF1A1A1A"
+                                             Foreground="#FF00FF00"
+                                             BorderBrush="#FF3C3C3C"
+                                             BorderThickness="1"
+                                             Padding="10"
+                                             FontFamily="Consolas"
+                                             FontSize="9"
+                                             Height="220"
+                                             Margin="0,0,0,12"/>
+
+                                    <TextBlock Text="⚠️ JSON Format: [{}ServiceName:Azure, Endpoint:https://... (use editor above)]"
+                                               Foreground="#FFFF6B6B" FontSize="8" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="12"/>
+                                </StackPanel>
+
+                                <!-- Action Buttons -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Button Grid.Column="0" Content="💾 SAVE" x:Name="BtnSaveServicesConfig"
+                                            Background="#FF00C853" Foreground="White" BorderThickness="0"
+                                            Padding="8,6" FontSize="10" FontWeight="Bold" Margin="0,0,3,0"
+                                            Click="BtnSaveServicesConfig_Click" Cursor="Hand"/>
+                                    <Button Grid.Column="1" Content="🔄 RESET TO DEFAULTS" x:Name="BtnResetServicesConfig"
+                                            Background="#FFFF6B6B" Foreground="White" BorderThickness="0"
+                                            Padding="8,6" FontSize="9" FontWeight="Bold" Margin="1.5,0,1.5,0"
+                                            Click="BtnResetServicesConfig_Click" Cursor="Hand"/>
+                                    <Button Grid.Column="2" Content="🧪 TEST APIS" x:Name="BtnTestAPIs"
+                                            Background="#FF2196F3" Foreground="White" BorderThickness="0"
+                                            Padding="8,6" FontSize="10" FontWeight="Bold" Margin="3,0,0,0"
+                                            Click="BtnTestAPIs_Click" Cursor="Hand"/>
+                                </Grid>
+
+                                <TextBlock x:Name="TxtConfigStatus" Text="" Foreground="#FF00FF00"
+                                           FontSize="9" FontWeight="Bold" Margin="0,8,0,0"
+                                           HorizontalAlignment="Center" Visibility="Collapsed"/>
+                            </StackPanel>
+                        </Border>
+                    </Expander>
+
+                    <!-- Copyright -->
+                    <Border Background="{StaticResource BgCardBrush}"
+                            BorderBrush="{StaticResource BorderDimBrush}"
+                            BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,8,0,0">
+                        <StackPanel>
+                            <TextBlock x:Name="TxtCopyright" Text="Copyright © Artazn LLC 2026"
+                                       Foreground="#FF888888" FontSize="10"
+                                       HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                            <TextBlock Text="All rights reserved."
+                                       Foreground="#FF666666" FontSize="9"
+                                       HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Footer -->
+            <Border Grid.Row="2" Background="#FF1A1A1A"
+                    BorderBrush="{StaticResource BorderDimBrush}" BorderThickness="0,1,0,0"
+                    Padding="20,12" CornerRadius="0,0,6,6">
+                <TextBlock Text="Built with Claude Code 🤖"
+                           Foreground="#FF666666" FontSize="9"
+                           HorizontalAlignment="Center" FontStyle="Italic"/>
+            </Border>
+        </Grid>
+    </Border>
+</Window>
