@@ -12621,13 +12621,13 @@ runas /user:{adminUsername} /savecred ""{exePath}""
     public static class LogoConfig
     {
         // Branding Text
-        public const string COMPANY_NAME = "Artazn";
-        public const string COMPANY_SUFFIX = " LLC";
+        public const string COMPANY_NAME = "NecessaryAdmin";
+        public const string COMPANY_SUFFIX = "";
         public const string TAGLINE = "I T   M A N A G E M E N T   S U I T E";
 
         /// <summary>
         /// Gets version in CalVer format: Major.YYMM.Minor
-        /// Example: v6.2602.1 = Version 6, February 2026, iteration 1
+        /// Example: v1.2602.0 = Version 1, February 2026, release 0
         /// TAG: #MODULAR #VERSION #CALVER
         /// </summary>
         public static string VERSION
@@ -12636,7 +12636,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             {
                 var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
                 // Format: Major.YYMM.Minor
-                // AssemblyVersion should be: 6.2602.1.0
+                // AssemblyVersion: 1.2602.0.0 (NecessaryAdminTool v1.0)
                 return $"v{version.Major}.{version.Minor:D4}.{version.Build}";
             }
         }
