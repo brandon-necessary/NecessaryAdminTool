@@ -612,7 +612,7 @@
                                     <TextBox x:Name="TxtLogoPath" Grid.Column="0" IsReadOnly="True"
                                              Background="{StaticResource BgDark}" Foreground="White"
                                              BorderBrush="{StaticResource BorderDim}" Padding="8,6" FontSize="10"
-                                             Text="(Using default Artazn logo)"/>
+                                             Text="(Using default NecessaryAdmin logo)"/><!-- TAG: #DYNAMIC_BRANDING -->
                                     <Button Grid.Column="1" Content="BROWSE" Style="{StaticResource BtnPrimary}"
                                             Click="BtnBrowseLogo_Click" Margin="8,0,0,0" Padding="12,6" FontSize="10"/>
                                 </Grid>
@@ -684,7 +684,8 @@
                                 <Border Background="{StaticResource BgDarkest}" BorderBrush="{StaticResource BorderDim}"
                                         BorderThickness="1" Padding="15" Margin="0,4,0,12" Height="200">
                                     <StackPanel>
-                                        <TextBlock Text="Artazn LLC" FontSize="18" FontWeight="Bold" Margin="0,0,0,8">
+                                        <!-- TAG: #DYNAMIC_BRANDING - Preview uses static text (OK for preview) -->
+                                        <TextBlock Text="NecessaryAdmin" FontSize="18" FontWeight="Bold" Margin="0,0,0,8">
                                             <TextBlock.Foreground>
                                                 <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
                                                     <GradientStop x:Name="PreviewPrimaryStop" Color="#FFFF8533" Offset="0"/>

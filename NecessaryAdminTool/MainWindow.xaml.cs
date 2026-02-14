@@ -214,7 +214,7 @@ namespace NecessaryAdminTool
     {
         private static readonly string _configPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "Artazn_Config_v2.xml");
+            "NecessaryAdmin_Config_v2.xml");
 
         public static string SharedLogPath { get; set; } = @"G:\PUBLIC\BNIT\01_Software\04_Update Logs\Master_Update_Log.csv";
         public static string InventoryDbPath { get; set; } = @"G:\PUBLIC\BNIT\01_Software\04_Update Logs\Master_Inventory.csv";
@@ -272,9 +272,9 @@ namespace NecessaryAdminTool
     {
         private static readonly object _logLock = new object();
         private static readonly string _debugLogPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Artazn_Debug.log");
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "NecessaryAdmin_Debug.log");
         private static readonly string _runtimeLogPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Artazn_Runtime.log");
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "NecessaryAdmin_Runtime.log");
         private const long MAX_LOG_SIZE = 10 * 1024 * 1024;
 
         public static void LogDebug(string message, Exception ex = null) => WriteLog(_debugLogPath, "DEBUG", message, ex);
@@ -689,7 +689,7 @@ namespace NecessaryAdminTool
     {
         private static string ConfigPath => Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "Artazn_DCConfiguration.xml");
+            "NecessaryAdmin_DCConfiguration.xml");
 
         public class DCInfo
         {
@@ -2029,7 +2029,7 @@ namespace NecessaryAdminTool
         private DispatcherTimer _refreshTimer;
 
         private string _xmlConfigPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Artazn_UserConfig.xml");
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "NecessaryAdmin_UserConfig.xml");
 
         // ── PowerShell Scripts ──
 
@@ -10993,7 +10993,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                         using (var client = new System.Net.Http.HttpClient())
                         {
                             client.Timeout = TimeSpan.FromSeconds(5);
-                            client.DefaultRequestHeaders.Add("User-Agent", "NecessaryAdminTool-Monitor/6.0");
+                            // TAG: #USER_AGENT #DYNAMIC_VERSION
+                            client.DefaultRequestHeaders.Add("User-Agent", $"NecessaryAdminTool-Monitor/{LogoConfig.USER_AGENT_VERSION}");
 
                             var response = await client.GetAsync(service.Endpoint);
                             stopwatch.Stop();
@@ -12615,7 +12616,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
     // ############################################################################
 
     // ══════════════════════════════════════════════════════════════
-    // MODULAR LOGO COMPONENT - Artazn LLC Branding
+    // TAG: #DYNAMIC_BRANDING #WHITE_LABEL - All branding pulls from LogoConfig constants
     // ══════════════════════════════════════════════════════════════
     // LOGO_CONFIG: Change these values to update the logo across the entire application
     public static class LogoConfig

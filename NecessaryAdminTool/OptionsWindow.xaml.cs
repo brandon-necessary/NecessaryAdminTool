@@ -884,8 +884,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         private void BtnResetAppearance_Click(object sender, RoutedEventArgs e)
         {
             var result = MessageBox.Show(
-                "Reset all appearance settings to default Artazn branding?\n\n" +
-                "• Logo: Artazn \"A\" icon\n" +
+                "Reset all appearance settings to default NecessaryAdmin branding?\n\n" +
+                "• Logo: NecessaryAdmin \"A\" icon\n" +
                 "• Primary Color: Orange (#FFFF8533)\n" +
                 "• Secondary Color: Zinc (#FFA1A1AA)\n" +
                 "• Font: Segoe UI",
@@ -895,7 +895,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
             if (result == MessageBoxResult.Yes)
             {
-                TxtLogoPath.Text = "(Using default Artazn logo)";
+                TxtLogoPath.Text = "(Using default NecessaryAdmin logo)";
                 TxtPrimaryColor.Text = "#FFFF8533";
                 TxtSecondaryColor.Text = "#FFA1A1AA";
                 SliderLogoSize.Value = 64;
@@ -1131,7 +1131,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 using (var client = new System.Net.Http.HttpClient())
                 {
                     client.Timeout = TimeSpan.FromSeconds(5);
-                    client.DefaultRequestHeaders.Add("User-Agent", "NecessaryAdminTool-Monitor/6.0");
+                    // TAG: #USER_AGENT #DYNAMIC_VERSION
+                    client.DefaultRequestHeaders.Add("User-Agent", $"NecessaryAdminTool-Monitor/{LogoConfig.USER_AGENT_VERSION}");
 
                     int successCount = 0;
                     int failCount = 0;

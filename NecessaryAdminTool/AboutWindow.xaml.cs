@@ -506,7 +506,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             <div class=""logo"">
                 <div class=""logo-text"">A</div>
             </div>
-            <div class=""brand"">Artazn LLC</div>
+            <div class=""brand"">Brandon Necessary</div>
             <div class=""tagline"">I T   M A N A G E M E N T   S U I T E</div>
             <div class=""version"">v{version.Major}.{version.Minor}.{version.Build}</div>
         </div>
@@ -522,15 +522,15 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
             <div class=""contact"">
                 <strong>For licensing inquiries, permission requests, legal questions, or to report violations of this EULA, please contact:</strong><br><br>
-                <strong>Artazn LLC - Legal Department</strong><br>
+                <strong>Brandon Necessary - Legal Department</strong><br>
                 Email: <a href=""mailto:brandon.necessary@jadexinc.com"" style=""color: #FF8533;"">brandon.necessary@jadexinc.com</a><br>
-                Phone: Contact your authorized Artazn LLC representative
+                Phone: Contact your authorized Brandon Necessary representative
             </div>
         </div>
 
         <div class=""footer"">
             END-USER LICENSE AGREEMENT - Document Version: 2.0 | Effective Date: 2026-02-11<br>
-            NecessaryAdminTool Suite v{version.Major}.{version.Minor} | Artazn LLC - All Rights Reserved | Confidential &amp; Proprietary<br>
+            NecessaryAdminTool Suite v{version.Major}.{version.Minor} | Brandon Necessary - All Rights Reserved | Confidential &amp; Proprietary<br>
             This document contains 28 sections and constitutes a legally binding agreement.<br><br>
             <em>Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}</em>
         </div>
@@ -543,7 +543,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         {
             return @"
             <h2>1. GRANT OF LICENSE</h2>
-            <p>This software product, NecessaryAdminTool Suite (""Software""), is licensed, not sold, to you by Artazn LLC (""Licensor"") for use strictly in accordance with the terms of this Agreement. This license grants you the right to install and use the Software solely for internal business operations within your organization's authorized IT infrastructure management activities.</p>
+            <p>This software product, NecessaryAdminTool Suite (""Software""), is licensed, not sold, to you by Brandon Necessary (""Licensor"") for use strictly in accordance with the terms of this Agreement. This license grants you the right to install and use the Software solely for internal business operations within your organization's authorized IT infrastructure management activities.</p>
 
             <h2>2. RESTRICTIONS ON USE</h2>
             <p>You may NOT, under any circumstances:</p>
@@ -553,16 +553,16 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 <li>Modify, adapt, translate, rent, lease, loan, resell, distribute, or create derivative works based upon the Software or any part thereof;</li>
                 <li>Remove, obscure, or alter any proprietary notices (including copyright and trademark notices) that may be affixed to or contained within the Software;</li>
                 <li>Use the Software for any purpose outside of authorized IT management within your organization;</li>
-                <li>Transfer, sublicense, or assign your rights under this license to any third party without prior written consent from Artazn LLC;</li>
+                <li>Transfer, sublicense, or assign your rights under this license to any third party without prior written consent from Brandon Necessary;</li>
                 <li>Use the Software in any manner that violates applicable local, state, national, or international law;</li>
                 <li>Deploy the Software on systems you do not own or have explicit authorization to manage.</li>
             </ul>
 
             <h2>3. PROPRIETARY RIGHTS</h2>
-            <p>The Software is protected by copyright laws and international copyright treaties, as well as other intellectual property laws and treaties. Artazn LLC retains all rights, title, and interest in and to the Software, including all copyrights, patents, trade secrets, trademarks, and other intellectual property rights therein. This Agreement does not grant you any rights to trademarks, service marks, or trade names of Artazn LLC.</p>
+            <p>The Software is protected by copyright laws and international copyright treaties, as well as other intellectual property laws and treaties. Brandon Necessary retains all rights, title, and interest in and to the Software, including all copyrights, patents, trade secrets, trademarks, and other intellectual property rights therein. This Agreement does not grant you any rights to trademarks, service marks, or trade names of Brandon Necessary.</p>
 
             <h2>4. CONFIDENTIALITY</h2>
-            <p>The Software contains proprietary and confidential information of Artazn LLC. You agree to maintain the confidentiality of the Software and to not disclose, provide, or otherwise make available such proprietary and confidential information to any third party without the prior written consent of Artazn LLC.</p>
+            <p>The Software contains proprietary and confidential information of Brandon Necessary. You agree to maintain the confidentiality of the Software and to not disclose, provide, or otherwise make available such proprietary and confidential information to any third party without the prior written consent of Brandon Necessary.</p>
 
             <h2>5. WARRANTY DISCLAIMER</h2>
             <p>THE SOFTWARE IS PROVIDED ""AS IS"" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. ARTAZN LLC DOES NOT WARRANT THAT THE SOFTWARE WILL MEET YOUR REQUIREMENTS OR THAT THE OPERATION OF THE SOFTWARE WILL BE UNINTERRUPTED OR ERROR-FREE.</p>
@@ -571,19 +571,19 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             <p>IN NO EVENT SHALL ARTAZN LLC BE LIABLE FOR ANY SPECIAL, INCIDENTAL, INDIRECT, OR CONSEQUENTIAL DAMAGES WHATSOEVER (INCLUDING, WITHOUT LIMITATION, DAMAGES FOR LOSS OF BUSINESS PROFITS, BUSINESS INTERRUPTION, LOSS OF BUSINESS INFORMATION, OR ANY OTHER PECUNIARY LOSS) ARISING OUT OF THE USE OF OR INABILITY TO USE THE SOFTWARE, EVEN IF ARTAZN LLC HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.</p>
 
             <h2>7. TERMINATION</h2>
-            <p>This license is effective until terminated. Your rights under this license will terminate automatically without notice from Artazn LLC if you fail to comply with any term(s) of this Agreement. Upon termination, you shall cease all use of the Software and destroy all copies, full or partial, of the Software.</p>
+            <p>This license is effective until terminated. Your rights under this license will terminate automatically without notice from Brandon Necessary if you fail to comply with any term(s) of this Agreement. Upon termination, you shall cease all use of the Software and destroy all copies, full or partial, of the Software.</p>
 
             <h2>8. COMMERCIAL USE PROHIBITION</h2>
-            <p>This Software is licensed exclusively for use within the internal operations of the organization to which it has been provided. Any commercial use, resale, redistribution, or deployment of this Software for third-party benefit or monetary gain is strictly prohibited without a separate commercial licensing agreement with Artazn LLC.</p>
+            <p>This Software is licensed exclusively for use within the internal operations of the organization to which it has been provided. Any commercial use, resale, redistribution, or deployment of this Software for third-party benefit or monetary gain is strictly prohibited without a separate commercial licensing agreement with Brandon Necessary.</p>
 
             <h2>9. GOVERNING LAW</h2>
-            <p>This Agreement shall be governed by and construed in accordance with the laws of the jurisdiction in which Artazn LLC operates, without regard to its conflict of law provisions.</p>
+            <p>This Agreement shall be governed by and construed in accordance with the laws of the jurisdiction in which Brandon Necessary operates, without regard to its conflict of law provisions.</p>
 
             <h2>10. ENTIRE AGREEMENT</h2>
-            <p>This Agreement constitutes the entire agreement between you and Artazn LLC concerning the Software and supersedes all prior or contemporaneous oral or written communications, proposals, and representations with respect to the Software or any other subject matter covered by this Agreement.</p>
+            <p>This Agreement constitutes the entire agreement between you and Brandon Necessary concerning the Software and supersedes all prior or contemporaneous oral or written communications, proposals, and representations with respect to the Software or any other subject matter covered by this Agreement.</p>
 
             <h2>11. DATA PRIVACY &amp; SECURITY POLICY</h2>
-            <p>The Software may collect, process, and store system information, performance metrics, audit logs, and user authentication data necessary for its operation. By using this Software, you acknowledge and consent to such data collection strictly for the purposes of system management, diagnostic logging, and security auditing. Artazn LLC commits to maintaining the confidentiality and security of collected data in accordance with applicable data protection regulations. No personally identifiable information (PII) or sensitive business data will be transmitted to external servers without explicit user consent. All authentication credentials are encrypted and stored locally using industry-standard cryptographic methods (AES-256, SecureString, and RtlSecureZeroMemory).</p>
+            <p>The Software may collect, process, and store system information, performance metrics, audit logs, and user authentication data necessary for its operation. By using this Software, you acknowledge and consent to such data collection strictly for the purposes of system management, diagnostic logging, and security auditing. Brandon Necessary commits to maintaining the confidentiality and security of collected data in accordance with applicable data protection regulations. No personally identifiable information (PII) or sensitive business data will be transmitted to external servers without explicit user consent. All authentication credentials are encrypted and stored locally using industry-standard cryptographic methods (AES-256, SecureString, and RtlSecureZeroMemory).</p>
 
             <h2>12. NETWORK ACCESS &amp; SECURITY RESPONSIBILITIES</h2>
             <p>The Software requires network access, WMI (Windows Management Instrumentation), WinRM (Windows Remote Management), and Active Directory connectivity to function properly. You acknowledge that the Software will initiate connections to domain controllers, remote workstations, and network resources within your infrastructure. You are solely responsible for:</p>
@@ -595,13 +595,13 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 <li>Compliance with your organization's IT security policies and procedures;</li>
                 <li>Ensuring all remote management activities are authorized and documented.</li>
             </ul>
-            <p>Artazn LLC is not liable for any security breaches, data loss, or unauthorized access resulting from improper configuration, weak authentication, or misuse of the Software.</p>
+            <p>Brandon Necessary is not liable for any security breaches, data loss, or unauthorized access resulting from improper configuration, weak authentication, or misuse of the Software.</p>
 
             <h2>13. AUDIT &amp; COMPLIANCE OBLIGATIONS</h2>
-            <p>The Software maintains comprehensive audit logs of all administrative actions, system modifications, remote access sessions, and deployment activities. You are responsible for retaining these logs in accordance with your organization's data retention policies and applicable regulatory requirements (including but not limited to SOX, HIPAA, PCI-DSS, GDPR, and other industry-specific compliance frameworks). Artazn LLC reserves the right to audit your use of the Software to ensure compliance with this Agreement. You agree to provide reasonable cooperation and access to records upon request for compliance verification purposes.</p>
+            <p>The Software maintains comprehensive audit logs of all administrative actions, system modifications, remote access sessions, and deployment activities. You are responsible for retaining these logs in accordance with your organization's data retention policies and applicable regulatory requirements (including but not limited to SOX, HIPAA, PCI-DSS, GDPR, and other industry-specific compliance frameworks). Brandon Necessary reserves the right to audit your use of the Software to ensure compliance with this Agreement. You agree to provide reasonable cooperation and access to records upon request for compliance verification purposes.</p>
 
             <h2>14. SOFTWARE UPDATES &amp; MAINTENANCE</h2>
-            <p>Artazn LLC may, at its sole discretion, provide updates, patches, bug fixes, or new versions of the Software. You acknowledge that updates may modify, add, or remove features without prior notice. Installation of updates is recommended but not mandatory unless critical security vulnerabilities are addressed. Artazn LLC is under no obligation to provide updates, technical support, or maintenance services unless otherwise specified in a separate support agreement. Failure to install critical security updates may result in security vulnerabilities for which Artazn LLC shall not be held liable.</p>
+            <p>Brandon Necessary may, at its sole discretion, provide updates, patches, bug fixes, or new versions of the Software. You acknowledge that updates may modify, add, or remove features without prior notice. Installation of updates is recommended but not mandatory unless critical security vulnerabilities are addressed. Brandon Necessary is under no obligation to provide updates, technical support, or maintenance services unless otherwise specified in a separate support agreement. Failure to install critical security updates may result in security vulnerabilities for which Brandon Necessary shall not be held liable.</p>
 
             <h2>15. USER RESPONSIBILITIES &amp; ACCEPTABLE USE</h2>
             <p>You are solely responsible for:</p>
@@ -617,13 +617,13 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             <p>You agree NOT to use the Software for any unlawful, malicious, or unauthorized purposes, including but not limited to unauthorized network scanning, data exfiltration, denial-of-service attacks, or deployment of malicious code.</p>
 
             <h2>16. THIRD-PARTY COMPONENTS &amp; DEPENDENCIES</h2>
-            <p>The Software may incorporate or depend upon third-party libraries, frameworks, and technologies, including but not limited to: Microsoft .NET Framework, Windows Presentation Foundation (WPF), Windows Management Instrumentation (WMI), PowerShell, Active Directory Services, and other Microsoft Windows components. These components are subject to their respective license agreements and terms of use. You acknowledge that use of the Software constitutes acceptance of all applicable third-party license terms. Artazn LLC makes no warranties regarding third-party components and disclaims all liability for issues arising from third-party dependencies.</p>
+            <p>The Software may incorporate or depend upon third-party libraries, frameworks, and technologies, including but not limited to: Microsoft .NET Framework, Windows Presentation Foundation (WPF), Windows Management Instrumentation (WMI), PowerShell, Active Directory Services, and other Microsoft Windows components. These components are subject to their respective license agreements and terms of use. You acknowledge that use of the Software constitutes acceptance of all applicable third-party license terms. Brandon Necessary makes no warranties regarding third-party components and disclaims all liability for issues arising from third-party dependencies.</p>
 
             <h2>17. BACKUP &amp; DISASTER RECOVERY</h2>
-            <p>THE SOFTWARE DOES NOT PROVIDE AUTOMATED BACKUP OR DISASTER RECOVERY CAPABILITIES. You are solely responsible for implementing and maintaining appropriate backup procedures, disaster recovery plans, and business continuity strategies for all systems managed by the Software. Artazn LLC strongly recommends creating full system backups and recovery points before performing any mass deployments, operating system upgrades, or system modifications. Artazn LLC shall not be liable for any data loss, system failures, or recovery costs resulting from use of the Software.</p>
+            <p>THE SOFTWARE DOES NOT PROVIDE AUTOMATED BACKUP OR DISASTER RECOVERY CAPABILITIES. You are solely responsible for implementing and maintaining appropriate backup procedures, disaster recovery plans, and business continuity strategies for all systems managed by the Software. Brandon Necessary strongly recommends creating full system backups and recovery points before performing any mass deployments, operating system upgrades, or system modifications. Brandon Necessary shall not be liable for any data loss, system failures, or recovery costs resulting from use of the Software.</p>
 
             <h2>18. INDEMNIFICATION</h2>
-            <p>You agree to indemnify, defend, and hold harmless Artazn LLC, its officers, directors, employees, agents, and affiliates from and against any and all claims, liabilities, damages, losses, costs, expenses, or fees (including reasonable attorneys' fees) arising from:</p>
+            <p>You agree to indemnify, defend, and hold harmless Brandon Necessary, its officers, directors, employees, agents, and affiliates from and against any and all claims, liabilities, damages, losses, costs, expenses, or fees (including reasonable attorneys' fees) arising from:</p>
             <ul>
                 <li>Your use or misuse of the Software;</li>
                 <li>Your violation of this Agreement or any applicable law or regulation;</li>
@@ -637,28 +637,28 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             <p>The Software may be subject to export control laws and regulations of the United States and other jurisdictions. You agree to comply with all applicable export and import laws, including but not limited to the U.S. Export Administration Regulations (EAR) and International Traffic in Arms Regulations (ITAR). You represent and warrant that you are not located in, under the control of, or a national or resident of any country to which the United States has embargoed goods, and that you are not on any U.S. government list of prohibited or restricted parties. You shall not export, re-export, or transfer the Software in violation of applicable export control laws.</p>
 
             <h2>20. SYSTEM REQUIREMENTS &amp; COMPATIBILITY</h2>
-            <p>The Software is designed to operate on Windows 10/11 systems with .NET Framework 4.8.1 or later, in Active Directory domain environments. Minimum system requirements include: 4-core processor, 8GB RAM, network connectivity, and administrator privileges. Artazn LLC makes no warranty that the Software will function correctly on systems not meeting these requirements or in non-domain environments. Performance may vary based on network topology, domain size, hardware specifications, and configuration settings. Artazn LLC is not responsible for compatibility issues with third-party security software, group policies, or custom system configurations that interfere with Software operation.</p>
+            <p>The Software is designed to operate on Windows 10/11 systems with .NET Framework 4.8.1 or later, in Active Directory domain environments. Minimum system requirements include: 4-core processor, 8GB RAM, network connectivity, and administrator privileges. Brandon Necessary makes no warranty that the Software will function correctly on systems not meeting these requirements or in non-domain environments. Performance may vary based on network topology, domain size, hardware specifications, and configuration settings. Brandon Necessary is not responsible for compatibility issues with third-party security software, group policies, or custom system configurations that interfere with Software operation.</p>
 
             <h2>21. TELEMETRY &amp; DIAGNOSTIC DATA</h2>
-            <p>The Software may collect anonymous telemetry and diagnostic data including error reports, performance metrics, feature usage statistics, and system configuration information to improve product quality and user experience. All telemetry data is anonymized and does not include personally identifiable information, credentials, or sensitive business data. You may disable telemetry collection through the Software's configuration settings, though this may impact the quality of support services. Artazn LLC uses collected data solely for product improvement, bug fixes, and feature development purposes.</p>
+            <p>The Software may collect anonymous telemetry and diagnostic data including error reports, performance metrics, feature usage statistics, and system configuration information to improve product quality and user experience. All telemetry data is anonymized and does not include personally identifiable information, credentials, or sensitive business data. You may disable telemetry collection through the Software's configuration settings, though this may impact the quality of support services. Brandon Necessary uses collected data solely for product improvement, bug fixes, and feature development purposes.</p>
 
             <h2>22. INTELLECTUAL PROPERTY CLAIMS</h2>
-            <p>If you believe that the Software infringes upon any patent, copyright, trademark, or other intellectual property right, you must promptly notify Artazn LLC in writing with detailed information regarding the alleged infringement. Artazn LLC reserves the right to modify or replace allegedly infringing components, obtain necessary licenses, or terminate this Agreement at its sole discretion. This section constitutes your sole and exclusive remedy for any intellectual property infringement claims related to the Software.</p>
+            <p>If you believe that the Software infringes upon any patent, copyright, trademark, or other intellectual property right, you must promptly notify Brandon Necessary in writing with detailed information regarding the alleged infringement. Brandon Necessary reserves the right to modify or replace allegedly infringing components, obtain necessary licenses, or terminate this Agreement at its sole discretion. This section constitutes your sole and exclusive remedy for any intellectual property infringement claims related to the Software.</p>
 
             <h2>23. FORCE MAJEURE</h2>
-            <p>Artazn LLC shall not be liable for any failure or delay in performance of its obligations under this Agreement due to causes beyond its reasonable control, including but not limited to: acts of God, war, terrorism, civil unrest, labor disputes, natural disasters, government actions, pandemics, epidemics, cyber-attacks, power failures, telecommunications failures, or other unforeseeable circumstances. In such events, Artazn LLC's obligations shall be suspended for the duration of the force majeure event.</p>
+            <p>Brandon Necessary shall not be liable for any failure or delay in performance of its obligations under this Agreement due to causes beyond its reasonable control, including but not limited to: acts of God, war, terrorism, civil unrest, labor disputes, natural disasters, government actions, pandemics, epidemics, cyber-attacks, power failures, telecommunications failures, or other unforeseeable circumstances. In such events, Brandon Necessary's obligations shall be suspended for the duration of the force majeure event.</p>
 
             <h2>24. SEVERABILITY &amp; WAIVER</h2>
-            <p>If any provision of this Agreement is found to be invalid, illegal, or unenforceable by a court of competent jurisdiction, the remaining provisions shall continue in full force and effect. The invalid provision shall be modified to the minimum extent necessary to make it valid and enforceable while preserving the original intent. No waiver of any breach of this Agreement shall constitute a waiver of any subsequent breach. Failure by Artazn LLC to enforce any provision of this Agreement shall not be construed as a waiver of that or any other provision.</p>
+            <p>If any provision of this Agreement is found to be invalid, illegal, or unenforceable by a court of competent jurisdiction, the remaining provisions shall continue in full force and effect. The invalid provision shall be modified to the minimum extent necessary to make it valid and enforceable while preserving the original intent. No waiver of any breach of this Agreement shall constitute a waiver of any subsequent breach. Failure by Brandon Necessary to enforce any provision of this Agreement shall not be construed as a waiver of that or any other provision.</p>
 
             <h2>25. AMENDMENT &amp; MODIFICATION RIGHTS</h2>
-            <p>Artazn LLC reserves the right to modify, amend, or update this Agreement at any time without prior notice. Continued use of the Software following any such modifications constitutes your acceptance of the revised terms. Material changes to this Agreement will be communicated through the Software interface, email notification, or posted to the Artazn LLC website. It is your responsibility to review this Agreement periodically for changes. If you do not agree to modified terms, you must immediately cease using the Software and uninstall it from all systems.</p>
+            <p>Brandon Necessary reserves the right to modify, amend, or update this Agreement at any time without prior notice. Continued use of the Software following any such modifications constitutes your acceptance of the revised terms. Material changes to this Agreement will be communicated through the Software interface, email notification, or posted to the Brandon Necessary website. It is your responsibility to review this Agreement periodically for changes. If you do not agree to modified terms, you must immediately cease using the Software and uninstall it from all systems.</p>
 
             <h2>26. DISPUTE RESOLUTION &amp; ARBITRATION</h2>
-            <p>Any disputes, claims, or controversies arising out of or relating to this Agreement or the Software shall first be subject to good-faith negotiation between the parties. If negotiation fails to resolve the dispute within thirty (30) days, the dispute shall be resolved through binding arbitration in accordance with the rules of the American Arbitration Association. The arbitration shall be conducted in the jurisdiction where Artazn LLC is headquartered. Each party shall bear its own costs and expenses related to arbitration. The arbitrator's decision shall be final and binding, and judgment may be entered in any court of competent jurisdiction. Notwithstanding the foregoing, either party may seek injunctive or other equitable relief in court to prevent irreparable harm or protect intellectual property rights.</p>
+            <p>Any disputes, claims, or controversies arising out of or relating to this Agreement or the Software shall first be subject to good-faith negotiation between the parties. If negotiation fails to resolve the dispute within thirty (30) days, the dispute shall be resolved through binding arbitration in accordance with the rules of the American Arbitration Association. The arbitration shall be conducted in the jurisdiction where Brandon Necessary is headquartered. Each party shall bear its own costs and expenses related to arbitration. The arbitrator's decision shall be final and binding, and judgment may be entered in any court of competent jurisdiction. Notwithstanding the foregoing, either party may seek injunctive or other equitable relief in court to prevent irreparable harm or protect intellectual property rights.</p>
 
             <h2>27. SURVIVAL OF TERMS</h2>
-            <p>The following sections shall survive termination or expiration of this Agreement: Proprietary Rights, Confidentiality, Warranty Disclaimer, Limitation of Liability, Indemnification, Governing Law, Dispute Resolution, and any other provisions which by their nature are intended to survive termination. Upon termination, you must immediately cease all use of the Software, destroy all copies, and certify in writing to Artazn LLC that you have complied with these obligations.</p>
+            <p>The following sections shall survive termination or expiration of this Agreement: Proprietary Rights, Confidentiality, Warranty Disclaimer, Limitation of Liability, Indemnification, Governing Law, Dispute Resolution, and any other provisions which by their nature are intended to survive termination. Upon termination, you must immediately cease all use of the Software, destroy all copies, and certify in writing to Brandon Necessary that you have complied with these obligations.</p>
 
             <h2>28. ACKNOWLEDGMENT &amp; ACCEPTANCE</h2>
             <p>BY INSTALLING, COPYING, ACCESSING, OR OTHERWISE USING THE SOFTWARE, YOU ACKNOWLEDGE THAT:</p>
@@ -667,7 +667,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 <li>You have the authority to bind your organization to these terms;</li>
                 <li>You agree to be legally bound by all terms, conditions, restrictions, and obligations set forth herein;</li>
                 <li>You have been given adequate opportunity to review this Agreement with legal counsel;</li>
-                <li>You acknowledge that this Agreement constitutes a binding legal contract between you (individually and/or on behalf of your organization) and Artazn LLC.</li>
+                <li>You acknowledge that this Agreement constitutes a binding legal contract between you (individually and/or on behalf of your organization) and Brandon Necessary.</li>
             </ul>
 
             <div class=""notice"">
@@ -914,7 +914,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 using (var client = new System.Net.Http.HttpClient())
                 {
                     client.Timeout = TimeSpan.FromSeconds(5);
-                    client.DefaultRequestHeaders.Add("User-Agent", "NecessaryAdminTool-Monitor/6.0");
+                    // TAG: #USER_AGENT #DYNAMIC_VERSION
+                    client.DefaultRequestHeaders.Add("User-Agent", $"NecessaryAdminTool-Monitor/{LogoConfig.USER_AGENT_VERSION}");
 
                     int successCount = 0;
                     int failCount = 0;
