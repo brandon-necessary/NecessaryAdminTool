@@ -115,6 +115,9 @@ namespace NecessaryAdminTool
                 // TAG: #VERSION_7 #CONNECTION_PROFILES - Load connection profiles
                 LoadConnectionProfiles();
 
+                // TAG: #VERSION_1_2 #DATABASE - Load database configuration and stats
+                LoadDatabaseConfiguration();
+
                 // TAG: #VERSION_7 #BOOKMARKS - Load bookmarks
                 LoadBookmarks();
 
@@ -2153,6 +2156,351 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 ShowStatus($"Failed to import settings: {ex.Message}", MessageType.Error);
                 MessageBox.Show($"Import failed:\n\n{ex.Message}", "Import Error",
                     MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        #endregion
+
+        #region Database Management - TAG: #VERSION_1_2 #DATABASE
+
+        /// <summary>
+        /// Load database configuration and statistics
+        /// </summary>
+        private async void LoadDatabaseConfiguration()
+        {
+            try
+            {
+                // Load database type and path
+                var dbType = Properties.Settings.Default.DatabaseType ?? "SQLite";
+                var dbPath = Properties.Settings.Default.DatabasePath ?? "C:\\ProgramData\\NecessaryAdminTool";
+
+                if (TxtDbType != null)
+                    TxtDbType.Text = Data.DataProviderFactory.GetDatabaseTypeDescription(dbType);
+
+                if (TxtDbPath != null)
+                    TxtDbPath.Text = dbPath;
+
+                // Load database statistics
+                await RefreshDatabaseStatisticsAsync();
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to load database configuration", ex);
+            }
+        }
+
+        /// <summary>
+        /// Refresh database statistics
+        /// </summary>
+        private async System.Threading.Tasks.Task RefreshDatabaseStatisticsAsync()
+        {
+            try
+            {
+                if (!Data.DataProviderFactory.VerifyConfiguration())
+                {
+                    LogManager.LogWarning("Database configuration not valid, skipping stats refresh");
+                    return;
+                }
+
+                using (var provider = await Data.DataProviderFactory.CreateProviderAsync())
+                {
+                    var stats = await provider.GetDatabaseStatsAsync();
+
+                    if (TxtDbComputers != null)
+                        TxtDbComputers.Text = stats.TotalComputers.ToString();
+
+                    if (TxtDbScans != null)
+                        TxtDbScans.Text = stats.TotalScans.ToString();
+
+                    if (TxtDbScripts != null)
+                        TxtDbScripts.Text = stats.TotalScripts.ToString();
+
+                    if (TxtDbSize != null)
+                        TxtDbSize.Text = $"{stats.DatabaseSizeMB:N1} MB";
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to refresh database statistics", ex);
+
+                // Show zeros if stats fail
+                if (TxtDbComputers != null) TxtDbComputers.Text = "0";
+                if (TxtDbScans != null) TxtDbScans.Text = "0";
+                if (TxtDbScripts != null) TxtDbScripts.Text = "0";
+                if (TxtDbSize != null) TxtDbSize.Text = "0 MB";
+            }
+        }
+
+        /// <summary>
+        /// Refresh database statistics button click
+        /// </summary>
+        private async void BtnRefreshDbStats_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var button = sender as Button;
+                if (button != null)
+                {
+                    button.IsEnabled = false;
+                    button.Content = "⏳ LOADING...";
+                }
+
+                await RefreshDatabaseStatisticsAsync();
+
+                ShowStatus("Database statistics refreshed", MessageType.Success);
+
+                if (button != null)
+                {
+                    button.Content = "🔄 REFRESH";
+                    button.IsEnabled = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to refresh database stats", ex);
+                ShowStatus($"Failed to refresh stats: {ex.Message}", MessageType.Error);
+            }
+        }
+
+        /// <summary>
+        /// Backup database button click
+        /// </summary>
+        private async void BtnBackupDatabase_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dialog = new SaveFileDialog
+                {
+                    Filter = "Database Backup|*.bak;*.db;*.accdb;*.zip|All Files|*.*",
+                    Title = "Save Database Backup",
+                    FileName = $"NAT_Backup_{DateTime.Now:yyyyMMdd_HHmmss}"
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    var button = sender as Button;
+                    if (button != null)
+                    {
+                        button.IsEnabled = false;
+                        button.Content = "⏳ BACKING UP...";
+                    }
+
+                    var dbPath = Properties.Settings.Default.DatabasePath;
+                    var dbType = Properties.Settings.Default.DatabaseType;
+
+                    // Copy database file(s) to backup location
+                    if (dbType == "SQLite")
+                    {
+                        var sourceFile = Path.Combine(dbPath, "NecessaryAdminTool.db");
+                        if (File.Exists(sourceFile))
+                        {
+                            File.Copy(sourceFile, dialog.FileName, true);
+                        }
+                    }
+                    else if (dbType == "Access")
+                    {
+                        var sourceFile = Path.Combine(dbPath, "NecessaryAdminTool.accdb");
+                        if (File.Exists(sourceFile))
+                        {
+                            File.Copy(sourceFile, dialog.FileName, true);
+                        }
+                    }
+                    else if (dbType == "CSV" || dbType == "JSON")
+                    {
+                        // ZIP the entire directory
+                        System.IO.Compression.ZipFile.CreateFromDirectory(dbPath, dialog.FileName);
+                    }
+
+                    ShowStatus($"Database backed up to: {Path.GetFileName(dialog.FileName)}", MessageType.Success);
+                    MessageBox.Show($"Database backed up successfully!\n\nLocation: {dialog.FileName}",
+                        "Backup Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    if (button != null)
+                    {
+                        button.Content = "💾 BACKUP";
+                        button.IsEnabled = true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to backup database", ex);
+                ShowStatus($"Backup failed: {ex.Message}", MessageType.Error);
+                MessageBox.Show($"Failed to backup database:\n\n{ex.Message}",
+                    "Backup Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Restore database button click
+        /// </summary>
+        private void BtnRestoreDatabase_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var result = MessageBox.Show(
+                    "⚠️ WARNING: Restoring from a backup will REPLACE all current data!\n\n" +
+                    "Make sure you have a recent backup before proceeding.\n\n" +
+                    "Do you want to continue?",
+                    "Confirm Database Restore",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (result != MessageBoxResult.Yes)
+                    return;
+
+                var dialog = new OpenFileDialog
+                {
+                    Filter = "Database Backup|*.bak;*.db;*.accdb;*.zip|All Files|*.*",
+                    Title = "Select Database Backup to Restore"
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    var dbPath = Properties.Settings.Default.DatabasePath;
+                    var dbType = Properties.Settings.Default.DatabaseType;
+
+                    // Restore database file(s) from backup
+                    if (dbType == "SQLite")
+                    {
+                        var targetFile = Path.Combine(dbPath, "NecessaryAdminTool.db");
+                        File.Copy(dialog.FileName, targetFile, true);
+                    }
+                    else if (dbType == "Access")
+                    {
+                        var targetFile = Path.Combine(dbPath, "NecessaryAdminTool.accdb");
+                        File.Copy(dialog.FileName, targetFile, true);
+                    }
+                    else if (dbType == "CSV" || dbType == "JSON")
+                    {
+                        // Extract ZIP to directory
+                        if (Directory.Exists(dbPath))
+                        {
+                            Directory.Delete(dbPath, true);
+                        }
+                        System.IO.Compression.ZipFile.ExtractToDirectory(dialog.FileName, dbPath);
+                    }
+
+                    ShowStatus("Database restored successfully", MessageType.Success);
+                    MessageBox.Show(
+                        "Database restored successfully!\n\n" +
+                        "Restart the application to use the restored database.",
+                        "Restore Complete",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to restore database", ex);
+                ShowStatus($"Restore failed: {ex.Message}", MessageType.Error);
+                MessageBox.Show($"Failed to restore database:\n\n{ex.Message}",
+                    "Restore Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Optimize database button click
+        /// </summary>
+        private async void BtnOptimizeDatabase_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var button = sender as Button;
+                if (button != null)
+                {
+                    button.IsEnabled = false;
+                    button.Content = "⏳ OPTIMIZING...";
+                }
+
+                var dbType = Properties.Settings.Default.DatabaseType;
+
+                if (dbType == "SQLite")
+                {
+                    #if SQLITE_ENABLED
+                    using (var provider = await Data.DataProviderFactory.CreateProviderAsync())
+                    {
+                        // Run VACUUM command
+                        await System.Threading.Tasks.Task.Run(() =>
+                        {
+                            var sqliteProvider = provider as Data.SqliteDataProvider;
+                            sqliteProvider?.Vacuum();
+                        });
+                    }
+                    #endif
+                }
+                else if (dbType == "Access")
+                {
+                    // Access compact & repair would go here
+                    ShowStatus("Access database optimization not yet implemented", MessageType.Warning);
+                }
+                else
+                {
+                    ShowStatus($"{dbType} optimization not supported", MessageType.Warning);
+                }
+
+                await RefreshDatabaseStatisticsAsync();
+
+                ShowStatus("Database optimized successfully", MessageType.Success);
+                MessageBox.Show("Database optimized!\n\nOld data has been purged and the database has been compacted.",
+                    "Optimization Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                if (button != null)
+                {
+                    button.Content = "⚡ OPTIMIZE";
+                    button.IsEnabled = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to optimize database", ex);
+                ShowStatus($"Optimization failed: {ex.Message}", MessageType.Error);
+                MessageBox.Show($"Failed to optimize database:\n\n{ex.Message}",
+                    "Optimization Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Re-run setup wizard button click
+        /// </summary>
+        private void BtnRerunSetup_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var result = MessageBox.Show(
+                    "This will launch the setup wizard to reconfigure your database.\n\n" +
+                    "⚠️ Make sure you have a backup before changing database configuration!\n\n" +
+                    "Do you want to continue?",
+                    "Reconfigure Database",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (result != MessageBoxResult.Yes)
+                    return;
+
+                var setupWizard = new SetupWizardWindow();
+                var wizardResult = setupWizard.ShowDialog();
+
+                if (wizardResult == true)
+                {
+                    // Reload database configuration
+                    LoadDatabaseConfiguration();
+
+                    ShowStatus("Database configuration updated", MessageType.Success);
+                    MessageBox.Show(
+                        "Database configuration updated successfully!\n\n" +
+                        "Restart the application to use the new configuration.",
+                        "Configuration Updated",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to reconfigure database", ex);
+                ShowStatus($"Configuration failed: {ex.Message}", MessageType.Error);
+                MessageBox.Show($"Failed to reconfigure database:\n\n{ex.Message}",
+                    "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

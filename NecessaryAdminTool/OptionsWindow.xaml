@@ -1110,6 +1110,210 @@
                     </Border>
                 </Expander>
 
+                <!-- ══════════════════════════════ -->
+                <!-- SECTION 7: DATABASE MANAGEMENT - TAG: #VERSION_1_2 #DATABASE -->
+                <!-- ══════════════════════════════ -->
+                <Expander x:Name="ExpanderDatabase" Header="💾 DATABASE MANAGEMENT"
+                          IsExpanded="False" Margin="0,0,0,10">
+                    <Expander.HeaderTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" FontSize="13" FontWeight="Bold"
+                                       Foreground="{StaticResource AccentOrange}"/>
+                        </DataTemplate>
+                    </Expander.HeaderTemplate>
+                    <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
+                            BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
+                        <StackPanel>
+                            <TextBlock Text="Manage persistent storage of computer inventory data"
+                                       Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="14"/>
+
+                            <!-- Current Configuration -->
+                            <TextBlock Text="CURRENT CONFIGURATION" Foreground="{StaticResource AccentOrange}"
+                                       FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
+
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Database Type:" Foreground="{StaticResource TextMuted}"
+                                           FontSize="10" Margin="0,0,12,4"/>
+                                <TextBlock Grid.Row="0" Grid.Column="1" x:Name="TxtDbType" Text="SQLite (AES-256 Encrypted)"
+                                           Foreground="White" FontSize="10" FontWeight="SemiBold" Margin="0,0,0,4"/>
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Location:" Foreground="{StaticResource TextMuted}"
+                                           FontSize="10" Margin="0,0,12,0"/>
+                                <TextBlock Grid.Row="1" Grid.Column="1" x:Name="TxtDbPath" Text="C:\ProgramData\NecessaryAdminTool"
+                                           Foreground="White" FontSize="10" TextWrapping="Wrap"/>
+                            </Grid>
+
+                            <!-- Database Statistics -->
+                            <TextBlock Text="DATABASE STATISTICS" Foreground="{StaticResource AccentOrange}"
+                                       FontSize="10" FontWeight="Bold" Margin="0,12,0,8"/>
+
+                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                                    BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,12">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Total Computers -->
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="💻" FontSize="18" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                                        <TextBlock x:Name="TxtDbComputers" Text="0" FontSize="20" FontWeight="Bold"
+                                                   Foreground="{StaticResource AccentOrange}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="Computers" FontSize="9" Foreground="{StaticResource TextMuted}"
+                                                   HorizontalAlignment="Center"/>
+                                    </StackPanel>
+
+                                    <!-- Total Scans -->
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="🔍" FontSize="18" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                                        <TextBlock x:Name="TxtDbScans" Text="0" FontSize="20" FontWeight="Bold"
+                                                   Foreground="{StaticResource AccentOrange}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="Scans" FontSize="9" Foreground="{StaticResource TextMuted}"
+                                                   HorizontalAlignment="Center"/>
+                                    </StackPanel>
+
+                                    <!-- Total Scripts -->
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="📜" FontSize="18" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                                        <TextBlock x:Name="TxtDbScripts" Text="0" FontSize="20" FontWeight="Bold"
+                                                   Foreground="{StaticResource AccentOrange}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="Scripts" FontSize="9" Foreground="{StaticResource TextMuted}"
+                                                   HorizontalAlignment="Center"/>
+                                    </StackPanel>
+
+                                    <!-- Database Size -->
+                                    <StackPanel Grid.Column="3">
+                                        <TextBlock Text="💾" FontSize="18" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                                        <TextBlock x:Name="TxtDbSize" Text="0 MB" FontSize="20" FontWeight="Bold"
+                                                   Foreground="{StaticResource AccentOrange}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="Size" FontSize="9" Foreground="{StaticResource TextMuted}"
+                                                   HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <!-- Database Actions -->
+                            <TextBlock Text="DATABASE ACTIONS" Foreground="{StaticResource AccentOrange}"
+                                       FontSize="10" FontWeight="Bold" Margin="0,12,0,8"/>
+
+                            <!-- Refresh Stats -->
+                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                                    BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock Text="Refresh Statistics" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Update the database statistics shown above"
+                                                   Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,0"/>
+                                    </StackPanel>
+
+                                    <Button Grid.Column="1" Content="🔄 REFRESH" Style="{StaticResource BtnPrimary}"
+                                            Click="BtnRefreshDbStats_Click" Padding="12,6" FontSize="10"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Backup Database -->
+                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                                    BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock Text="Backup Database" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Create a complete backup of the database"
+                                                   Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,0"/>
+                                    </StackPanel>
+
+                                    <Button Grid.Column="1" Content="💾 BACKUP" Style="{StaticResource BtnPrimary}"
+                                            Click="BtnBackupDatabase_Click" Padding="12,6" FontSize="10"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Restore Database -->
+                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                                    BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock Text="Restore Database" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Restore database from a backup file"
+                                                   Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,0"/>
+                                    </StackPanel>
+
+                                    <Button Grid.Column="1" Content="📂 RESTORE" Style="{StaticResource BtnGhost}"
+                                            Click="BtnRestoreDatabase_Click" Padding="12,6" FontSize="10"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Optimize Database -->
+                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                                    BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock Text="Optimize/Vacuum Database" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Reclaim disk space and improve performance"
+                                                   Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,0"/>
+                                    </StackPanel>
+
+                                    <Button Grid.Column="1" Content="⚡ OPTIMIZE" Style="{StaticResource BtnGhost}"
+                                            Click="BtnOptimizeDatabase_Click" Padding="12,6" FontSize="10"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Re-run Setup Wizard -->
+                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                                    BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock Text="Change Database Configuration" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Re-run the setup wizard to change database type or location"
+                                                   Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,0"/>
+                                    </StackPanel>
+
+                                    <Button Grid.Column="1" Content="🔧 RECONFIGURE" Style="{StaticResource BtnGhost}"
+                                            Click="BtnRerunSetup_Click" Padding="12,6" FontSize="10"/>
+                                </Grid>
+                            </Border>
+
+                            <TextBlock Text="⚠️ Always backup your database before making configuration changes"
+                                       Foreground="{StaticResource DangerRed}" FontSize="9" Margin="0,8,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+                </Expander>
+
             </StackPanel>
         </ScrollViewer>
 
