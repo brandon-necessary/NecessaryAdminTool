@@ -118,6 +118,9 @@ namespace NecessaryAdminTool
                 // TAG: #VERSION_1_2 #DATABASE - Load database configuration and stats
                 LoadDatabaseConfiguration();
 
+                // TAG: #VERSION_1_2 #SERVICE - Load service status
+                LoadServiceStatus();
+
                 // TAG: #VERSION_7 #BOOKMARKS - Load bookmarks
                 LoadBookmarks();
 
@@ -2501,6 +2504,198 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 ShowStatus($"Configuration failed: {ex.Message}", MessageType.Error);
                 MessageBox.Show($"Failed to reconfigure database:\n\n{ex.Message}",
                     "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Load service status
+        /// </summary>
+        private void LoadServiceStatus()
+        {
+            try
+            {
+                var status = ScheduledTaskManager.GetTaskStatus();
+
+                if (TxtServiceStatus != null)
+                {
+                    TxtServiceStatus.Text = status.GetDisplayText();
+                }
+
+                if (TxtServiceLastRun != null)
+                {
+                    TxtServiceLastRun.Text = status.LastRunTime?.ToString("g") ?? "Never";
+                }
+
+                if (TxtServiceNextRun != null)
+                {
+                    TxtServiceNextRun.Text = status.NextRunTime?.ToString("g") ?? "N/A";
+                }
+
+                // Update button states
+                if (BtnEnableService != null)
+                {
+                    BtnEnableService.IsEnabled = status.Exists && !status.IsEnabled;
+                }
+
+                if (BtnDisableService != null)
+                {
+                    BtnDisableService.IsEnabled = status.Exists && status.IsEnabled;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to load service status", ex);
+            }
+        }
+
+        /// <summary>
+        /// Enable service button click
+        /// </summary>
+        private void BtnEnableService_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                bool success = ScheduledTaskManager.EnableTask();
+
+                if (success)
+                {
+                    ShowStatus("Background service enabled", MessageType.Success);
+                    LoadServiceStatus();
+                }
+                else
+                {
+                    ShowStatus("Failed to enable service", MessageType.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to enable service", ex);
+                ShowStatus($"Error enabling service: {ex.Message}", MessageType.Error);
+            }
+        }
+
+        /// <summary>
+        /// Disable service button click
+        /// </summary>
+        private void BtnDisableService_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                bool success = ScheduledTaskManager.DisableTask();
+
+                if (success)
+                {
+                    ShowStatus("Background service disabled", MessageType.Success);
+                    LoadServiceStatus();
+                }
+                else
+                {
+                    ShowStatus("Failed to disable service", MessageType.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to disable service", ex);
+                ShowStatus($"Error disabling service: {ex.Message}", MessageType.Error);
+            }
+        }
+
+        /// <summary>
+        /// Run service now button click
+        /// </summary>
+        private void BtnRunServiceNow_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (!ScheduledTaskManager.TaskExists())
+                {
+                    var result = MessageBox.Show(
+                        "Background service is not installed.\n\n" +
+                        "Would you like to install it now?",
+                        "Service Not Installed",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Question);
+
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        // Re-run setup wizard
+                        BtnRerunSetup_Click(sender, e);
+                    }
+
+                    return;
+                }
+
+                bool success = ScheduledTaskManager.RunTask();
+
+                if (success)
+                {
+                    ShowStatus("Background scan started", MessageType.Success);
+                    MessageBox.Show(
+                        "Background scan has been started.\n\n" +
+                        "Check the log files for scan results.",
+                        "Scan Started",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+
+                    LoadServiceStatus();
+                }
+                else
+                {
+                    ShowStatus("Failed to start background scan", MessageType.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to run service", ex);
+                ShowStatus($"Error starting scan: {ex.Message}", MessageType.Error);
+            }
+        }
+
+        /// <summary>
+        /// Uninstall service button click
+        /// </summary>
+        private void BtnUninstallService_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var result = MessageBox.Show(
+                    "This will remove the background scanning service.\n\n" +
+                    "You can reinstall it later from the setup wizard.\n\n" +
+                    "Do you want to continue?",
+                    "Uninstall Background Service",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (result != MessageBoxResult.Yes)
+                    return;
+
+                bool success = ScheduledTaskManager.DeleteTask();
+
+                if (success)
+                {
+                    Properties.Settings.Default.ServiceEnabled = false;
+                    Properties.Settings.Default.Save();
+
+                    ShowStatus("Background service uninstalled", MessageType.Success);
+                    MessageBox.Show(
+                        "Background service has been uninstalled successfully.",
+                        "Service Uninstalled",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+
+                    LoadServiceStatus();
+                }
+                else
+                {
+                    ShowStatus("Failed to uninstall service", MessageType.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to uninstall service", ex);
+                ShowStatus($"Error uninstalling service: {ex.Message}", MessageType.Error);
+                MessageBox.Show($"Failed to uninstall service:\n\n{ex.Message}",
+                    "Uninstall Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

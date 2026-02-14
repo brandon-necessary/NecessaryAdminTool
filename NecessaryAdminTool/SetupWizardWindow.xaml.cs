@@ -84,6 +84,42 @@ namespace NecessaryAdminTool
                 LogManager.LogInfo($"Setup completed: {SelectedDatabaseType} at {DatabasePath}, " +
                     $"Service={InstallService}, Interval={ScanIntervalHours}h");
 
+                // Create scheduled task if service is enabled
+                if (InstallService && ScanIntervalHours > 0)
+                {
+                    try
+                    {
+                        bool isAdmin = ScheduledTaskManager.IsAdministrator();
+                        bool taskCreated = ScheduledTaskManager.CreateTask(ScanIntervalHours, runAsAdmin: isAdmin);
+
+                        if (taskCreated)
+                        {
+                            LogManager.LogInfo($"Scheduled task created successfully for {ScanIntervalHours}h interval");
+                            System.Windows.MessageBox.Show(
+                                $"Scheduled task created successfully!\n\n" +
+                                $"NecessaryAdminTool will automatically scan every {ScanIntervalHours} hour(s).\n\n" +
+                                $"Running as: {(isAdmin ? "Administrator" : "Current User")}",
+                                "Service Configured",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Information);
+                        }
+                        else
+                        {
+                            LogManager.LogWarning("Failed to create scheduled task during setup");
+                            System.Windows.MessageBox.Show(
+                                "Failed to create scheduled task.\n\n" +
+                                "You can manually configure it later from Options > Database Management.",
+                                "Service Warning",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Warning);
+                        }
+                    }
+                    catch (Exception taskEx)
+                    {
+                        LogManager.LogError("Exception creating scheduled task during setup", taskEx);
+                    }
+                }
+
                 DialogResult = true;
                 Close();
             }

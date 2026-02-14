@@ -242,6 +242,9 @@
     <Compile Include="LogManager.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="ScheduledTaskManager.cs">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs">

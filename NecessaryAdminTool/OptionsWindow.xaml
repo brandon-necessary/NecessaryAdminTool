@@ -1310,6 +1310,56 @@
 
                             <TextBlock Text="⚠️ Always backup your database before making configuration changes"
                                        Foreground="{StaticResource DangerRed}" FontSize="9" Margin="0,8,0,0" TextWrapping="Wrap"/>
+
+                            <!-- Background Service Management -->
+                            <TextBlock Text="BACKGROUND SERVICE" Foreground="{StaticResource AccentOrange}"
+                                       FontSize="10" FontWeight="Bold" Margin="0,20,0,8"/>
+
+                            <!-- Service Status -->
+                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                                    BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Status:" Foreground="{StaticResource TextMuted}"
+                                               FontSize="10" Margin="0,0,12,4"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="1" x:Name="TxtServiceStatus" Text="Not Installed"
+                                               Foreground="White" FontSize="10" FontWeight="SemiBold" Margin="0,0,0,4"/>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Last Run:" Foreground="{StaticResource TextMuted}"
+                                               FontSize="10" Margin="0,0,12,4"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="1" x:Name="TxtServiceLastRun" Text="Never"
+                                               Foreground="White" FontSize="10" Margin="0,0,0,4"/>
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Next Run:" Foreground="{StaticResource TextMuted}"
+                                               FontSize="10" Margin="0,0,12,0"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="1" x:Name="TxtServiceNextRun" Text="N/A"
+                                               Foreground="White" FontSize="10"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Service Actions -->
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <Button x:Name="BtnEnableService" Content="⚡ ENABLE" Style="{StaticResource BtnPrimary}"
+                                        Click="BtnEnableService_Click" Padding="12,6" FontSize="10" Margin="0,0,8,0"/>
+                                <Button x:Name="BtnDisableService" Content="⏸ DISABLE" Style="{StaticResource BtnGhost}"
+                                        Click="BtnDisableService_Click" Padding="12,6" FontSize="10" Margin="0,0,8,0"/>
+                                <Button Content="▶ RUN NOW" Style="{StaticResource BtnGhost}"
+                                        Click="BtnRunServiceNow_Click" Padding="12,6" FontSize="10" Margin="0,0,8,0"/>
+                                <Button Content="🗑 UNINSTALL" Style="{StaticResource BtnDanger}"
+                                        Click="BtnUninstallService_Click" Padding="12,6" FontSize="10"/>
+                            </StackPanel>
+
+                            <TextBlock Text="ℹ️ The background service uses Windows Task Scheduler to run automatic scans"
+                                       Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,0,0,0" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Border>
                 </Expander>

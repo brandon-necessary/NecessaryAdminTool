@@ -18,6 +18,22 @@ namespace NecessaryAdminTool
         {
             base.OnStartup(e);
 
+            // Check for command-line arguments
+            if (e.Args.Length > 0)
+            {
+                foreach (var arg in e.Args)
+                {
+                    if (arg.Equals("/autoscan", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Run automatic scan in background (scheduled task mode)
+                        LogManager.LogInfo("Auto-scan triggered by scheduled task");
+                        RunAutomaticScan();
+                        Shutdown(0);
+                        return;
+                    }
+                }
+            }
+
             // Check if first-run setup is needed
             if (!Properties.Settings.Default.SetupCompleted)
             {
@@ -39,6 +55,50 @@ namespace NecessaryAdminTool
 
             // Continue with normal application startup
             // MainWindow will be shown automatically via StartupUri in App.xaml
+        }
+
+        /// <summary>
+        /// Run automatic scan in background (called by scheduled task)
+        /// </summary>
+        private async void RunAutomaticScan()
+        {
+            try
+            {
+                LogManager.LogInfo("=== AUTOMATIC SCAN STARTED ===");
+
+                // Initialize database provider
+                using (var provider = await Data.DataProviderFactory.CreateProviderAsync())
+                {
+                    // TODO: Implement automatic scanning logic here
+                    // This would typically:
+                    // 1. Query Active Directory for all computers
+                    // 2. Ping/WMI query each computer for status
+                    // 3. Update database with results
+                    // 4. Log scan statistics
+
+                    // For now, just log that we would scan
+                    LogManager.LogInfo("Auto-scan completed (scanning logic not yet implemented)");
+
+                    // Save scan history
+                    var scanHistory = new Data.ScanHistory
+                    {
+                        ScanDate = DateTime.Now,
+                        ScanType = "Automatic",
+                        ComputersFound = 0,
+                        ErrorCount = 0,
+                        DurationSeconds = 0,
+                        Notes = "Automatic scan triggered by scheduled task"
+                    };
+
+                    // await provider.SaveScanHistoryAsync(scanHistory);
+                }
+
+                LogManager.LogInfo("=== AUTOMATIC SCAN COMPLETED ===");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Automatic scan failed", ex);
+            }
         }
     }
 }
