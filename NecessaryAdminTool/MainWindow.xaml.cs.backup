@@ -36,7 +36,7 @@ using System.Runtime.CompilerServices;
 using System.Windows.Data;
 using System.Windows.Threading;
 
-namespace ArtaznIT
+namespace NecessaryAdminTool
 {
     // ############################################################################
     // REGION: SECURE MEMORY UTILITIES
@@ -214,7 +214,7 @@ namespace ArtaznIT
     {
         private static readonly string _configPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "Artazn_Config_v2.xml");
+            "NecessaryAdmin_Config_v2.xml");
 
         public static string SharedLogPath { get; set; } = @"G:\PUBLIC\BNIT\01_Software\04_Update Logs\Master_Update_Log.csv";
         public static string InventoryDbPath { get; set; } = @"G:\PUBLIC\BNIT\01_Software\04_Update Logs\Master_Inventory.csv";
@@ -267,93 +267,8 @@ namespace ArtaznIT
     // ############################################################################
     // REGION: LOG MANAGER
     // ############################################################################
-
-    public static class LogManager
-    {
-        private static readonly object _logLock = new object();
-        private static readonly string _debugLogPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Artazn_Debug.log");
-        private static readonly string _runtimeLogPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Artazn_Runtime.log");
-        private const long MAX_LOG_SIZE = 10 * 1024 * 1024;
-
-        public static void LogDebug(string message, Exception ex = null) => WriteLog(_debugLogPath, "DEBUG", message, ex);
-        public static void LogInfo(string message) => WriteLog(_runtimeLogPath, "INFO", message, null);
-        public static void LogError(string message, Exception ex) => WriteLog(_debugLogPath, "ERROR", message, ex);
-        public static void LogWarning(string message) => WriteLog(_debugLogPath, "WARN", message, null);
-
-        private static void WriteLog(string path, string level, string message, Exception ex)
-        {
-            lock (_logLock)
-            {
-                try
-                {
-                    if (File.Exists(path) && new FileInfo(path).Length > MAX_LOG_SIZE)
-                    {
-                        string backup = path + ".old";
-                        if (File.Exists(backup)) File.Delete(backup);
-                        File.Move(path, backup);
-                    }
-                    string entry = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} [{level}] {message}";
-                    if (ex != null)
-                        entry += $"\n  Exception: {ex.GetType().Name}\n  Message: {ex.Message}\n  StackTrace: {ex.StackTrace}";
-                    File.AppendAllText(path, entry + "\n");
-                }
-                catch (Exception logEx)
-                {
-                    // Fallback: Write to Debug output if file logging fails
-                    Debug.WriteLine($"[LogManager] Failed to write log: {logEx.Message}");
-                }
-            }
-        }
-
-        public static string GetDebugLogPath() => _debugLogPath;
-        public static string GetRuntimeLogPath() => _runtimeLogPath;
-    }
-
     // ############################################################################
-    // REGION: TOAST NOTIFICATION MANAGER
-    // ############################################################################
-
-    /// <summary>
-    /// Centralized toast notification manager for non-blocking user feedback
-    /// TAG: #TOAST_MANAGER #UI_FEEDBACK #NON_BLOCKING
-    /// </summary>
-    public static class Managers
-    {
-        public static class UI
-        {
-            public static class ToastManager
-            {
-                /// <summary>Show a success toast notification (green)</summary>
-                public static void ShowSuccess(string message, string actionText = null, Action actionCallback = null)
-                {
-                    LogManager.LogInfo($"[Toast:Success] {message}");
-                    // In a full implementation, this would create a visual toast notification
-                    // For now, it logs the notification for debugging purposes
-                }
-
-                /// <summary>Show an info toast notification (blue)</summary>
-                public static void ShowInfo(string message, string actionText = null, Action actionCallback = null)
-                {
-                    LogManager.LogInfo($"[Toast:Info] {message}");
-                }
-
-                /// <summary>Show a warning toast notification (yellow/orange)</summary>
-                public static void ShowWarning(string message, string actionText = null, Action actionCallback = null)
-                {
-                    LogManager.LogWarning($"[Toast:Warning] {message}");
-                }
-
-                /// <summary>Show an error toast notification (red)</summary>
-                public static void ShowError(string message, string actionText = null, Action actionCallback = null)
-                {
-                    LogManager.LogError($"[Toast:Error] {message}", null);
-                }
-            }
-        }
-    }
-
+    // NOTE: LogManager is now in LogManager.cs (separate file)
     // ############################################################################
     // REGION: WMI CONNECTION POOL
     // ############################################################################
@@ -732,7 +647,7 @@ namespace ArtaznIT
     {
         private static string ConfigPath => Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "Artazn_DCConfiguration.xml");
+            "NecessaryAdmin_DCConfiguration.xml");
 
         public class DCInfo
         {
@@ -1589,7 +1504,9 @@ namespace ArtaznIT
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Copy failed: {ex.Message}");
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                    Managers.UI.ToastManager.ShowError($"Copy failed: {ex.Message}");
+                    LogManager.LogError($"Clipboard copy failed: {ex.Message}");
                 }
             };
 
@@ -1876,6 +1793,9 @@ namespace ArtaznIT
         private const uint ERROR_SUCCESS = 0;
         private const uint ERROR_CANCELLED = 1223;
 
+        // TAG: #VERSION_SYSTEM - Version info now centralized in LogoConfig class
+        // All version numbers pulled dynamically from AssemblyInfo.cs via LogoConfig
+
         // CreateProcessWithLogonW API for launching process as different user (doesn't require privileges)
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         private static extern bool CreateProcessWithLogonW(
@@ -1976,36 +1896,40 @@ namespace ArtaznIT
             {
                 _isDarkMode = !_isDarkMode;
 
-                var resources = window.Resources;
+                var resources = Application.Current.Resources;
 
                 if (_isDarkMode)
                 {
                     // Dark theme (current)
-                    resources["BgDarkest"] = Color.FromRgb(13, 13, 13);
-                    resources["BgDark"] = Color.FromRgb(26, 26, 26);
-                    resources["BgMedium"] = Color.FromRgb(37, 37, 38);
-                    resources["BgCard"] = Color.FromRgb(30, 30, 30);
-                    resources["BorderDim"] = Color.FromRgb(60, 60, 60);
-                    resources["BorderBright"] = Color.FromRgb(85, 85, 85);
+                    resources["BgDarkest"] = new SolidColorBrush(Color.FromRgb(13, 13, 13));
+                    resources["BgDark"] = new SolidColorBrush(Color.FromRgb(26, 26, 26));
+                    resources["BgMedium"] = new SolidColorBrush(Color.FromRgb(37, 37, 38));
+                    resources["BgLight"] = new SolidColorBrush(Color.FromRgb(45, 45, 45));
+                    resources["BgCard"] = new SolidColorBrush(Color.FromRgb(30, 30, 30));
+                    resources["BorderDim"] = new SolidColorBrush(Color.FromRgb(60, 60, 60));
+                    resources["BorderBright"] = new SolidColorBrush(Color.FromRgb(85, 85, 85));
+                    resources["TextPrimary"] = new SolidColorBrush(Color.FromRgb(255, 255, 255));
+                    resources["TextSecondary"] = new SolidColorBrush(Color.FromRgb(200, 200, 200));
+                    resources["TextMuted"] = new SolidColorBrush(Color.FromRgb(161, 161, 170));
                 }
                 else
                 {
                     // Light theme (Aero-inspired)
-                    resources["BgDarkest"] = Color.FromRgb(240, 240, 240);
-                    resources["BgDark"] = Color.FromRgb(250, 250, 250);
-                    resources["BgMedium"] = Color.FromRgb(230, 230, 230);
-                    resources["BgCard"] = Color.FromRgb(255, 255, 255);
-                    resources["BorderDim"] = Color.FromRgb(200, 200, 200);
-                    resources["BorderBright"] = Color.FromRgb(170, 170, 170);
+                    resources["BgDarkest"] = new SolidColorBrush(Color.FromRgb(240, 240, 240));
+                    resources["BgDark"] = new SolidColorBrush(Color.FromRgb(250, 250, 250));
+                    resources["BgMedium"] = new SolidColorBrush(Color.FromRgb(230, 230, 230));
+                    resources["BgLight"] = new SolidColorBrush(Color.FromRgb(245, 245, 245));
+                    resources["BgCard"] = new SolidColorBrush(Color.FromRgb(255, 255, 255));
+                    resources["BorderDim"] = new SolidColorBrush(Color.FromRgb(200, 200, 200));
+                    resources["BorderBright"] = new SolidColorBrush(Color.FromRgb(170, 170, 170));
+                    resources["TextPrimary"] = new SolidColorBrush(Color.FromRgb(0, 0, 0));
+                    resources["TextSecondary"] = new SolidColorBrush(Color.FromRgb(60, 60, 60));
+                    resources["TextMuted"] = new SolidColorBrush(Color.FromRgb(100, 100, 100));
                 }
 
-                // Force UI refresh
+                // Force UI refresh by triggering resource change notifications
                 window.InvalidateVisual();
-                foreach (var child in GetLogicalChildren(window))
-                {
-                    if (child is FrameworkElement fe)
-                        fe.InvalidateVisual();
-                }
+                window.UpdateLayout();
             }
 
             private static IEnumerable<DependencyObject> GetLogicalChildren(DependencyObject parent)
@@ -2069,17 +1993,19 @@ namespace ArtaznIT
         private HybridQueryHelper _queryHelper;
         private CancellationTokenSource _scanTokenSource;
         private DispatcherTimer _searchDebounceTimer;
+        #pragma warning disable CS0649 // Field is never assigned - reserved for future auto-refresh feature
         private DispatcherTimer _refreshTimer;
+        #pragma warning restore CS0649
 
         private string _xmlConfigPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Artazn_UserConfig.xml");
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "NecessaryAdmin_UserConfig.xml");
 
         // ── PowerShell Scripts ──
 
         // GENERAL UPDATE: Downloads and installs all pending Windows Updates
         // including driver packs and firmware from Windows Update catalog
         private const string Script_General = @"
-            Write-Output '>>> JADEX GENERAL UPDATE ENGINE';
+            Write-Output '>>> GENERAL UPDATE ENGINE';
             $ErrorActionPreference = 'Continue';
             $Session = New-Object -ComObject Microsoft.Update.Session;
             $Searcher = $Session.CreateUpdateSearcher();
@@ -2137,7 +2063,7 @@ namespace ArtaznIT
         // FEATURE UPDATE: In-place upgrade to latest Windows version
         // (e.g., 22H2 → 23H2 → 24H2) keeping all apps, settings, data
         private const string Script_Feature = @"
-            Write-Output '>>> JADEX FEATURE UPDATE ENGINE (IN-PLACE UPGRADE)';
+            Write-Output '>>> FEATURE UPDATE ENGINE (IN-PLACE UPGRADE)';
             $ErrorActionPreference = 'Continue';
             $Session = New-Object -ComObject Microsoft.Update.Session;
             $Searcher = $Session.CreateUpdateSearcher();
@@ -2205,14 +2131,44 @@ namespace ArtaznIT
         {
             InitializeComponent();
 
+            // TAG: #SUPERADMIN - Register secret keyboard shortcut for SuperAdmin window
+            // Secret combo: Ctrl+Shift+Alt+S
+            this.KeyDown += MainWindow_KeyDown_SuperAdmin;
+
             // Set window title with version from AssemblyInfo (modular)
             // TAG: #MODULAR #VERSION
-            Title = $"ArtaznIT Suite {LogoConfig.VERSION}";
+            Title = $"NecessaryAdminTool Suite {LogoConfig.VERSION}";
 
             // Set version badge in header (will be set after InitializeComponent loads controls)
             Loaded += (s, e) => {
                 if (TxtVersionBadge != null)
                     TxtVersionBadge.Text = LogoConfig.VERSION;
+
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS - Initialize ToastManager
+                if (ToastContainer != null)
+                {
+                    Managers.UI.ToastManager.Initialize(ToastContainer);
+                    LogManager.LogInfo("ToastManager initialized successfully");
+
+                    // Show welcome toast after brief delay
+                    Task.Delay(1000).ContinueWith(_ => {
+                        Dispatcher.Invoke(() => {
+                            Managers.UI.ToastManager.ShowSuccess(
+                                $"Welcome to NecessaryAdminTool Suite {LogoConfig.VERSION}",
+                                "View Docs",
+                                () => {
+                                    try {
+                                        var aboutWindow = new AboutWindow();
+                                        aboutWindow.Owner = this;
+                                        aboutWindow.ShowDialog();
+                                    }
+                                    catch (Exception ex) {
+                                        LogManager.LogError($"Failed to open About window: {ex.Message}");
+                                    }
+                                });
+                        });
+                    });
+                }
 
                 // TAG: #VERSION_7 #AD_MANAGEMENT - Wire up tab selection changed for AD Object Browser initialization
                 if (MainTabs != null)
@@ -2282,14 +2238,16 @@ namespace ArtaznIT
             try
             {
                 // ⚡ Loading overlay is visible by default in XAML
-                UpdateLoadingStatus("Initializing ArtaznIT Suite...", "Checking system configuration");
+                UpdateLoadingStatus("Initializing NecessaryAdminTool Suite...", "Checking system configuration");
 
                 if (IntPtr.Size == 4)
                 {
                     LogManager.LogWarning("32-bit mode detected");
                     UpdateLoadingStatus("System Check", "WARNING: 32-bit mode detected");
-                    MessageBox.Show("WARNING: Running in 32-bit mode. Some WMI features may not work correctly.",
-                        "Architecture Warning");
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_WARNING
+                    Task.Delay(1500).ContinueWith(_ => Dispatcher.Invoke(() =>
+                        Managers.UI.ToastManager.ShowWarning("Running in 32-bit mode - Some WMI features may not work correctly")
+                    ));
                 }
 
                 UpdateLoadingStatus("Loading Configuration...", "Reading secure settings");
@@ -2328,13 +2286,21 @@ namespace ArtaznIT
 
                 UpdateLoadingStatus("Applying Restrictions...", "Checking permissions");
                 ApplyRoleRestrictions(); // Lock down UI for non-admins
-                AppendTerminal($"ArtaznIT Suite {LogoConfig.VERSION} (Kerberos Edition) initialized.", false);
+                AppendTerminal($"NecessaryAdminTool Suite {LogoConfig.VERSION} (Kerberos Edition) initialized.", false);
 
                 UpdateLoadingStatus("Ready", "Launching login dialog");
                 await Task.Delay(300); // Brief pause so user sees "Ready" status
 
                 // Hide loading overlay before showing login
                 HideLoadingOverlay();
+
+                // TAG: #AUTO_UPDATE #VERSION_1_1
+                // Check for updates in background (weekly automatic check)
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(3000); // Wait 3 seconds after startup
+                    await UpdateManager.PerformAutomaticUpdateCheckAsync();
+                });
 
                 // ⚡ INSTANT STARTUP: Show login immediately, check domain in background
                 // The LoginWindow will check domain availability and handle the DC unavailable dialog if needed
@@ -2344,7 +2310,8 @@ namespace ArtaznIT
             {
                 HideLoadingOverlay();
                 LogManager.LogError("Window_Loaded failed", ex);
-                MessageBox.Show($"Initialization error: {ex.Message}", "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                Managers.UI.ToastManager.ShowError($"Initialization error: {ex.Message}");
             }
         }
 
@@ -2557,25 +2524,21 @@ namespace ArtaznIT
                 if (!stillConnected && !string.IsNullOrEmpty(previousDomain))
                 {
                     AppendTerminal($"[DOMAIN CHECK] Lost connection to domain: {previousDomain}", isError: true);
-                    MessageBox.Show(
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                    Managers.UI.ToastManager.ShowWarning(
                         $"Connection to domain '{previousDomain}' was lost.\n\n" +
                         "You may be disconnected from VPN or experiencing network issues.\n" +
-                        "Some features may be unavailable until connection is restored.",
-                        "Domain Connection Lost",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
+                        "Some features may be unavailable until connection is restored.");
                 }
                 else if (stillConnected && CurrentDomainName != previousDomain && !string.IsNullOrEmpty(previousDomain))
                 {
                     AppendTerminal($"[DOMAIN CHECK] Domain changed from {previousDomain} to {CurrentDomainName}", isError: true);
-                    MessageBox.Show(
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                    Managers.UI.ToastManager.ShowWarning(
                         $"Domain has changed!\n\n" +
                         $"Previous: {previousDomain}\n" +
                         $"Current: {CurrentDomainName}\n\n" +
-                        "Application will restart to apply new domain settings.",
-                        "Domain Changed",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
+                        "Application will restart to apply new domain settings.");
                     Application.Current.Shutdown();
                 }
             };
@@ -2668,6 +2631,246 @@ namespace ArtaznIT
                 LogManager.LogInfo("Application closing — credentials wiped from memory");
             }
             catch (Exception ex) { LogManager.LogError("Window_Closing failed", ex); }
+        }
+
+        // ────────────────────────────────────────────────────────────────────────
+        // REGION: SUPERADMIN ACCESS
+        // TAG: #SUPERADMIN #HIDDEN_FEATURE #WHITELABEL_GUI
+        // ────────────────────────────────────────────────────────────────────────
+
+        // SuperAdmin secret button click tracking
+        private int _superAdminClickCount = 0;
+        private DateTime _lastSuperAdminClick = DateTime.MinValue;
+        private const int SUPERADMIN_CLICK_THRESHOLD = 5; // Require 5 rapid clicks
+        private const int SUPERADMIN_CLICK_WINDOW_MS = 2000; // Within 2 seconds
+
+        /// <summary>
+        /// Invisible button click handler for SuperAdmin access
+        /// Requires 5 rapid clicks within 2 seconds
+        /// Located over the version badge in header
+        /// </summary>
+        private void BtnSuperAdminTrigger_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                DateTime now = DateTime.Now;
+                TimeSpan timeSinceLastClick = now - _lastSuperAdminClick;
+
+                // Reset counter if too much time has passed
+                if (timeSinceLastClick.TotalMilliseconds > SUPERADMIN_CLICK_WINDOW_MS)
+                {
+                    _superAdminClickCount = 0;
+                }
+
+                _superAdminClickCount++;
+                _lastSuperAdminClick = now;
+
+                // Visual feedback (subtle pulse animation on version badge)
+                if (_superAdminClickCount > 1 && _superAdminClickCount < SUPERADMIN_CLICK_THRESHOLD)
+                {
+                    if (TxtVersionBadge != null)
+                    {
+                        var pulseAnimation = new DoubleAnimation
+                        {
+                            From = 1.0,
+                            To = 0.5,
+                            Duration = TimeSpan.FromMilliseconds(100),
+                            AutoReverse = true
+                        };
+                        TxtVersionBadge.BeginAnimation(UIElement.OpacityProperty, pulseAnimation);
+                    }
+                }
+
+                // Trigger SuperAdmin if threshold reached
+                if (_superAdminClickCount >= SUPERADMIN_CLICK_THRESHOLD)
+                {
+                    _superAdminClickCount = 0; // Reset counter
+                    OpenSuperAdminWindow();
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("SuperAdmin trigger button click failed", ex);
+            }
+        }
+
+        /// <summary>
+        /// Secret keyboard shortcut handler for SuperAdmin window
+        /// Combo: Ctrl+Shift+Alt+S
+        /// </summary>
+        private void MainWindow_KeyDown_SuperAdmin(object sender, KeyEventArgs e)
+        {
+            // Secret combo: Ctrl+Shift+Alt+S
+            if (e.Key == Key.S &&
+                Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift | ModifierKeys.Alt))
+            {
+                e.Handled = true;
+                OpenSuperAdminWindow();
+            }
+        }
+
+        /// <summary>
+        /// Open SuperAdmin window with password authentication
+        /// Shared method for both keyboard shortcut and secret button
+        /// </summary>
+        private void OpenSuperAdminWindow()
+        {
+            try
+            {
+                // Require admin privileges
+                if (!IsUserAdmin())
+                {
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                    Managers.UI.ToastManager.ShowWarning(
+                        "SuperAdmin mode requires administrator privileges.\n\n" +
+                        "Please run NecessaryAdminTool as Administrator.");
+                    return;
+                }
+
+                    // Optional: Password challenge
+                    var passwordWindow = new Window
+                    {
+                        Title = "SuperAdmin Authentication",
+                        Width = 400,
+                        Height = 200,
+                        WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                        Owner = this,
+                        Background = new SolidColorBrush(Color.FromRgb(26, 26, 26)),
+                        ResizeMode = ResizeMode.NoResize
+                    };
+
+                    var stack = new StackPanel { Margin = new Thickness(20) };
+
+                    var headerText = new TextBlock
+                    {
+                        Text = "🔒 Enter SuperAdmin Password",
+                        FontSize = 16,
+                        FontWeight = FontWeights.Bold,
+                        Foreground = Brushes.White,
+                        Margin = new Thickness(0, 0, 0, 15)
+                    };
+                    stack.Children.Add(headerText);
+
+                    var passwordBox = new PasswordBox
+                    {
+                        Height = 35,
+                        FontSize = 14,
+                        Margin = new Thickness(0, 0, 0, 15)
+                    };
+                    stack.Children.Add(passwordBox);
+
+                    var buttonPanel = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+
+                    var okButton = new Button
+                    {
+                        Content = "OK",
+                        Width = 80,
+                        Height = 35,
+                        Margin = new Thickness(0, 0, 10, 0),
+                        Background = new SolidColorBrush(Color.FromRgb(255, 107, 53)),
+                        Foreground = Brushes.White,
+                        BorderThickness = new Thickness(0)
+                    };
+                    okButton.Click += (s, args) => {
+                        passwordWindow.DialogResult = true;
+                        passwordWindow.Close();
+                    };
+                    buttonPanel.Children.Add(okButton);
+
+                    var cancelButton = new Button
+                    {
+                        Content = "Cancel",
+                        Width = 80,
+                        Height = 35,
+                        Background = new SolidColorBrush(Color.FromRgb(113, 121, 126)),
+                        Foreground = Brushes.White,
+                        BorderThickness = new Thickness(0)
+                    };
+                    cancelButton.Click += (s, args) => {
+                        passwordWindow.DialogResult = false;
+                        passwordWindow.Close();
+                    };
+                    buttonPanel.Children.Add(cancelButton);
+
+                    stack.Children.Add(buttonPanel);
+
+                    var hintText = new TextBlock
+                    {
+                        Text = "Hint: Check WHITELABEL_GUIDE.md",
+                        FontSize = 11,
+                        Foreground = new SolidColorBrush(Color.FromRgb(136, 136, 136)),
+                        FontStyle = FontStyles.Italic,
+                        Margin = new Thickness(0, 15, 0, 0)
+                    };
+                    stack.Children.Add(hintText);
+
+                    passwordWindow.Content = stack;
+                    passwordBox.Focus();
+
+                    // Allow Enter key to submit
+                    passwordBox.KeyDown += (s, args) =>
+                    {
+                        if (args.Key == Key.Enter)
+                        {
+                            okButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                        }
+                    };
+
+                    if (passwordWindow.ShowDialog() == true)
+                    {
+                        // SuperAdmin password
+                        // In production, use hashed password with salt
+                        string enteredPassword = passwordBox.Password;
+                        string correctPassword = "08282021";
+
+                        if (enteredPassword == correctPassword)
+                        {
+                            // Open SuperAdmin window
+                            var superAdminWindow = new SuperAdminWindow
+                            {
+                                Owner = this
+                            };
+                            superAdminWindow.ShowDialog();
+
+                            LogManager.LogInfo($"SuperAdmin mode accessed by {Environment.UserName}");
+                        }
+                        else
+                        {
+                            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                            Managers.UI.ToastManager.ShowError(
+                                "Incorrect password.\n\n" +
+                                "Access denied.");
+
+                            LogManager.LogWarning($"Failed SuperAdmin access attempt by {Environment.UserName}");
+                        }
+                    }
+            }
+            catch (Exception ex)
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                Managers.UI.ToastManager.ShowError($"Error opening SuperAdmin mode:\n\n{ex.Message}");
+
+                LogManager.LogError("SuperAdmin window launch failed", ex);
+            }
+        }
+
+        /// <summary>
+        /// Check if current user has administrator privileges
+        /// </summary>
+        private bool IsUserAdmin()
+        {
+            try
+            {
+                using (WindowsIdentity identity = WindowsIdentity.GetCurrent())
+                {
+                    WindowsPrincipal principal = new WindowsPrincipal(identity);
+                    return principal.IsInRole(WindowsBuiltInRole.Administrator);
+                }
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         // ── Role-Based Access Control ──
@@ -3472,14 +3675,14 @@ namespace ArtaznIT
 
                 if (string.IsNullOrEmpty(targetDC))
                 {
-                    MessageBox.Show("Select a Domain Controller", "Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                    Managers.UI.ToastManager.ShowWarning("Select a Domain Controller");
                     Mouse.OverrideCursor = null;
                     return;
                 }
 
                 AppendTerminal($"\n>>> FLEET SCAN on {targetDC}...");
                 ResetErrorCounter(); // Clear error indicator for new scan
-                Managers.UI.ToastManager.ShowInfo($"Fleet scan started on {targetDC}");
 
                 lock (_inventoryLock) { _inventory.Clear(); }
                 BtnScanFleet.Content = "⬛ STOP SCAN";
@@ -3683,34 +3886,24 @@ namespace ArtaznIT
 
                         await Task.WhenAll(tasks);
                         AppendTerminal(">>> FLEET SCAN COMPLETE.");
-
-                        // Calculate scan duration
-                        var scanDuration = DateTime.Now - DateTime.Now; // Will be replaced with actual timing
-                        _ = Dispatcher.InvokeAsync(() =>
-                        {
-                            Managers.UI.ToastManager.ShowSuccess(
-                                $"Fleet scan complete: {onlineCount} online, {offlineCount} offline"
-                            );
-                        });
                     }
                     catch (OperationCanceledException)
                     {
                         AppendTerminal("Scan aborted.");
-                        _ = Dispatcher.InvokeAsync(() =>
-                        {
-                            Managers.UI.ToastManager.ShowInfo("Scan cancelled by user");
-                        });
                     }
                     catch (UnauthorizedAccessException uex)
                     {
                         AppendTerminal($"AD Access Denied: {uex.Message}", true);
                         AppendTerminal("Ensure you're logged in with Domain Admin credentials.", true);
+                        // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
                         _ = Dispatcher.InvokeAsync(() =>
-                            MessageBox.Show("Access denied to Active Directory.\n\nPlease log in with Domain Admin credentials and try again.",
-                                "Authentication Required", MessageBoxButton.OK, MessageBoxImage.Warning));
+                            Managers.UI.ToastManager.ShowWarning("Access denied to Active Directory.\n\nPlease log in with Domain Admin credentials and try again."));
                     }
                     catch (Exception ex)
                     {
+                        // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                        Managers.UI.ToastManager.ShowError($"AD scan failed: {ex.Message}");
+                        LogManager.LogError("AD scan error", ex);
                         AppendTerminal($"AD Error: {ex.Message}", true);
                     }
                     finally
@@ -3730,6 +3923,8 @@ namespace ArtaznIT
             }
             catch (Exception ex)
             {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"Fleet scan error: {ex.Message}");
                 LogManager.LogError("Fleet scan error", ex);
                 Mouse.OverrideCursor = null;
             }
@@ -4475,11 +4670,13 @@ namespace ArtaznIT
                         spec.Serial = $"Timeout after {SecureConfig.WmiTimeoutMs}ms";
 
                         // Hide progress bar on timeout
+                        #pragma warning disable CS4014 // Fire-and-forget UI update - intentional
                         Dispatcher.InvokeAsync(() =>
                         {
                             StatusProgressBar.Visibility = Visibility.Collapsed;
                             StatusDot.Fill = new SolidColorBrush(Color.FromRgb(244, 67, 54)); // Red
                             TxtStatus.Text = "TIMEOUT";
+                        #pragma warning restore CS4014
                         });
 
                         return spec; // Force-return with partial data
@@ -4489,12 +4686,14 @@ namespace ArtaznIT
                         AppendTerminal($"[{spec.Protocol}] All queries completed successfully");
 
                         // Hide progress bar on successful completion
+                        #pragma warning disable CS4014 // Fire-and-forget UI update - intentional
                         Dispatcher.InvokeAsync(() =>
                         {
                             StatusProgressBar.Visibility = Visibility.Collapsed;
                             StatusDot.Fill = new SolidColorBrush(Color.FromRgb(76, 175, 80)); // Green
                             TxtStatus.Text = "Complete";
                         });
+                        #pragma warning restore CS4014
                     }
                 }
             }
@@ -4505,12 +4704,14 @@ namespace ArtaznIT
                 LogManager.LogDebug($"Scan cancelled/timeout: {hostname}");
 
                 // Hide progress bar on cancel/timeout
+                #pragma warning disable CS4014 // Fire-and-forget UI update - intentional
                 Dispatcher.InvokeAsync(() =>
                 {
                     StatusProgressBar.Visibility = Visibility.Collapsed;
                     StatusDot.Fill = new SolidColorBrush(Color.FromRgb(244, 67, 54)); // Red
                     TxtStatus.Text = "TIMEOUT";
                 });
+                #pragma warning restore CS4014
             }
             catch (UnauthorizedAccessException uaEx)
             {
@@ -4519,12 +4720,14 @@ namespace ArtaznIT
                 LogManager.LogDebug($"WMI access denied for {hostname}: {uaEx.Message}");
 
                 // Hide progress bar on auth error
+                #pragma warning disable CS4014 // Fire-and-forget UI update - intentional
                 Dispatcher.InvokeAsync(() =>
                 {
                     StatusProgressBar.Visibility = Visibility.Collapsed;
                     StatusDot.Fill = new SolidColorBrush(Color.FromRgb(255, 152, 0)); // Orange warning
                     TxtStatus.Text = "UNAUTHORIZED";
                 });
+                #pragma warning restore CS4014
             }
             catch (System.Runtime.InteropServices.COMException comEx)
             {
@@ -4539,12 +4742,14 @@ namespace ArtaznIT
                 LogManager.LogDebug($"WMI connection failed for {hostname}: {errorMsg} (HRESULT: 0x{comEx.HResult:X})");
 
                 // Hide progress bar on connection failure
+                #pragma warning disable CS4014 // Fire-and-forget UI update - intentional
                 Dispatcher.InvokeAsync(() =>
                 {
                     StatusProgressBar.Visibility = Visibility.Collapsed;
                     StatusDot.Fill = new SolidColorBrush(Color.FromRgb(244, 67, 54)); // Red
                     TxtStatus.Text = "FAILED";
                 });
+                #pragma warning restore CS4014
             }
             catch (Exception ex)
             {
@@ -4553,12 +4758,14 @@ namespace ArtaznIT
                 LogManager.LogDebug($"Spec scan failed for {hostname}: {ex.GetType().Name} - {ex.Message}");
 
                 // Hide progress bar on general failure
+                #pragma warning disable CS4014 // Fire-and-forget UI update - intentional
                 Dispatcher.InvokeAsync(() =>
                 {
                     StatusProgressBar.Visibility = Visibility.Collapsed;
                     StatusDot.Fill = new SolidColorBrush(Color.FromRgb(244, 67, 54)); // Red
                     TxtStatus.Text = "FAILED";
                 });
+                #pragma warning restore CS4014
             }
 
             // ══════════════════════════════════════════════════════════════
@@ -4700,8 +4907,9 @@ namespace ArtaznIT
             {
                 Mouse.OverrideCursor = Cursors.Wait;
                 string hostname = ComboTarget.Text;
-                if (string.IsNullOrEmpty(hostname)) { MessageBox.Show("Enter a hostname", "Required"); return; }
-                if (!SecurityValidator.IsValidHostname(hostname)) { MessageBox.Show("Invalid hostname format", "Error"); return; }
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                if (string.IsNullOrEmpty(hostname)) { Managers.UI.ToastManager.ShowWarning("Enter a hostname"); return; }
+                if (!SecurityValidator.IsValidHostname(hostname)) { Managers.UI.ToastManager.ShowWarning("Invalid hostname format"); return; }
 
                 // Show progress
                 ShowBottomProgress($"Scanning {hostname}...");
@@ -4714,7 +4922,7 @@ namespace ArtaznIT
                         "Remote WMI queries require admin credentials.\n" +
                         "Scanning may fail or show limited information.\n\n" +
                         "For full access:\n" +
-                        "• Use the desktop shortcut: \"ArtaznIT Suite (Admin)\"\n" +
+                        "• Use the desktop shortcut: \"NecessaryAdminTool Suite (Admin)\"\n" +
                         "• Or create it via: About → Debugging & Admin Tools\n\n" +
                         "Continue anyway with current user credentials?",
                         "Admin Credentials Recommended",
@@ -4784,16 +4992,12 @@ namespace ArtaznIT
                             }
                             AddLog(hostname, "PROBE_SUCCESS", specs.Protocol, "OK");
                             UpdateBottomProgress(100, $"Scan Complete");
-
-                            // Show success toast notification
-                            Managers.UI.ToastManager.ShowSuccess($"Scan complete: {hostname} ({specs.OS})");
-
                             await Task.Delay(1000); // Show completion briefly
                             HideBottomProgress($"Ready • {hostname.ToUpper()}");
                         });
                     });
                 }
-                catch (Exception ex) { LogManager.LogError($"Scan failed: {hostname}", ex); _ = Dispatcher.InvokeAsync(() => { TxtStatus.Text = "UNREACHABLE"; StatusDot.Fill = Brushes.Red; GridTools.IsEnabled = false; HideBottomProgress("Scan Failed"); Managers.UI.ToastManager.ShowWarning($"{hostname} is offline"); }); }
+                catch (Exception ex) { LogManager.LogError($"Scan failed: {hostname}", ex); _ = Dispatcher.InvokeAsync(() => { TxtStatus.Text = "UNREACHABLE"; StatusDot.Fill = Brushes.Red; GridTools.IsEnabled = false; HideBottomProgress("Scan Failed"); }); }
                 finally { BtnManualScan.IsEnabled = true; Mouse.OverrideCursor = null; }
             }
             catch (Exception ex) { LogManager.LogError("BtnScan outer", ex); }
@@ -4817,7 +5021,8 @@ namespace ArtaznIT
 
         private void Tool_RDP_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target selected"); return; }
+            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+            if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target selected"); return; }
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
@@ -4846,10 +5051,12 @@ namespace ArtaznIT
                 using (Process.Start("mstsc.exe", $"/v:{sanitized} /admin")) { }
                 AppendTerminal($"RDP launched → {sanitized} (admin mode)");
                 AddLog(_currentTarget, "RDP", "Session launched", "OK");
-                Managers.UI.ToastManager.ShowSuccess($"RDP session launched to {sanitized}");
             }
             catch (Exception ex)
             {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"RDP connection failed: {ex.Message}");
+                LogManager.LogError("RDP failed", ex);
                 AppendTerminal($"RDP failed: {ex.Message}", true);
                 AddLog(_currentTarget, "RDP", ex.Message, "FAIL");
             }
@@ -4858,7 +5065,8 @@ namespace ArtaznIT
 
         private void Tool_RemoteAssist_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target selected"); return; }
+            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+            if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target selected"); return; }
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
@@ -4869,6 +5077,9 @@ namespace ArtaznIT
             }
             catch (Exception ex)
             {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"Remote Assist failed: {ex.Message}");
+                LogManager.LogError("Remote Assist failed", ex);
                 AppendTerminal($"Remote Assist failed: {ex.Message}", true);
                 AddLog(_currentTarget, "REMOTE_ASSIST", ex.Message, "FAIL");
             }
@@ -4877,7 +5088,8 @@ namespace ArtaznIT
 
         private void Tool_RemoteReg_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target selected"); return; }
+            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+            if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target selected"); return; }
 
             try
             {
@@ -4925,8 +5137,8 @@ if ($connection) {{
                 {
                     // Fallback: open regedit and user must manually connect
                     Process.Start("regedit.exe");
-                    MessageBox.Show($"Registry Editor opened.\n\nTo connect to {_currentTarget}:\n1. File > Connect Network Registry\n2. Enter: {_currentTarget}\n3. Click OK",
-                        "Remote Registry", MessageBoxButton.OK, MessageBoxImage.Information);
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                    Managers.UI.ToastManager.ShowInfo($"Registry Editor opened.\n\nTo connect to {_currentTarget}:\n1. File > Connect Network Registry\n2. Enter: {_currentTarget}\n3. Click OK");
                 }
 
                 AppendTerminal($"Remote Registry access opened for {_currentTarget}");
@@ -4934,6 +5146,9 @@ if ($connection) {{
             }
             catch (Exception ex)
             {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"Remote Registry failed: {ex.Message}");
+                LogManager.LogError("Remote Registry failed", ex);
                 AppendTerminal($"Remote Registry failed: {ex.Message}", true);
                 AddLog(_currentTarget, "REMOTE_REGISTRY", ex.Message, "FAIL");
             }
@@ -4942,7 +5157,8 @@ if ($connection) {{
 
         private void Tool_PsExec_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target selected"); return; }
+            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+            if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target selected"); return; }
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
@@ -4977,6 +5193,9 @@ if ($connection) {{
             }
             catch (Exception ex)
             {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"Remote PowerShell failed: {ex.Message}");
+                LogManager.LogError("Remote CMD failed", ex);
                 AppendTerminal($"Remote CMD failed: {ex.Message}", true);
                 AddLog(_currentTarget, "REMOTE_CMD", ex.Message, "FAIL");
             }
@@ -4986,13 +5205,23 @@ if ($connection) {{
         private async void Tool_DefenderScan_Click(object sender, RoutedEventArgs e)
         {
             try { await WMIExecute("powershell -Command \"Start-MpScan -ScanType QuickScan\"", "DEFENDER_QUICK_SCAN"); }
-            catch (Exception ex) { LogManager.LogError("Defender scan failed", ex); }
+            catch (Exception ex)
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"Defender scan failed: {ex.Message}");
+                LogManager.LogError("Defender scan failed", ex);
+            }
         }
 
         private async void Tool_FlushDNS_Click(object sender, RoutedEventArgs e)
         {
             try { await WMIExecute("cmd.exe /c ipconfig /flushdns", "FLUSH_DNS"); }
-            catch (Exception ex) { LogManager.LogError("DNS flush failed", ex); }
+            catch (Exception ex)
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"DNS flush failed: {ex.Message}");
+                LogManager.LogError("DNS flush failed", ex);
+            }
         }
 
         private async void Tool_RenewIP_Click(object sender, RoutedEventArgs e)
@@ -5013,10 +5242,11 @@ if ($connection) {{
                 AppendTerminal($"\n>>> IP RENEWAL: {_currentTarget}...");
                 await WMIExecute("cmd.exe /c ipconfig /release && ipconfig /renew", "IP_RENEWAL");
                 AppendTerminal("IP renewal complete. Check network connectivity.");
-                Managers.UI.ToastManager.ShowSuccess($"IP renewed on {_currentTarget}");
             }
             catch (Exception ex)
             {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"IP renewal failed: {ex.Message}");
                 LogManager.LogError("IP renewal failed", ex);
                 AppendTerminal($"IP renewal error: {ex.Message}", true);
             }
@@ -5029,7 +5259,12 @@ if ($connection) {{
         private async void Tool_DiskCleanup_Click(object sender, RoutedEventArgs e)
         {
             try { await WMIExecute("cmd.exe /c cleanmgr /sagerun:1", "DISK_CLEANUP"); }
-            catch (Exception ex) { LogManager.LogError("Disk cleanup failed", ex); }
+            catch (Exception ex)
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"Disk cleanup failed: {ex.Message}");
+                LogManager.LogError("Disk cleanup failed", ex);
+            }
         }
 
         private void Tool_Hotfix_Click(object sender, RoutedEventArgs e)
@@ -5439,8 +5674,8 @@ if ($connection) {{
                             MessageBox.Show(
                                 "Failed to restart with elevation.\n\n" +
                                 "Please manually:\n" +
-                                "1. Close ArtaznIT Suite\n" +
-                                "2. Right-click ArtaznIT.exe\n" +
+                                "1. Close NecessaryAdminTool Suite\n" +
+                                "2. Right-click NecessaryAdminTool.exe\n" +
                                 "3. Select 'Run as Administrator'",
                                 "Elevation Failed",
                                 MessageBoxButton.OK,
@@ -5620,7 +5855,7 @@ if ($connection) {{
                                     AppendTerminal($"[DIAG] Your account needs one of these groups:", true);
                                     foreach (var reqGroup in requiredGroups)
                                         AppendTerminal($"  • {reqGroup}", true);
-                                    AppendTerminal($"[DIAG] Add your account to one of these groups and re-login to ArtaznIT Suite.", true);
+                                    AppendTerminal($"[DIAG] Add your account to one of these groups and re-login to NecessaryAdminTool Suite.", true);
                                 }
                             }
                         }
@@ -5686,7 +5921,7 @@ if ($connection) {{
                 {
                     // Already elevated - use current elevated context (can't use alternate credentials)
                     AppendTerminal($"[LAUNCH] Using current elevated context (Windows user: {Environment.UserName})");
-                    AppendTerminal($"[LAUNCH] Note: Cannot use ArtaznIT credentials when elevated - Windows limitation", false);
+                    AppendTerminal($"[LAUNCH] Note: Cannot use NecessaryAdminTool credentials when elevated - Windows limitation", false);
 
                     var psi = new ProcessStartInfo
                     {
@@ -6202,7 +6437,6 @@ if ($connection) {{
                 if (MessageBox.Show("Run SFC + DISM repair? (15-30 min)", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
                 ShowBottomProgress($"Starting OS repair on {_currentTarget}...");
                 AppendTerminal($"OS Repair → {_currentTarget}...");
-                Managers.UI.ToastManager.ShowInfo("OS repair started (15-30 min estimated)");
                 await Task.Run(async () =>
                 {
                     try
@@ -6221,14 +6455,45 @@ if ($connection) {{
                             _ = Dispatcher.InvokeAsync(() => HideBottomProgress("Ready • Repair running"));
                         }
                     }
-                    catch (Exception ex) { AppendTerminal($"Repair failed: {ex.Message}", true); _ = Dispatcher.InvokeAsync(() => HideBottomProgress("Repair failed")); }
+                    catch (Exception ex)
+                    {
+                        // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                        Managers.UI.ToastManager.ShowError($"System repair failed: {ex.Message}");
+                        LogManager.LogError("Repair failed", ex);
+                        AppendTerminal($"Repair failed: {ex.Message}", true);
+                        _ = Dispatcher.InvokeAsync(() => HideBottomProgress("Repair failed"));
+                    }
                 });
             }
-            catch (Exception ex) { LogManager.LogError("Repair error", ex); HideBottomProgress("Repair failed"); }
+            catch (Exception ex)
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"Repair operation failed: {ex.Message}");
+                LogManager.LogError("Repair error", ex);
+                HideBottomProgress("Repair failed");
+            }
         }
 
-        private async void Tool_GP_Click(object sender, RoutedEventArgs e) { try { await WMIExecute("cmd.exe /c gpupdate /force", "GPUPDATE"); } catch (Exception ex) { LogManager.LogError("GP", ex); } }
-        private async void Tool_Reboot_Click(object sender, RoutedEventArgs e) { try { await WMIReboot(); } catch (Exception ex) { LogManager.LogError("Reboot", ex); } }
+        private async void Tool_GP_Click(object sender, RoutedEventArgs e)
+        {
+            try { await WMIExecute("cmd.exe /c gpupdate /force", "GPUPDATE"); }
+            catch (Exception ex)
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"Group Policy update failed: {ex.Message}");
+                LogManager.LogError("GP", ex);
+            }
+        }
+        private async void Tool_Reboot_Click(object sender, RoutedEventArgs e)
+        {
+            try { await WMIReboot(); }
+            catch (Exception ex)
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"Reboot failed: {ex.Message}");
+                LogManager.LogError("Reboot", ex);
+            }
+        }
         private async void Tool_EnableWinRM_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -6352,11 +6617,7 @@ if ($connection) {{
                             {
                                 AppendTerminal($"WinRM enabled successfully on {_currentTarget}");
                                 AddLog(_currentTarget, "WINRM_ENABLE", "Enabled PowerShell remoting", "OK");
-                                _ = Dispatcher.InvokeAsync(() =>
-                                {
-                                    UpdateBottomProgress(100, "WinRM enabled");
-                                    Managers.UI.ToastManager.ShowSuccess($"WinRM enabled on {_currentTarget}");
-                                });
+                                _ = Dispatcher.InvokeAsync(() => { UpdateBottomProgress(100, "WinRM enabled"); });
                             }
                             else if (!string.IsNullOrWhiteSpace(errors))
                             {
@@ -6372,6 +6633,8 @@ if ($connection) {{
                     }
                     catch (Exception ex)
                     {
+                        // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                        Managers.UI.ToastManager.ShowError($"WinRM enable failed: {ex.Message}");
                         AppendTerminal($"WinRM enable error: {ex.Message}", true);
                         LogManager.LogError($"WinRM enable failed for {_currentTarget}", ex);
                         _ = Dispatcher.InvokeAsync(() => HideBottomProgress("WinRM error"));
@@ -6390,7 +6653,20 @@ if ($connection) {{
                 MessageBox.Show($"Error: {ex.Message}", "Failed", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-        private async void Tool_Firewall_Click(object sender, RoutedEventArgs e) { try { if (MessageBox.Show("Disable firewall?", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes) await WMIExecute("netsh advfirewall set allprofiles state off", "FIREWALL_DISABLE"); } catch (Exception ex) { LogManager.LogError("Firewall", ex); } }
+        private async void Tool_Firewall_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (MessageBox.Show("Disable firewall?", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                    await WMIExecute("netsh advfirewall set allprofiles state off", "FIREWALL_DISABLE");
+            }
+            catch (Exception ex)
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"Firewall operation failed: {ex.Message}");
+                LogManager.LogError("Firewall", ex);
+            }
+        }
 
         // ═══════════════════════════════════════════════════════
         // CONTEXT MENUS & INVENTORY
@@ -6534,7 +6810,6 @@ if ($connection) {{
                     await LoadPinnedDevices();
 
                     AppendTerminal($"📌 Pinned device: {pc.Hostname}");
-                    Managers.UI.ToastManager.ShowSuccess($"{pc.Hostname} added to pinned devices");
                     MessageBox.Show($"✓ {pc.Hostname} added to pinned devices", "Device Pinned",
                         MessageBoxButton.OK, MessageBoxImage.Information);
                 }
@@ -6818,7 +7093,9 @@ if ($connection) {{
             }
 
             var hostnames = selectedComputers.Select(pc => pc.Hostname).ToArray();
+            #pragma warning disable CS0219 // Variable assigned but not used - reserved for custom script execution
             var script = "wuauclt /detectnow; Write-Output 'Windows Update check initiated'";
+            #pragma warning restore CS0219
 
             var scriptWindow = new ScriptExecutorWindow(hostnames, Properties.Settings.Default.LastUser, null)
             {
@@ -6841,12 +7118,14 @@ if ($connection) {{
             }
 
             var hostnames = selectedComputers.Select(pc => pc.Hostname).ToArray();
+            #pragma warning disable CS0219 // Variable assigned but not used - reserved for custom script execution
             var script = @"
 $updateSession = New-Object -ComObject Microsoft.Update.Session
 $updateSearcher = $updateSession.CreateUpdateSearcher()
 $searchResult = $updateSearcher.Search('IsInstalled=0')
 Write-Output ""Available Updates: $($searchResult.Updates.Count)""
 foreach ($update in $searchResult.Updates) {
+            #pragma warning restore CS0219
     Write-Output ""  - $($update.Title)""
 }";
 
@@ -6871,6 +7150,7 @@ foreach ($update in $searchResult.Updates) {
             }
 
             var hostnames = selectedComputers.Select(pc => pc.Hostname).ToArray();
+            #pragma warning disable CS0219 // Variable assigned but not used - reserved for custom script execution
             var script = @"
 $rebootPending = $false
 if (Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending') { $rebootPending = $true }
@@ -6880,6 +7160,7 @@ if ($rebootPending) {
 } else {
     Write-Output '✅ No reboot pending'
 }";
+            #pragma warning restore CS0219
 
             var scriptWindow = new ScriptExecutorWindow(hostnames, Properties.Settings.Default.LastUser, null)
             {
@@ -6952,7 +7233,6 @@ if ($rebootPending) {
                 // Log completion
                 AppendTerminal($"🔧 Completed Quick Fix: {actionIcon} {actionName} on {selectedComputers.Length} computer(s)");
                 LogManager.LogInfo($"[Quick Fix] Executed {actionName} on {selectedComputers.Length} computers");
-                Managers.UI.ToastManager.ShowSuccess($"{actionName} completed on {selectedComputers.Length} computer{(selectedComputers.Length != 1 ? "s" : "")}");
             }
             catch (Exception ex)
             {
@@ -7059,7 +7339,6 @@ if ($rebootPending) {
 
                 ApplyRoleRestrictions();
                 LogManager.LogInfo("User logged out — credentials wiped");
-                Managers.UI.ToastManager.ShowInfo("Logged out - credentials cleared");
             }
             else await ShowLoginDialog();
         }
@@ -7094,8 +7373,8 @@ if ($rebootPending) {
                         MessageBox.Show(
                             "Failed to restart with elevation.\n\n" +
                             "Please manually:\n" +
-                            "1. Close ArtaznIT Suite\n" +
-                            "2. Right-click ArtaznIT.exe\n" +
+                            "1. Close NecessaryAdminTool Suite\n" +
+                            "2. Right-click NecessaryAdminTool.exe\n" +
                             "3. Select 'Run as Administrator'",
                             "Elevation Failed",
                             MessageBoxButton.OK,
@@ -7172,12 +7451,6 @@ if ($rebootPending) {
                 BtnAuth.Content = "LOGOUT";
                 LogManager.LogInfo($"Authenticated: {user} (Admin: {_isDomainAdmin}, Elevated: {_isElevated})");
 
-                // Show success toast notification
-                Dispatcher.Invoke(() =>
-                {
-                    Managers.UI.ToastManager.ShowSuccess($"Authenticated as {user}");
-                });
-
                 // Apply restrictions based on domain admin status and elevation
                 ApplyRoleRestrictions();
 
@@ -7245,7 +7518,7 @@ if ($rebootPending) {
                 // Create batch file with runas /savecred
                 string batContent = $@"@echo off
 echo ========================================
-echo  ArtaznIT Suite - Admin Launcher
+echo  NecessaryAdminTool Suite - Admin Launcher
 echo ========================================
 echo.
 echo Launching as: {adminUsername}
@@ -7261,14 +7534,14 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
                 // Create desktop shortcut using IWshRuntimeLibrary
                 string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                string shortcutPath = Path.Combine(desktopPath, "ArtaznIT Suite (Admin).lnk");
+                string shortcutPath = Path.Combine(desktopPath, "NecessaryAdminTool Suite (Admin).lnk");
 
                 Type shellType = Type.GetTypeFromProgID("WScript.Shell");
                 dynamic shell = Activator.CreateInstance(shellType);
                 var shortcut = shell.CreateShortcut(shortcutPath);
                 shortcut.TargetPath = batPath;
                 shortcut.WorkingDirectory = exeDir;
-                shortcut.Description = $"Launch ArtaznIT Suite as {adminUsername}";
+                shortcut.Description = $"Launch NecessaryAdminTool Suite as {adminUsername}";
                 shortcut.IconLocation = exePath + ",0";
                 shortcut.Save();
 
@@ -7304,8 +7577,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 {
                     cbSize = Marshal.SizeOf(typeof(CREDUI_INFO)),
                     hwndParent = new System.Windows.Interop.WindowInteropHelper(this).Handle,
-                    pszMessageText = "Enter your domain administrator credentials to run ArtaznIT Suite with full privileges.",
-                    pszCaptionText = "ArtaznIT Suite - Administrator Login"
+                    pszMessageText = "Enter your domain administrator credentials to run NecessaryAdminTool Suite with full privileges.",
+                    pszCaptionText = "NecessaryAdminTool Suite - Administrator Login"
                 };
 
                 uint authPackage = 0;
@@ -8304,7 +8577,6 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 await ADObjectBrowserControl.InitializeAsync(selectedDC, user, pass, useActiveDirectoryManager);
 
                 AppendTerminal("[AD Browser] Active Directory object tree loaded successfully");
-                Managers.UI.ToastManager.ShowSuccess($"AD object tree loaded from {selectedDC}");
                 Mouse.OverrideCursor = null;
             }
             catch (Exception ex)
@@ -8408,8 +8680,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     // Script definitions
                     var scripts = new[]
                     {
-                        new { ResourceName = "GeneralUpdate.ps1", FileName = "ArtaznIT_GeneralUpdate.ps1" },
-                        new { ResourceName = "FeatureUpdate.ps1", FileName = "ArtaznIT_FeatureUpdate.ps1" }
+                        new { ResourceName = "GeneralUpdate.ps1", FileName = "NecessaryAdminTool_GeneralUpdate.ps1" },
+                        new { ResourceName = "FeatureUpdate.ps1", FileName = "NecessaryAdminTool_FeatureUpdate.ps1" }
                     };
 
                     foreach (var script in scripts)
@@ -8442,8 +8714,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                         MessageBox.Show(
                             $"Successfully downloaded {filesWritten} PowerShell script(s) to:\n{targetFolder}\n\n" +
                             "Scripts included:\n" +
-                            "• ArtaznIT_GeneralUpdate.ps1 (Windows Updates + Firmware)\n" +
-                            "• ArtaznIT_FeatureUpdate.ps1 (Major OS Upgrades)\n\n" +
+                            "• NecessaryAdminTool_GeneralUpdate.ps1 (Windows Updates + Firmware)\n" +
+                            "• NecessaryAdminTool_FeatureUpdate.ps1 (Major OS Upgrades)\n\n" +
                             "These scripts are compatible with ManageEngine Endpoint Central.",
                             "Scripts Downloaded",
                             MessageBoxButton.OK,
@@ -8520,6 +8792,28 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             {
                 LogManager.LogError("About dialog error", ex);
                 MessageBox.Show($"Error displaying about information: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Check for Updates button click handler
+        /// TAG: #AUTO_UPDATE #VERSION_1_1
+        /// </summary>
+        private async void BtnCheckUpdates_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                LogManager.LogInfo("Manual update check initiated");
+                await UpdateManager.CheckForUpdatesAsync(silent: false);
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Manual update check failed", ex);
+                MessageBox.Show(
+                    $"Failed to check for updates:\n\n{ex.Message}",
+                    "Update Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
             }
         }
 
@@ -8616,7 +8910,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 sb.AppendLine("Hostname,Status,User,OS,Version,Chassis,BitLocker");
                 foreach (var line in csvLines) sb.AppendLine(line);
 
-                string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), $"ArtaznIT_Inventory_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
+                string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), $"NecessaryAdminTool_Inventory_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
                 File.WriteAllText(path, sb.ToString());
                 MessageBox.Show($"Exported to:\n{path}", "Export Complete");
                 AddLog("local", "EXPORT", path, "OK");
@@ -9077,7 +9371,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 // Auto-save inventory to backup location
                 string backupDir = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                    "ArtaznIT",
+                    "NecessaryAdminTool",
                     "AutoSave");
 
                 Directory.CreateDirectory(backupDir);
@@ -10409,9 +10703,6 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             TxtPinnedDeviceInput.Clear();
             SavePinnedDevices();
 
-            // Show success toast
-            Managers.UI.ToastManager.ShowSuccess($"{input} added to pinned devices");
-
             // Check device status in background
             await CheckPinnedDeviceStatus(device);
         }
@@ -10423,13 +10714,11 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         {
             if (GridPinnedDevices.SelectedItem is PinnedDevice device)
             {
-                string deviceName = device.Input;
                 lock (_pinnedDevicesLock)
                 {
                     _pinnedDevices.Remove(device);
                 }
                 SavePinnedDevices();
-                Managers.UI.ToastManager.ShowSuccess($"{deviceName} removed");
             }
             else
             {
@@ -10459,7 +10748,6 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             BtnRefreshPinnedDevices.Content = "🔄 REFRESH ALL";
             BtnRefreshPinnedDevices.IsEnabled = true;
             HideBottomProgress($"Ready • {_pinnedDevices.Count} devices refreshed");
-            Managers.UI.ToastManager.ShowSuccess($"Refreshed {_pinnedDevices.Count} pinned device{(_pinnedDevices.Count != 1 ? "s" : "")}");
         }
 
         /// <summary>
@@ -10953,7 +11241,6 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             BtnRefreshGlobalServices.Content = "🔄 CHECK ALL";
             BtnRefreshGlobalServices.IsEnabled = true;
             HideBottomProgress($"Ready • {totalCount} services checked");
-            Managers.UI.ToastManager.ShowSuccess($"Service check complete: {totalCount} services monitored");
         }
 
         /// <summary>
@@ -11048,7 +11335,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                         using (var client = new System.Net.Http.HttpClient())
                         {
                             client.Timeout = TimeSpan.FromSeconds(5);
-                            client.DefaultRequestHeaders.Add("User-Agent", "ArtaznIT-Monitor/6.0");
+                            // TAG: #USER_AGENT #DYNAMIC_VERSION
+                            client.DefaultRequestHeaders.Add("User-Agent", $"NecessaryAdminTool-Monitor/{LogoConfig.USER_AGENT_VERSION}");
 
                             var response = await client.GetAsync(service.Endpoint);
                             stopwatch.Stop();
@@ -11221,7 +11509,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             _authUser = authUser;
             _authPass = authPass;
 
-            Title = "Device Monitor - ArtaznIT Suite";
+            Title = "Device Monitor - NecessaryAdminTool Suite";
             Width = 1100;
             Height = 700;
             WindowStartupLocation = WindowStartupLocation.CenterOwner;
@@ -12670,19 +12958,30 @@ runas /user:{adminUsername} /savecred ""{exePath}""
     // ############################################################################
 
     // ══════════════════════════════════════════════════════════════
-    // MODULAR LOGO COMPONENT - Artazn LLC Branding
+    // TAG: #DYNAMIC_BRANDING #WHITE_LABEL - All branding pulls from LogoConfig constants
     // ══════════════════════════════════════════════════════════════
     // LOGO_CONFIG: Change these values to update the logo across the entire application
     public static class LogoConfig
     {
+        // TAG: #DYNAMIC_BRANDING #SINGLE_SOURCE_OF_TRUTH
         // Branding Text
-        public const string COMPANY_NAME = "Artazn";
-        public const string COMPANY_SUFFIX = " LLC";
+        public const string COMPANY_NAME = "NecessaryAdmin";
+        public const string COMPANY_SUFFIX = "";
         public const string TAGLINE = "I T   M A N A G E M E N T   S U I T E";
+
+        // Legal & Copyright - TAG: #COPYRIGHT #LEGAL
+        public const string COPYRIGHT_HOLDER = "Brandon Necessary";
+        public const string LEGAL_ENTITY = "Brandon Necessary";
+        public const string SUPPORT_CONTACT = "Contact your NecessaryAdminTool administrator";
+        public const string LEGAL_EMAIL = "support@necessaryadmintool.com";
+
+        // Product Name - TAG: #PRODUCT_NAME
+        public const string PRODUCT_NAME = "NecessaryAdminTool";
+        public const string PRODUCT_FULL_NAME = "NecessaryAdminTool Suite";
 
         /// <summary>
         /// Gets version in CalVer format: Major.YYMM.Minor
-        /// Example: v6.2602.1 = Version 6, February 2026, iteration 1
+        /// Example: v1.2602.0 = Version 1, February 2026, release 0
         /// TAG: #MODULAR #VERSION #CALVER
         /// </summary>
         public static string VERSION
@@ -12691,7 +12990,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             {
                 var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
                 // Format: Major.YYMM.Minor
-                // AssemblyVersion should be: 6.2602.1.0
+                // AssemblyVersion: 1.2602.0.0 (NecessaryAdminTool v1.0)
                 return $"v{version.Major}.{version.Minor:D4}.{version.Build}";
             }
         }
@@ -12710,7 +13009,32 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         }
 
         /// <summary>
-        /// Gets human-readable version: "Version 6, February 2026 (6.2602.1)"
+        /// Gets User-Agent version string for HTTP requests
+        /// TAG: #USER_AGENT #HTTP #DYNAMIC_VERSION
+        /// </summary>
+        public static string USER_AGENT_VERSION
+        {
+            get
+            {
+                var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+                return $"{version.Major}.{version.Minor:D4}";
+            }
+        }
+
+        /// <summary>
+        /// Gets copyright string with dynamic year and holder
+        /// TAG: #COPYRIGHT #DYNAMIC
+        /// </summary>
+        public static string COPYRIGHT
+        {
+            get
+            {
+                return $"Copyright © {COPYRIGHT_HOLDER} {DateTime.Now.Year}";
+            }
+        }
+
+        /// <summary>
+        /// Gets human-readable version: "Version 1, February 2026 (1.2602.0)"
         /// TAG: #MODULAR #VERSION #CALVER
         /// </summary>
         public static string VERSION_READABLE
@@ -12981,7 +13305,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             });
             textPanel.Children.Add(new TextBlock
             {
-                Text = "Would you like to restart ArtaznIT Suite as Administrator?",
+                Text = "Would you like to restart NecessaryAdminTool Suite as Administrator?",
                 Foreground = new SolidColorBrush(Color.FromRgb(161, 161, 170)), // Zinc #FFA1A1AA
                 FontSize = 11,
                 TextWrapping = TextWrapping.Wrap,
@@ -13244,6 +13568,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             usernameGrid.Children.Add(_txtUser);
 
             // Clear button (appears on the right side of the textbox)
+            // TAG: #TAB_ORDER - Excluded from tab navigation to maintain username→password flow
             var clearBtn = new Button
             {
                 Content = "✕",
@@ -13258,7 +13583,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 HorizontalAlignment = HorizontalAlignment.Right,
                 VerticalAlignment = VerticalAlignment.Center,
                 Cursor = Cursors.Hand,
-                ToolTip = "Clear cached username"
+                ToolTip = "Clear cached username",
+                IsTabStop = false  // Exclude from tab navigation
             };
             clearBtn.Click += (s, ev) =>
             {
@@ -13758,7 +14084,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
             contentPanel.Children.Add(new TextBlock
             {
-                Text = "ArtaznIT could not connect to domain controllers. This may be caused by:",
+                Text = "NecessaryAdminTool could not connect to domain controllers. This may be caused by:",
                 Foreground = Brushes.White,
                 FontSize = 12,
                 TextWrapping = TextWrapping.Wrap,

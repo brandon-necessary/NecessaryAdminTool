@@ -1504,7 +1504,9 @@ namespace NecessaryAdminTool
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Copy failed: {ex.Message}");
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                    Managers.UI.ToastManager.ShowError($"Copy failed: {ex.Message}");
+                    LogManager.LogError($"Clipboard copy failed: {ex.Message}");
                 }
             };
 
@@ -2133,6 +2135,9 @@ namespace NecessaryAdminTool
             // Secret combo: Ctrl+Shift+Alt+S
             this.KeyDown += MainWindow_KeyDown_SuperAdmin;
 
+            // TAG: #AUTO_UPDATE_UI_ENGINE #COMMAND_PALETTE - Register Ctrl+K for Command Palette
+            this.KeyDown += MainWindow_KeyDown_CommandPalette;
+
             // Set window title with version from AssemblyInfo (modular)
             // TAG: #MODULAR #VERSION
             Title = $"NecessaryAdminTool Suite {LogoConfig.VERSION}";
@@ -2242,8 +2247,10 @@ namespace NecessaryAdminTool
                 {
                     LogManager.LogWarning("32-bit mode detected");
                     UpdateLoadingStatus("System Check", "WARNING: 32-bit mode detected");
-                    MessageBox.Show("WARNING: Running in 32-bit mode. Some WMI features may not work correctly.",
-                        "Architecture Warning");
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_WARNING
+                    Task.Delay(1500).ContinueWith(_ => Dispatcher.Invoke(() =>
+                        Managers.UI.ToastManager.ShowWarning("Running in 32-bit mode - Some WMI features may not work correctly")
+                    ));
                 }
 
                 UpdateLoadingStatus("Loading Configuration...", "Reading secure settings");
@@ -2306,7 +2313,8 @@ namespace NecessaryAdminTool
             {
                 HideLoadingOverlay();
                 LogManager.LogError("Window_Loaded failed", ex);
-                MessageBox.Show($"Initialization error: {ex.Message}", "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                Managers.UI.ToastManager.ShowError($"Initialization error: {ex.Message}");
             }
         }
 
@@ -2519,25 +2527,21 @@ namespace NecessaryAdminTool
                 if (!stillConnected && !string.IsNullOrEmpty(previousDomain))
                 {
                     AppendTerminal($"[DOMAIN CHECK] Lost connection to domain: {previousDomain}", isError: true);
-                    MessageBox.Show(
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                    Managers.UI.ToastManager.ShowWarning(
                         $"Connection to domain '{previousDomain}' was lost.\n\n" +
                         "You may be disconnected from VPN or experiencing network issues.\n" +
-                        "Some features may be unavailable until connection is restored.",
-                        "Domain Connection Lost",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
+                        "Some features may be unavailable until connection is restored.");
                 }
                 else if (stillConnected && CurrentDomainName != previousDomain && !string.IsNullOrEmpty(previousDomain))
                 {
                     AppendTerminal($"[DOMAIN CHECK] Domain changed from {previousDomain} to {CurrentDomainName}", isError: true);
-                    MessageBox.Show(
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                    Managers.UI.ToastManager.ShowWarning(
                         $"Domain has changed!\n\n" +
                         $"Previous: {previousDomain}\n" +
                         $"Current: {CurrentDomainName}\n\n" +
-                        "Application will restart to apply new domain settings.",
-                        "Domain Changed",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
+                        "Application will restart to apply new domain settings.");
                     Application.Current.Shutdown();
                 }
             };
@@ -2719,12 +2723,10 @@ namespace NecessaryAdminTool
                 // Require admin privileges
                 if (!IsUserAdmin())
                 {
-                    MessageBox.Show(
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                    Managers.UI.ToastManager.ShowWarning(
                         "SuperAdmin mode requires administrator privileges.\n\n" +
-                        "Please run NecessaryAdminTool as Administrator.",
-                        "Access Denied",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
+                        "Please run NecessaryAdminTool as Administrator.");
                     return;
                 }
 
@@ -2837,12 +2839,10 @@ namespace NecessaryAdminTool
                         }
                         else
                         {
-                            MessageBox.Show(
+                            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                            Managers.UI.ToastManager.ShowError(
                                 "Incorrect password.\n\n" +
-                                "Access denied.",
-                                "Authentication Failed",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Error);
+                                "Access denied.");
 
                             LogManager.LogWarning($"Failed SuperAdmin access attempt by {Environment.UserName}");
                         }
@@ -2850,11 +2850,8 @@ namespace NecessaryAdminTool
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
-                    $"Error opening SuperAdmin mode:\n\n{ex.Message}",
-                    "Error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                Managers.UI.ToastManager.ShowError($"Error opening SuperAdmin mode:\n\n{ex.Message}");
 
                 LogManager.LogError("SuperAdmin window launch failed", ex);
             }
@@ -3469,6 +3466,9 @@ namespace NecessaryAdminTool
                 }
                 catch (Exception ex)
                 {
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                    Managers.UI.ToastManager.ShowError($"Reboot failed: {ex.Message}");
+                    LogManager.LogError("Reboot failed", ex);
                     AppendTerminal($"Reboot failed: {ex.Message}", true);
                     _ = Application.Current.Dispatcher.InvokeAsync(() => AddLog(host, "REBOOT", ex.Message, "FAIL"));
                 }
@@ -3681,7 +3681,8 @@ namespace NecessaryAdminTool
 
                 if (string.IsNullOrEmpty(targetDC))
                 {
-                    MessageBox.Show("Select a Domain Controller", "Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                    Managers.UI.ToastManager.ShowWarning("Select a Domain Controller");
                     Mouse.OverrideCursor = null;
                     return;
                 }
@@ -3900,12 +3901,15 @@ namespace NecessaryAdminTool
                     {
                         AppendTerminal($"AD Access Denied: {uex.Message}", true);
                         AppendTerminal("Ensure you're logged in with Domain Admin credentials.", true);
+                        // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
                         _ = Dispatcher.InvokeAsync(() =>
-                            MessageBox.Show("Access denied to Active Directory.\n\nPlease log in with Domain Admin credentials and try again.",
-                                "Authentication Required", MessageBoxButton.OK, MessageBoxImage.Warning));
+                            Managers.UI.ToastManager.ShowWarning("Access denied to Active Directory.\n\nPlease log in with Domain Admin credentials and try again."));
                     }
                     catch (Exception ex)
                     {
+                        // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                        Managers.UI.ToastManager.ShowError($"AD scan failed: {ex.Message}");
+                        LogManager.LogError("AD scan error", ex);
                         AppendTerminal($"AD Error: {ex.Message}", true);
                     }
                     finally
@@ -3925,6 +3929,8 @@ namespace NecessaryAdminTool
             }
             catch (Exception ex)
             {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"Fleet scan error: {ex.Message}");
                 LogManager.LogError("Fleet scan error", ex);
                 Mouse.OverrideCursor = null;
             }
@@ -4576,6 +4582,8 @@ namespace NecessaryAdminTool
                             }
                             catch (TimeoutException tex)
                             {
+                                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                                Managers.UI.ToastManager.ShowError("Operation timed out - Check network connectivity");
                                 spec.BitLocker = "TIMEOUT";
                                 LogManager.LogDebug($"BitLocker query timeout for {hostname}: {tex.Message}");
                             }
@@ -4639,6 +4647,8 @@ namespace NecessaryAdminTool
                             }
                             catch (TimeoutException tex)
                             {
+                                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                                Managers.UI.ToastManager.ShowError("Operation timed out - Check network connectivity");
                                 spec.TPMEnabled = "TIMEOUT";
                                 LogManager.LogDebug($"TPM query timeout for {hostname}: {tex.Message}");
                             }
@@ -4715,6 +4725,8 @@ namespace NecessaryAdminTool
             }
             catch (UnauthorizedAccessException uaEx)
             {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError("Access denied - Administrator privileges required");
                 spec.Protocol = "UNAUTHORIZED";
                 AppendTerminal($"[UNAUTHORIZED] Access denied - check credentials", true);
                 LogManager.LogDebug($"WMI access denied for {hostname}: {uaEx.Message}");
@@ -4731,12 +4743,15 @@ namespace NecessaryAdminTool
             }
             catch (System.Runtime.InteropServices.COMException comEx)
             {
-                // RPC server unavailable, network issues, etc.
-                spec.Protocol = "FAILED";
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
                 string errorMsg = comEx.Message.Contains("RPC") ? "RPC server unavailable (offline/firewall)" :
                                  comEx.Message.Contains("Access is denied") ? "Access denied (check credentials)" :
                                  comEx.Message.Contains("0x800706BA") ? "RPC server unavailable" :
                                  comEx.Message;
+                Managers.UI.ToastManager.ShowError($"WMI query failed - Verify WinRM is enabled: {errorMsg}");
+
+                // RPC server unavailable, network issues, etc.
+                spec.Protocol = "FAILED";
 
                 AppendTerminal($"[FAILED] {errorMsg}", true);
                 LogManager.LogDebug($"WMI connection failed for {hostname}: {errorMsg} (HRESULT: 0x{comEx.HResult:X})");
@@ -4907,8 +4922,9 @@ namespace NecessaryAdminTool
             {
                 Mouse.OverrideCursor = Cursors.Wait;
                 string hostname = ComboTarget.Text;
-                if (string.IsNullOrEmpty(hostname)) { MessageBox.Show("Enter a hostname", "Required"); return; }
-                if (!SecurityValidator.IsValidHostname(hostname)) { MessageBox.Show("Invalid hostname format", "Error"); return; }
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                if (string.IsNullOrEmpty(hostname)) { Managers.UI.ToastManager.ShowWarning("Enter a hostname"); return; }
+                if (!SecurityValidator.IsValidHostname(hostname)) { Managers.UI.ToastManager.ShowWarning("Invalid hostname format"); return; }
 
                 // Show progress
                 ShowBottomProgress($"Scanning {hostname}...");
@@ -4996,10 +5012,21 @@ namespace NecessaryAdminTool
                         });
                     });
                 }
-                catch (Exception ex) { LogManager.LogError($"Scan failed: {hostname}", ex); _ = Dispatcher.InvokeAsync(() => { TxtStatus.Text = "UNREACHABLE"; StatusDot.Fill = Brushes.Red; GridTools.IsEnabled = false; HideBottomProgress("Scan Failed"); }); }
+                catch (Exception ex)
+                {
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                    Managers.UI.ToastManager.ShowError($"Scan failed: {ex.Message}");
+                    LogManager.LogError($"Scan failed: {hostname}", ex);
+                    _ = Dispatcher.InvokeAsync(() => { TxtStatus.Text = "UNREACHABLE"; StatusDot.Fill = Brushes.Red; GridTools.IsEnabled = false; HideBottomProgress("Scan Failed"); });
+                }
                 finally { BtnManualScan.IsEnabled = true; Mouse.OverrideCursor = null; }
             }
-            catch (Exception ex) { LogManager.LogError("BtnScan outer", ex); }
+            catch (Exception ex)
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"Scan operation failed: {ex.Message}");
+                LogManager.LogError("BtnScan outer", ex);
+            }
             finally { Mouse.OverrideCursor = null; }
         }
 
@@ -5020,7 +5047,8 @@ namespace NecessaryAdminTool
 
         private void Tool_RDP_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target selected"); return; }
+            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+            if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target selected"); return; }
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
@@ -5052,6 +5080,9 @@ namespace NecessaryAdminTool
             }
             catch (Exception ex)
             {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"RDP connection failed: {ex.Message}");
+                LogManager.LogError("RDP failed", ex);
                 AppendTerminal($"RDP failed: {ex.Message}", true);
                 AddLog(_currentTarget, "RDP", ex.Message, "FAIL");
             }
@@ -5060,7 +5091,8 @@ namespace NecessaryAdminTool
 
         private void Tool_RemoteAssist_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target selected"); return; }
+            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+            if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target selected"); return; }
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
@@ -5071,6 +5103,9 @@ namespace NecessaryAdminTool
             }
             catch (Exception ex)
             {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"Remote Assist failed: {ex.Message}");
+                LogManager.LogError("Remote Assist failed", ex);
                 AppendTerminal($"Remote Assist failed: {ex.Message}", true);
                 AddLog(_currentTarget, "REMOTE_ASSIST", ex.Message, "FAIL");
             }
@@ -5079,7 +5114,8 @@ namespace NecessaryAdminTool
 
         private void Tool_RemoteReg_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target selected"); return; }
+            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+            if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target selected"); return; }
 
             try
             {
@@ -5127,8 +5163,8 @@ if ($connection) {{
                 {
                     // Fallback: open regedit and user must manually connect
                     Process.Start("regedit.exe");
-                    MessageBox.Show($"Registry Editor opened.\n\nTo connect to {_currentTarget}:\n1. File > Connect Network Registry\n2. Enter: {_currentTarget}\n3. Click OK",
-                        "Remote Registry", MessageBoxButton.OK, MessageBoxImage.Information);
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                    Managers.UI.ToastManager.ShowInfo($"Registry Editor opened.\n\nTo connect to {_currentTarget}:\n1. File > Connect Network Registry\n2. Enter: {_currentTarget}\n3. Click OK");
                 }
 
                 AppendTerminal($"Remote Registry access opened for {_currentTarget}");
@@ -5136,6 +5172,9 @@ if ($connection) {{
             }
             catch (Exception ex)
             {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"Remote Registry failed: {ex.Message}");
+                LogManager.LogError("Remote Registry failed", ex);
                 AppendTerminal($"Remote Registry failed: {ex.Message}", true);
                 AddLog(_currentTarget, "REMOTE_REGISTRY", ex.Message, "FAIL");
             }
@@ -5144,7 +5183,8 @@ if ($connection) {{
 
         private void Tool_PsExec_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target selected"); return; }
+            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+            if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target selected"); return; }
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
@@ -5179,6 +5219,9 @@ if ($connection) {{
             }
             catch (Exception ex)
             {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"Remote PowerShell failed: {ex.Message}");
+                LogManager.LogError("Remote CMD failed", ex);
                 AppendTerminal($"Remote CMD failed: {ex.Message}", true);
                 AddLog(_currentTarget, "REMOTE_CMD", ex.Message, "FAIL");
             }
@@ -5188,18 +5231,30 @@ if ($connection) {{
         private async void Tool_DefenderScan_Click(object sender, RoutedEventArgs e)
         {
             try { await WMIExecute("powershell -Command \"Start-MpScan -ScanType QuickScan\"", "DEFENDER_QUICK_SCAN"); }
-            catch (Exception ex) { LogManager.LogError("Defender scan failed", ex); }
+            catch (Exception ex)
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"Defender scan failed: {ex.Message}");
+                LogManager.LogError("Defender scan failed", ex);
+            }
         }
 
         private async void Tool_FlushDNS_Click(object sender, RoutedEventArgs e)
         {
             try { await WMIExecute("cmd.exe /c ipconfig /flushdns", "FLUSH_DNS"); }
-            catch (Exception ex) { LogManager.LogError("DNS flush failed", ex); }
+            catch (Exception ex)
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"DNS flush failed: {ex.Message}");
+                LogManager.LogError("DNS flush failed", ex);
+            }
         }
 
         private async void Tool_RenewIP_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target selected"); return; }
+            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+
+            if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target selected"); return; }
 
             try
             {
@@ -5218,6 +5273,8 @@ if ($connection) {{
             }
             catch (Exception ex)
             {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"IP renewal failed: {ex.Message}");
                 LogManager.LogError("IP renewal failed", ex);
                 AppendTerminal($"IP renewal error: {ex.Message}", true);
             }
@@ -5230,12 +5287,19 @@ if ($connection) {{
         private async void Tool_DiskCleanup_Click(object sender, RoutedEventArgs e)
         {
             try { await WMIExecute("cmd.exe /c cleanmgr /sagerun:1", "DISK_CLEANUP"); }
-            catch (Exception ex) { LogManager.LogError("Disk cleanup failed", ex); }
+            catch (Exception ex)
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"Disk cleanup failed: {ex.Message}");
+                LogManager.LogError("Disk cleanup failed", ex);
+            }
         }
 
         private void Tool_Hotfix_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target selected"); return; }
+            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+
+            if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target selected"); return; }
             var tw = new ToolWindow(_currentTarget, "INSTALLED HOTFIXES"); tw.Show();
             tw.SetStatus("Loading hotfixes...");
             _ = Task.Run(() =>
@@ -5280,7 +5344,9 @@ if ($connection) {{
 
         private void Tool_Startup_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target selected"); return; }
+            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+
+            if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target selected"); return; }
             var tw = new ToolWindow(_currentTarget, "STARTUP PROGRAMS"); tw.Show();
             tw.SetStatus("Loading startup items...");
             _ = Task.Run(() =>
@@ -5334,7 +5400,9 @@ if ($connection) {{
 
         private void Tool_SchedTask_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target selected"); return; }
+            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+
+            if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target selected"); return; }
             var tw = new ToolWindow(_currentTarget, "SCHEDULED TASKS"); tw.Show();
             tw.SetStatus("Loading tasks...");
             _ = Task.Run(() =>
@@ -5447,7 +5515,9 @@ if ($connection) {{
 
         private void Tool_NetDiag_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target selected"); return; }
+            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+
+            if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target selected"); return; }
             var tw = new ToolWindow(_currentTarget, "NETWORK DIAGNOSTICS"); tw.Show();
             tw.SetStatus("Loading network configuration...");
             _ = Task.Run(() =>
@@ -5637,15 +5707,7 @@ if ($connection) {{
                         }
                         catch (Exception restartEx)
                         {
-                            MessageBox.Show(
-                                "Failed to restart with elevation.\n\n" +
-                                "Please manually:\n" +
-                                "1. Close NecessaryAdminTool Suite\n" +
-                                "2. Right-click NecessaryAdminTool.exe\n" +
-                                "3. Select 'Run as Administrator'",
-                                "Elevation Failed",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Error);
+                            Managers.UI.ToastManager.ShowError("Failed to restart with elevation.\n\n" +"Please manually:\n" +"1. Close NecessaryAdminTool Suite\n" +"2. Right-click NecessaryAdminTool.exe\n" +"3. Select \'Run as Administrator\'");
                             LogManager.LogError("Failed to restart with elevation from MMC launch", restartEx);
                         }
                     }
@@ -5701,7 +5763,7 @@ if ($connection) {{
                                         Verb = "runas" // Run as admin
                                     };
                                     Process.Start(installPsi);
-                                    MessageBox.Show("RSAT installation started. Please wait for it to complete, then try launching the tool again.", "Installing", MessageBoxButton.OK, MessageBoxImage.Information);
+                                    Managers.UI.ToastManager.ShowInfo("RSAT installation started. Please wait for it to complete, then try launching the tool again.");
                                 }
                                 return;
                             }
@@ -5998,6 +6060,8 @@ if ($connection) {{
             }
             catch (Exception ex)
             {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"Launch failed: {ex.Message}");
                 AppendTerminal($"Launch failed: {ex.Message}", true);
                 LogManager.LogError($"Failed to launch {executable}", ex);
             }
@@ -6009,7 +6073,9 @@ if ($connection) {{
 
         private void Tool_Browse_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target selected"); return; }
+            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+
+            if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target selected"); return; }
             string unc = $"\\\\{_currentTarget}\\C$";
             if (_isLoggedIn && _authPass != null)
             {
@@ -6020,12 +6086,14 @@ if ($connection) {{
                 });
                 AppendTerminal($"C$ share → {_currentTarget}");
             }
-            else { try { using (Process.Start("explorer.exe", unc)) { } } catch (Exception ex) { MessageBox.Show(ex.Message); } }
+            else { try { using (Process.Start("explorer.exe", unc)) { } } catch (Exception ex) { Managers.UI.ToastManager.ShowError(ex.Message); } }
         }
 
         private void Tool_Soft_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target selected"); return; }
+            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+
+            if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target selected"); return; }
             var tw = new ToolWindow(_currentTarget, "SOFTWARE INVENTORY"); tw.Show(); tw.SetStatus("Loading (1-2 min)...");
             _ = Task.Run(() =>
             {
@@ -6107,7 +6175,9 @@ if ($connection) {{
 
         private void Tool_Proc_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target selected"); return; }
+            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+
+            if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target selected"); return; }
 
             ShowToolProgress("Process Manager", $"Connecting to {_currentTarget}...");
 
@@ -6205,7 +6275,9 @@ if ($connection) {{
 
         private void Tool_Svc_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target selected"); return; }
+            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+
+            if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target selected"); return; }
             var tw = new ToolWindow(_currentTarget, "SERVICES MANAGER"); tw.Show();
             tw.SetRefreshAction(async () =>
             {
@@ -6302,7 +6374,9 @@ if ($connection) {{
 
         private void Tool_Evt_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target selected"); return; }
+            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+
+            if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target selected"); return; }
             var tw = new ToolWindow(_currentTarget, "EVENT LOGS (SYSTEM ERRORS)"); tw.Show(); tw.SetStatus("Loading errors...");
             _ = Task.Run(() =>
             {
@@ -6399,7 +6473,9 @@ if ($connection) {{
         {
             try
             {
-                if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target"); return; }
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+
+                if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target"); return; }
                 if (MessageBox.Show("Run SFC + DISM repair? (15-30 min)", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
                 ShowBottomProgress($"Starting OS repair on {_currentTarget}...");
                 AppendTerminal($"OS Repair → {_currentTarget}...");
@@ -6421,21 +6497,52 @@ if ($connection) {{
                             _ = Dispatcher.InvokeAsync(() => HideBottomProgress("Ready • Repair running"));
                         }
                     }
-                    catch (Exception ex) { AppendTerminal($"Repair failed: {ex.Message}", true); _ = Dispatcher.InvokeAsync(() => HideBottomProgress("Repair failed")); }
+                    catch (Exception ex)
+                    {
+                        // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                        Managers.UI.ToastManager.ShowError($"System repair failed: {ex.Message}");
+                        LogManager.LogError("Repair failed", ex);
+                        AppendTerminal($"Repair failed: {ex.Message}", true);
+                        _ = Dispatcher.InvokeAsync(() => HideBottomProgress("Repair failed"));
+                    }
                 });
             }
-            catch (Exception ex) { LogManager.LogError("Repair error", ex); HideBottomProgress("Repair failed"); }
+            catch (Exception ex)
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"Repair operation failed: {ex.Message}");
+                LogManager.LogError("Repair error", ex);
+                HideBottomProgress("Repair failed");
+            }
         }
 
-        private async void Tool_GP_Click(object sender, RoutedEventArgs e) { try { await WMIExecute("cmd.exe /c gpupdate /force", "GPUPDATE"); } catch (Exception ex) { LogManager.LogError("GP", ex); } }
-        private async void Tool_Reboot_Click(object sender, RoutedEventArgs e) { try { await WMIReboot(); } catch (Exception ex) { LogManager.LogError("Reboot", ex); } }
+        private async void Tool_GP_Click(object sender, RoutedEventArgs e)
+        {
+            try { await WMIExecute("cmd.exe /c gpupdate /force", "GPUPDATE"); }
+            catch (Exception ex)
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"Group Policy update failed: {ex.Message}");
+                LogManager.LogError("GP", ex);
+            }
+        }
+        private async void Tool_Reboot_Click(object sender, RoutedEventArgs e)
+        {
+            try { await WMIReboot(); }
+            catch (Exception ex)
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"Reboot failed: {ex.Message}");
+                LogManager.LogError("Reboot", ex);
+            }
+        }
         private async void Tool_EnableWinRM_Click(object sender, RoutedEventArgs e)
         {
             try
             {
                 if (string.IsNullOrEmpty(_currentTarget))
                 {
-                    MessageBox.Show("No target selected", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Managers.UI.ToastManager.ShowWarning("No target selected");
                     return;
                 }
 
@@ -6568,6 +6675,8 @@ if ($connection) {{
                     }
                     catch (Exception ex)
                     {
+                        // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                        Managers.UI.ToastManager.ShowError($"WinRM enable failed: {ex.Message}");
                         AppendTerminal($"WinRM enable error: {ex.Message}", true);
                         LogManager.LogError($"WinRM enable failed for {_currentTarget}", ex);
                         _ = Dispatcher.InvokeAsync(() => HideBottomProgress("WinRM error"));
@@ -6583,10 +6692,23 @@ if ($connection) {{
                 Mouse.OverrideCursor = null;
                 HideBottomProgress("WinRM error");
                 LogManager.LogError("WinRM button error", ex);
-                MessageBox.Show($"Error: {ex.Message}", "Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                Managers.UI.ToastManager.ShowError($"Error: {ex.Message}");
             }
         }
-        private async void Tool_Firewall_Click(object sender, RoutedEventArgs e) { try { if (MessageBox.Show("Disable firewall?", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes) await WMIExecute("netsh advfirewall set allprofiles state off", "FIREWALL_DISABLE"); } catch (Exception ex) { LogManager.LogError("Firewall", ex); } }
+        private async void Tool_Firewall_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (MessageBox.Show("Disable firewall?", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                    await WMIExecute("netsh advfirewall set allprofiles state off", "FIREWALL_DISABLE");
+            }
+            catch (Exception ex)
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"Firewall operation failed: {ex.Message}");
+                LogManager.LogError("Firewall", ex);
+            }
+        }
 
         // ═══════════════════════════════════════════════════════
         // CONTEXT MENUS & INVENTORY
@@ -6618,7 +6740,7 @@ if ($connection) {{
             if (GridInventory.SelectedItem is PCInventory pc && pc.Status == "ONLINE")
             {
                 try { Process.Start("mstsc.exe", $"/v:{pc.Hostname}"); }
-                catch (Exception ex) { MessageBox.Show($"RDP failed: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
+                catch (Exception ex) { Managers.UI.ToastManager.ShowError($"RDP failed: {ex.Message}"); }
             }
         }
 
@@ -6711,8 +6833,7 @@ if ($connection) {{
                     // Check if already pinned
                     if (_pinnedDevices.Any(p => p.Input.Equals(pc.Hostname, StringComparison.OrdinalIgnoreCase)))
                     {
-                        MessageBox.Show($"{pc.Hostname} is already pinned.", "Already Pinned",
-                            MessageBoxButton.OK, MessageBoxImage.Information);
+                        Managers.UI.ToastManager.ShowInfo($"{pc.Hostname} is already pinned.");
                         return;
                     }
 
@@ -6730,15 +6851,13 @@ if ($connection) {{
                     await LoadPinnedDevices();
 
                     AppendTerminal($"📌 Pinned device: {pc.Hostname}");
-                    MessageBox.Show($"✓ {pc.Hostname} added to pinned devices", "Device Pinned",
-                        MessageBoxButton.OK, MessageBoxImage.Information);
+                    Managers.UI.ToastManager.ShowSuccess($"✓ {pc.Hostname} added to pinned devices");
                 }
             }
             catch (Exception ex)
             {
                 LogManager.LogError("Failed to pin device", ex);
-                MessageBox.Show($"Failed to pin device: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                Managers.UI.ToastManager.ShowError($"Failed to pin device: {ex.Message}");
             }
         }
 
@@ -6758,16 +6877,14 @@ if ($connection) {{
                     {
                         BookmarkManager.AddBookmark(pc.Hostname, dialog.Description, dialog.Category);
                         AppendTerminal($"⭐ Added to favorites: {pc.Hostname}");
-                        MessageBox.Show($"✓ {pc.Hostname} added to favorites", "Favorite Added",
-                            MessageBoxButton.OK, MessageBoxImage.Information);
+                        Managers.UI.ToastManager.ShowSuccess($"✓ {pc.Hostname} added to favorites");
                     }
                 }
             }
             catch (Exception ex)
             {
                 LogManager.LogError("Failed to add favorite", ex);
-                MessageBox.Show($"Failed to add favorite: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                Managers.UI.ToastManager.ShowError($"Failed to add favorite: {ex.Message}");
             }
         }
 
@@ -6791,16 +6908,14 @@ if ($connection) {{
                     {
                         BookmarkManager.RemoveBookmark(pc.Hostname);
                         AppendTerminal($"💔 Removed from favorites: {pc.Hostname}");
-                        MessageBox.Show($"✓ {pc.Hostname} removed from favorites", "Favorite Removed",
-                            MessageBoxButton.OK, MessageBoxImage.Information);
+                        Managers.UI.ToastManager.ShowSuccess($"✓ {pc.Hostname} removed from favorites");
                     }
                 }
             }
             catch (Exception ex)
             {
                 LogManager.LogError("Failed to remove favorite", ex);
-                MessageBox.Show($"Failed to remove favorite: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                Managers.UI.ToastManager.ShowError($"Failed to remove favorite: {ex.Message}");
             }
         }
 
@@ -6875,8 +6990,7 @@ if ($connection) {{
                 var selectedComputers = GridInventory.SelectedItems.Cast<PCInventory>().ToArray();
                 if (selectedComputers.Length == 0)
                 {
-                    MessageBox.Show("Please select one or more computers to run scripts on.", "No Selection",
-                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Managers.UI.ToastManager.ShowWarning("Please select one or more computers to run scripts on.");
                     return;
                 }
 
@@ -6907,8 +7021,7 @@ if ($connection) {{
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to open Script Executor:\n\n{ex.Message}",
-                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Managers.UI.ToastManager.ShowError($"Failed to open Script Executor:\n\n{ex.Message}");
                 LogManager.LogError("[MainWindow] Failed to open Script Executor", ex);
             }
         }
@@ -6935,12 +7048,11 @@ if ($connection) {{
                     message.AppendLine($"{tag.DisplayName} - {count} computer(s)");
                 }
 
-                MessageBox.Show(message.ToString(), "Asset Tags", MessageBoxButton.OK, MessageBoxImage.Information);
+                Managers.UI.ToastManager.ShowInfo(message.ToString());
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to load tags:\n\n{ex.Message}",
-                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Managers.UI.ToastManager.ShowError($"Failed to load tags:\n\n{ex.Message}");
                 LogManager.LogError("[MainWindow] Failed to manage tags", ex);
             }
         }
@@ -7007,8 +7119,7 @@ if ($connection) {{
             var selectedComputers = GridInventory.SelectedItems.Cast<PCInventory>().ToArray();
             if (selectedComputers.Length == 0)
             {
-                MessageBox.Show("Please select one or more computers.", "No Selection",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                Managers.UI.ToastManager.ShowWarning("Please select one or more computers.");
                 return;
             }
 
@@ -7032,8 +7143,7 @@ if ($connection) {{
             var selectedComputers = GridInventory.SelectedItems.Cast<PCInventory>().ToArray();
             if (selectedComputers.Length == 0)
             {
-                MessageBox.Show("Please select one or more computers.", "No Selection",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                Managers.UI.ToastManager.ShowWarning("Please select one or more computers.");
                 return;
             }
 
@@ -7064,8 +7174,7 @@ foreach ($update in $searchResult.Updates) {
             var selectedComputers = GridInventory.SelectedItems.Cast<PCInventory>().ToArray();
             if (selectedComputers.Length == 0)
             {
-                MessageBox.Show("Please select one or more computers.", "No Selection",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                Managers.UI.ToastManager.ShowWarning("Please select one or more computers.");
                 return;
             }
 
@@ -7105,8 +7214,7 @@ if ($rebootPending) {
                 var selectedComputers = GridInventory.SelectedItems.Cast<PCInventory>().ToArray();
                 if (selectedComputers.Length == 0)
                 {
-                    MessageBox.Show("Please select one or more computers.", "No Selection",
-                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Managers.UI.ToastManager.ShowWarning("Please select one or more computers.");
                     return;
                 }
 
@@ -7157,8 +7265,7 @@ if ($rebootPending) {
             catch (Exception ex)
             {
                 LogManager.LogError($"[Quick Fix] Failed to execute remediation", ex);
-                MessageBox.Show($"Quick Fix failed: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                Managers.UI.ToastManager.ShowError($"Quick Fix failed: {ex.Message}");
             }
         }
 
@@ -7290,15 +7397,7 @@ if ($rebootPending) {
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show(
-                            "Failed to restart with elevation.\n\n" +
-                            "Please manually:\n" +
-                            "1. Close NecessaryAdminTool Suite\n" +
-                            "2. Right-click NecessaryAdminTool.exe\n" +
-                            "3. Select 'Run as Administrator'",
-                            "Elevation Failed",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Error);
+                        Managers.UI.ToastManager.ShowError("Failed to restart with elevation.\n\n" +"Please manually:\n" +"1. Close NecessaryAdminTool Suite\n" +"2. Right-click NecessaryAdminTool.exe\n" +"3. Select \'Run as Administrator\'");
                         LogManager.LogError("Failed to restart with elevation from login", ex);
                     }
                     break;
@@ -7308,8 +7407,7 @@ if ($rebootPending) {
                 {
                     if (!SecurityValidator.IsValidDomainUser(lw.Username))
                     {
-                        MessageBox.Show("Invalid username. Use domain\\user format.", "Invalid Input",
-                            MessageBoxButton.OK, MessageBoxImage.Warning);
+                        Managers.UI.ToastManager.ShowWarning("Invalid username. Use domain\\user format.");
                         attempt++;
                         continue;
                     }
@@ -7337,11 +7435,9 @@ if ($rebootPending) {
                     {
                         attempt++;
                         if (attempt < MAX)
-                            MessageBox.Show($"Authentication failed.\n\n{MAX - attempt} attempts remaining.",
-                                "Authentication Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            Managers.UI.ToastManager.ShowWarning($"Authentication failed.\n\n{MAX - attempt} attempts remaining.");
                         else
-                            MessageBox.Show("Maximum authentication attempts exceeded.\n\nApplication will close.",
-                                "Access Denied", MessageBoxButton.OK, MessageBoxImage.Error);
+                            Managers.UI.ToastManager.ShowError("Maximum authentication attempts exceeded.\n\nApplication will close.");
                     }
                 }
                 else break;
@@ -7379,13 +7475,7 @@ if ($rebootPending) {
                 {
                     Dispatcher.Invoke(() =>
                     {
-                        MessageBox.Show(
-                            "You are authenticated but NOT a Domain Admin.\n\n" +
-                            "Some features (deployment, destructive tools) are disabled.\n\n" +
-                            "Contact your IT administrator for Domain Admin access.",
-                            "Limited Access",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
+                        Managers.UI.ToastManager.ShowInfo("You are authenticated but NOT a Domain Admin.\n\n" +"Some features (deployment, destructive tools) are disabled.\n\n" +"Contact your IT administrator for Domain Admin access.");
                     });
                 }
             }
@@ -7474,11 +7564,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             catch (Exception ex)
             {
                 LogManager.LogError("Failed to create admin launcher", ex);
-                MessageBox.Show(
-                    $"Failed to create admin launcher:\n\n{ex.Message}",
-                    "Creation Failed",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                Managers.UI.ToastManager.ShowError($"Failed to create admin launcher:\n\n{ex.Message}");
                 throw;
             }
         }
@@ -8463,7 +8549,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
                 if (string.IsNullOrEmpty(selectedDC))
                 {
-                    MessageBox.Show("Please select a Domain Controller first.", "No DC Selected", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Managers.UI.ToastManager.ShowWarning("Please select a Domain Controller first.");
                     return;
                 }
 
@@ -8473,7 +8559,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
                 if (!_isLoggedIn || _authPass == null)
                 {
-                    MessageBox.Show("Please authenticate first (LOGIN button in top toolbar).", "Authentication Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Managers.UI.ToastManager.ShowWarning("Please authenticate first (LOGIN button in top toolbar).");
                     return;
                 }
 
@@ -8504,7 +8590,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 Mouse.OverrideCursor = null;
                 AppendTerminal($"[AD Browser] Failed to load AD objects: {ex.Message}", isError: true);
                 LogManager.LogError("AD Object Browser initialization failed", ex);
-                MessageBox.Show($"Failed to load Active Directory objects:\n\n{ex.Message}", "AD Browser Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Managers.UI.ToastManager.ShowError($"Failed to load Active Directory objects:\n\n{ex.Message}");
             }
         }
 
@@ -8579,7 +8665,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             }
         }
 
-        private void BtnSync_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Script sync — implement per deployment");
+        private void BtnSync_Click(object sender, RoutedEventArgs e) => Managers.UI.ToastManager.ShowInfo("Script sync — implement per deployment");
 
         private void BtnDownloadScripts_Click(object sender, RoutedEventArgs e)
         {
@@ -8631,15 +8717,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
                     if (filesWritten > 0)
                     {
-                        MessageBox.Show(
-                            $"Successfully downloaded {filesWritten} PowerShell script(s) to:\n{targetFolder}\n\n" +
-                            "Scripts included:\n" +
-                            "• NecessaryAdminTool_GeneralUpdate.ps1 (Windows Updates + Firmware)\n" +
-                            "• NecessaryAdminTool_FeatureUpdate.ps1 (Major OS Upgrades)\n\n" +
-                            "These scripts are compatible with ManageEngine Endpoint Central.",
-                            "Scripts Downloaded",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
+                        Managers.UI.ToastManager.ShowSuccess($"Successfully downloaded {filesWritten} PowerShell script(s) to:\n{targetFolder}\n\n" +"Scripts included:\n" +"• NecessaryAdminTool_GeneralUpdate.ps1 (Windows Updates + Firmware)\n" +"• NecessaryAdminTool_FeatureUpdate.ps1 (Major OS Upgrades)\n\n" +"These scripts are compatible with ManageEngine Endpoint Central.");
 
                         // Open folder
                         Process.Start("explorer.exe", targetFolder);
@@ -8650,11 +8728,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             {
                 LogManager.LogError("Failed to download scripts", ex);
                 AppendTerminal($"✗ Download failed: {ex.Message}", true);
-                MessageBox.Show(
-                    $"Failed to download scripts:\n{ex.Message}",
-                    "Download Error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                Managers.UI.ToastManager.ShowError($"Failed to download scripts:\n{ex.Message}");
             }
         }
         private void BtnTheme_Click(object sender, RoutedEventArgs e)
@@ -8667,7 +8741,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             catch (Exception ex)
             {
                 LogManager.LogError("Theme toggle failed", ex);
-                MessageBox.Show($"Theme toggle error: {ex.Message}");
+                Managers.UI.ToastManager.ShowError($"Theme toggle error: {ex.Message}");
             }
         }
 
@@ -8687,7 +8761,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             catch (Exception ex)
             {
                 LogManager.LogError("Options dialog error", ex);
-                MessageBox.Show($"Error opening options: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Managers.UI.ToastManager.ShowError($"Error opening options: {ex.Message}");
             }
         }
 
@@ -8711,7 +8785,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             catch (Exception ex)
             {
                 LogManager.LogError("About dialog error", ex);
-                MessageBox.Show($"Error displaying about information: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Managers.UI.ToastManager.ShowError($"Error displaying about information: {ex.Message}");
             }
         }
 
@@ -8729,11 +8803,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             catch (Exception ex)
             {
                 LogManager.LogError("Manual update check failed", ex);
-                MessageBox.Show(
-                    $"Failed to check for updates:\n\n{ex.Message}",
-                    "Update Error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                Managers.UI.ToastManager.ShowError($"Failed to check for updates:\n\n{ex.Message}");
             }
         }
 
@@ -8789,9 +8859,9 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 LogManager.LogError("Failed to reload global services config", ex);
             }
         }
-        private void BtnSyncDB_Click(object sender, RoutedEventArgs e) { try { if (File.Exists(SecureConfig.InventoryDbPath)) MessageBox.Show($"Synced to:\n{SecureConfig.InventoryDbPath}"); else MessageBox.Show("DB not accessible"); } catch (Exception ex) { MessageBox.Show(ex.Message); } }
+        private void BtnSyncDB_Click(object sender, RoutedEventArgs e) { try { if (File.Exists(SecureConfig.InventoryDbPath)) Managers.UI.ToastManager.ShowSuccess($"Synced to:\n{SecureConfig.InventoryDbPath}"); else Managers.UI.ToastManager.ShowWarning("DB not accessible"); } catch (Exception ex) { Managers.UI.ToastManager.ShowError(ex.Message); } }
         private void BtnWarranty_Click(object sender, RoutedEventArgs e) { if (!string.IsNullOrEmpty(_currentServiceTag) && _currentServiceTag != "N/A") try { Process.Start(new ProcessStartInfo($"https://www.dell.com/support/home/en-us/product-support/servicetag/{_currentServiceTag}/overview") { UseShellExecute = true }); } catch { } }
-        private void BtnWOL_Click(object sender, RoutedEventArgs e) => MessageBox.Show("WOL — implement Magic Packet logic");
+        private void BtnWOL_Click(object sender, RoutedEventArgs e) => Managers.UI.ToastManager.ShowInfo("WOL — implement Magic Packet logic");
         private void BtnOpenLog_Click(object sender, RoutedEventArgs e) { if (File.Exists(LogManager.GetDebugLogPath())) Process.Start("notepad.exe", LogManager.GetDebugLogPath()); }
         private void Menu_RefreshLogs_Click(object sender, RoutedEventArgs e) => LoadMasterLog();
         private void ComboTarget_KeyDown(object sender, KeyEventArgs e) { if (e.Key == Key.Enter) BtnScan_Click(sender, e); }
@@ -8832,10 +8902,10 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
                 string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), $"NecessaryAdminTool_Inventory_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
                 File.WriteAllText(path, sb.ToString());
-                MessageBox.Show($"Exported to:\n{path}", "Export Complete");
+                Managers.UI.ToastManager.ShowSuccess($"Exported to:\n{path}");
                 AddLog("local", "EXPORT", path, "OK");
             }
-            catch (Exception ex) { MessageBox.Show($"Export failed: {ex.Message}"); }
+            catch (Exception ex) { Managers.UI.ToastManager.ShowError($"Export failed: {ex.Message}"); }
         }
 
         private void Ctx_KillProc_Click(object sender, RoutedEventArgs e) { if (AuditGrid.SelectedItem is AuditLog log) { var pn = log.Details.Split(' ')[0]; if (!SecurityValidator.ContainsDangerousPatterns(pn)) RunHybridExecutor($"Stop-Process -Name {pn} -Force", "", "KILL_PROC"); } }
@@ -8843,17 +8913,19 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
         private void BtnPush_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target selected"); return; }
+            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+
+            if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target selected"); return; }
             if (ComboScripts.SelectedIndex == 0) RunHybridExecutor(Script_General, "", "DEPLOY_GENERAL");
             else RunHybridExecutor(Script_Feature, "", "DEPLOY_FEATURE");
         }
         private void BtnConsole_Click(object sender, RoutedEventArgs e)
         {
             string cmd = TxtConsoleInput.Text; if (string.IsNullOrWhiteSpace(cmd)) return;
-            if (SecurityValidator.ContainsDangerousPatterns(cmd)) { MessageBox.Show("Blocked — dangerous patterns"); return; }
+            if (SecurityValidator.ContainsDangerousPatterns(cmd)) { Managers.UI.ToastManager.ShowWarning("Blocked — dangerous patterns"); return; }
             RunHybridExecutor(cmd, "", "CONSOLE_CMD"); TxtConsoleInput.Text = "";
         }
-        private void BtnUninstall_Click(object sender, RoutedEventArgs e) { MessageBox.Show("Use standard Windows uninstall."); }
+        private void BtnUninstall_Click(object sender, RoutedEventArgs e) { Managers.UI.ToastManager.ShowInfo("Use standard Windows uninstall."); }
 
         // ############################################################################
         // REGION: CONTEXT MENU HANDLERS (RMM Integration)
@@ -8887,7 +8959,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 string targetHost = selectedDevice.Hostname;
                 if (string.IsNullOrWhiteSpace(targetHost))
                 {
-                    MessageBox.Show("No device selected", "Remote Control", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Managers.UI.ToastManager.ShowWarning("No device selected");
                     return;
                 }
 
@@ -8908,11 +8980,11 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 RemoteControlManager.LaunchSession(toolType, targetHost);
                 AddRecentTarget(targetHost); // Track in recent targets
 
-                MessageBox.Show($"Remote session initiated to {targetHost}", "Remote Control", MessageBoxButton.OK, MessageBoxImage.Information);
+                Managers.UI.ToastManager.ShowSuccess($"Remote session initiated to {targetHost}");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to launch remote session:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Managers.UI.ToastManager.ShowError($"Failed to launch remote session:\n{ex.Message}");
                 LogManager.LogError("Failed to launch RMM session from context menu", ex);
             }
         }
@@ -8965,8 +9037,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 string targetHost = ComboTarget.Text.Trim();
                 if (string.IsNullOrWhiteSpace(targetHost))
                 {
-                    MessageBox.Show("Please enter a target hostname or IP address in the Target System Control panel.",
-                        "Target Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Managers.UI.ToastManager.ShowWarning("Please enter a target hostname or IP address in the Target System Control panel.");
                     return;
                 }
 
@@ -8987,13 +9058,11 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 RemoteControlManager.LaunchSession(toolType, targetHost);
                 AddRecentTarget(targetHost);
 
-                MessageBox.Show($"Remote session initiated to {targetHost}", "Remote Control",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
+                Managers.UI.ToastManager.ShowSuccess($"Remote session initiated to {targetHost}");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to launch remote session:\n{ex.Message}",
-                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Managers.UI.ToastManager.ShowError($"Failed to launch remote session:\n{ex.Message}");
                 LogManager.LogError("Failed to launch RMM session from quick-launch", ex);
             }
         }
@@ -9026,7 +9095,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 if (GridInventory.SelectedItem is PCInventory selectedDevice && !string.IsNullOrWhiteSpace(selectedDevice.Hostname))
                 {
                     Clipboard.SetText(selectedDevice.Hostname);
-                    MessageBox.Show($"Copied: {selectedDevice.Hostname}", "Clipboard", MessageBoxButton.OK, MessageBoxImage.Information);
+                    Managers.UI.ToastManager.ShowSuccess($"Copied: {selectedDevice.Hostname}");
                 }
             }
             catch (Exception ex)
@@ -9051,7 +9120,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                         $"Chassis: {selectedDevice.Chassis}\n" +
                         $"BitLocker: {selectedDevice.BitLockerStatus}";
 
-                    MessageBox.Show(details, "Device Details", MessageBoxButton.OK, MessageBoxImage.Information);
+                    Managers.UI.ToastManager.ShowInfo(details);
                 }
             }
             catch (Exception ex)
@@ -9357,8 +9426,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 if (endpoint.StartsWith("ping:", StringComparison.OrdinalIgnoreCase))
                 {
                     AppendTerminal($"[Services] Ping endpoints don't have status pages: {endpoint}");
-                    MessageBox.Show($"This is a ping endpoint ({endpoint}) - no status page available.",
-                        "No Status Page", MessageBoxButton.OK, MessageBoxImage.Information);
+                    Managers.UI.ToastManager.ShowInfo($"This is a ping endpoint ({endpoint}) - no status page available.");
                     return;
                 }
 
@@ -9376,16 +9444,14 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 else
                 {
                     AppendTerminal($"[Services] Invalid endpoint format: {endpoint}");
-                    MessageBox.Show($"Invalid endpoint format: {endpoint}\n\nExpected HTTP/HTTPS URL.",
-                        "Invalid Endpoint", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Managers.UI.ToastManager.ShowWarning($"Invalid endpoint format: {endpoint}\n\nExpected HTTP/HTTPS URL.");
                 }
             }
             catch (Exception ex)
             {
                 AppendTerminal($"[Services] Failed to open status page: {ex.Message}", isError: true);
                 LogManager.LogError("Failed to open service status page", ex);
-                MessageBox.Show($"Failed to open status page:\n\n{ex.Message}",
-                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Managers.UI.ToastManager.ShowError($"Failed to open status page:\n\n{ex.Message}");
             }
         }
 
@@ -9412,8 +9478,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
                 if (string.IsNullOrEmpty(dc) || dc.Contains("Scanning") || dc.Contains("probing"))
                 {
-                    MessageBox.Show("Please wait for DC scan to complete first.",
-                        "No DC Selected", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Managers.UI.ToastManager.ShowWarning("Please wait for DC scan to complete first.");
                     return;
                 }
 
@@ -9435,8 +9500,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             {
                 AppendTerminal($"[AD Management] ✗ Failed to refresh: {ex.Message}", isError: true);
                 LogManager.LogError("Failed to refresh AD Object Browser", ex);
-                MessageBox.Show($"Failed to refresh AD Object Browser:\n\n{ex.Message}",
-                    "Refresh Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                Managers.UI.ToastManager.ShowError($"Failed to refresh AD Object Browser:\n\n{ex.Message}");
             }
         }
 
@@ -9458,16 +9522,14 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
                 if (string.IsNullOrEmpty(dc) || dc.Contains("Scanning") || dc.Contains("probing"))
                 {
-                    MessageBox.Show("Please wait for DC scan to complete first.",
-                        "No DC Selected", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Managers.UI.ToastManager.ShowWarning("Please wait for DC scan to complete first.");
                     return;
                 }
 
                 // Check if logged in with admin credentials
                 if (!_isLoggedIn || _authPass == null)
                 {
-                    MessageBox.Show("Please login with domain admin credentials first.\n\nUse the login panel in the left sidebar.",
-                        "Authentication Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Managers.UI.ToastManager.ShowWarning("Please login with domain admin credentials first.\n\nUse the login panel in the left sidebar.");
                     return;
                 }
 
@@ -9494,8 +9556,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             {
                 AppendTerminal($"[AD Management] ✗ Failed to create object: {ex.Message}", isError: true);
                 LogManager.LogError("Failed to create AD object", ex);
-                MessageBox.Show($"Failed to create AD object:\n\n{ex.Message}",
-                    "Create Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                Managers.UI.ToastManager.ShowError($"Failed to create AD object:\n\n{ex.Message}");
             }
         }
 
@@ -9517,16 +9578,14 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
                 if (string.IsNullOrEmpty(dc) || dc.Contains("Scanning") || dc.Contains("probing"))
                 {
-                    MessageBox.Show("Please wait for DC scan to complete first.",
-                        "No DC Selected", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Managers.UI.ToastManager.ShowWarning("Please wait for DC scan to complete first.");
                     return;
                 }
 
                 // Check if logged in with admin credentials
                 if (!_isLoggedIn || _authPass == null)
                 {
-                    MessageBox.Show("Please login with domain admin credentials first.\n\nUse the login panel in the left sidebar.",
-                        "Authentication Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Managers.UI.ToastManager.ShowWarning("Please login with domain admin credentials first.\n\nUse the login panel in the left sidebar.");
                     return;
                 }
 
@@ -9553,8 +9612,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             {
                 AppendTerminal($"[AD Management] ✗ Failed to edit object: {ex.Message}", isError: true);
                 LogManager.LogError("Failed to edit AD object", ex);
-                MessageBox.Show($"Failed to edit AD object:\n\n{ex.Message}",
-                    "Edit Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                Managers.UI.ToastManager.ShowError($"Failed to edit AD object:\n\n{ex.Message}");
             }
         }
 
@@ -9576,16 +9634,14 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
                 if (string.IsNullOrEmpty(dc) || dc.Contains("Scanning") || dc.Contains("probing"))
                 {
-                    MessageBox.Show("Please wait for DC scan to complete first.",
-                        "No DC Selected", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Managers.UI.ToastManager.ShowWarning("Please wait for DC scan to complete first.");
                     return;
                 }
 
                 // Check if logged in with admin credentials
                 if (!_isLoggedIn || _authPass == null)
                 {
-                    MessageBox.Show("Please login with domain admin credentials first.\n\nUse the login panel in the left sidebar.",
-                        "Authentication Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Managers.UI.ToastManager.ShowWarning("Please login with domain admin credentials first.\n\nUse the login panel in the left sidebar.");
                     return;
                 }
 
@@ -9613,8 +9669,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             {
                 AppendTerminal($"[AD Management] ✗ Failed to delete object: {ex.Message}", isError: true);
                 LogManager.LogError("Failed to delete AD object", ex);
-                MessageBox.Show($"Failed to delete AD object:\n\n{ex.Message}",
-                    "Delete Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                Managers.UI.ToastManager.ShowError($"Failed to delete AD object:\n\n{ex.Message}");
             }
         }
 
@@ -9900,14 +9955,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     }
 
                     // Notify user to login with profile credentials
-                    MessageBox.Show(
-                        $"Connection profile '{profile.Name}' loaded.\n\n" +
-                        $"Domain Controller: {profile.DomainController}\n" +
-                        $"Username: {profile.Username}\n\n" +
-                        "Please login using the credentials for this profile.",
-                        "Profile Loaded",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
+                    Managers.UI.ToastManager.ShowInfo($"Connection profile \'{profile.Name}\' loaded.\n\n" +$"Domain Controller: {profile.DomainController}\n" +$"Username: {profile.Username}\n\n" +"Please login using the credentials for this profile.");
 
                     AppendTerminal($"[Connection Profile] ✓ Profile loaded successfully");
                 }
@@ -9916,8 +9964,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             {
                 AppendTerminal($"[Connection Profile] ✗ Failed to manage profiles: {ex.Message}", isError: true);
                 LogManager.LogError("Failed to manage connection profiles", ex);
-                MessageBox.Show($"Failed to manage connection profiles:\n\n{ex.Message}",
-                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Managers.UI.ToastManager.ShowError($"Failed to manage connection profiles:\n\n{ex.Message}");
             }
         }
 
@@ -10013,7 +10060,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             string tool = sel.Content.ToString();
             string dc = ComboDC.Text;
             if (ComboDC.SelectedItem is ComboBoxItem di && di.Tag != null) { string t = di.Tag.ToString(); if (t != "Auto") dc = t; }
-            if (string.IsNullOrEmpty(dc) || dc.Contains("Scanning")) { MessageBox.Show("Wait for DC scan"); return; }
+            if (string.IsNullOrEmpty(dc) || dc.Contains("Scanning")) { Managers.UI.ToastManager.ShowWarning("Wait for DC scan"); return; }
 
             string mmc = "", args = "";
             switch (tool)
@@ -10027,7 +10074,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 case "AD Domains and Trusts": mmc = "domain.msc"; break;
                 case "Certification Authority": mmc = "certsrv.msc"; args = $"/ComputerName {dc}"; break;
                 case "Failover Cluster Manager": mmc = "cluadmin.msc"; break;
-                default: MessageBox.Show($"'{tool}' not configured"); return;
+                default: Managers.UI.ToastManager.ShowWarning($"\'{tool}\' not configured"); return;
             }
 
             // Uses LaunchMMCWithCreds which handles credential passing via runas /netonly
@@ -10048,13 +10095,13 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
             if (string.IsNullOrEmpty(dc) || dc.Contains("Scanning"))
             {
-                MessageBox.Show("Please select a Domain Controller first.", "No DC Selected", MessageBoxButton.OK, MessageBoxImage.Warning);
+                Managers.UI.ToastManager.ShowWarning("Please select a Domain Controller first.");
                 return;
             }
 
             if (!_isLoggedIn || _authPass == null)
             {
-                MessageBox.Show("Please login with Domain Admin credentials to access event logs.", "Authentication Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                Managers.UI.ToastManager.ShowWarning("Please login with Domain Admin credentials to access event logs.");
                 return;
             }
 
@@ -10350,16 +10397,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                                                 AppendTerminal($"✓ Event Viewer launched (PID: {proc.Id})");
                                                 AppendTerminal($"Navigate to: Windows Logs > Security");
                                                 AppendTerminal($"Filter: Event ID 4740 (Account Lockout)");
-                                                MessageBox.Show(
-                                                    "Event Viewer opened successfully!\n\n" +
-                                                    "Steps to view lockouts:\n" +
-                                                    "1. Navigate to: Windows Logs → Security\n" +
-                                                    "2. Right-click Security → Filter Current Log\n" +
-                                                    "3. Enter Event ID: 4740\n" +
-                                                    "4. Click OK",
-                                                    "Event Viewer Launched",
-                                                    MessageBoxButton.OK,
-                                                    MessageBoxImage.Information);
+                                                Managers.UI.ToastManager.ShowInfo("Event Viewer opened successfully!\n\n" +"Steps to view lockouts:\n" +"1. Navigate to: Windows Logs → Security\n" +"2. Right-click Security → Filter Current Log\n" +"3. Enter Event ID: 4740\n" +"4. Click OK");
                                             }
                                             else
                                             {
@@ -10370,12 +10408,10 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                                         {
                                             AppendTerminal($"✗ Failed to launch Event Viewer: {evtEx.Message}", true);
                                             LogManager.LogError("Event Viewer launch failed", evtEx);
-                                            MessageBox.Show(
+                                            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                                            Managers.UI.ToastManager.ShowError(
                                                 $"Could not launch Event Viewer:\n{evtEx.Message}\n\n" +
-                                                $"Try manually opening Event Viewer and connecting to: {dc}",
-                                                "Launch Failed",
-                                                MessageBoxButton.OK,
-                                                MessageBoxImage.Error);
+                                                $"Try manually opening Event Viewer and connecting to: {dc}");
                                         }
                                     }
                                 });
@@ -10402,7 +10438,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     if (anyMethodSucceeded)
                     {
                         AppendTerminal($"✓ Successfully accessed event logs on {dc} - no lockouts found in last 30 days");
-                        MessageBox.Show("No account lockout events found in the Security log for the past 30 days.\n\nThe event log was successfully queried.", "No Lockouts", MessageBoxButton.OK, MessageBoxImage.Information);
+                        Managers.UI.ToastManager.ShowInfo("No account lockout events found in the Security log for the past 30 days.\n\nThe event log was successfully queried.");
                     }
                     else
                     {
@@ -10426,7 +10462,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 Mouse.OverrideCursor = null;
                 HideBottomProgress("Query failed");
                 LogManager.LogError("Lockout check failed", ex);
-                MessageBox.Show($"Error: {ex.Message}", "Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                Managers.UI.ToastManager.ShowError($"Error: {ex.Message}");
             }
         }
 
@@ -10526,11 +10562,11 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
                     string filename = $"Lockouts_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
                     System.IO.File.WriteAllText(filename, csv);
-                    MessageBox.Show($"Exported to {filename}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    Managers.UI.ToastManager.ShowSuccess($"Exported to {filename}");
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Export failed: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Managers.UI.ToastManager.ShowError($"Export failed: {ex.Message}");
                 }
             };
             DockPanel.SetDock(exportBtn, Dock.Top);
@@ -10586,21 +10622,21 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         {
             if (_pinnedDevices.Count >= 10)
             {
-                MessageBox.Show("Maximum of 10 pinned devices reached.", "Limit Reached", MessageBoxButton.OK, MessageBoxImage.Warning);
+                Managers.UI.ToastManager.ShowWarning("Maximum of 10 pinned devices reached.");
                 return;
             }
 
             string input = TxtPinnedDeviceInput.Text.Trim();
             if (string.IsNullOrWhiteSpace(input))
             {
-                MessageBox.Show("Please enter a hostname or IP address.", "Input Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                Managers.UI.ToastManager.ShowWarning("Please enter a hostname or IP address.");
                 return;
             }
 
             // Check if already exists
             if (_pinnedDevices.Any(d => d.Input.Equals(input, StringComparison.OrdinalIgnoreCase)))
             {
-                MessageBox.Show("This device is already pinned.", "Duplicate Device", MessageBoxButton.OK, MessageBoxImage.Information);
+                Managers.UI.ToastManager.ShowInfo("This device is already pinned.");
                 return;
             }
 
@@ -10642,7 +10678,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             }
             else
             {
-                MessageBox.Show("Please select a device to remove.", "No Selection", MessageBoxButton.OK, MessageBoxImage.Information);
+                Managers.UI.ToastManager.ShowInfo("Please select a device to remove.");
             }
         }
 
@@ -10859,7 +10895,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         {
             if (_pinnedDevices.Count == 0)
             {
-                MessageBox.Show("No pinned devices to monitor.", "No Devices", MessageBoxButton.OK, MessageBoxImage.Information);
+                Managers.UI.ToastManager.ShowInfo("No pinned devices to monitor.");
                 return;
             }
 
@@ -13665,12 +13701,12 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             {
                 if (string.IsNullOrWhiteSpace(_txtUser.Text))
                 {
-                    MessageBox.Show("Enter username", "Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Managers.UI.ToastManager.ShowWarning("Enter username");
                     return;
                 }
                 if (_txtPass.SecurePassword.Length == 0)
                 {
-                    MessageBox.Show("Enter password", "Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Managers.UI.ToastManager.ShowWarning("Enter password");
                     return;
                 }
                 DialogResult = true;
@@ -14147,5 +14183,210 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         public double Percentage { get; set; }
         public string CountText { get; set; }
         public System.Windows.Media.Brush Color { get; set; }
+    }
+
+    // ############################################################################
+    // REGION: UI ENGINE EXTENSIONS - TAG: #AUTO_UPDATE_UI_ENGINE
+    // ############################################################################
+
+    public partial class MainWindow
+    {
+        /// <summary>
+        /// Toggle between DataGrid view and Card view
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #VIEW_TOGGLE #CARD_VIEW
+        /// </summary>
+        private void BtnToggleView_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                bool isCardViewVisible = CardViewContainer.Visibility == Visibility.Visible;
+
+                if (isCardViewVisible)
+                {
+                    // Switch to Grid View
+                    GridInventory.Visibility = Visibility.Visible;
+                    CardViewContainer.Visibility = Visibility.Collapsed;
+                    BtnToggleView.Content = "📇 CARD VIEW";
+                    Managers.UI.ToastManager.ShowInfo("Switched to grid view");
+                    LogManager.LogInfo("View switched to DataGrid");
+                }
+                else
+                {
+                    // Switch to Card View
+                    GridInventory.Visibility = Visibility.Collapsed;
+                    CardViewContainer.Visibility = Visibility.Visible;
+                    BtnToggleView.Content = "📊 GRID VIEW";
+                    Managers.UI.ToastManager.ShowInfo("Switched to card view");
+                    LogManager.LogInfo("View switched to Card layout");
+                }
+            }
+            catch (Exception ex)
+            {
+                Managers.UI.ToastManager.ShowError($"View toggle failed: {ex.Message}");
+                LogManager.LogError("BtnToggleView_Click failed", ex);
+            }
+        }
+
+        /// <summary>
+        /// Show Command Palette (Ctrl+K)
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #COMMAND_PALETTE
+        /// </summary>
+        private void ShowCommandPalette()
+        {
+            try
+            {
+                CommandPaletteOverlay.Visibility = Visibility.Visible;
+                CommandPaletteControl.Visibility = Visibility.Visible;
+                LogManager.LogInfo("Command Palette opened");
+            }
+            catch (Exception ex)
+            {
+                Managers.UI.ToastManager.ShowError($"Failed to open command palette: {ex.Message}");
+                LogManager.LogError("ShowCommandPalette failed", ex);
+            }
+        }
+
+        /// <summary>
+        /// Close Command Palette when clicking outside
+        /// </summary>
+        private void CommandPaletteOverlay_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            CommandPaletteOverlay.Visibility = Visibility.Collapsed;
+            LogManager.LogInfo("Command Palette closed");
+        }
+
+        /// <summary>
+        /// Handle command execution from Command Palette
+        /// TAG: #COMMAND_ROUTING
+        /// </summary>
+        private void CommandPalette_CommandExecuted(object sender, UI.Components.CommandExecutedEventArgs e)
+        {
+            try
+            {
+                var command = e.Command;
+                LogManager.LogInfo($"Executing command: {command.Id}");
+
+                // Route command to appropriate handler
+                switch (command.Id)
+                {
+                    // Scanning
+                    case "scan_fleet":
+                        BtnInvScan_Click(null, null);
+                        break;
+                    case "scan_single":
+                        ComboTarget.Focus();
+                        break;
+                    case "load_ad_objects":
+                        BtnLoadADObjects_Click(null, null);
+                        break;
+
+                    // Authentication
+                    case "auth_login":
+                        BtnAuth_Click(null, null);
+                        break;
+                    case "auth_logout":
+                        BtnAuth_Click(null, null); // Same button toggles
+                        break;
+
+                    // Remote Tools
+                    case "tool_rdp":
+                        if (!string.IsNullOrEmpty(_currentTarget))
+                            Tool_RDP_Click(null, null);
+                        else
+                            Managers.UI.ToastManager.ShowWarning("No target selected");
+                        break;
+                    case "tool_powershell":
+                        if (!string.IsNullOrEmpty(_currentTarget))
+                            Tool_PsExec_Click(null, null);
+                        else
+                            Managers.UI.ToastManager.ShowWarning("No target selected");
+                        break;
+                    case "tool_services":
+                        if (!string.IsNullOrEmpty(_currentTarget))
+                            Ctx_ServicesManager_Click(null, null);
+                        else
+                            Managers.UI.ToastManager.ShowWarning("No target selected");
+                        break;
+                    case "tool_processes":
+                        if (!string.IsNullOrEmpty(_currentTarget))
+                            Tool_Proc_Click(null, null);
+                        else
+                            Managers.UI.ToastManager.ShowWarning("No target selected");
+                        break;
+                    case "tool_eventlogs":
+                        if (!string.IsNullOrEmpty(_currentTarget))
+                            Ctx_EventLogs_Click(null, null);
+                        else
+                            Managers.UI.ToastManager.ShowWarning("No target selected");
+                        break;
+
+                    // Quick Fixes
+                    case "fix_windows_update":
+                        Ctx_FixWindowsUpdate_Click(null, null);
+                        break;
+                    case "fix_dns":
+                        Ctx_FixDNS_Click(null, null);
+                        break;
+                    case "fix_print_spooler":
+                        Ctx_FixPrintSpooler_Click(null, null);
+                        break;
+
+                    // Views
+                    case "toggle_view":
+                        BtnToggleView_Click(null, null);
+                        break;
+                    case "toggle_terminal":
+                        BtnToggleTerminal_Click(null, null);
+                        break;
+
+                    // Filters
+                    case "filter_online":
+                        BtnFilterOnline_Click(null, null);
+                        break;
+                    case "filter_offline":
+                        BtnFilterOffline_Click(null, null);
+                        break;
+                    case "filter_servers":
+                        BtnFilterServers_Click(null, null);
+                        break;
+                    case "filter_all":
+                        BtnFilterAll_Click(null, null);
+                        break;
+
+                    // Settings
+                    case "settings":
+                        BtnOptions_Click(null, null);
+                        break;
+                    case "about":
+                        BtnAbout_Click(null, null);
+                        break;
+
+                    default:
+                        Managers.UI.ToastManager.ShowWarning($"Command not implemented: {command.Title}");
+                        break;
+                }
+
+                Managers.UI.ToastManager.ShowSuccess($"Executed: {command.Title}");
+            }
+            catch (Exception ex)
+            {
+                Managers.UI.ToastManager.ShowError($"Command execution failed: {ex.Message}");
+                LogManager.LogError($"CommandPalette_CommandExecuted failed for {e.Command?.Id}", ex);
+            }
+        }
+
+        /// <summary>
+        /// Handle Ctrl+K keyboard shortcut
+        /// TAG: #KEYBOARD_SHORTCUTS
+        /// </summary>
+        private void MainWindow_KeyDown_CommandPalette(object sender, KeyEventArgs e)
+        {
+            // Ctrl+K - Open Command Palette
+            if (e.Key == Key.K && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                ShowCommandPalette();
+                e.Handled = true;
+            }
+        }
     }
 }

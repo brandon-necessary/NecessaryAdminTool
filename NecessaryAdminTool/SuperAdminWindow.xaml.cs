@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Reflection;
 using Microsoft.Win32;
 using System.Security.Cryptography;
+using NecessaryAdminTool.Managers.UI;
 
 namespace NecessaryAdminTool
 {
@@ -74,8 +75,7 @@ namespace NecessaryAdminTool
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error loading current settings:\n{ex.Message}", "Load Error",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                ToastManager.ShowWarning($"Error loading current settings: {ex.Message}");
             }
         }
 
@@ -122,15 +122,13 @@ namespace NecessaryAdminTool
             // Validation
             if (string.IsNullOrWhiteSpace(companyName) || companyName == "{{COMPANY_NAME}}")
             {
-                MessageBox.Show("Please enter a valid company name.", "Validation Error",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                ToastManager.ShowWarning("Please enter a valid company name.");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(domain) || domain == "{{COMPANY_DOMAIN}}" || !domain.Contains("."))
             {
-                MessageBox.Show("Please enter a valid domain (e.g., contoso.com).", "Validation Error",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                ToastManager.ShowWarning("Please enter a valid domain (e.g., contoso.com).");
                 return;
             }
 
@@ -171,23 +169,14 @@ namespace NecessaryAdminTool
                 // Log the change
                 LogWhiteLabelChange(companyName, domain);
 
-                MessageBox.Show(
-                    $"White-label configuration applied successfully!\n\n" +
-                    $"{filesModified} files modified.\n" +
-                    $"Backups saved to: {_backupPath}\n\n" +
-                    $"⚠️ Restart the application to see changes.",
-                    "Success",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                ToastManager.ShowSuccess($"White-label configuration applied! {filesModified} files modified. Restart to see changes.");
             }
             catch (Exception ex)
             {
                 TxtWhiteLabelStatus.Text = "✗ Error applying changes!";
                 TxtWhiteLabelStatus.Foreground = System.Windows.Media.Brushes.Red;
 
-                MessageBox.Show($"Error applying white-label changes:\n\n{ex.Message}\n\n" +
-                    $"Your files have been restored from backup.",
-                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ToastManager.ShowError($"Error applying white-label changes: {ex.Message}. Files restored from backup.");
 
                 // Restore from backup on error
                 RestoreFromBackup();
@@ -324,8 +313,7 @@ namespace NecessaryAdminTool
 
                 if (!backups.Any())
                 {
-                    MessageBox.Show("No backups found.", "Restore Error",
-                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    ToastManager.ShowWarning("No backups found.");
                     return;
                 }
 
@@ -345,13 +333,11 @@ namespace NecessaryAdminTool
                     File.Copy(backupCs, GetAboutWindowCsPath(), true);
                 }
 
-                MessageBox.Show($"Files restored from backup:\n{latestBackup}",
-                    "Restore Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                ToastManager.ShowSuccess($"Files restored from backup: {latestBackup}");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error restoring from backup:\n{ex.Message}",
-                    "Restore Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ToastManager.ShowError($"Error restoring from backup: {ex.Message}");
             }
         }
 
@@ -369,12 +355,7 @@ namespace NecessaryAdminTool
             // Save to config
             SaveAdvancedSetting("DebugMode", enabled.ToString());
 
-            MessageBox.Show(
-                $"Debug mode {(enabled ? "enabled" : "disabled")}.\n\n" +
-                $"Restart the application for changes to take effect.",
-                "Debug Mode",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
+            ToastManager.ShowInfo($"Debug mode {(enabled ? "enabled" : "disabled")}. Restart required.");
         }
 
         /// <summary>
@@ -387,12 +368,7 @@ namespace NecessaryAdminTool
             // Save to config
             SaveAdvancedSetting("HiddenFeatures", enabled.ToString());
 
-            MessageBox.Show(
-                $"Hidden features {(enabled ? "unlocked" : "locked")}.\n\n" +
-                $"Restart the application for changes to take effect.",
-                "Hidden Features",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
+            ToastManager.ShowInfo($"Hidden features {(enabled ? "unlocked" : "locked")}. Restart required.");
         }
 
         /// <summary>
@@ -446,19 +422,13 @@ namespace NecessaryAdminTool
                     }
                 }
 
-                MessageBox.Show(
-                    $"Settings reset complete!\n\n{deleted} configuration files deleted.\n\n" +
-                    $"The application will now close.\nAll settings will be reset on next launch.",
-                    "Reset Complete",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                ToastManager.ShowSuccess($"Settings reset! {deleted} files deleted. Application will close.");
 
                 Application.Current.Shutdown();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error resetting settings:\n{ex.Message}",
-                    "Reset Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ToastManager.ShowError($"Error resetting settings: {ex.Message}");
             }
         }
 
@@ -495,13 +465,11 @@ namespace NecessaryAdminTool
 
                 File.WriteAllText(dialog.FileName, json, Encoding.UTF8);
 
-                MessageBox.Show($"Configuration exported successfully to:\n{dialog.FileName}",
-                    "Export Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                ToastManager.ShowSuccess($"Configuration exported: {dialog.FileName}");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error exporting configuration:\n{ex.Message}",
-                    "Export Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ToastManager.ShowError($"Error exporting configuration: {ex.Message}");
             }
         }
 
@@ -533,14 +501,11 @@ namespace NecessaryAdminTool
 
                 UpdatePreview();
 
-                MessageBox.Show("Configuration imported successfully!\n\n" +
-                    "Click 'Apply Changes' to save to files.",
-                    "Import Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                ToastManager.ShowSuccess("Configuration imported! Click 'Apply Changes' to save.");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error importing configuration:\n{ex.Message}",
-                    "Import Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ToastManager.ShowError($"Error importing configuration: {ex.Message}");
             }
         }
 
@@ -556,20 +521,11 @@ namespace NecessaryAdminTool
             try
             {
                 // This would call the actual database provider's optimize method
-                MessageBox.Show(
-                    "Database optimization would be performed here.\n\n" +
-                    "In production, this calls:\n" +
-                    "  • SQLite: VACUUM\n" +
-                    "  • SQL Server: INDEX REBUILD\n" +
-                    "  • Access: COMPACT & REPAIR",
-                    "Database Optimization",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                ToastManager.ShowInfo("Database optimization: SQLite VACUUM, SQL Server INDEX REBUILD, Access COMPACT & REPAIR");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error optimizing database:\n{ex.Message}",
-                    "Database Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ToastManager.ShowError($"Error optimizing database: {ex.Message}");
             }
         }
 
@@ -590,17 +546,11 @@ namespace NecessaryAdminTool
                 if (dialog.ShowDialog() != true) return;
 
                 // This would call the actual database backup method
-                MessageBox.Show(
-                    $"Database backup would be saved to:\n{dialog.FileName}\n\n" +
-                    $"In production, this copies the active database file.",
-                    "Database Backup",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                ToastManager.ShowInfo($"Database backup saved: {dialog.FileName}");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error backing up database:\n{ex.Message}",
-                    "Backup Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ToastManager.ShowError($"Error backing up database: {ex.Message}");
             }
         }
 
@@ -623,15 +573,7 @@ namespace NecessaryAdminTool
 
             if (result != MessageBoxResult.Yes) return;
 
-            MessageBox.Show(
-                "In production, this would call:\n" +
-                "  • DELETE FROM Computers;\n" +
-                "  • DELETE FROM ScanHistory;\n" +
-                "  • DELETE FROM AssetTags;\n\n" +
-                "Function not implemented in preview.",
-                "Clear Database",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
+            ToastManager.ShowInfo("Production: DELETE FROM Computers/ScanHistory/AssetTags. Function not implemented in preview.");
         }
 
         #endregion

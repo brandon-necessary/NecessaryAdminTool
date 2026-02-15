@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using NecessaryAdminTool.Managers.UI;
 
 namespace NecessaryAdminTool
 {
@@ -52,8 +53,7 @@ namespace NecessaryAdminTool
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to initialize script library:\n\n{ex.Message}",
-                    "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ToastManager.ShowError($"Failed to initialize script library: {ex.Message}");
                 TxtStatus.Text = "Error: Failed to load script library";
             }
         }

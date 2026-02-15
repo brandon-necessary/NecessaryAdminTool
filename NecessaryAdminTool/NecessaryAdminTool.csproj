@@ -140,6 +140,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="UI\Components\CommandPalette.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Compile Include="AboutWindow.xaml.cs">
       <DependentUpon>AboutWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -296,6 +300,10 @@
     </Compile>
     <Compile Include="UI\Components\ComputerCard.xaml.cs">
       <DependentUpon>ComputerCard.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="UI\Components\CommandPalette.xaml.cs">
+      <DependentUpon>CommandPalette.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>

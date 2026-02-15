@@ -10,6 +10,7 @@ using System.Windows.Input;
 using System.IO;
 using Microsoft.Win32;
 using System.Web.Script.Serialization;
+using NecessaryAdminTool.Managers.UI;
 
 namespace NecessaryAdminTool
 {
@@ -584,12 +585,8 @@ namespace NecessaryAdminTool
                     // Reload UI
                     LoadAllSettings();
 
-                    MessageBox.Show(
-                        $"Settings reset to factory defaults!\n\n" +
-                        $"Backup created at:\n{backupPath}",
-                        "Reset Complete",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                    ToastManager.ShowSuccess($"Settings reset to factory defaults!\n\nBackup created at:\n{backupPath}");
 
                     ShowStatus("Factory reset completed - backup created", MessageType.Success);
                 }
@@ -781,7 +778,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 System.Runtime.InteropServices.Marshal.ReleaseComObject(shortcut);
                 System.Runtime.InteropServices.Marshal.ReleaseComObject(shell);
 
-                MessageBox.Show(
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                ToastManager.ShowSuccess(
                     "✅ Admin launcher created successfully!\n\n" +
                     $"Desktop shortcut: \"NecessaryAdminTool Suite (Admin)\"\n" +
                     $"Batch file: {batPath}\n\n" +
@@ -790,21 +788,15 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     "2. Enter your admin password when prompted\n" +
                     "3. Windows will remember your password\n\n" +
                     "📌 FUTURE USE:\n" +
-                    "Just double-click the shortcut - no password needed!",
-                    "Shortcut Created",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                    "Just double-click the shortcut - no password needed!");
 
                 ShowStatus("Admin launcher created successfully!", MessageType.Success);
             }
             catch (Exception ex)
             {
                 ShowStatus($"Failed to create admin launcher: {ex.Message}", MessageType.Error);
-                MessageBox.Show(
-                    $"Failed to create admin launcher:\n\n{ex.Message}",
-                    "Creation Failed",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                ToastManager.ShowError($"Failed to create admin launcher:\n\n{ex.Message}");
             }
         }
 
@@ -2106,7 +2098,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     File.WriteAllText(dialog.FileName, json);
 
                     ShowStatus($"✅ All settings exported to {Path.GetFileName(dialog.FileName)}", MessageType.Success);
-                    MessageBox.Show(
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                    ToastManager.ShowSuccess(
                         $"Settings backup created successfully!\n\n" +
                         $"File: {Path.GetFileName(dialog.FileName)}\n" +
                         $"Location: {Path.GetDirectoryName(dialog.FileName)}\n\n" +
@@ -2114,17 +2107,14 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                         $"• Connection Profiles ({_connectionProfiles.Count})\n" +
                         $"• Bookmarks ({_bookmarks.Count})\n" +
                         $"• All preferences and settings\n\n" +
-                        $"Keep this file safe for easy restoration!",
-                        "Export Complete",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
+                        $"Keep this file safe for easy restoration!");
                 }
             }
             catch (Exception ex)
             {
                 ShowStatus($"Failed to export settings: {ex.Message}", MessageType.Error);
-                MessageBox.Show($"Export failed:\n\n{ex.Message}", "Export Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                ToastManager.ShowError($"Export failed:\n\n{ex.Message}");
             }
         }
 
@@ -2243,21 +2233,19 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     ShowStatus($"✅ Settings imported successfully from backup", MessageType.Success);
                     string exportDate = backupData.ContainsKey("ExportDate") ? backupData["ExportDate"].ToString() : "Unknown";
 
-                    MessageBox.Show(
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                    ToastManager.ShowSuccess(
                         $"Settings imported successfully!\n\n" +
                         $"Imported from: {Path.GetFileName(dialog.FileName)}\n" +
                         $"Date: {exportDate}\n\n" +
-                        $"Restart the application to apply all changes.",
-                        "Import Complete",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
+                        $"Restart the application to apply all changes.");
                 }
             }
             catch (Exception ex)
             {
                 ShowStatus($"Failed to import settings: {ex.Message}", MessageType.Error);
-                MessageBox.Show($"Import failed:\n\n{ex.Message}", "Import Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                ToastManager.ShowError($"Import failed:\n\n{ex.Message}");
             }
         }
 
@@ -2467,8 +2455,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     }
 
                     ShowStatus($"Database backed up to: {Path.GetFileName(dialog.FileName)}", MessageType.Success);
-                    MessageBox.Show($"Database backed up successfully!\n\nLocation: {dialog.FileName}",
-                        "Backup Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                    ToastManager.ShowSuccess($"Database backed up successfully!\n\nLocation: {dialog.FileName}");
 
                     if (button != null)
                     {
@@ -2481,8 +2469,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             {
                 LogManager.LogError("Failed to backup database", ex);
                 ShowStatus($"Backup failed: {ex.Message}", MessageType.Error);
-                MessageBox.Show($"Failed to backup database:\n\n{ex.Message}",
-                    "Backup Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                ToastManager.ShowError($"Failed to backup database:\n\n{ex.Message}");
             }
         }
 
@@ -2537,20 +2525,18 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     }
 
                     ShowStatus("Database restored successfully", MessageType.Success);
-                    MessageBox.Show(
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                    ToastManager.ShowSuccess(
                         "Database restored successfully!\n\n" +
-                        "Restart the application to use the restored database.",
-                        "Restore Complete",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
+                        "Restart the application to use the restored database.");
                 }
             }
             catch (Exception ex)
             {
                 LogManager.LogError("Failed to restore database", ex);
                 ShowStatus($"Restore failed: {ex.Message}", MessageType.Error);
-                MessageBox.Show($"Failed to restore database:\n\n{ex.Message}",
-                    "Restore Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                ToastManager.ShowError($"Failed to restore database:\n\n{ex.Message}");
             }
         }
 
@@ -2597,8 +2583,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 await RefreshDatabaseStatisticsAsync();
 
                 ShowStatus("Database optimized successfully", MessageType.Success);
-                MessageBox.Show("Database optimized!\n\nOld data has been purged and the database has been compacted.",
-                    "Optimization Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                ToastManager.ShowSuccess("Database optimized!\n\nOld data has been purged and the database has been compacted.");
 
                 if (button != null)
                 {
@@ -2610,8 +2596,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             {
                 LogManager.LogError("Failed to optimize database", ex);
                 ShowStatus($"Optimization failed: {ex.Message}", MessageType.Error);
-                MessageBox.Show($"Failed to optimize database:\n\n{ex.Message}",
-                    "Optimization Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                ToastManager.ShowError($"Failed to optimize database:\n\n{ex.Message}");
             }
         }
 
@@ -2642,20 +2628,18 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     LoadDatabaseConfiguration();
 
                     ShowStatus("Database configuration updated", MessageType.Success);
-                    MessageBox.Show(
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                    ToastManager.ShowSuccess(
                         "Database configuration updated successfully!\n\n" +
-                        "Restart the application to use the new configuration.",
-                        "Configuration Updated",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
+                        "Restart the application to use the new configuration.");
                 }
             }
             catch (Exception ex)
             {
                 LogManager.LogError("Failed to reconfigure database", ex);
                 ShowStatus($"Configuration failed: {ex.Message}", MessageType.Error);
-                MessageBox.Show($"Failed to reconfigure database:\n\n{ex.Message}",
-                    "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                ToastManager.ShowError($"Failed to reconfigure database:\n\n{ex.Message}");
             }
         }
 
@@ -2782,12 +2766,10 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 if (success)
                 {
                     ShowStatus("Background scan started", MessageType.Success);
-                    MessageBox.Show(
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                    ToastManager.ShowSuccess(
                         "Background scan has been started.\n\n" +
-                        "Check the log files for scan results.",
-                        "Scan Started",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
+                        "Check the log files for scan results.");
 
                     LoadServiceStatus();
                 }
@@ -2829,11 +2811,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     Properties.Settings.Default.Save();
 
                     ShowStatus("Background service uninstalled", MessageType.Success);
-                    MessageBox.Show(
-                        "Background service has been uninstalled successfully.",
-                        "Service Uninstalled",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                    ToastManager.ShowSuccess("Background service has been uninstalled successfully.");
 
                     LoadServiceStatus();
                 }
@@ -2846,8 +2825,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             {
                 LogManager.LogError("Failed to uninstall service", ex);
                 ShowStatus($"Error uninstalling service: {ex.Message}", MessageType.Error);
-                MessageBox.Show($"Failed to uninstall service:\n\n{ex.Message}",
-                    "Uninstall Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                ToastManager.ShowError($"Failed to uninstall service:\n\n{ex.Message}");
             }
         }
 
@@ -2888,20 +2867,18 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     Properties.Settings.Default.Save();
                     LogManager.LogInfo("First-run setup flag reset - setup wizard will run on next manual launch");
 
-                    MessageBox.Show(
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                    ToastManager.ShowSuccess(
                         "✓ Setup wizard will run on next launch\n\n" +
-                        "The database setup wizard will appear when you restart NecessaryAdminTool.",
-                        "Reset Successful",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
+                        "The database setup wizard will appear when you restart NecessaryAdminTool.");
                 }
                 // If Cancel, do nothing
             }
             catch (Exception ex)
             {
                 LogManager.LogError("Failed to reset setup flag", ex);
-                MessageBox.Show($"Failed to reset setup flag:\n\n{ex.Message}",
-                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                ToastManager.ShowError($"Failed to reset setup flag:\n\n{ex.Message}");
             }
         }
 
