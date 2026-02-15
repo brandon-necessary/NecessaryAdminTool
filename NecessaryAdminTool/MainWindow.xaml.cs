@@ -3516,7 +3516,12 @@ namespace NecessaryAdminTool
                 try
                 {
                     AppendTerminal($"[Method 1] Attempting PowerShell Remoting...");
-                    string fullScript = $"$ProgressPreference='SilentlyContinue'; Invoke-Command -ComputerName '{targetHost}' -ScriptBlock {{ {psCommand} }} | Out-String";
+
+                    // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+                    // Sanitize target host for PowerShell command
+                    string safeTargetHost = NecessaryAdminTool.Security.SecurityValidator.SanitizePowerShellInput(targetHost);
+
+                    string fullScript = $"$ProgressPreference='SilentlyContinue'; Invoke-Command -ComputerName '{safeTargetHost}' -ScriptBlock {{ {psCommand} }} | Out-String";
                     string b64 = Convert.ToBase64String(Encoding.Unicode.GetBytes(fullScript));
                     var psi = new ProcessStartInfo
                     {
@@ -3605,18 +3610,26 @@ namespace NecessaryAdminTool
                                 return;
                             }
 
+                            // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+                            // Sanitize all parameters for PsExec execution
+                            string safeTargetHost = NecessaryAdminTool.Security.SecurityValidator.SanitizePowerShellInput(targetHost);
+                            string safeAuthUser = NecessaryAdminTool.Security.SecurityValidator.SanitizePowerShellInput(_authUser);
+
                             string capturedPassword = null;
                             if (_authPass != null)
                             {
                                 SecureMemory.UseSecureString(_authPass, pwd => capturedPassword = pwd);
                             }
 
+                            // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+                            string safePassword = NecessaryAdminTool.Security.SecurityValidator.SanitizePowerShellInput(capturedPassword);
+
                             string psexecCommand = ConvertToWmiCommand(psCommand);
 
                             var psexecPsi = new ProcessStartInfo
                             {
                                 FileName = psexecPath,
-                                Arguments = $"\\\\{targetHost} -u {_authUser} -p \"{capturedPassword}\" -accepteula {psexecCommand}",
+                                Arguments = $"\\\\{safeTargetHost} -u {safeAuthUser} -p \"{safePassword}\" -accepteula {psexecCommand}",
                                 UseShellExecute = false,
                                 RedirectStandardOutput = true,
                                 RedirectStandardError = true,
@@ -6633,6 +6646,16 @@ if ($connection) {{
                     return;
                 }
 
+                // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+                // Validate target host before enabling WinRM via PsExec
+                if (!NecessaryAdminTool.Security.SecurityValidator.IsValidHostname(_currentTarget) &&
+                    !NecessaryAdminTool.Security.SecurityValidator.IsValidIPAddress(_currentTarget))
+                {
+                    Managers.UI.ToastManager.ShowError($"Invalid target format: {_currentTarget}");
+                    LogManager.LogWarning($"[EnableWinRM] Blocked invalid target: {_currentTarget}");
+                    return;
+                }
+
                 Mouse.OverrideCursor = Cursors.Wait;
                 ShowBottomProgress($"Enabling WinRM on {_currentTarget}...");
                 AppendTerminal($"Enabling WinRM on {_currentTarget}...");
@@ -6698,6 +6721,11 @@ if ($connection) {{
                             }
                         }
 
+                        // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+                        // Sanitize all inputs for PowerShell execution
+                        string safeTarget = NecessaryAdminTool.Security.SecurityValidator.SanitizePowerShellInput(_currentTarget);
+                        string safeUser = NecessaryAdminTool.Security.SecurityValidator.SanitizePowerShellInput(_authUser);
+
                         // Use PowerShell remoting via TCP (doesn't require WMI)
                         string capturedPassword = null;
                         if (_authPass != null)
@@ -6705,20 +6733,23 @@ if ($connection) {{
                             SecureMemory.UseSecureString(_authPass, pwd => capturedPassword = pwd);
                         }
 
+                        // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+                        string safePassword = NecessaryAdminTool.Security.SecurityValidator.SanitizePowerShellInput(capturedPassword);
+
                         string psScript = $@"
-                            $secpass = ConvertTo-SecureString '{capturedPassword}' -AsPlainText -Force
-                            $cred = New-Object System.Management.Automation.PSCredential('{_authUser}', $secpass)
+                            $secpass = ConvertTo-SecureString '{safePassword}' -AsPlainText -Force
+                            $cred = New-Object System.Management.Automation.PSCredential('{safeUser}', $secpass)
 
                             # Try WinRM first (might already be enabled)
                             try {{
-                                Invoke-Command -ComputerName {_currentTarget} -Credential $cred -ScriptBlock {{
+                                Invoke-Command -ComputerName {safeTarget} -Credential $cred -ScriptBlock {{
                                     Enable-PSRemoting -Force -SkipNetworkProfileCheck
                                     Set-Item WSMan:\localhost\Client\TrustedHosts -Value * -Force
                                 }} -ErrorAction Stop
                                 Write-Output 'SUCCESS'
                             }} catch {{
                                 # If WinRM fails, try PsExec
-                                & '{psexecPath}' \\{_currentTarget} -u {_authUser} -p '{capturedPassword}' -accepteula powershell.exe -Command ""Enable-PSRemoting -Force -SkipNetworkProfileCheck""
+                                & '{psexecPath}' \\{safeTarget} -u {safeUser} -p '{safePassword}' -accepteula powershell.exe -Command ""Enable-PSRemoting -Force -SkipNetworkProfileCheck""
                                 Write-Output 'SUCCESS_PSEXEC'
                             }}
                         ";
@@ -6826,7 +6857,21 @@ if ($connection) {{
         {
             if (GridInventory.SelectedItem is PCInventory pc && pc.Status == "ONLINE")
             {
-                try { Process.Start("mstsc.exe", $"/v:{pc.Hostname}"); }
+                // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+                // Validate hostname before RDP connection
+                if (!NecessaryAdminTool.Security.SecurityValidator.IsValidHostname(pc.Hostname) &&
+                    !NecessaryAdminTool.Security.SecurityValidator.IsValidIPAddress(pc.Hostname))
+                {
+                    Managers.UI.ToastManager.ShowError($"Invalid hostname format: {pc.Hostname}");
+                    LogManager.LogWarning($"[Ctx_RDP] Blocked invalid hostname: {pc.Hostname}");
+                    return;
+                }
+
+                try
+                {
+                    string sanitized = SecurityValidator.SanitizeHostname(pc.Hostname);
+                    Process.Start("mstsc.exe", $"/v:{sanitized}");
+                }
                 catch (Exception ex) { Managers.UI.ToastManager.ShowError($"RDP failed: {ex.Message}"); }
             }
         }

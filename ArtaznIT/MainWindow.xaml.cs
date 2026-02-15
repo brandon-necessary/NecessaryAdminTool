@@ -204,6 +204,322 @@ namespace ArtaznIT
         {
             return (value ?? "").Replace("\"", "\"\"");
         }
+
+        /// <summary>
+        /// Sanitize PowerShell input to prevent command injection
+        /// Removes dangerous characters that could break out of string context
+        /// TAG: #SECURITY_CRITICAL #POWERSHELL_INJECTION #COMMAND_INJECTION
+        /// </summary>
+        /// <param name="input">Input to sanitize</param>
+        /// <returns>Sanitized string safe for PowerShell interpolation</returns>
+        public static string SanitizePowerShellInput(string input)
+        {
+            if (string.IsNullOrEmpty(input)) return string.Empty;
+
+            // Remove command injection characters
+            // Backtick: escape character
+            // $: variable expansion
+            // ;: command separator
+            // &: background execution
+            // |: pipe operator
+            // < >: redirection
+            // \n \r: line breaks (could break out of string)
+            // \0: null terminator
+            var dangerous = new[] { '`', '$', ';', '&', '|', '<', '>', '\n', '\r', '\0' };
+            foreach (var c in dangerous)
+            {
+                input = input.Replace(c.ToString(), string.Empty);
+            }
+
+            // Escape single quotes for PowerShell (double them)
+            input = input.Replace("'", "''");
+
+            return input;
+        }
+
+        /// <summary>
+        /// Alias for SanitizePowerShellInput for consistency with security audit recommendations
+        /// TAG: #SECURITY_CRITICAL #POWERSHELL_INJECTION #COMMAND_INJECTION
+        /// </summary>
+        /// <param name="input">Input to sanitize</param>
+        /// <returns>Sanitized string safe for PowerShell interpolation</returns>
+        public static string SanitizeForPowerShell(string input)
+        {
+            return SanitizePowerShellInput(input);
+        }
+
+        /// <summary>
+        /// Validate PowerShell script content for dangerous commands
+        /// Detects common attack patterns and malicious commands
+        /// TAG: #SECURITY_CRITICAL #POWERSHELL_INJECTION_PREVENTION #MALWARE_DETECTION
+        /// </summary>
+        /// <param name="scriptContent">PowerShell script content to validate</param>
+        /// <returns>True if script is safe, false if dangerous patterns detected</returns>
+        public static bool ValidatePowerShellScript(string scriptContent)
+        {
+            if (string.IsNullOrWhiteSpace(scriptContent))
+            {
+                LogManager.LogWarning("[SecurityValidator] PowerShell script validation failed: empty script");
+                return false;
+            }
+
+            // Convert to lowercase for case-insensitive matching
+            string scriptLower = scriptContent.ToLowerInvariant();
+
+            // Dangerous command patterns that should be blocked or flagged
+            var dangerousPowerShellPatterns = new[]
+            {
+                // Download and execution patterns
+                "invoke-webrequest",
+                "iwr ",
+                "wget ",
+                "curl ",
+                "downloadstring",
+                "downloadfile",
+                "net.webclient",
+                "bitstransfer",
+
+                // Encoded/obfuscated command execution
+                "invoke-expression",
+                "iex ",
+                "-encodedcommand",
+                "-enc ",
+                "frombase64string",
+
+                // System modification commands
+                "remove-item",
+                "del ",
+                "rm ",
+                "format-volume",
+                "clear-disk",
+                "initialize-disk",
+
+                // Credential theft
+                "mimikatz",
+                "invoke-mimikatz",
+                "get-credential",
+                "convertfrom-securestring",
+                "export-clixml",
+
+                // Persistence mechanisms
+                "new-scheduledtask",
+                "register-scheduledtask",
+                "set-itemproperty -path hkcu:",
+                "set-itemproperty -path hklm:",
+                "new-service",
+
+                // Disable security features
+                "set-mppreference",
+                "disable-windowsdefender",
+                "set-executionpolicy bypass",
+                "add-mppreference -exclusion",
+
+                // Reverse shells / C2
+                "new-object system.net.sockets.tcpclient",
+                "system.net.sockets.tcp",
+                "nc.exe",
+                "ncat",
+                "powercat",
+
+                // Script block logging bypass
+                "$null = ",
+                "out-null",
+                "-windowstyle hidden",
+
+                // File encryption (ransomware)
+                "cryptoserviceprovider",
+                "aes.create",
+                "rijndaelmanaged"
+            };
+
+            foreach (var pattern in dangerousPowerShellPatterns)
+            {
+                if (scriptLower.Contains(pattern))
+                {
+                    LogManager.LogWarning($"[SecurityValidator] Dangerous PowerShell pattern detected: {pattern}");
+                    LogManager.LogWarning($"[SecurityValidator] Script content preview: {scriptContent.Substring(0, Math.Min(200, scriptContent.Length))}...");
+                    return false;
+                }
+            }
+
+            // Check for excessive obfuscation (multiple layers of encoding)
+            int obfuscationScore = 0;
+            if (scriptLower.Contains("char") && scriptLower.Contains("join")) obfuscationScore++;
+            if (scriptLower.Contains("replace") && scriptLower.Contains("split")) obfuscationScore++;
+            if (scriptLower.Contains("[convert]")) obfuscationScore++;
+            if (scriptLower.Contains("([char]")) obfuscationScore++;
+
+            if (obfuscationScore >= 3)
+            {
+                LogManager.LogWarning("[SecurityValidator] PowerShell script appears heavily obfuscated");
+                return false;
+            }
+
+            // All checks passed
+            return true;
+        }
+
+        /// <summary>
+        /// Validate username for Active Directory compatibility
+        /// Supports DOMAIN\user and user@domain.com formats
+        /// TAG: #SECURITY_CRITICAL #USERNAME_VALIDATION #ACTIVE_DIRECTORY
+        /// </summary>
+        /// <param name="username">Username to validate</param>
+        /// <returns>True if username is valid</returns>
+        public static bool IsValidUsername(string username)
+        {
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                LogManager.LogWarning("[SecurityValidator] Username validation failed: null or empty");
+                return false;
+            }
+
+            // Format 1: DOMAIN\user
+            if (username.Contains("\\"))
+            {
+                var parts = username.Split('\\');
+                if (parts.Length != 2)
+                {
+                    LogManager.LogWarning($"[SecurityValidator] Username validation failed: invalid DOMAIN\\user format");
+                    return false;
+                }
+                return IsValidDomainNamePart(parts[0]) && IsValidUserPart(parts[1]);
+            }
+            // Format 2: user@domain.com
+            else if (username.Contains("@"))
+            {
+                var parts = username.Split('@');
+                if (parts.Length != 2)
+                {
+                    LogManager.LogWarning($"[SecurityValidator] Username validation failed: invalid user@domain format");
+                    return false;
+                }
+                return IsValidUserPart(parts[0]) && IsValidDomainNamePart(parts[1]);
+            }
+            // Format 3: user (no domain)
+            else
+            {
+                return IsValidUserPart(username);
+            }
+        }
+
+        /// <summary>
+        /// Validate domain name part (DNS-compatible)
+        /// </summary>
+        private static bool IsValidDomainNamePart(string domain)
+        {
+            if (string.IsNullOrWhiteSpace(domain)) return false;
+            if (domain.Length > 255) return false;
+
+            // Allow letters, digits, dots, hyphens (DNS-safe)
+            return domain.All(c => char.IsLetterOrDigit(c) || c == '.' || c == '-');
+        }
+
+        /// <summary>
+        /// Validate username part (without domain)
+        /// Ensures compliance with Active Directory username restrictions
+        /// </summary>
+        private static bool IsValidUserPart(string user)
+        {
+            if (string.IsNullOrWhiteSpace(user)) return false;
+            if (user.Length > 104) return false; // AD limit is 104 characters
+
+            // AD disallows: / \ [ ] : | < > + = ; , ? * @ "
+            var invalidChars = @"/\[]:|<>+=;,?*@""";
+            return !user.Any(c => invalidChars.Contains(c));
+        }
+
+        /// <summary>
+        /// Validate IP address (IPv4 or IPv6)
+        /// TAG: #SECURITY_CRITICAL #IP_VALIDATION
+        /// </summary>
+        /// <param name="ipAddress">IP address to validate</param>
+        /// <returns>True if IP address is valid</returns>
+        public static bool IsValidIPAddress(string ipAddress)
+        {
+            if (string.IsNullOrWhiteSpace(ipAddress)) return false;
+
+            try
+            {
+                System.Net.IPAddress.Parse(ipAddress);
+                return true;
+            }
+            catch
+            {
+                LogManager.LogWarning($"[SecurityValidator] IP address validation failed: {ipAddress}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Validate file path to prevent path traversal attacks
+        /// Ensures file path is within allowed base directory
+        /// TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL #DIRECTORY_TRAVERSAL
+        /// </summary>
+        /// <param name="filePath">File path to validate</param>
+        /// <param name="allowedBasePath">Allowed base directory</param>
+        /// <returns>True if path is safe</returns>
+        public static bool IsValidFilePath(string filePath, string allowedBasePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+            {
+                LogManager.LogWarning("[SecurityValidator] File path validation failed: null or empty");
+                return false;
+            }
+
+            try
+            {
+                // Resolve to absolute paths
+                string fullPath = Path.GetFullPath(filePath);
+                string basePath = Path.GetFullPath(allowedBasePath);
+
+                // Ensure path is within allowed directory (prevents ../ attacks)
+                bool isValid = fullPath.StartsWith(basePath, StringComparison.OrdinalIgnoreCase);
+
+                if (!isValid)
+                {
+                    LogManager.LogWarning($"[SecurityValidator] Path traversal attempt blocked: {filePath} is outside {allowedBasePath}");
+                }
+
+                return isValid;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"[SecurityValidator] File path validation error: {filePath}", ex);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Validate filename to prevent directory traversal and invalid characters
+        /// TAG: #SECURITY_CRITICAL #FILENAME_VALIDATION
+        /// </summary>
+        /// <param name="filename">Filename to validate</param>
+        /// <returns>True if filename is safe</returns>
+        public static bool IsValidFilename(string filename)
+        {
+            if (string.IsNullOrWhiteSpace(filename))
+            {
+                LogManager.LogWarning("[SecurityValidator] Filename validation failed: null or empty");
+                return false;
+            }
+
+            // Check for path traversal attempts
+            if (filename.Contains("..") || filename.Contains("/") || filename.Contains("\\"))
+            {
+                LogManager.LogWarning($"[SecurityValidator] Filename validation failed: contains path separators or '..'");
+                return false;
+            }
+
+            // Check for invalid filename characters
+            if (filename.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            {
+                LogManager.LogWarning($"[SecurityValidator] Filename validation failed: contains invalid characters");
+                return false;
+            }
+
+            return true;
+        }
     }
 
     // ############################################################################

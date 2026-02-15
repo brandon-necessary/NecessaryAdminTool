@@ -200,9 +200,6 @@
     <Compile Include="ScriptManager.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="SecurityValidator.cs">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="ScriptExecutorWindow.xaml.cs">
       <DependentUpon>ScriptExecutorWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
