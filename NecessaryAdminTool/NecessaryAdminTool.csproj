@@ -148,6 +148,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="UI\Components\ADTreeView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Compile Include="AboutWindow.xaml.cs">
       <DependentUpon>AboutWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -287,6 +291,9 @@
     <Compile Include="Security\EncryptionKeyManager.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Security\SecurityValidator.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="LogManager.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -312,6 +319,13 @@
     </Compile>
     <Compile Include="UI\Components\CommandPalette.xaml.cs">
       <DependentUpon>CommandPalette.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="UI\Components\ADTreeView.xaml.cs">
+      <DependentUpon>ADTreeView.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Models\ADTreeNode.cs">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
