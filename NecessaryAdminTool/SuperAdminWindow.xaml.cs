@@ -663,7 +663,7 @@ namespace NecessaryAdminTool
                 sb.AppendLine($"64-Bit Process: {Environment.Is64BitProcess}");
                 sb.AppendLine($"Processor Count: {Environment.ProcessorCount}");
                 sb.AppendLine($"Machine Name: {Environment.MachineName}");
-                sb.AppendLine($"User Name: {Environment.UserDomain}\\{Environment.UserName}");
+                sb.AppendLine($"User Name: {Environment.UserDomainName}\\{Environment.UserName}");
                 sb.AppendLine($"CLR Version: {Environment.Version}");
                 sb.AppendLine();
 
@@ -775,7 +775,7 @@ namespace NecessaryAdminTool
             {
                 string logPath = Path.Combine(_appDataPath, "SuperAdmin_Access.log");
                 string entry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] " +
-                    $"User: {Environment.UserDomain}\\{Environment.UserName} | " +
+                    $"User: {Environment.UserDomainName}\\{Environment.UserName} | " +
                     $"Machine: {Environment.MachineName}\n";
 
                 File.AppendAllText(logPath, entry);
@@ -795,7 +795,7 @@ namespace NecessaryAdminTool
             {
                 string logPath = Path.Combine(_appDataPath, "WhiteLabel_Changes.log");
                 string entry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] " +
-                    $"User: {Environment.UserDomain}\\{Environment.UserName} | " +
+                    $"User: {Environment.UserDomainName}\\{Environment.UserName} | " +
                     $"Company: {companyName} | " +
                     $"Domain: {domain}\n";
 
