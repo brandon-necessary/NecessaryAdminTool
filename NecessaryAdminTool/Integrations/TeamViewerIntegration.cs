@@ -2,7 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using NecessaryAdminTool.Security;
+using SecValidator = NecessaryAdminTool.Security.SecValidator;
 
 namespace NecessaryAdminTool.Integrations
 {
@@ -22,7 +22,7 @@ namespace NecessaryAdminTool.Integrations
             {
                 // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
                 // Validate target host to prevent command injection
-                if (!SecurityValidator.IsValidHostname(targetHost) && !SecurityValidator.IsValidIPAddress(targetHost))
+                if (!SecValidator.IsValidHostname(targetHost) && !SecValidator.IsValidIPAddress(targetHost))
                 {
                     LogManager.LogWarning($"[TeamViewer] Blocked invalid target host: {targetHost}");
                     throw new ArgumentException($"Invalid target host format: {targetHost}");
@@ -62,7 +62,7 @@ namespace NecessaryAdminTool.Integrations
         {
             // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
             // Sanitize target host for command line usage
-            string safeTargetHost = SecurityValidator.SanitizePowerShellInput(targetHost);
+            string safeTargetHost = SecValidator.SanitizePowerShellInput(targetHost);
             string arguments = $"-i {safeTargetHost}";
 
             // Add password if configured
@@ -70,7 +70,7 @@ namespace NecessaryAdminTool.Integrations
             if (!string.IsNullOrEmpty(password))
             {
                 // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
-                string safePassword = SecurityValidator.SanitizePowerShellInput(password);
+                string safePassword = SecValidator.SanitizePowerShellInput(password);
                 string base64Password = Convert.ToBase64String(Encoding.UTF8.GetBytes(safePassword));
                 arguments += $" -p {base64Password}";
             }

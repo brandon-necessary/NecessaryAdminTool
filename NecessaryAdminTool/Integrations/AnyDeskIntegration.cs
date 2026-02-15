@@ -22,7 +22,7 @@ namespace NecessaryAdminTool.Integrations
             {
                 // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
                 // Validate target host to prevent command injection
-                if (!SecurityValidator.IsValidHostname(targetHost) && !SecurityValidator.IsValidIPAddress(targetHost))
+                if (!SecValidator.IsValidHostname(targetHost) && !SecValidator.IsValidIPAddress(targetHost))
                 {
                     LogManager.LogWarning($"[AnyDesk] Blocked invalid target host: {targetHost}");
                     throw new ArgumentException($"Invalid target host format: {targetHost}");
@@ -43,7 +43,7 @@ namespace NecessaryAdminTool.Integrations
 
                 // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
                 // Sanitize target host for command line usage
-                string safeTargetHost = SecurityValidator.SanitizePowerShellInput(targetHost);
+                string safeTargetHost = SecValidator.SanitizePowerShellInput(targetHost);
 
                 // Build arguments
                 string arguments = $"{safeTargetHost} --plain";
@@ -55,7 +55,7 @@ namespace NecessaryAdminTool.Integrations
                     if (!string.IsNullOrEmpty(password))
                     {
                         // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
-                        string safePassword = SecurityValidator.SanitizePowerShellInput(password);
+                        string safePassword = SecValidator.SanitizePowerShellInput(password);
                         arguments += $" --with-password \"{safePassword}\"";
                     }
                 }

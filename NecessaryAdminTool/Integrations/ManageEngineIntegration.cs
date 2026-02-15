@@ -1,7 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Net.Http;
-using NecessaryAdminTool.Security;
+using SecValidator = NecessaryAdminTool.Security.SecValidator;
 
 namespace NecessaryAdminTool.Integrations
 {
@@ -21,7 +21,7 @@ namespace NecessaryAdminTool.Integrations
             {
                 // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
                 // Validate target host to prevent command injection
-                if (!SecurityValidator.IsValidHostname(targetHost) && !SecurityValidator.IsValidIPAddress(targetHost))
+                if (!SecValidator.IsValidHostname(targetHost) && !SecValidator.IsValidIPAddress(targetHost))
                 {
                     LogManager.LogWarning($"[ManageEngine] Blocked invalid target host: {targetHost}");
                     throw new ArgumentException($"Invalid target host format: {targetHost}");

@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Web.Script.Serialization;
 using NecessaryAdminTool.Properties;
-using NecessaryAdminTool.Security;
+using SecValidator = NecessaryAdminTool.Security.SecurityValidator;
 
 namespace NecessaryAdminTool
 {
@@ -365,8 +365,8 @@ namespace NecessaryAdminTool
             }
 
             // Validate hostname or IP address format
-            bool isValidHostname = SecurityValidator.IsValidHostname(targetHost);
-            bool isValidIP = SecurityValidator.IsValidIPAddress(targetHost);
+            bool isValidHostname = SecValidator.IsValidHostname(targetHost);
+            bool isValidIP = SecValidator.IsValidIPAddress(targetHost);
 
             if (!isValidHostname && !isValidIP)
             {
