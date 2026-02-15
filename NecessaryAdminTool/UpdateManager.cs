@@ -4,7 +4,8 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Win32;
-// TAG: #AUTO_UPDATE_INSTALLER #SQUIRREL #UPDATE_CONTROL #VERSION_1_0
+using NecessaryAdminTool.Security;
+// TAG: #AUTO_UPDATE_INSTALLER #SQUIRREL #UPDATE_CONTROL #VERSION_1_0 #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
 
 namespace NecessaryAdminTool
 {
@@ -68,9 +69,14 @@ namespace NecessaryAdminTool
                     return false;
                 }
 
+                // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
                 // Check for marker file (for air-gapped environments)
-                string markerFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".no-updates");
-                if (File.Exists(markerFile))
+                string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                string markerFile = Path.Combine(baseDirectory, ".no-updates");
+                string fullMarkerPath = Path.GetFullPath(markerFile);
+
+                // Validate marker file is within application directory
+                if (SecurityValidator.IsValidFilePath(fullMarkerPath, baseDirectory) && File.Exists(markerFile))
                 {
                     LogManager.LogInfo("Auto-updates disabled via marker file (.no-updates)");
                     return false;
@@ -425,13 +431,32 @@ namespace NecessaryAdminTool
 
         /// <summary>
         /// Create marker file to disable updates (for deployment)
-        /// TAG: #DEPLOYMENT #AIR_GAPPED
+        /// TAG: #DEPLOYMENT #AIR_GAPPED #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
         /// </summary>
         public static void CreateNoUpdateMarker()
         {
             try
             {
-                string markerFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".no-updates");
+                // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                // Validate marker file path
+                string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                string markerFile = Path.Combine(baseDirectory, ".no-updates");
+                string fullMarkerPath = Path.GetFullPath(markerFile);
+
+                // Validate filename
+                if (!SecurityValidator.IsValidFilename(".no-updates"))
+                {
+                    LogManager.LogWarning("CreateNoUpdateMarker - invalid filename");
+                    return;
+                }
+
+                // Ensure path is within application directory
+                if (!SecurityValidator.IsValidFilePath(fullMarkerPath, baseDirectory))
+                {
+                    LogManager.LogWarning("CreateNoUpdateMarker - path traversal attempt blocked");
+                    return;
+                }
+
                 File.WriteAllText(markerFile, $"Auto-updates disabled at {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
                 LogManager.LogInfo("Created .no-updates marker file");
             }
@@ -443,13 +468,25 @@ namespace NecessaryAdminTool
 
         /// <summary>
         /// Remove marker file to re-enable updates
-        /// TAG: #DEPLOYMENT
+        /// TAG: #DEPLOYMENT #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
         /// </summary>
         public static void RemoveNoUpdateMarker()
         {
             try
             {
-                string markerFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".no-updates");
+                // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                // Validate marker file path
+                string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                string markerFile = Path.Combine(baseDirectory, ".no-updates");
+                string fullMarkerPath = Path.GetFullPath(markerFile);
+
+                // Ensure path is within application directory
+                if (!SecurityValidator.IsValidFilePath(fullMarkerPath, baseDirectory))
+                {
+                    LogManager.LogWarning("RemoveNoUpdateMarker - path traversal attempt blocked");
+                    return;
+                }
+
                 if (File.Exists(markerFile))
                 {
                     File.Delete(markerFile);

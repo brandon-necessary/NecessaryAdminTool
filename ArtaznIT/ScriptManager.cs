@@ -12,10 +12,11 @@ using System.Web.Script.Serialization;
 
 namespace ArtaznIT
 {
-    // TAG: #VERSION_7.1 #SCRIPTS #BULK_OPERATIONS #AUTOMATION
+    // TAG: #VERSION_7.1 #SCRIPTS #BULK_OPERATIONS #AUTOMATION #SECURITY_CRITICAL #POWERSHELL_INJECTION_PREVENTION
     /// <summary>
     /// Manages PowerShell script library and execution
     /// Supports bulk execution across multiple computers with parallel processing
+    /// Integrated with SecurityValidator for PowerShell injection prevention
     /// </summary>
     public class ScriptManager
     {
@@ -306,11 +307,31 @@ Write-Output ""Uptime: $($uptime.Days) days, $($uptime.Hours) hours, $($uptime.M
 
         /// <summary>
         /// Save script to library
+        /// TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION #FILENAME_VALIDATION
         /// </summary>
         public static bool SaveScript(SavedScript script)
         {
             try
             {
+                // TAG: #SECURITY_CRITICAL #FILENAME_VALIDATION
+                // Validate script name to prevent path traversal attacks
+                if (!SecurityValidator.IsValidFilename(script.Name))
+                {
+                    LogManager.LogError($"[ScriptManager] Invalid script name rejected: {script.Name}");
+                    LogManager.UI.ToastManager.ShowError($"Invalid script name: {script.Name}");
+                    return false;
+                }
+
+                // TAG: #SECURITY_CRITICAL #POWERSHELL_INJECTION_PREVENTION
+                // Validate script content before saving
+                if (!SecurityValidator.ValidatePowerShellScript(script.ScriptContent))
+                {
+                    LogManager.LogWarning($"[ScriptManager] Script contains dangerous patterns: {script.Name}");
+                    LogManager.UI.ToastManager.ShowWarning($"Script '{script.Name}' contains potentially dangerous commands");
+                    // Note: We log the warning but allow save for user scripts
+                    // Built-in scripts are pre-validated during creation
+                }
+
                 if (!Directory.Exists(ScriptLibraryPath))
                     Directory.CreateDirectory(ScriptLibraryPath);
 
@@ -322,6 +343,16 @@ Write-Output ""Uptime: $($uptime.Days) days, $($uptime.Hours) hours, $($uptime.M
                 string json = serializer.Serialize(script);
 
                 string filePath = Path.Combine(ScriptLibraryPath, $"{script.Name}.json");
+
+                // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                // Validate resolved path is within allowed directory
+                if (!SecurityValidator.IsValidFilePath(filePath, ScriptLibraryPath))
+                {
+                    LogManager.LogError($"[ScriptManager] Path traversal attempt blocked: {script.Name}");
+                    LogManager.UI.ToastManager.ShowError("Invalid file path - security violation");
+                    return false;
+                }
+
                 File.WriteAllText(filePath, json);
 
                 LogManager.LogInfo($"[ScriptManager] Saved script: {script.Name}");
@@ -336,12 +367,30 @@ Write-Output ""Uptime: $($uptime.Days) days, $($uptime.Hours) hours, $($uptime.M
 
         /// <summary>
         /// Delete script from library
+        /// TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION #FILENAME_VALIDATION
         /// </summary>
         public static bool DeleteScript(string scriptName)
         {
             try
             {
+                // TAG: #SECURITY_CRITICAL #FILENAME_VALIDATION
+                // Validate script name to prevent path traversal attacks
+                if (!SecurityValidator.IsValidFilename(scriptName))
+                {
+                    LogManager.LogError($"[ScriptManager] Invalid script name rejected for deletion: {scriptName}");
+                    return false;
+                }
+
                 string filePath = Path.Combine(ScriptLibraryPath, $"{scriptName}.json");
+
+                // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                // Validate resolved path is within allowed directory
+                if (!SecurityValidator.IsValidFilePath(filePath, ScriptLibraryPath))
+                {
+                    LogManager.LogError($"[ScriptManager] Path traversal attempt blocked during deletion: {scriptName}");
+                    return false;
+                }
+
                 if (File.Exists(filePath))
                 {
                     File.Delete(filePath);
@@ -359,11 +408,28 @@ Write-Output ""Uptime: $($uptime.Days) days, $($uptime.Hours) hours, $($uptime.M
 
         /// <summary>
         /// Export script to .ps1 file
+        /// TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
         /// </summary>
         public static bool ExportScript(SavedScript script, string filePath)
         {
             try
             {
+                // TAG: #SECURITY_CRITICAL #PATH_VALIDATION
+                // Validate file path exists and is writable
+                if (string.IsNullOrWhiteSpace(filePath))
+                {
+                    LogManager.LogError("[ScriptManager] Export failed: empty file path");
+                    return false;
+                }
+
+                // Get directory and validate it exists or can be created
+                string directory = Path.GetDirectoryName(filePath);
+                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                {
+                    LogManager.LogWarning($"[ScriptManager] Export directory does not exist: {directory}");
+                    return false;
+                }
+
                 var sb = new StringBuilder();
                 sb.AppendLine($"# Script: {script.Name}");
                 sb.AppendLine($"# Description: {script.Description}");
@@ -386,16 +452,59 @@ Write-Output ""Uptime: $($uptime.Days) days, $($uptime.Hours) hours, $($uptime.M
 
         /// <summary>
         /// Import script from .ps1 file
+        /// TAG: #SECURITY_CRITICAL #POWERSHELL_INJECTION_PREVENTION #FILE_VALIDATION
         /// </summary>
         public static SavedScript ImportScript(string filePath, string name = null, ScriptCategory category = ScriptCategory.Custom)
         {
             try
             {
+                // TAG: #SECURITY_CRITICAL #FILE_VALIDATION
+                // Validate file path and existence
+                if (string.IsNullOrWhiteSpace(filePath))
+                {
+                    LogManager.LogError("[ScriptManager] Import failed: empty file path");
+                    return null;
+                }
+
+                if (!File.Exists(filePath))
+                {
+                    LogManager.LogError($"[ScriptManager] Import failed: file does not exist: {filePath}");
+                    return null;
+                }
+
+                // Validate file extension
+                string extension = Path.GetExtension(filePath)?.ToLowerInvariant();
+                if (extension != ".ps1" && extension != ".psm1" && extension != ".txt")
+                {
+                    LogManager.LogWarning($"[ScriptManager] Import warning: unusual file extension: {extension}");
+                }
+
                 string content = File.ReadAllText(filePath);
+
+                // TAG: #SECURITY_CRITICAL #POWERSHELL_INJECTION_PREVENTION
+                // Validate script content for dangerous patterns
+                if (!SecurityValidator.ValidatePowerShellScript(content))
+                {
+                    LogManager.LogWarning($"[ScriptManager] Imported script contains dangerous patterns: {filePath}");
+                    LogManager.UI.ToastManager.ShowWarning($"Warning: Imported script contains potentially dangerous commands");
+                }
+
+                string scriptName = name ?? Path.GetFileNameWithoutExtension(filePath);
+
+                // TAG: #SECURITY_CRITICAL #FILENAME_VALIDATION
+                // Validate script name
+                if (!SecurityValidator.IsValidFilename(scriptName))
+                {
+                    LogManager.LogError($"[ScriptManager] Import failed: invalid script name: {scriptName}");
+                    LogManager.UI.ToastManager.ShowError($"Invalid script name: {scriptName}");
+                    return null;
+                }
+
+                LogManager.LogInfo($"[ScriptManager] Successfully imported script: {scriptName} from {filePath}");
 
                 return new SavedScript
                 {
-                    Name = name ?? Path.GetFileNameWithoutExtension(filePath),
+                    Name = scriptName,
                     Description = $"Imported from {Path.GetFileName(filePath)}",
                     Category = category,
                     ScriptContent = content,
@@ -413,7 +522,7 @@ Write-Output ""Uptime: $($uptime.Days) days, $($uptime.Hours) hours, $($uptime.M
 
         /// <summary>
         /// Execute PowerShell script on multiple computers in parallel
-        /// TAG: #VERSION_7.1 #BULK_OPERATIONS #PARALLEL_EXECUTION
+        /// TAG: #VERSION_7.1 #BULK_OPERATIONS #PARALLEL_EXECUTION #SECURITY_CRITICAL #POWERSHELL_INJECTION_PREVENTION
         /// </summary>
         public static async Task<List<ScriptExecutionResult>> ExecuteScriptBulkAsync(
             string scriptContent,
@@ -428,6 +537,45 @@ Write-Output ""Uptime: $($uptime.Days) days, $($uptime.Hours) hours, $($uptime.M
             var semaphore = new SemaphoreSlim(maxConcurrency);
             int completed = 0;
             int total = hostnames.Length;
+
+            // TAG: #SECURITY_CRITICAL #POWERSHELL_INJECTION_PREVENTION
+            // Pre-validate script content once before bulk execution
+            if (!SecurityValidator.ValidatePowerShellScript(scriptContent))
+            {
+                LogManager.LogError("[ScriptManager] Bulk execution aborted: script failed security validation");
+                LogManager.UI.ToastManager.ShowError("Script execution blocked: contains potentially dangerous commands");
+
+                // Return failed results for all hostnames
+                return hostnames.Select(h => new ScriptExecutionResult
+                {
+                    Hostname = h,
+                    Success = false,
+                    Error = "Script validation failed: contains potentially dangerous commands",
+                    ExitCode = -2,
+                    Timestamp = DateTime.Now,
+                    Duration = TimeSpan.Zero
+                }).ToList();
+            }
+
+            // TAG: #SECURITY_CRITICAL #USERNAME_VALIDATION
+            // Validate credentials if provided
+            if (!string.IsNullOrEmpty(username) && !SecurityValidator.IsValidUsername(username))
+            {
+                LogManager.LogError($"[ScriptManager] Bulk execution aborted: invalid username format: {username}");
+                LogManager.UI.ToastManager.ShowError($"Invalid username format: {username}");
+
+                return hostnames.Select(h => new ScriptExecutionResult
+                {
+                    Hostname = h,
+                    Success = false,
+                    Error = $"Invalid username format: {username}",
+                    ExitCode = -4,
+                    Timestamp = DateTime.Now,
+                    Duration = TimeSpan.Zero
+                }).ToList();
+            }
+
+            LogManager.LogInfo($"[ScriptManager] Starting bulk script execution on {total} computers with concurrency={maxConcurrency}");
 
             var tasks = hostnames.Select(async hostname =>
             {
@@ -450,11 +598,18 @@ Write-Output ""Uptime: $($uptime.Days) days, $($uptime.Hours) hours, $($uptime.M
             });
 
             await Task.WhenAll(tasks);
+
+            // Log summary
+            int successCount = results.Count(r => r.Success);
+            int failCount = results.Count(r => !r.Success);
+            LogManager.LogInfo($"[ScriptManager] Bulk execution completed: {successCount} succeeded, {failCount} failed");
+
             return results.OrderBy(r => r.Hostname).ToList();
         }
 
         /// <summary>
         /// Execute PowerShell script on a single computer
+        /// TAG: #SECURITY_CRITICAL #POWERSHELL_INJECTION_PREVENTION
         /// </summary>
         private static async Task<ScriptExecutionResult> ExecuteScriptAsync(
             string hostname,
@@ -471,6 +626,42 @@ Write-Output ""Uptime: $($uptime.Days) days, $($uptime.Hours) hours, $($uptime.M
 
             var startTime = DateTime.Now;
 
+            // TAG: #SECURITY_CRITICAL #POWERSHELL_INJECTION_PREVENTION
+            // Validate script content before execution
+            if (!SecurityValidator.ValidatePowerShellScript(scriptContent))
+            {
+                result.Success = false;
+                result.Error = "Script validation failed: Script contains potentially dangerous commands or patterns";
+                result.ExitCode = -2;
+                result.Duration = DateTime.Now - startTime;
+                LogManager.LogWarning($"[ScriptManager] Blocked dangerous PowerShell script execution on {hostname}");
+                return result;
+            }
+
+            // TAG: #SECURITY_CRITICAL #HOSTNAME_VALIDATION
+            // Validate hostname format
+            if (!SecurityValidator.IsValidHostname(hostname) && !SecurityValidator.IsValidIPAddress(hostname))
+            {
+                result.Success = false;
+                result.Error = $"Invalid hostname format: {hostname}";
+                result.ExitCode = -3;
+                result.Duration = DateTime.Now - startTime;
+                LogManager.LogError($"[ScriptManager] Invalid hostname rejected: {hostname}");
+                return result;
+            }
+
+            // TAG: #SECURITY_CRITICAL #USERNAME_VALIDATION
+            // Validate username if provided
+            if (!string.IsNullOrEmpty(username) && !SecurityValidator.IsValidUsername(username))
+            {
+                result.Success = false;
+                result.Error = $"Invalid username format: {username}";
+                result.ExitCode = -4;
+                result.Duration = DateTime.Now - startTime;
+                LogManager.LogError($"[ScriptManager] Invalid username rejected: {username}");
+                return result;
+            }
+
             await Task.Run(() =>
             {
                 try
@@ -486,12 +677,19 @@ Write-Output ""Uptime: $($uptime.Days) days, $($uptime.Hours) hours, $($uptime.M
                         // Build script with remote execution
                         var scriptBuilder = new StringBuilder();
 
+                        // TAG: #SECURITY_CRITICAL #POWERSHELL_INJECTION_PREVENTION
+                        // Sanitize all user inputs before string interpolation
+                        string safeHostname = SecurityValidator.SanitizeForPowerShell(hostname);
+                        string safeUsername = SecurityValidator.SanitizeForPowerShell(username ?? "");
+                        string safePassword = SecurityValidator.SanitizeForPowerShell(password ?? "");
+
                         // If credentials provided, use Invoke-Command for remote execution
                         if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
                         {
-                            scriptBuilder.AppendLine($"$secPass = ConvertTo-SecureString '{password}' -AsPlainText -Force");
-                            scriptBuilder.AppendLine($"$cred = New-Object System.Management.Automation.PSCredential('{username}', $secPass)");
-                            scriptBuilder.AppendLine($"Invoke-Command -ComputerName '{hostname}' -Credential $cred -ScriptBlock {{");
+                            // TAG: #SECURITY_CRITICAL #POWERSHELL_INJECTION_PREVENTION
+                            scriptBuilder.AppendLine($"$secPass = ConvertTo-SecureString '{safePassword}' -AsPlainText -Force");
+                            scriptBuilder.AppendLine($"$cred = New-Object System.Management.Automation.PSCredential('{safeUsername}', $secPass)");
+                            scriptBuilder.AppendLine($"Invoke-Command -ComputerName '{safeHostname}' -Credential $cred -ScriptBlock {{");
                             scriptBuilder.AppendLine(scriptContent);
                             scriptBuilder.AppendLine("}");
                         }
@@ -505,7 +703,8 @@ Write-Output ""Uptime: $($uptime.Days) days, $($uptime.Hours) hours, $($uptime.M
                             }
                             else
                             {
-                                scriptBuilder.AppendLine($"Invoke-Command -ComputerName '{hostname}' -ScriptBlock {{");
+                                // TAG: #SECURITY_CRITICAL #POWERSHELL_INJECTION_PREVENTION
+                                scriptBuilder.AppendLine($"Invoke-Command -ComputerName '{safeHostname}' -ScriptBlock {{");
                                 scriptBuilder.AppendLine(scriptContent);
                                 scriptBuilder.AppendLine("}");
                             }

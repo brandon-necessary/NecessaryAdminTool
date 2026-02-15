@@ -35,6 +35,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Data;
 using System.Windows.Threading;
+using NecessaryAdminTool.Security;
 
 namespace NecessaryAdminTool
 {
@@ -3477,9 +3478,33 @@ namespace NecessaryAdminTool
 
         private void RunHybridExecutor(string psCommand, string wmiQuery, string actionName, string specificTarget = "")
         {
+            // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
             string targetHost = string.IsNullOrEmpty(specificTarget) ? _currentTarget : specificTarget;
-            if (string.IsNullOrEmpty(targetHost) || !SecurityValidator.IsValidHostname(targetHost)) { AppendTerminal("ERROR: Invalid hostname", true); return; }
-            if (SecurityValidator.ContainsDangerousPatterns(psCommand)) { AppendTerminal("ERROR: Blocked dangerous command", true); return; }
+
+            // Validate target hostname using OWASP-compliant validator
+            if (string.IsNullOrEmpty(targetHost))
+            {
+                AppendTerminal("ERROR: Target host cannot be empty", true);
+                LogManager.LogWarning("[WMIExecute] Blocked: empty target host");
+                return;
+            }
+
+            if (!NecessaryAdminTool.Security.SecurityValidator.IsValidHostname(targetHost) &&
+                !NecessaryAdminTool.Security.SecurityValidator.IsValidIPAddress(targetHost))
+            {
+                AppendTerminal($"ERROR: Invalid target host format: {targetHost}", true);
+                LogManager.LogWarning($"[WMIExecute] Blocked invalid target: {targetHost}");
+                return;
+            }
+
+            // Validate command doesn't contain dangerous patterns
+            if (SecurityValidator.ContainsDangerousPatterns(psCommand))
+            {
+                AppendTerminal("ERROR: Blocked dangerous command", true);
+                LogManager.LogWarning($"[WMIExecute] Blocked dangerous command: {actionName}");
+                return;
+            }
+
             AppendTerminal($"\n>>> EXEC: {actionName} → {targetHost}...");
             _ = Task.Run(() =>
             {
@@ -5049,6 +5074,17 @@ namespace NecessaryAdminTool
         {
             // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
             if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target selected"); return; }
+
+            // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+            // Validate target host before RDP connection
+            if (!NecessaryAdminTool.Security.SecurityValidator.IsValidHostname(_currentTarget) &&
+                !NecessaryAdminTool.Security.SecurityValidator.IsValidIPAddress(_currentTarget))
+            {
+                Managers.UI.ToastManager.ShowError($"Invalid target format: {_currentTarget}");
+                LogManager.LogWarning($"[RDP] Blocked invalid target: {_currentTarget}");
+                return;
+            }
+
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
@@ -5058,10 +5094,15 @@ namespace NecessaryAdminTool
                 {
                     SecureMemory.UseSecureString(_authPass, password =>
                     {
+                        // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+                        string safeTarget = NecessaryAdminTool.Security.SecurityValidator.SanitizePowerShellInput(_currentTarget);
+                        string safeUser = NecessaryAdminTool.Security.SecurityValidator.SanitizePowerShellInput(_authUser);
+                        string safePassword = NecessaryAdminTool.Security.SecurityValidator.SanitizePowerShellInput(password);
+
                         var psi = new ProcessStartInfo
                         {
                             FileName = "cmdkey.exe",
-                            Arguments = $"/generic:TERMSRV/{_currentTarget} /user:{_authUser} /pass:\"{password}\"",
+                            Arguments = $"/generic:TERMSRV/{safeTarget} /user:{safeUser} /pass:\"{safePassword}\"",
                             UseShellExecute = false,
                             CreateNoWindow = true
                         };
@@ -5093,6 +5134,17 @@ namespace NecessaryAdminTool
         {
             // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
             if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target selected"); return; }
+
+            // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+            // Validate target host before remote assistance
+            if (!NecessaryAdminTool.Security.SecurityValidator.IsValidHostname(_currentTarget) &&
+                !NecessaryAdminTool.Security.SecurityValidator.IsValidIPAddress(_currentTarget))
+            {
+                Managers.UI.ToastManager.ShowError($"Invalid target format: {_currentTarget}");
+                LogManager.LogWarning($"[RemoteAssist] Blocked invalid target: {_currentTarget}");
+                return;
+            }
+
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
@@ -5117,9 +5169,22 @@ namespace NecessaryAdminTool
             // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
             if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target selected"); return; }
 
+            // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+            // Validate target host before remote registry access
+            if (!NecessaryAdminTool.Security.SecurityValidator.IsValidHostname(_currentTarget) &&
+                !NecessaryAdminTool.Security.SecurityValidator.IsValidIPAddress(_currentTarget))
+            {
+                Managers.UI.ToastManager.ShowError($"Invalid target format: {_currentTarget}");
+                LogManager.LogWarning($"[RemoteRegistry] Blocked invalid target: {_currentTarget}");
+                return;
+            }
+
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
+
+                // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+                string safeTarget = NecessaryAdminTool.Security.SecurityValidator.SanitizePowerShellInput(_currentTarget);
 
                 // Use reg.exe connect method which actually works for remote registry
                 string regCommand = $"reg.exe";
@@ -5128,16 +5193,16 @@ namespace NecessaryAdminTool
                 // Open Registry Editor and use File > Connect Network Registry
                 // or use PowerShell to browse remote registry
                 string psScript = $@"
-Write-Host 'REMOTE REGISTRY ACCESS: {_currentTarget}' -ForegroundColor Cyan;
+Write-Host 'REMOTE REGISTRY ACCESS: {safeTarget}' -ForegroundColor Cyan;
 Write-Host 'Loading registry hives...' -ForegroundColor Yellow;
 Write-Host '';
 Write-Host 'Available Hives:';
 Write-Host '  HKLM - HKEY_LOCAL_MACHINE';
 Write-Host '  HKU  - HKEY_USERS';
 Write-Host '';
-Write-Host 'Example: Get-ItemProperty -Path ''\\{_currentTarget}\HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion''' -ForegroundColor Green;
+Write-Host 'Example: Get-ItemProperty -Path ''\\{safeTarget}\HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion''' -ForegroundColor Green;
 Write-Host '';
-$connection = Test-Connection -ComputerName {_currentTarget} -Count 1 -Quiet;
+$connection = Test-Connection -ComputerName {safeTarget} -Count 1 -Quiet;
 if ($connection) {{
     Write-Host '✓ Connection successful' -ForegroundColor Green;
     Write-Host 'You can now use Get-ItemProperty, Set-ItemProperty, etc. with remote path';
@@ -5150,10 +5215,14 @@ if ($connection) {{
                 {
                     SecureMemory.UseSecureString(_authPass, password =>
                     {
+                        // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+                        string safeUser = NecessaryAdminTool.Security.SecurityValidator.SanitizePowerShellInput(_authUser);
+                        string safePassword = NecessaryAdminTool.Security.SecurityValidator.SanitizePowerShellInput(password);
+
                         var psi = new ProcessStartInfo
                         {
                             FileName = "powershell.exe",
-                            Arguments = $"-NoExit -Command \"$cred = New-Object System.Management.Automation.PSCredential('{_authUser}', (ConvertTo-SecureString '{password}' -AsPlainText -Force)); Invoke-Command -ComputerName {_currentTarget} -Credential $cred -ScriptBlock {{ {psScript} }}\"",
+                            Arguments = $"-NoExit -Command \"$cred = New-Object System.Management.Automation.PSCredential('{safeUser}', (ConvertTo-SecureString '{safePassword}' -AsPlainText -Force)); Invoke-Command -ComputerName {safeTarget} -Credential $cred -ScriptBlock {{ {psScript} }}\"",
                             UseShellExecute = true
                         };
                         Process.Start(psi);
@@ -5185,19 +5254,37 @@ if ($connection) {{
         {
             // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
             if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target selected"); return; }
+
+            // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+            // Validate target host before PowerShell remoting
+            if (!NecessaryAdminTool.Security.SecurityValidator.IsValidHostname(_currentTarget) &&
+                !NecessaryAdminTool.Security.SecurityValidator.IsValidIPAddress(_currentTarget))
+            {
+                Managers.UI.ToastManager.ShowError($"Invalid target format: {_currentTarget}");
+                LogManager.LogWarning($"[PSExec] Blocked invalid target: {_currentTarget}");
+                return;
+            }
+
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
-                string psCommand = $"Enter-PSSession -ComputerName {_currentTarget}";
+
+                // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+                string safeTarget = NecessaryAdminTool.Security.SecurityValidator.SanitizePowerShellInput(_currentTarget);
+                string psCommand = $"Enter-PSSession -ComputerName {safeTarget}";
 
                 if (_isLoggedIn && _authPass != null)
                 {
                     SecureMemory.UseSecureString(_authPass, password =>
                     {
+                        // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+                        string safeUser = NecessaryAdminTool.Security.SecurityValidator.SanitizePowerShellInput(_authUser);
+                        string safePassword = NecessaryAdminTool.Security.SecurityValidator.SanitizePowerShellInput(password);
+
                         var psi = new ProcessStartInfo
                         {
                             FileName = "powershell.exe",
-                            Arguments = $"-NoExit -Command \"$cred = New-Object System.Management.Automation.PSCredential('{_authUser}', (ConvertTo-SecureString '{password}' -AsPlainText -Force)); Enter-PSSession -ComputerName {_currentTarget} -Credential $cred\"",
+                            Arguments = $"-NoExit -Command \"$cred = New-Object System.Management.Automation.PSCredential('{safeUser}', (ConvertTo-SecureString '{safePassword}' -AsPlainText -Force)); Enter-PSSession -ComputerName {safeTarget} -Credential $cred\"",
                             UseShellExecute = true
                         };
                         Process.Start(psi);

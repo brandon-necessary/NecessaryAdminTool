@@ -9,10 +9,11 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
+using NecessaryAdminTool.Security;
 
 namespace NecessaryAdminTool
 {
-    // TAG: #VERSION_7.1 #SCRIPTS #BULK_OPERATIONS #AUTOMATION
+    // TAG: #VERSION_7.1 #SCRIPTS #BULK_OPERATIONS #AUTOMATION #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
     /// <summary>
     /// Manages PowerShell script library and execution
     /// Supports bulk execution across multiple computers with parallel processing
@@ -276,6 +277,17 @@ Write-Output ""Uptime: $($uptime.Days) days, $($uptime.Hours) hours, $($uptime.M
 
             try
             {
+                // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                // Validate script library path
+                string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                string allowedBasePath = Path.Combine(appDataPath, "NecessaryAdminTool");
+
+                if (!SecurityValidator.IsValidFilePath(ScriptLibraryPath, allowedBasePath))
+                {
+                    LogManager.LogWarning("[ScriptManager] Blocked loading scripts - invalid library path");
+                    return scripts;
+                }
+
                 if (!Directory.Exists(ScriptLibraryPath))
                     return scripts;
 
@@ -286,6 +298,23 @@ Write-Output ""Uptime: $($uptime.Days) days, $($uptime.Hours) hours, $($uptime.M
                 {
                     try
                     {
+                        // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                        // Validate each file path before reading
+                        string fullPath = Path.GetFullPath(file);
+                        if (!SecurityValidator.IsValidFilePath(fullPath, ScriptLibraryPath))
+                        {
+                            LogManager.LogWarning($"[ScriptManager] Blocked loading script outside library: {file}");
+                            continue;
+                        }
+
+                        // Validate filename
+                        string filename = Path.GetFileName(file);
+                        if (!SecurityValidator.IsValidFilename(filename))
+                        {
+                            LogManager.LogWarning($"[ScriptManager] Blocked loading script with invalid filename: {filename}");
+                            continue;
+                        }
+
                         string json = File.ReadAllText(file);
                         var script = serializer.Deserialize<SavedScript>(json);
                         scripts.Add(script);
@@ -311,6 +340,25 @@ Write-Output ""Uptime: $($uptime.Days) days, $($uptime.Hours) hours, $($uptime.M
         {
             try
             {
+                // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                // Validate script library path
+                string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                string allowedBasePath = Path.Combine(appDataPath, "NecessaryAdminTool");
+
+                if (!SecurityValidator.IsValidFilePath(ScriptLibraryPath, allowedBasePath))
+                {
+                    LogManager.LogWarning("[ScriptManager] Blocked saving script - invalid library path");
+                    return false;
+                }
+
+                // TAG: #SECURITY_CRITICAL #FILENAME_VALIDATION
+                // Validate script name for path traversal
+                if (!SecurityValidator.IsValidFilename(script.Name))
+                {
+                    LogManager.LogWarning($"[ScriptManager] Blocked saving script with invalid name: {script.Name}");
+                    return false;
+                }
+
                 if (!Directory.Exists(ScriptLibraryPath))
                     Directory.CreateDirectory(ScriptLibraryPath);
 
@@ -322,6 +370,16 @@ Write-Output ""Uptime: $($uptime.Days) days, $($uptime.Hours) hours, $($uptime.M
                 string json = serializer.Serialize(script);
 
                 string filePath = Path.Combine(ScriptLibraryPath, $"{script.Name}.json");
+
+                // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                // Final validation of constructed file path
+                string fullPath = Path.GetFullPath(filePath);
+                if (!SecurityValidator.IsValidFilePath(fullPath, ScriptLibraryPath))
+                {
+                    LogManager.LogWarning($"[ScriptManager] Blocked saving script - path traversal attempt: {filePath}");
+                    return false;
+                }
+
                 File.WriteAllText(filePath, json);
 
                 LogManager.LogInfo($"[ScriptManager] Saved script: {script.Name}");
@@ -341,7 +399,28 @@ Write-Output ""Uptime: $($uptime.Days) days, $($uptime.Hours) hours, $($uptime.M
         {
             try
             {
+                // TAG: #SECURITY_CRITICAL #FILENAME_VALIDATION
+                // Validate script name for path traversal
+                if (!SecurityValidator.IsValidFilename(scriptName))
+                {
+                    LogManager.LogWarning($"[ScriptManager] Blocked deleting script with invalid name: {scriptName}");
+                    return false;
+                }
+
                 string filePath = Path.Combine(ScriptLibraryPath, $"{scriptName}.json");
+
+                // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                // Validate file path before deletion
+                string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                string allowedBasePath = Path.Combine(appDataPath, "NecessaryAdminTool");
+                string fullPath = Path.GetFullPath(filePath);
+
+                if (!SecurityValidator.IsValidFilePath(fullPath, ScriptLibraryPath))
+                {
+                    LogManager.LogWarning($"[ScriptManager] Blocked deleting script - path traversal attempt: {filePath}");
+                    return false;
+                }
+
                 if (File.Exists(filePath))
                 {
                     File.Delete(filePath);
@@ -364,6 +443,31 @@ Write-Output ""Uptime: $($uptime.Days) days, $($uptime.Hours) hours, $($uptime.M
         {
             try
             {
+                // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                // Validate filename
+                string filename = Path.GetFileName(filePath);
+                if (!SecurityValidator.IsValidFilename(filename))
+                {
+                    LogManager.LogWarning($"[ScriptManager] Blocked exporting script - invalid filename: {filename}");
+                    return false;
+                }
+
+                // Validate file extension
+                string extension = Path.GetExtension(filePath);
+                if (!extension.Equals(".ps1", StringComparison.OrdinalIgnoreCase))
+                {
+                    LogManager.LogWarning($"[ScriptManager] Blocked exporting script - invalid extension: {extension}");
+                    return false;
+                }
+
+                // Validate parent directory exists
+                string directory = Path.GetDirectoryName(filePath);
+                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                {
+                    LogManager.LogWarning($"[ScriptManager] Blocked exporting script - directory does not exist: {directory}");
+                    return false;
+                }
+
                 var sb = new StringBuilder();
                 sb.AppendLine($"# Script: {script.Name}");
                 sb.AppendLine($"# Description: {script.Description}");
@@ -391,11 +495,54 @@ Write-Output ""Uptime: $($uptime.Days) days, $($uptime.Hours) hours, $($uptime.M
         {
             try
             {
+                // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                // Validate filename
+                string filename = Path.GetFileName(filePath);
+                if (!SecurityValidator.IsValidFilename(filename))
+                {
+                    LogManager.LogWarning($"[ScriptManager] Blocked importing script - invalid filename: {filename}");
+                    return null;
+                }
+
+                // Validate file extension
+                string extension = Path.GetExtension(filePath);
+                if (!extension.Equals(".ps1", StringComparison.OrdinalIgnoreCase))
+                {
+                    LogManager.LogWarning($"[ScriptManager] Blocked importing script - invalid extension: {extension}");
+                    return null;
+                }
+
+                // Validate file exists
+                if (!File.Exists(filePath))
+                {
+                    LogManager.LogWarning($"[ScriptManager] Blocked importing script - file does not exist: {filePath}");
+                    return null;
+                }
+
+                // TAG: #SECURITY_CRITICAL #FILE_SIZE_VALIDATION
+                // Prevent reading excessively large files (DoS protection)
+                var fileInfo = new FileInfo(filePath);
+                const long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+                if (fileInfo.Length > MAX_FILE_SIZE)
+                {
+                    LogManager.LogWarning($"[ScriptManager] Blocked importing script - file too large: {fileInfo.Length} bytes");
+                    return null;
+                }
+
                 string content = File.ReadAllText(filePath);
+
+                // TAG: #SECURITY_CRITICAL #FILENAME_VALIDATION
+                // Validate the script name if provided
+                string scriptName = name ?? Path.GetFileNameWithoutExtension(filePath);
+                if (!SecurityValidator.IsValidFilename(scriptName))
+                {
+                    LogManager.LogWarning($"[ScriptManager] Blocked importing script - invalid script name: {scriptName}");
+                    return null;
+                }
 
                 return new SavedScript
                 {
-                    Name = name ?? Path.GetFileNameWithoutExtension(filePath),
+                    Name = scriptName,
                     Description = $"Imported from {Path.GetFileName(filePath)}",
                     Category = category,
                     ScriptContent = content,
@@ -567,6 +714,31 @@ Write-Output ""Uptime: $($uptime.Days) days, $($uptime.Hours) hours, $($uptime.M
         {
             try
             {
+                // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                // Validate filename
+                string filename = Path.GetFileName(filePath);
+                if (!SecurityValidator.IsValidFilename(filename))
+                {
+                    LogManager.LogWarning($"[ScriptManager] Blocked exporting results - invalid filename: {filename}");
+                    return false;
+                }
+
+                // Validate file extension
+                string extension = Path.GetExtension(filePath);
+                if (!extension.Equals(".csv", StringComparison.OrdinalIgnoreCase))
+                {
+                    LogManager.LogWarning($"[ScriptManager] Blocked exporting results - invalid extension: {extension}");
+                    return false;
+                }
+
+                // Validate parent directory exists
+                string directory = Path.GetDirectoryName(filePath);
+                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                {
+                    LogManager.LogWarning($"[ScriptManager] Blocked exporting results - directory does not exist: {directory}");
+                    return false;
+                }
+
                 var sb = new StringBuilder();
                 sb.AppendLine("Hostname,Status,Duration(ms),Output,Error");
 
@@ -596,6 +768,31 @@ Write-Output ""Uptime: $($uptime.Days) days, $($uptime.Hours) hours, $($uptime.M
         {
             try
             {
+                // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                // Validate filename
+                string filename = Path.GetFileName(filePath);
+                if (!SecurityValidator.IsValidFilename(filename))
+                {
+                    LogManager.LogWarning($"[ScriptManager] Blocked exporting results - invalid filename: {filename}");
+                    return false;
+                }
+
+                // Validate file extension
+                string extension = Path.GetExtension(filePath);
+                if (!extension.Equals(".txt", StringComparison.OrdinalIgnoreCase))
+                {
+                    LogManager.LogWarning($"[ScriptManager] Blocked exporting results - invalid extension: {extension}");
+                    return false;
+                }
+
+                // Validate parent directory exists
+                string directory = Path.GetDirectoryName(filePath);
+                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                {
+                    LogManager.LogWarning($"[ScriptManager] Blocked exporting results - directory does not exist: {directory}");
+                    return false;
+                }
+
                 var sb = new StringBuilder();
                 sb.AppendLine("========================================");
                 sb.AppendLine("Script Execution Results");

@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Threading.Tasks;
+using NecessaryAdminTool.Security;
 
 namespace NecessaryAdminTool.Integrations
 {
@@ -19,6 +20,14 @@ namespace NecessaryAdminTool.Integrations
         {
             try
             {
+                // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+                // Validate target host to prevent command injection
+                if (!SecurityValidator.IsValidHostname(targetHost) && !SecurityValidator.IsValidIPAddress(targetHost))
+                {
+                    LogManager.LogWarning($"[ScreenConnect] Blocked invalid target host: {targetHost}");
+                    throw new ArgumentException($"Invalid target host format: {targetHost}");
+                }
+
                 string serverUrl = config.Settings.ContainsKey("ServerUrl")
                     ? config.Settings["ServerUrl"]
                     : "";
@@ -56,8 +65,12 @@ namespace NecessaryAdminTool.Integrations
 
         private static void LaunchViaUrl(string serverUrl, string port, string targetHost, RmmToolConfig config)
         {
+            // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+            // URL encode target host to prevent URL injection
+            string safeTargetHost = System.Uri.EscapeDataString(targetHost);
+
             // Construct session URL
-            string sessionUrl = $"https://{serverUrl}:{port}/Host#Access/All Machines//{targetHost}/Join";
+            string sessionUrl = $"https://{serverUrl}:{port}/Host#Access/All Machines//{safeTargetHost}/Join";
 
             // Launch in default browser
             var psi = new ProcessStartInfo

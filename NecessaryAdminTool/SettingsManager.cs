@@ -5,10 +5,11 @@ using System.Linq;
 using System.Web.Script.Serialization;
 using System.Windows;
 using NecessaryAdminTool.Properties;
+using NecessaryAdminTool.Security;
 
 namespace NecessaryAdminTool
 {
-    // TAG: #SETTINGS #SETTINGS_MANAGER #CENTRALIZED_CONFIG
+    // TAG: #SETTINGS #SETTINGS_MANAGER #CENTRALIZED_CONFIG #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
     /// <summary>
     /// Centralized settings management for NecessaryAdminTool Suite
     /// Handles loading, saving, validation, export/import, and reset operations
@@ -440,7 +441,7 @@ namespace NecessaryAdminTool
             }
         }
 
-        // TAG: #EXPORT_IMPORT #LOGGING
+        // TAG: #EXPORT_IMPORT #LOGGING #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
         /// <summary>
         /// Export all settings to JSON file
         /// </summary>
@@ -450,6 +451,31 @@ namespace NecessaryAdminTool
 
             try
             {
+                // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                // Validate file path and filename
+                string filename = Path.GetFileName(filePath);
+                if (!SecurityValidator.IsValidFilename(filename))
+                {
+                    LogManager.LogWarning($"SettingsManager.ExportToFile() - BLOCKED - Invalid filename: {filename}");
+                    throw new ArgumentException("Invalid filename detected");
+                }
+
+                // Ensure the file has a safe extension
+                string extension = Path.GetExtension(filePath);
+                if (!extension.Equals(".json", StringComparison.OrdinalIgnoreCase))
+                {
+                    LogManager.LogWarning($"SettingsManager.ExportToFile() - BLOCKED - Invalid file extension: {extension}");
+                    throw new ArgumentException("File must have .json extension");
+                }
+
+                // Validate parent directory exists
+                string directory = Path.GetDirectoryName(filePath);
+                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                {
+                    LogManager.LogWarning($"SettingsManager.ExportToFile() - BLOCKED - Directory does not exist: {directory}");
+                    throw new DirectoryNotFoundException($"Directory does not exist: {directory}");
+                }
+
                 var settings = LoadAllSettings();
                 var serializer = new JavaScriptSerializer();
                 string json = serializer.Serialize(settings);
@@ -475,6 +501,23 @@ namespace NecessaryAdminTool
 
             try
             {
+                // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                // Validate file path and filename
+                string filename = Path.GetFileName(filePath);
+                if (!SecurityValidator.IsValidFilename(filename))
+                {
+                    LogManager.LogWarning($"SettingsManager.ImportFromFile() - BLOCKED - Invalid filename: {filename}");
+                    throw new ArgumentException("Invalid filename detected");
+                }
+
+                // Ensure the file has a safe extension
+                string extension = Path.GetExtension(filePath);
+                if (!extension.Equals(".json", StringComparison.OrdinalIgnoreCase))
+                {
+                    LogManager.LogWarning($"SettingsManager.ImportFromFile() - BLOCKED - Invalid file extension: {extension}");
+                    throw new ArgumentException("File must have .json extension");
+                }
+
                 if (!File.Exists(filePath))
                 {
                     LogManager.LogError($"SettingsManager.ImportFromFile() - FAILED - File not found: {filePath}");
@@ -482,6 +525,16 @@ namespace NecessaryAdminTool
                 }
 
                 var fileInfo = new FileInfo(filePath);
+
+                // TAG: #SECURITY_CRITICAL #FILE_SIZE_VALIDATION
+                // Prevent reading excessively large files (DoS protection)
+                const long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+                if (fileInfo.Length > MAX_FILE_SIZE)
+                {
+                    LogManager.LogWarning($"SettingsManager.ImportFromFile() - BLOCKED - File too large: {fileInfo.Length} bytes");
+                    throw new ArgumentException("Settings file exceeds maximum allowed size (10 MB)");
+                }
+
                 LogManager.LogInfo($"SettingsManager.ImportFromFile() - Reading file - Size: {fileInfo.Length} bytes");
 
                 string json = File.ReadAllText(filePath);
@@ -625,14 +678,49 @@ namespace NecessaryAdminTool
         {
             try
             {
+                // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                // Validate all config file paths before deletion
+                string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                string allowedBasePath = Path.Combine(appDataPath, "NecessaryAdminTool");
+
                 if (File.Exists(SecureConfigPath))
-                    File.Delete(SecureConfigPath);
+                {
+                    string fullPath = Path.GetFullPath(SecureConfigPath);
+                    if (SecurityValidator.IsValidFilePath(fullPath, allowedBasePath))
+                    {
+                        File.Delete(SecureConfigPath);
+                    }
+                    else
+                    {
+                        LogManager.LogWarning($"[SettingsManager] Blocked deletion of SecureConfigPath outside allowed directory: {SecureConfigPath}");
+                    }
+                }
 
                 if (File.Exists(UserConfigPath))
-                    File.Delete(UserConfigPath);
+                {
+                    string fullPath = Path.GetFullPath(UserConfigPath);
+                    if (SecurityValidator.IsValidFilePath(fullPath, allowedBasePath))
+                    {
+                        File.Delete(UserConfigPath);
+                    }
+                    else
+                    {
+                        LogManager.LogWarning($"[SettingsManager] Blocked deletion of UserConfigPath outside allowed directory: {UserConfigPath}");
+                    }
+                }
 
                 if (File.Exists(DCManagerPath))
-                    File.Delete(DCManagerPath);
+                {
+                    string fullPath = Path.GetFullPath(DCManagerPath);
+                    if (SecurityValidator.IsValidFilePath(fullPath, allowedBasePath))
+                    {
+                        File.Delete(DCManagerPath);
+                    }
+                    else
+                    {
+                        LogManager.LogWarning($"[SettingsManager] Blocked deletion of DCManagerPath outside allowed directory: {DCManagerPath}");
+                    }
+                }
             }
             catch
             {

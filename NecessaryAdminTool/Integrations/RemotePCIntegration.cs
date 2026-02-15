@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using NecessaryAdminTool.Security;
 
 namespace NecessaryAdminTool.Integrations
 {
@@ -16,6 +17,14 @@ namespace NecessaryAdminTool.Integrations
         {
             try
             {
+                // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+                // Validate target host to prevent command injection
+                if (!SecurityValidator.IsValidHostname(targetHost) && !SecurityValidator.IsValidIPAddress(targetHost))
+                {
+                    LogManager.LogWarning($"[RemotePC] Blocked invalid target host: {targetHost}");
+                    throw new ArgumentException($"Invalid target host format: {targetHost}");
+                }
+
                 // RemotePC uses web-based connection URLs
                 // API would return connection URL to open in browser
 

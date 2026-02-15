@@ -2,7 +2,8 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text;
-// TAG: #LOGGING #DIAGNOSTICS #VERSION_1_2
+using NecessaryAdminTool.Security;
+// TAG: #LOGGING #DIAGNOSTICS #VERSION_1_2 #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
 
 namespace NecessaryAdminTool
 {
@@ -52,11 +53,31 @@ namespace NecessaryAdminTool
         {
             try
             {
+                // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                // Validate log directory is within allowed base path
+                string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                string allowedBasePath = Path.Combine(appDataPath, "NecessaryAdminTool");
+
+                if (!SecurityValidator.IsValidFilePath(LogDirectory, allowedBasePath))
+                {
+                    LogWarning("[LogManager] CleanOldLogs blocked - invalid log directory path");
+                    return;
+                }
+
                 var cutoffDate = DateTime.Now.AddDays(-30);
                 var logFiles = Directory.GetFiles(LogDirectory, "NAT_*.log");
 
                 foreach (var logFile in logFiles)
                 {
+                    // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                    // Validate each log file path before deletion
+                    string fullLogPath = Path.GetFullPath(logFile);
+                    if (!SecurityValidator.IsValidFilePath(fullLogPath, LogDirectory))
+                    {
+                        LogWarning($"[LogManager] Blocked deletion of file outside log directory: {logFile}");
+                        continue;
+                    }
+
                     var fileInfo = new FileInfo(logFile);
                     if (fileInfo.LastWriteTime < cutoffDate)
                     {
@@ -117,6 +138,18 @@ namespace NecessaryAdminTool
 
             try
             {
+                // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                // Validate log file path before writing
+                string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                string allowedBasePath = Path.Combine(appDataPath, "NecessaryAdminTool");
+                string fullLogPath = Path.GetFullPath(LogFile);
+
+                if (!SecurityValidator.IsValidFilePath(fullLogPath, allowedBasePath))
+                {
+                    // Cannot log warning since we're in the logging function
+                    return;
+                }
+
                 lock (_lockObject)
                 {
                     var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
@@ -154,6 +187,17 @@ namespace NecessaryAdminTool
         {
             try
             {
+                // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                // Validate log file path before reading
+                string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                string allowedBasePath = Path.Combine(appDataPath, "NecessaryAdminTool");
+                string fullLogPath = Path.GetFullPath(LogFile);
+
+                if (!SecurityValidator.IsValidFilePath(fullLogPath, allowedBasePath))
+                {
+                    return "Error: Invalid log file path";
+                }
+
                 if (!File.Exists(LogFile))
                 {
                     return "No log file found.";
@@ -179,9 +223,29 @@ namespace NecessaryAdminTool
         {
             try
             {
+                // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                // Validate log directory before clearing
+                string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                string allowedBasePath = Path.Combine(appDataPath, "NecessaryAdminTool");
+
+                if (!SecurityValidator.IsValidFilePath(LogDirectory, allowedBasePath))
+                {
+                    LogWarning("[LogManager] ClearAllLogs blocked - invalid log directory path");
+                    return;
+                }
+
                 var logFiles = Directory.GetFiles(LogDirectory, "NAT_*.log");
                 foreach (var logFile in logFiles)
                 {
+                    // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                    // Validate each file path before deletion
+                    string fullLogPath = Path.GetFullPath(logFile);
+                    if (!SecurityValidator.IsValidFilePath(fullLogPath, LogDirectory))
+                    {
+                        LogWarning($"[LogManager] Blocked deletion of file outside log directory: {logFile}");
+                        continue;
+                    }
+
                     File.Delete(logFile);
                 }
 

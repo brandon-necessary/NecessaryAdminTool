@@ -7,10 +7,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using NecessaryAdminTool.Security;
 
 namespace NecessaryAdminTool
 {
-    // TAG: #AD_OBJECT_BROWSER #RSAT_ADUC #VERSION_7
+    // TAG: #AD_OBJECT_BROWSER #RSAT_ADUC #VERSION_7 #SECURITY_CRITICAL #LDAP_INJECTION_PREVENTION
     /// <summary>
     /// RSAT Active Directory Users and Computers-like interface
     /// Provides tree-based navigation of AD objects with scanning capabilities
@@ -66,6 +67,14 @@ namespace NecessaryAdminTool
 
             try
             {
+                // TAG: #SECURITY_CRITICAL #LDAP_INJECTION_PREVENTION
+                // Validate domain controller hostname before use
+                if (!SecurityValidator.IsValidHostname(domainController))
+                {
+                    LogManager.LogWarning($"[AD Browser] Invalid domain controller hostname: {domainController}");
+                    throw new ArgumentException("Invalid domain controller hostname. Possible injection attempt.");
+                }
+
                 string domainName = null;
                 DirectoryEntry rootEntry = null;
 
@@ -127,7 +136,8 @@ namespace NecessaryAdminTool
                 }
             };
 
-            // Add standard containers
+            // TAG: #SECURITY_CRITICAL #LDAP_INJECTION_PREVENTION
+            // Add standard containers with validated LDAP filters
             var computersNode = new TreeViewItem
             {
                 Header = "🖥️ Computers",
@@ -135,7 +145,7 @@ namespace NecessaryAdminTool
                 {
                     ObjectClass = "container",
                     ContainerType = ADContainerType.Computers,
-                    Filter = "(objectCategory=computer)"
+                    Filter = "(objectCategory=computer)" // Pre-validated static filter
                 }
             };
             computersNode.Items.Add(new TreeViewItem { Header = "Loading..." }); // Placeholder
@@ -148,7 +158,7 @@ namespace NecessaryAdminTool
                 {
                     ObjectClass = "container",
                     ContainerType = ADContainerType.Users,
-                    Filter = "(&(objectCategory=person)(objectClass=user))"
+                    Filter = "(&(objectCategory=person)(objectClass=user))" // Pre-validated static filter
                 }
             };
             usersNode.Items.Add(new TreeViewItem { Header = "Loading..." });
@@ -161,7 +171,7 @@ namespace NecessaryAdminTool
                 {
                     ObjectClass = "container",
                     ContainerType = ADContainerType.Groups,
-                    Filter = "(objectCategory=group)"
+                    Filter = "(objectCategory=group)" // Pre-validated static filter
                 }
             };
             groupsNode.Items.Add(new TreeViewItem { Header = "Loading..." });
@@ -174,7 +184,7 @@ namespace NecessaryAdminTool
                 {
                     ObjectClass = "organizationalUnit",
                     ContainerType = ADContainerType.OrganizationalUnits,
-                    Filter = "(objectCategory=organizationalUnit)"
+                    Filter = "(objectCategory=organizationalUnit)" // Pre-validated static filter
                 }
             };
             ousNode.Items.Add(new TreeViewItem { Header = "Loading..." });
@@ -274,7 +284,18 @@ namespace NecessaryAdminTool
                         using (var entry = GetDirectoryEntry($"LDAP://{_domainController}"))
                         using (var searcher = new DirectorySearcher(entry))
                         {
-                            searcher.Filter = node.Filter ?? "(objectClass=*)";
+                            // TAG: #SECURITY_CRITICAL #LDAP_INJECTION_PREVENTION
+                            // Validate LDAP filter before use
+                            string filter = node.Filter ?? "(objectClass=*)";
+                            if (!SecurityValidator.ValidateLDAPFilter(filter))
+                            {
+                                LogManager.LogWarning($"[AD Browser] Invalid LDAP filter blocked: {filter}");
+                                throw new InvalidOperationException("LDAP filter failed security validation.");
+                            }
+
+                            searcher.Filter = filter;
+                            LogManager.LogDebug($"[AD Browser] Using validated LDAP filter: {filter}");
+
                             searcher.PageSize = 1000;
                             searcher.PropertiesToLoad.Add("name");
                             searcher.PropertiesToLoad.Add("cn");

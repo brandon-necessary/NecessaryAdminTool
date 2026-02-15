@@ -5,10 +5,11 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using NecessaryAdminTool.Security;
 
 namespace NecessaryAdminTool
 {
-    // TAG: #ACTIVE_DIRECTORY #AD_MANAGER #VERSION_7
+    // TAG: #ACTIVE_DIRECTORY #AD_MANAGER #VERSION_7 #SECURITY_CRITICAL #LDAP_INJECTION_PREVENTION
     /// <summary>
     /// Centralized Active Directory management with bulletproof parsing and performance optimization
     /// Provides computer, user, group, and OU enumeration with robust error handling
@@ -96,12 +97,31 @@ namespace NecessaryAdminTool
                         if (_rootEntry == null)
                             throw new InvalidOperationException("AD Manager not initialized. Call Initialize() first.");
 
+                        // TAG: #SECURITY_CRITICAL #LDAP_INJECTION_PREVENTION
+                        // Validate and sanitize OU filter to prevent LDAP injection
+                        if (!string.IsNullOrEmpty(ouFilter) && !SecurityValidator.ValidateOUFilter(ouFilter))
+                        {
+                            LogManager.LogWarning($"[AD] Blocked invalid OU filter: {ouFilter}");
+                            throw new ArgumentException("Invalid OU filter detected. Possible LDAP injection attempt.");
+                        }
+
                         // Build LDAP filter
                         string filter = "(objectCategory=computer)";
                         if (!string.IsNullOrEmpty(ouFilter))
                         {
-                            // Filter by specific OU
-                            filter = $"(&(objectCategory=computer)(distinguishedName=*{ouFilter}*))";
+                            // TAG: #SECURITY_CRITICAL #LDAP_INJECTION_PREVENTION
+                            // Sanitize OU filter before using in LDAP query
+                            string sanitizedOU = SecurityValidator.EscapeLDAPSearchFilter(ouFilter);
+                            filter = $"(&(objectCategory=computer)(distinguishedName=*{sanitizedOU}*))";
+                            LogManager.LogDebug($"[AD] Applied sanitized OU filter: {sanitizedOU}");
+                        }
+
+                        // TAG: #SECURITY_CRITICAL #LDAP_INJECTION_PREVENTION
+                        // Validate final LDAP filter before execution
+                        if (!SecurityValidator.ValidateLDAPFilter(filter))
+                        {
+                            LogManager.LogWarning($"[AD] Blocked invalid LDAP filter: {filter}");
+                            throw new InvalidOperationException("Generated LDAP filter failed security validation.");
                         }
 
                         searcher = new DirectorySearcher(_rootEntry)
@@ -219,10 +239,28 @@ namespace NecessaryAdminTool
                         if (_rootEntry == null)
                             throw new InvalidOperationException("AD Manager not initialized. Call Initialize() first.");
 
+                        // TAG: #SECURITY_CRITICAL #LDAP_INJECTION_PREVENTION
+                        // Validate and sanitize OU filter to prevent LDAP injection
+                        if (!string.IsNullOrEmpty(ouFilter) && !SecurityValidator.ValidateOUFilter(ouFilter))
+                        {
+                            LogManager.LogWarning($"[AD] Blocked invalid OU filter: {ouFilter}");
+                            throw new ArgumentException("Invalid OU filter detected. Possible LDAP injection attempt.");
+                        }
+
                         string filter = "(&(objectCategory=person)(objectClass=user))";
                         if (!string.IsNullOrEmpty(ouFilter))
                         {
-                            filter = $"(&(objectCategory=person)(objectClass=user)(distinguishedName=*{ouFilter}*))";
+                            // TAG: #SECURITY_CRITICAL #LDAP_INJECTION_PREVENTION
+                            string sanitizedOU = SecurityValidator.EscapeLDAPSearchFilter(ouFilter);
+                            filter = $"(&(objectCategory=person)(objectClass=user)(distinguishedName=*{sanitizedOU}*))";
+                            LogManager.LogDebug($"[AD] Applied sanitized OU filter: {sanitizedOU}");
+                        }
+
+                        // TAG: #SECURITY_CRITICAL #LDAP_INJECTION_PREVENTION
+                        if (!SecurityValidator.ValidateLDAPFilter(filter))
+                        {
+                            LogManager.LogWarning($"[AD] Blocked invalid LDAP filter: {filter}");
+                            throw new InvalidOperationException("Generated LDAP filter failed security validation.");
                         }
 
                         searcher = new DirectorySearcher(_rootEntry)
@@ -323,10 +361,28 @@ namespace NecessaryAdminTool
                         if (_rootEntry == null)
                             throw new InvalidOperationException("AD Manager not initialized. Call Initialize() first.");
 
+                        // TAG: #SECURITY_CRITICAL #LDAP_INJECTION_PREVENTION
+                        // Validate and sanitize OU filter to prevent LDAP injection
+                        if (!string.IsNullOrEmpty(ouFilter) && !SecurityValidator.ValidateOUFilter(ouFilter))
+                        {
+                            LogManager.LogWarning($"[AD] Blocked invalid OU filter: {ouFilter}");
+                            throw new ArgumentException("Invalid OU filter detected. Possible LDAP injection attempt.");
+                        }
+
                         string filter = "(objectCategory=group)";
                         if (!string.IsNullOrEmpty(ouFilter))
                         {
-                            filter = $"(&(objectCategory=group)(distinguishedName=*{ouFilter}*))";
+                            // TAG: #SECURITY_CRITICAL #LDAP_INJECTION_PREVENTION
+                            string sanitizedOU = SecurityValidator.EscapeLDAPSearchFilter(ouFilter);
+                            filter = $"(&(objectCategory=group)(distinguishedName=*{sanitizedOU}*))";
+                            LogManager.LogDebug($"[AD] Applied sanitized OU filter: {sanitizedOU}");
+                        }
+
+                        // TAG: #SECURITY_CRITICAL #LDAP_INJECTION_PREVENTION
+                        if (!SecurityValidator.ValidateLDAPFilter(filter))
+                        {
+                            LogManager.LogWarning($"[AD] Blocked invalid LDAP filter: {filter}");
+                            throw new InvalidOperationException("Generated LDAP filter failed security validation.");
                         }
 
                         searcher = new DirectorySearcher(_rootEntry)

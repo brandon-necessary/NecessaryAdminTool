@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Web.Script.Serialization;
+using NecessaryAdminTool.Security;
 
 namespace NecessaryAdminTool
 {
-    // TAG: #VERSION_7.1 #ASSET_TAGGING #CATEGORIZATION
+    // TAG: #VERSION_7.1 #ASSET_TAGGING #CATEGORIZATION #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
     /// <summary>
     /// Manages asset tags and categories for computers
     /// Allows custom tagging for organization, filtering, and tracking
@@ -343,6 +344,18 @@ namespace NecessaryAdminTool
         {
             try
             {
+                // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                // Validate tag storage path
+                string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                string allowedBasePath = Path.Combine(appDataPath, "NecessaryAdminTool");
+                string fullPath = Path.GetFullPath(TagStoragePath);
+
+                if (!SecurityValidator.IsValidFilePath(fullPath, allowedBasePath))
+                {
+                    LogManager.LogWarning("[AssetTagManager] Blocked saving tags - invalid storage path");
+                    return;
+                }
+
                 var data = new
                 {
                     Tags = _tags,
@@ -372,6 +385,18 @@ namespace NecessaryAdminTool
         {
             try
             {
+                // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                // Validate tag storage path
+                string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                string allowedBasePath = Path.Combine(appDataPath, "NecessaryAdminTool");
+                string fullPath = Path.GetFullPath(TagStoragePath);
+
+                if (!SecurityValidator.IsValidFilePath(fullPath, allowedBasePath))
+                {
+                    LogManager.LogWarning("[AssetTagManager] Blocked loading tags - invalid storage path");
+                    return;
+                }
+
                 if (!File.Exists(TagStoragePath))
                     return;
 

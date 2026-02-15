@@ -5,7 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
-// TAG: #DATABASE #CSV_JSON #VERSION_1_2
+using NecessaryAdminTool.Security;
+// TAG: #DATABASE #CSV_JSON #VERSION_1_2 #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
 
 namespace NecessaryAdminTool.Data
 {
@@ -298,24 +299,49 @@ namespace NecessaryAdminTool.Data
         {
             try
             {
-                if (!Directory.Exists(_dataDirectory))
+                // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                // Validate backup path
+                if (!Directory.Exists(backupPath))
                 {
+                    LogManager.LogWarning($"[CsvDataProvider] Blocked backup - directory does not exist: {backupPath}");
                     return false;
                 }
 
-                // Create backup directory
-                var backupDir = Path.GetDirectoryName(backupPath);
-                if (!Directory.Exists(backupDir))
+                if (!Directory.Exists(_dataDirectory))
                 {
-                    Directory.CreateDirectory(backupDir);
+                    return false;
                 }
 
                 // Copy all JSON files
                 var files = Directory.GetFiles(_dataDirectory, "*.json");
                 foreach (var file in files)
                 {
+                    // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                    // Validate source file path
+                    string fullSourcePath = Path.GetFullPath(file);
+                    if (!SecurityValidator.IsValidFilePath(fullSourcePath, _dataDirectory))
+                    {
+                        LogManager.LogWarning($"[CsvDataProvider] Blocked backup - invalid source file: {file}");
+                        continue;
+                    }
+
                     var fileName = Path.GetFileName(file);
+                    if (!SecurityValidator.IsValidFilename(fileName))
+                    {
+                        LogManager.LogWarning($"[CsvDataProvider] Blocked backup - invalid filename: {fileName}");
+                        continue;
+                    }
+
                     var destFile = Path.Combine(backupPath, fileName);
+                    string fullDestPath = Path.GetFullPath(destFile);
+
+                    // Validate destination path
+                    if (!SecurityValidator.IsValidFilePath(fullDestPath, backupPath))
+                    {
+                        LogManager.LogWarning($"[CsvDataProvider] Blocked backup - invalid destination: {destFile}");
+                        continue;
+                    }
+
                     await Task.Run(() => File.Copy(file, destFile, true));
                 }
 
@@ -333,8 +359,11 @@ namespace NecessaryAdminTool.Data
         {
             try
             {
+                // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                // Validate backup path
                 if (!Directory.Exists(backupPath))
                 {
+                    LogManager.LogWarning($"[CsvDataProvider] Blocked restore - directory does not exist: {backupPath}");
                     return false;
                 }
 
@@ -348,8 +377,32 @@ namespace NecessaryAdminTool.Data
                 var files = Directory.GetFiles(backupPath, "*.json");
                 foreach (var file in files)
                 {
+                    // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                    // Validate source file path
+                    string fullSourcePath = Path.GetFullPath(file);
+                    if (!SecurityValidator.IsValidFilePath(fullSourcePath, backupPath))
+                    {
+                        LogManager.LogWarning($"[CsvDataProvider] Blocked restore - invalid source file: {file}");
+                        continue;
+                    }
+
                     var fileName = Path.GetFileName(file);
+                    if (!SecurityValidator.IsValidFilename(fileName))
+                    {
+                        LogManager.LogWarning($"[CsvDataProvider] Blocked restore - invalid filename: {fileName}");
+                        continue;
+                    }
+
                     var destFile = Path.Combine(_dataDirectory, fileName);
+                    string fullDestPath = Path.GetFullPath(destFile);
+
+                    // Validate destination path
+                    if (!SecurityValidator.IsValidFilePath(fullDestPath, _dataDirectory))
+                    {
+                        LogManager.LogWarning($"[CsvDataProvider] Blocked restore - invalid destination: {destFile}");
+                        continue;
+                    }
+
                     await Task.Run(() => File.Copy(file, destFile, true));
                 }
 
@@ -419,6 +472,31 @@ namespace NecessaryAdminTool.Data
         {
             try
             {
+                // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                // Validate filename
+                string filename = Path.GetFileName(outputPath);
+                if (!SecurityValidator.IsValidFilename(filename))
+                {
+                    LogManager.LogWarning($"[CsvDataProvider] Blocked export - invalid filename: {filename}");
+                    throw new ArgumentException("Invalid filename detected");
+                }
+
+                // Validate file extension
+                string extension = Path.GetExtension(outputPath);
+                if (!extension.Equals(".csv", StringComparison.OrdinalIgnoreCase))
+                {
+                    LogManager.LogWarning($"[CsvDataProvider] Blocked export - invalid extension: {extension}");
+                    throw new ArgumentException("File must have .csv extension");
+                }
+
+                // Validate parent directory exists
+                string directory = Path.GetDirectoryName(outputPath);
+                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                {
+                    LogManager.LogWarning($"[CsvDataProvider] Blocked export - directory does not exist: {directory}");
+                    throw new DirectoryNotFoundException($"Directory does not exist: {directory}");
+                }
+
                 var computers = await GetAllComputersAsync();
                 var csv = new StringBuilder();
 
@@ -476,6 +554,40 @@ namespace NecessaryAdminTool.Data
         {
             try
             {
+                // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                // Validate filename
+                string filename = Path.GetFileName(csvPath);
+                if (!SecurityValidator.IsValidFilename(filename))
+                {
+                    LogManager.LogWarning($"[CsvDataProvider] Blocked import - invalid filename: {filename}");
+                    throw new ArgumentException("Invalid filename detected");
+                }
+
+                // Validate file extension
+                string extension = Path.GetExtension(csvPath);
+                if (!extension.Equals(".csv", StringComparison.OrdinalIgnoreCase))
+                {
+                    LogManager.LogWarning($"[CsvDataProvider] Blocked import - invalid extension: {extension}");
+                    throw new ArgumentException("File must have .csv extension");
+                }
+
+                // Validate file exists
+                if (!File.Exists(csvPath))
+                {
+                    LogManager.LogWarning($"[CsvDataProvider] Blocked import - file does not exist: {csvPath}");
+                    throw new FileNotFoundException("CSV file not found");
+                }
+
+                // TAG: #SECURITY_CRITICAL #FILE_SIZE_VALIDATION
+                // Prevent reading excessively large files (DoS protection)
+                var fileInfo = new FileInfo(csvPath);
+                const long MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+                if (fileInfo.Length > MAX_FILE_SIZE)
+                {
+                    LogManager.LogWarning($"[CsvDataProvider] Blocked import - file too large: {fileInfo.Length} bytes");
+                    throw new ArgumentException("CSV file exceeds maximum allowed size (50 MB)");
+                }
+
                 var lines = await Task.Run(() => File.ReadAllLines(csvPath, Encoding.UTF8));
                 if (lines.Length < 2)
                 {

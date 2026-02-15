@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using NecessaryAdminTool.Security;
 
 namespace NecessaryAdminTool.Integrations
 {
@@ -19,6 +20,14 @@ namespace NecessaryAdminTool.Integrations
         {
             try
             {
+                // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+                // Validate target host to prevent command injection
+                if (!SecurityValidator.IsValidHostname(targetHost) && !SecurityValidator.IsValidIPAddress(targetHost))
+                {
+                    LogManager.LogWarning($"[TeamViewer] Blocked invalid target host: {targetHost}");
+                    throw new ArgumentException($"Invalid target host format: {targetHost}");
+                }
+
                 string exePath = config.Settings.ContainsKey("ExePath")
                     ? config.Settings["ExePath"]
                     : @"C:\Program Files\TeamViewer\TeamViewer.exe";
@@ -51,13 +60,18 @@ namespace NecessaryAdminTool.Integrations
 
         private static void LaunchViaCli(string exePath, string targetHost, RmmToolConfig config)
         {
-            string arguments = $"-i {targetHost}";
+            // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+            // Sanitize target host for command line usage
+            string safeTargetHost = SecurityValidator.SanitizePowerShellInput(targetHost);
+            string arguments = $"-i {safeTargetHost}";
 
             // Add password if configured
             string password = SecureCredentialManager.RetrieveCredential("TeamViewer", "Password");
             if (!string.IsNullOrEmpty(password))
             {
-                string base64Password = Convert.ToBase64String(Encoding.UTF8.GetBytes(password));
+                // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+                string safePassword = SecurityValidator.SanitizePowerShellInput(password);
+                string base64Password = Convert.ToBase64String(Encoding.UTF8.GetBytes(safePassword));
                 arguments += $" -p {base64Password}";
             }
 

@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Web.Script.Serialization;
 using NecessaryAdminTool.Properties;
+using NecessaryAdminTool.Security;
 
 namespace NecessaryAdminTool
 {
@@ -355,6 +356,24 @@ namespace NecessaryAdminTool
         /// </summary>
         public static void LaunchSession(RmmToolType toolType, string targetHost)
         {
+            // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+            // Validate target host before any operations
+            if (string.IsNullOrWhiteSpace(targetHost))
+            {
+                LogManager.LogWarning("[RemoteControlManager] Blocked: null/empty target host");
+                throw new ArgumentException("Target host cannot be null or empty");
+            }
+
+            // Validate hostname or IP address format
+            bool isValidHostname = SecurityValidator.IsValidHostname(targetHost);
+            bool isValidIP = SecurityValidator.IsValidIPAddress(targetHost);
+
+            if (!isValidHostname && !isValidIP)
+            {
+                LogManager.LogWarning($"[RemoteControlManager] Blocked invalid target: {targetHost}");
+                throw new ArgumentException($"Invalid target host format: {targetHost}");
+            }
+
             // Security validation
             if (!_config.MasterEnabled)
                 throw new InvalidOperationException("Remote control integrations are disabled. Enable in Options menu.");

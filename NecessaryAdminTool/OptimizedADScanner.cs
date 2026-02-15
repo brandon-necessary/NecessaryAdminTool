@@ -9,10 +9,11 @@ using Microsoft.Management.Infrastructure;
 using Microsoft.Management.Infrastructure.Options;
 using System.Management;
 using System.Security;
+using NecessaryAdminTool.Security;
 
 namespace NecessaryAdminTool
 {
-    // TAG: #AD_FLEET_INVENTORY #PERFORMANCE #OPTIMIZED #VERSION_7
+    // TAG: #AD_FLEET_INVENTORY #PERFORMANCE #OPTIMIZED #VERSION_7 #SECURITY_CRITICAL #LDAP_INJECTION_PREVENTION
     /// <summary>
     /// High-performance AD computer scanner with multiple fallback strategies
     /// Optimized for 500+ computer enterprise environments
@@ -54,6 +55,14 @@ namespace NecessaryAdminTool
                 {
                     progress?.Report("Connecting to Active Directory...");
 
+                    // TAG: #SECURITY_CRITICAL #LDAP_INJECTION_PREVENTION
+                    // Validate domain controller hostname to prevent injection
+                    if (!SecurityValidator.IsValidHostname(domainController))
+                    {
+                        LogManager.LogWarning($"[AD Scanner] Invalid domain controller hostname: {domainController}");
+                        throw new ArgumentException("Invalid domain controller hostname. Possible injection attempt.");
+                    }
+
                     // Create DirectoryEntry with credentials
                     string ldapPath = $"LDAP://{domainController}";
                     if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
@@ -67,10 +76,21 @@ namespace NecessaryAdminTool
 
                     searcher = new DirectorySearcher(root);
 
+                    // TAG: #SECURITY_CRITICAL #LDAP_INJECTION_PREVENTION
                     // OPTIMIZED LDAP FILTER: Uses objectCategory (indexed) instead of objectClass
                     // Filters out disabled computers using bitwise LDAP filter
                     // userAccountControl:1.2.840.113556.1.4.803:=2 checks for ACCOUNTDISABLE flag
-                    searcher.Filter = "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))";
+                    string filter = "(&(objectCategory=computer)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))";
+
+                    // Validate LDAP filter before use
+                    if (!SecurityValidator.ValidateLDAPFilter(filter))
+                    {
+                        LogManager.LogWarning($"[AD Scanner] LDAP filter validation failed: {filter}");
+                        throw new InvalidOperationException("LDAP filter failed security validation.");
+                    }
+
+                    searcher.Filter = filter;
+                    LogManager.LogDebug($"[AD Scanner] Using validated LDAP filter: {filter}");
 
                     // CRITICAL PERFORMANCE OPTIMIZATION: PageSize = 1000
                     // - Enables LDAP paged searches
@@ -101,6 +121,7 @@ namespace NecessaryAdminTool
 
                     LogManager.LogInfo($"[AD] Found {totalFound} enabled computers in Active Directory");
 
+                    // TAG: #SECURITY_CRITICAL #LDAP_INJECTION_PREVENTION
                     // Extract hostnames with validation
                     foreach (SearchResult result in results)
                     {
@@ -120,9 +141,15 @@ namespace NecessaryAdminTool
                                 hostname = result.Properties["name"][0]?.ToString();
                             }
 
+                            // TAG: #SECURITY_CRITICAL #LDAP_INJECTION_PREVENTION
+                            // Validate hostname before adding to collection
                             if (!string.IsNullOrEmpty(hostname) && SecurityValidator.IsValidHostname(hostname))
                             {
                                 computers.Add(hostname);
+                            }
+                            else if (!string.IsNullOrEmpty(hostname))
+                            {
+                                LogManager.LogWarning($"[AD Scanner] Rejected invalid hostname from AD: {hostname}");
                             }
                         }
                         catch (Exception ex)

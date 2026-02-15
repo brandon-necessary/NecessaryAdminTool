@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
+using NecessaryAdminTool.Security;
 
 namespace NecessaryAdminTool.Integrations
 {
@@ -19,6 +20,14 @@ namespace NecessaryAdminTool.Integrations
         {
             try
             {
+                // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+                // Validate target host to prevent command injection
+                if (!SecurityValidator.IsValidHostname(targetHost) && !SecurityValidator.IsValidIPAddress(targetHost))
+                {
+                    LogManager.LogWarning($"[AnyDesk] Blocked invalid target host: {targetHost}");
+                    throw new ArgumentException($"Invalid target host format: {targetHost}");
+                }
+
                 // Get AnyDesk executable path
                 string exePath = config.Settings.ContainsKey("ExePath")
                     ? config.Settings["ExePath"]
@@ -32,15 +41,23 @@ namespace NecessaryAdminTool.Integrations
                     ? config.Settings["ConnectionMode"]
                     : "attended";
 
+                // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+                // Sanitize target host for command line usage
+                string safeTargetHost = SecurityValidator.SanitizePowerShellInput(targetHost);
+
                 // Build arguments
-                string arguments = $"{targetHost} --plain";
+                string arguments = $"{safeTargetHost} --plain";
 
                 // Add password for unattended access
                 if (connectionMode == "unattended")
                 {
                     string password = SecureCredentialManager.RetrieveCredential("AnyDesk", "Password");
                     if (!string.IsNullOrEmpty(password))
-                        arguments += $" --with-password \"{password}\"";
+                    {
+                        // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+                        string safePassword = SecurityValidator.SanitizePowerShellInput(password);
+                        arguments += $" --with-password \"{safePassword}\"";
+                    }
                 }
 
                 // Launch AnyDesk
