@@ -274,5 +274,65 @@ namespace NecessaryAdminTool.Properties {
                 this["SetupCompleted"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool DisableAutoUpdates {
+            get {
+                return ((bool)(this["DisableAutoUpdates"]));
+            }
+            set {
+                this["DisableAutoUpdates"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string WindowsUpdateISOPath {
+            get {
+                return ((string)(this["WindowsUpdateISOPath"]));
+            }
+            set {
+                this["WindowsUpdateISOPath"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("TN")]
+        public string LocalISOHostnamePattern {
+            get {
+                return ((string)(this["LocalISOHostnamePattern"]));
+            }
+            set {
+                this["LocalISOHostnamePattern"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("StartsWith")]
+        public string LocalISOHostnameMatchMode {
+            get {
+                return ((string)(this["LocalISOHostnameMatchMode"]));
+            }
+            set {
+                this["LocalISOHostnameMatchMode"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string DeploymentLogDirectory {
+            get {
+                return ((string)(this["DeploymentLogDirectory"]));
+            }
+            set {
+                this["DeploymentLogDirectory"] = value;
+            }
+        }
     }
 }

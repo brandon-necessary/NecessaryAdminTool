@@ -117,8 +117,10 @@
                                          Background="{StaticResource InputBackgroundBrush}"
                                          Foreground="{StaticResource ForegroundBrush}"
                                          Padding="8" Margin="0,0,10,0"/>
+                                <!-- TAG: #TOOLTIPS #FILE_OPERATIONS -->
                                 <Button Grid.Column="1" Content="Browse..." Width="100" Click="BtnBrowseSQLite_Click"
-                                        Background="{StaticResource SecondaryButtonBrush}"/>
+                                        Background="{StaticResource SecondaryButtonBrush}"
+                                        ToolTip="Opens folder browser to select directory for SQLite database file. Database file will be created as 'NecessaryAdminTool.db' in selected location. Recommended: C:\ProgramData\NecessaryAdminTool\ for multi-user access or network share for centralized storage."/>
                             </Grid>
 
                             <CheckBox x:Name="ChkEnableEncryption" Content="Enable encryption (SQLCipher)"
@@ -185,8 +187,10 @@
                                          Background="{StaticResource InputBackgroundBrush}"
                                          Foreground="{StaticResource ForegroundBrush}"
                                          Padding="8" Margin="0,0,10,0"/>
+                                <!-- TAG: #TOOLTIPS #FILE_OPERATIONS -->
                                 <Button Grid.Column="1" Content="Browse..." Width="100" Click="BtnBrowseAccess_Click"
-                                        Background="{StaticResource SecondaryButtonBrush}"/>
+                                        Background="{StaticResource SecondaryButtonBrush}"
+                                        ToolTip="Opens file browser to select or create Microsoft Access database file (.accdb). Requires ACE Database Engine (Office Runtime) installed. New .accdb file will be created if it doesn't exist. Supports network paths for multi-user access."/>
                             </Grid>
 
                             <TextBlock Text="Note: This will create a new .accdb file if it doesn't exist"
@@ -207,8 +211,10 @@
                                          Background="{StaticResource InputBackgroundBrush}"
                                          Foreground="{StaticResource ForegroundBrush}"
                                          Padding="8" Margin="0,0,10,0"/>
+                                <!-- TAG: #TOOLTIPS #FILE_OPERATIONS -->
                                 <Button Grid.Column="1" Content="Browse..." Width="100" Click="BtnBrowseCsv_Click"
-                                        Background="{StaticResource SecondaryButtonBrush}"/>
+                                        Background="{StaticResource SecondaryButtonBrush}"
+                                        ToolTip="Opens folder browser to select directory for CSV/JSON file storage. Lightweight file-based database option without SQL requirements. Suitable for small deployments or portable installations. Files created: computers.csv, scans.csv, etc."/>
                             </Grid>
 
                             <RadioButton x:Name="RadioCsvFormat" GroupName="CsvFormat" Content="CSV Format"
@@ -217,9 +223,11 @@
                                          Foreground="{StaticResource ForegroundBrush}"/>
                         </StackPanel>
 
+                        <!-- TAG: #TOOLTIPS #ACTIONS -->
                         <Button x:Name="BtnTestConnection" Content="Test Connection" Width="150"
                                 Margin="0,20,0,0" Click="BtnTestConnection_Click" HorizontalAlignment="Left"
-                                Background="{StaticResource SecondaryButtonBrush}"/>
+                                Background="{StaticResource SecondaryButtonBrush}"
+                                ToolTip="Tests database connection with current configuration. Verifies file paths, database engine availability, SQL Server connectivity, and credentials. Shows success/failure message with detailed error information if connection fails."/>
 
                         <TextBlock x:Name="TxtTestResult" Margin="0,10,0,0" FontSize="11"/>
                     </StackPanel>
@@ -241,9 +249,11 @@
                             <StackPanel x:Name="PanelAccessEngineDownload" Visibility="Collapsed" Margin="0,5,0,0">
                                 <TextBlock Text="❌ Microsoft Access Database Engine (ACE) not detected"
                                            Foreground="#FFFF6666" Margin="0,0,0,5"/>
+                                <!-- TAG: #TOOLTIPS #FILE_OPERATIONS -->
                                 <Button Content="Download ACE Database Engine (64-bit)" Width="300"
                                         Click="BtnDownloadAce_Click" HorizontalAlignment="Left"
-                                        Background="{StaticResource AccentOrangeBrush}"/>
+                                        Background="{StaticResource AccentOrangeBrush}"
+                                        ToolTip="Opens Microsoft download page for ACE Database Engine (Office Runtime) in your default browser. Required for Microsoft Access database support. 64-bit version required for 64-bit applications. Install and restart wizard after installation."/>
                                 <TextBlock Text="This will open the Microsoft download page in your browser"
                                            Foreground="{StaticResource ForegroundBrush}" FontSize="10" Margin="0,5,0,0"/>
                             </StackPanel>
@@ -253,15 +263,18 @@
                                            Foreground="#FFFF6666" Margin="0,0,0,5"/>
                                 <Button Content="Download SQL Server Express (Free)" Width="300"
                                         Click="BtnDownloadSqlExpress_Click" HorizontalAlignment="Left"
-                                        Background="{StaticResource AccentOrangeBrush}"/>
+                                        Background="{StaticResource AccentOrangeBrush}"
+                                        ToolTip="Opens Microsoft download page for SQL Server Express (free edition) in your default browser. Full-featured SQL database for enterprise deployments. Supports centralized multi-user access, advanced queries, and large datasets."/>
                                 <TextBlock Text="This will open the Microsoft download page in your browser"
                                            Foreground="{StaticResource ForegroundBrush}" FontSize="10" Margin="0,5,0,0"/>
                             </StackPanel>
                         </StackPanel>
 
+                        <!-- TAG: #TOOLTIPS #ACTIONS -->
                         <Button x:Name="BtnCheckDependencies" Content="Check Dependencies" Width="200"
                                 Margin="0,20,0,0" Click="BtnCheckDependencies_Click" HorizontalAlignment="Left"
-                                Background="{StaticResource SecondaryButtonBrush}"/>
+                                Background="{StaticResource SecondaryButtonBrush}"
+                                ToolTip="Verifies all required database dependencies are installed. Checks for ACE Database Engine (Access), SQL Server connectivity, and .NET Framework components. Shows download links for missing dependencies."/>
                     </StackPanel>
                 </Border>
 
@@ -284,18 +297,23 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
+                <!-- TAG: #TOOLTIPS #NAVIGATION -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal">
                     <Button x:Name="BtnBack" Content="← Back" Width="100" Click="BtnBack_Click"
-                            Visibility="Collapsed" Background="{StaticResource SecondaryButtonBrush}"/>
+                            Visibility="Collapsed" Background="{StaticResource SecondaryButtonBrush}"
+                            ToolTip="Returns to previous step in database setup wizard. Settings from current step are not saved. Use to change database type or configuration options."/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <Button x:Name="BtnNext" Content="Next →" Width="100" Click="BtnNext_Click"
-                            Margin="0,0,10,0" Background="{StaticResource AccentOrangeBrush}"/>
+                            Margin="0,0,10,0" Background="{StaticResource AccentOrangeBrush}"
+                            ToolTip="Proceeds to next step in database setup wizard. Validates current configuration before advancing. Test connection recommended before proceeding to ensure database accessibility."/>
                     <Button x:Name="BtnFinish" Content="Finish" Width="100" Click="BtnFinish_Click"
-                            Visibility="Collapsed" Background="{StaticResource AccentOrangeBrush}"/>
+                            Visibility="Collapsed" Background="{StaticResource AccentOrangeBrush}"
+                            ToolTip="Completes database setup wizard and saves configuration. Creates database file/tables if needed. Application will launch with configured database. First-run setup wizard will not show again."/>
                     <Button Content="Cancel" Width="100" Click="BtnCancel_Click"
-                            Background="{StaticResource SecondaryButtonBrush}"/>
+                            Background="{StaticResource SecondaryButtonBrush}"
+                            ToolTip="Exits database setup wizard without saving. Application will close and setup wizard will appear again on next launch. Use if you need to cancel setup or start over."/>
                 </StackPanel>
             </Grid>
         </Border>

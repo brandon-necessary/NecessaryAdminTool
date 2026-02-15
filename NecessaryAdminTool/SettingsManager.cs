@@ -24,12 +24,15 @@ namespace NecessaryAdminTool
         private static readonly string UserConfigPath = Path.Combine(AppDataPath, "UserConfig.xml");
         private static readonly string DCManagerPath = Path.Combine(AppDataPath, "DCManager.xml");
 
-        // TAG: #LOAD_SETTINGS
+        // TAG: #LOAD_SETTINGS #LOGGING
         /// <summary>
         /// Load all settings from various sources into unified structure
         /// </summary>
         public static AppSettings LoadAllSettings()
         {
+            LogManager.LogInfo("SettingsManager.LoadAllSettings() - START - Loading all application settings");
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+
             try
             {
                 var settings = new AppSettings
@@ -43,10 +46,12 @@ namespace NecessaryAdminTool
                     Appearance = LoadAppearanceSettings()
                 };
 
+                LogManager.LogInfo($"SettingsManager.LoadAllSettings() - SUCCESS - All settings loaded - Elapsed: {sw.ElapsedMilliseconds}ms");
                 return settings;
             }
             catch (Exception ex)
             {
+                LogManager.LogError("SettingsManager.LoadAllSettings() - FAILED - Error loading settings, returning defaults", ex);
                 MessageBox.Show($"Error loading settings: {ex.Message}", "Settings Error",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
                 return GetDefaultSettings();
@@ -180,15 +185,27 @@ namespace NecessaryAdminTool
             };
         }
 
-        // TAG: #SAVE_SETTINGS
+        // TAG: #SAVE_SETTINGS #LOGGING
         /// <summary>
         /// Save specific settings category
         /// </summary>
         public static void SaveGeneralSettings(GeneralSettings settings)
         {
-            Settings.Default.LastUser = settings.LastUser;
-            SaveTargetHistory(settings.TargetHistory);
-            Settings.Default.Save();
+            LogManager.LogInfo($"SettingsManager.SaveGeneralSettings() - Saving general settings - LastUser: {settings.LastUser}");
+
+            try
+            {
+                Settings.Default.LastUser = settings.LastUser;
+                SaveTargetHistory(settings.TargetHistory);
+                Settings.Default.Save();
+
+                LogManager.LogInfo("SettingsManager.SaveGeneralSettings() - SUCCESS - General settings saved");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("SettingsManager.SaveGeneralSettings() - FAILED", ex);
+                throw;
+            }
         }
 
         public static void SavePerformanceSettings(PerformanceSettings settings)
@@ -210,6 +227,8 @@ namespace NecessaryAdminTool
 
         public static void SaveGlobalServices(List<GlobalServiceStatus> services)
         {
+            LogManager.LogInfo($"SettingsManager.SaveGlobalServices() - Saving {services.Count} global service configurations");
+
             try
             {
                 var serializer = new JavaScriptSerializer();
@@ -222,15 +241,20 @@ namespace NecessaryAdminTool
                 string json = serializer.Serialize(serviceList);
                 Settings.Default.GlobalServicesConfig = json;
                 Settings.Default.Save();
+
+                LogManager.LogInfo($"SettingsManager.SaveGlobalServices() - SUCCESS - Saved {services.Count} services");
             }
             catch (Exception ex)
             {
+                LogManager.LogError($"SettingsManager.SaveGlobalServices() - FAILED - Service count: {services.Count}", ex);
                 throw new Exception($"Failed to save global services: {ex.Message}");
             }
         }
 
         public static void SavePinnedDevices(List<PinnedDevice> devices)
         {
+            LogManager.LogInfo($"SettingsManager.SavePinnedDevices() - Saving {devices.Count} pinned devices");
+
             try
             {
                 var serializer = new JavaScriptSerializer();
@@ -244,9 +268,12 @@ namespace NecessaryAdminTool
                 string json = serializer.Serialize(deviceList);
                 Settings.Default.PinnedDevices = json;
                 Settings.Default.Save();
+
+                LogManager.LogInfo($"SettingsManager.SavePinnedDevices() - SUCCESS - Saved {devices.Count} devices");
             }
             catch (Exception ex)
             {
+                LogManager.LogError($"SettingsManager.SavePinnedDevices() - FAILED - Device count: {devices.Count}", ex);
                 throw new Exception($"Failed to save pinned devices: {ex.Message}");
             }
         }
@@ -289,12 +316,14 @@ namespace NecessaryAdminTool
             Settings.Default.Save();
         }
 
-        // TAG: #RESET_ALL
+        // TAG: #RESET_ALL #LOGGING
         /// <summary>
         /// Factory reset - clear all settings and restore defaults
         /// </summary>
         public static void ResetAllSettings()
         {
+            LogManager.LogWarning("SettingsManager.ResetAllSettings() - START - Factory reset initiated - All settings will be cleared");
+
             try
             {
                 // Clear all Properties.Settings
@@ -305,19 +334,24 @@ namespace NecessaryAdminTool
 
                 // Delete XML config files (optional - recreated on next launch)
                 DeleteConfigFiles();
+
+                LogManager.LogWarning("SettingsManager.ResetAllSettings() - SUCCESS - All settings cleared, defaults restored");
             }
             catch (Exception ex)
             {
+                LogManager.LogError("SettingsManager.ResetAllSettings() - FAILED", ex);
                 throw new Exception($"Failed to reset all settings: {ex.Message}");
             }
         }
 
-        // TAG: #EXPORT_IMPORT
+        // TAG: #EXPORT_IMPORT #LOGGING
         /// <summary>
         /// Export all settings to JSON file
         /// </summary>
         public static void ExportToFile(string filePath)
         {
+            LogManager.LogInfo($"SettingsManager.ExportToFile() - START - Exporting settings to: {filePath}");
+
             try
             {
                 var settings = LoadAllSettings();
@@ -325,9 +359,13 @@ namespace NecessaryAdminTool
                 string json = serializer.Serialize(settings);
 
                 File.WriteAllText(filePath, json);
+
+                var fileInfo = new FileInfo(filePath);
+                LogManager.LogInfo($"SettingsManager.ExportToFile() - SUCCESS - Settings exported - Size: {fileInfo.Length} bytes - Path: {filePath}");
             }
             catch (Exception ex)
             {
+                LogManager.LogError($"SettingsManager.ExportToFile() - FAILED - Path: {filePath}", ex);
                 throw new Exception($"Failed to export settings: {ex.Message}");
             }
         }
@@ -337,39 +375,64 @@ namespace NecessaryAdminTool
         /// </summary>
         public static void ImportFromFile(string filePath)
         {
+            LogManager.LogInfo($"SettingsManager.ImportFromFile() - START - Importing settings from: {filePath}");
+
             try
             {
                 if (!File.Exists(filePath))
+                {
+                    LogManager.LogError($"SettingsManager.ImportFromFile() - FAILED - File not found: {filePath}");
                     throw new FileNotFoundException("Settings file not found.");
+                }
+
+                var fileInfo = new FileInfo(filePath);
+                LogManager.LogInfo($"SettingsManager.ImportFromFile() - Reading file - Size: {fileInfo.Length} bytes");
 
                 string json = File.ReadAllText(filePath);
                 var serializer = new JavaScriptSerializer();
                 var settings = serializer.Deserialize<AppSettings>(json);
 
+                int categoriesImported = 0;
+
                 // Apply imported settings
                 if (settings.General != null)
+                {
                     SaveGeneralSettings(settings.General);
+                    categoriesImported++;
+                    LogManager.LogInfo("SettingsManager.ImportFromFile() - General settings imported");
+                }
 
                 if (settings.GlobalServices != null)
+                {
                     SaveGlobalServices(settings.GlobalServices);
+                    categoriesImported++;
+                    LogManager.LogInfo($"SettingsManager.ImportFromFile() - Global services imported ({settings.GlobalServices.Count} services)");
+                }
 
                 if (settings.PinnedDevices != null)
+                {
                     SavePinnedDevices(settings.PinnedDevices);
+                    categoriesImported++;
+                    LogManager.LogInfo($"SettingsManager.ImportFromFile() - Pinned devices imported ({settings.PinnedDevices.Count} devices)");
+                }
 
-                // Other categories can be added here
+                LogManager.LogInfo($"SettingsManager.ImportFromFile() - SUCCESS - {categoriesImported} categories imported from: {filePath}");
             }
             catch (Exception ex)
             {
+                LogManager.LogError($"SettingsManager.ImportFromFile() - FAILED - Path: {filePath}", ex);
                 throw new Exception($"Failed to import settings: {ex.Message}");
             }
         }
 
-        // TAG: #VALIDATION
+        // TAG: #VALIDATION #LOGGING
         /// <summary>
         /// Validate path settings
         /// </summary>
         public static bool ValidatePaths(PathSettings settings)
         {
+            LogManager.LogInfo($"SettingsManager.ValidatePaths() - Validating paths - SharedLogPath: {settings.SharedLogPath}, InventoryDBPath: {settings.InventoryDBPath}");
+
             try
             {
                 // Check if parent directories exist or can be created
@@ -377,20 +440,28 @@ namespace NecessaryAdminTool
                 {
                     string parentDir = Path.GetDirectoryName(settings.SharedLogPath);
                     if (!Directory.Exists(parentDir))
+                    {
+                        LogManager.LogWarning($"SettingsManager.ValidatePaths() - INVALID - SharedLogPath parent directory does not exist: {parentDir}");
                         return false;
+                    }
                 }
 
                 if (!string.IsNullOrEmpty(settings.InventoryDBPath))
                 {
                     string parentDir = Path.GetDirectoryName(settings.InventoryDBPath);
                     if (!Directory.Exists(parentDir))
+                    {
+                        LogManager.LogWarning($"SettingsManager.ValidatePaths() - INVALID - InventoryDBPath parent directory does not exist: {parentDir}");
                         return false;
+                    }
                 }
 
+                LogManager.LogInfo("SettingsManager.ValidatePaths() - VALID - All paths validated successfully");
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                LogManager.LogError("SettingsManager.ValidatePaths() - FAILED - Exception during validation", ex);
                 return false;
             }
         }
@@ -400,11 +471,24 @@ namespace NecessaryAdminTool
         /// </summary>
         public static bool ValidatePerformance(PerformanceSettings settings)
         {
-            return settings.MaxParallelScans >= 1 && settings.MaxParallelScans <= 100 &&
+            LogManager.LogInfo($"SettingsManager.ValidatePerformance() - Validating performance settings - MaxParallelScans: {settings.MaxParallelScans}, WmiTimeout: {settings.WmiTimeout}ms, PingTimeout: {settings.PingTimeout}ms, MaxRetryAttempts: {settings.MaxRetryAttempts}, ThreadPoolSize: {settings.ThreadPoolSize}");
+
+            bool isValid = settings.MaxParallelScans >= 1 && settings.MaxParallelScans <= 100 &&
                    settings.WmiTimeout >= 1000 && settings.WmiTimeout <= 60000 &&
                    settings.PingTimeout >= 100 && settings.PingTimeout <= 10000 &&
                    settings.MaxRetryAttempts >= 1 && settings.MaxRetryAttempts <= 5 &&
                    settings.ThreadPoolSize >= 1;
+
+            if (isValid)
+            {
+                LogManager.LogInfo("SettingsManager.ValidatePerformance() - VALID - All performance settings within acceptable ranges");
+            }
+            else
+            {
+                LogManager.LogWarning("SettingsManager.ValidatePerformance() - INVALID - One or more performance settings out of range");
+            }
+
+            return isValid;
         }
 
         // TAG: #HELPERS

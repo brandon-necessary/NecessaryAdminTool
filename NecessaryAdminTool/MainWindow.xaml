@@ -116,13 +116,13 @@
                                 </TextBlock.Foreground>
                             </TextBlock>
 
-                            <!-- TAG: #SUPERADMIN - Invisible button overlay - Click 5x rapidly to access SuperAdmin -->
+                            <!-- TAG: #SUPERADMIN #TOOLTIPS #CONFIGURATION - Invisible button overlay - Click 5x rapidly to access SuperAdmin -->
                             <Button x:Name="BtnSuperAdminTrigger"
                                     Background="Transparent"
                                     BorderThickness="0"
                                     Cursor="Arrow"
                                     Click="BtnSuperAdminTrigger_Click"
-                                    ToolTip=""
+                                    ToolTip="Hidden SuperAdmin access trigger. Rapidly click logo 5 times to unlock advanced system configuration features including direct database manipulation, registry editing, and developer tools. Use with caution - intended for administrators only."
                                     Opacity="0.01"
                                     IsTabStop="False"/>
                         </Grid>
@@ -201,7 +201,7 @@
                                Foreground="{StaticResource TextMutedBrush}" FontSize="11"
                                FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,8,0"/>
 
-                    <!-- Login Button (appears in read-only mode) -->
+                    <!-- TAG: #TOOLTIPS #NAVIGATION - Login Button (appears in read-only mode) -->
                     <Button x:Name="BtnLoginFromReadOnly"
                             Content="🔑 LOGIN"
                             Click="BtnLoginFromReadOnly_Click"
@@ -213,7 +213,7 @@
                             Foreground="White"
                             BorderThickness="0"
                             Cursor="Hand"
-                            ToolTip="Click to authenticate">
+                            ToolTip="Authenticate with Active Directory credentials to unlock full application functionality. In read-only mode, limited features are available. After login, access scanning, deployment, and management tools. Credentials stored securely in Windows Credential Manager.">
                         <Button.Style>
                             <Style TargetType="Button">
                                 <Setter Property="Template">
@@ -244,35 +244,45 @@
                     </Button>
                 </StackPanel>
 
+                <!-- TAG: #TOOLTIPS #NAVIGATION -->
                 <!-- Auth Button -->
                 <Button x:Name="BtnAuth" Grid.Column="6" Content="LOGIN"
                         Style="{StaticResource BtnGhost}" Click="BtnAuth_Click"
-                        Padding="12,6" FontSize="11" Margin="0,0,8,0"/>
+                        Padding="12,6" FontSize="11" Margin="0,0,8,0"
+                        ToolTip="Authenticate with Active Directory domain credentials. Required for scanning AD computers and accessing fleet inventory features. Credentials are securely stored in Windows Credential Manager. Shows logout option when authenticated."/>
 
                 <!-- Theme Toggle -->
                 <Button x:Name="BtnTheme" Grid.Column="7" Content="🎨"
                         Style="{StaticResource BtnGhost}" Click="BtnTheme_Click"
-                        Padding="8,6" FontSize="13" Margin="0,0,4,0" ToolTip="Toggle Theme"/>
+                        Padding="8,6" FontSize="13" Margin="0,0,4,0"
+                        ToolTip="Toggles between dark and light theme. Changes apply immediately to all windows and UI elements. Theme preference is saved and persists across application restarts. Uses 35+ theme resource keys for complete UI coverage."/>
 
+                <!-- TAG: #TOOLTIPS #CONFIGURATION -->
                 <!-- Options Button - TAG: #SETTINGS #OPTIONS_MENU -->
                 <Button x:Name="BtnOptions" Grid.Column="8" Content="⚙️"
                         Style="{StaticResource BtnGhost}" Click="BtnOptions_Click"
-                        Padding="8,6" FontSize="13" Margin="0,0,4,0" ToolTip="Application Options"/>
+                        Padding="8,6" FontSize="13" Margin="0,0,4,0"
+                        ToolTip="Opens Options window to configure all application settings including database, deployment paths, theme colors, AD query methods, background service, bookmarks, connection profiles, and more. 21 configurable settings across 9 categories."/>
 
+                <!-- TAG: #TOOLTIPS #NAVIGATION -->
                 <!-- About Button -->
                 <Button x:Name="BtnAbout" Grid.Column="9" Content="ℹ️"
                         Style="{StaticResource BtnGhost}" Click="BtnAbout_Click"
-                        Padding="8,6" FontSize="13" Margin="0,0,4,0" ToolTip="About NecessaryAdminTool Suite"/>
+                        Padding="8,6" FontSize="13" Margin="0,0,4,0"
+                        ToolTip="Opens About window with application version, build date, credits, and license information. Current version: 1.0 (1.2602.0.0). Check for updates, view change log, and access support resources."/>
 
                 <!-- Check for Updates Button - TAG: #AUTO_UPDATE #VERSION_1_1 -->
                 <Button x:Name="BtnCheckUpdates" Grid.Column="10" Content="🔄"
                         Style="{StaticResource BtnGhost}" Click="BtnCheckUpdates_Click"
-                        Padding="8,6" FontSize="13" Margin="0,0,4,0" ToolTip="Check for Updates"/>
+                        Padding="8,6" FontSize="13" Margin="0,0,4,0"
+                        ToolTip="Checks for application updates from GitHub releases. Uses Squirrel.Windows auto-update system. Respects enterprise GPO policies and DisableAutoUpdates setting. Update checks can be disabled in Options or via registry."/>
 
+                <!-- TAG: #TOOLTIPS #FILE_OPERATIONS -->
                 <!-- Debug Log -->
                 <Button x:Name="BtnOpenDebugLog" Grid.Column="11" Content="📋 DEBUG LOG"
                         Style="{StaticResource BtnGhost}" Click="BtnOpenLog_Click"
-                        Padding="8,6" FontSize="10"/>
+                        Padding="8,6" FontSize="10"
+                        ToolTip="Opens application debug log file in default text editor. Logs are stored at %APPDATA%\NecessaryAdminTool\Logs\. Contains detailed information about application operations, errors, and diagnostic data. Useful for troubleshooting issues."/>
             </Grid>
         </Border>
 
@@ -300,8 +310,10 @@
                     <Grid>
                         <TextBlock Text="LIVE TERMINAL &amp; DEBUG OUTPUT" Foreground="{StaticResource TextSecondaryBrush}"
                                    FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <!-- TAG: #TOOLTIPS #NAVIGATION -->
                         <Button Content="✕" HorizontalAlignment="Right" Style="{StaticResource BtnGhost}"
-                                Padding="6,2" FontSize="12" Click="BtnToggleTerminal_Click"/>
+                                Padding="6,2" FontSize="12" Click="BtnToggleTerminal_Click"
+                                ToolTip="Closes the terminal/debug output panel. Terminal shows real-time WMI queries, PowerShell commands, and diagnostic information. Click 'TERMINAL' button to reopen."/>
                     </Grid>
                 </Border>
                 <!-- Terminal Output -->
@@ -324,10 +336,11 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
+                <!-- TAG: #TOOLTIPS #NAVIGATION -->
                 <Button x:Name="BtnToggleTerminal" Grid.Column="0" Content="▼ TERMINAL"
                         Style="{StaticResource BtnGhost}" Click="BtnToggleTerminal_Click"
                         Padding="12,6" FontSize="11" FontWeight="Bold"
-                        ToolTip="Show/hide terminal output"/>
+                        ToolTip="Toggles live terminal/debug output panel visibility. Shows real-time WMI queries, PowerShell commands, system operations, and diagnostic information. Useful for troubleshooting and monitoring background operations."/>
 
                 <!-- Integrated Status & Progress -->
                 <StackPanel Grid.Column="1" Margin="15,0,15,0" VerticalAlignment="Center">
@@ -377,9 +390,11 @@
                          Padding="8,5" Margin="0,0,4,0"
                          ToolTip="Remote PowerShell command (Enter to execute)"/>
 
+                <!-- TAG: #TOOLTIPS #ACTIONS -->
                 <Button x:Name="BtnConsoleExec" Grid.Column="3" Content="EXEC"
                         Style="{StaticResource BtnPrimary}" Click="BtnConsole_Click"
-                        Padding="12,4" FontSize="10"/>
+                        Padding="12,4" FontSize="10"
+                        ToolTip="Executes PowerShell command on target computer via PowerShell Remoting. Type command in text box and click EXEC or press Enter. Requires WinRM enabled and admin credentials. Output appears in terminal below."/>
             </Grid>
         </Border>
 
@@ -425,10 +440,12 @@
                                              ToolTip="Enter hostname or IP address"
                                              Background="#FF2A2A2A" BorderBrush="#FF444444"
                                              Padding="6,4"/>
+                                    <!-- TAG: #TOOLTIPS #ACTIONS -->
                                     <Button Grid.Column="1" Content="+ ADD"
                                             Style="{StaticResource BtnPrimary}"
                                             Click="BtnAddPinnedDevice_Click"
-                                            Padding="12,4" FontSize="10" FontWeight="Bold"/>
+                                            Padding="12,4" FontSize="10" FontWeight="Bold"
+                                            ToolTip="Adds computer to pinned devices list for quick access and monitoring. Enter hostname or IP address in text box. Pinned devices are continuously monitored for online/offline status with ping checks every 30 seconds."/>
                                 </Grid>
 
                                 <!-- Pinned Devices DataGrid -->
@@ -504,6 +521,7 @@
                                     </DataGrid.Columns>
                                 </DataGrid>
 
+                                <!-- TAG: #TOOLTIPS #ACTIONS -->
                                 <!-- Action Buttons -->
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -515,16 +533,19 @@
                                             Content="🔄 REFRESH"
                                             Style="{StaticResource BtnPrimary}"
                                             Click="BtnRefreshPinnedDevices_Click"
-                                            Margin="0,0,3,0" Padding="6,6" FontSize="10"/>
+                                            Margin="0,0,3,0" Padding="6,6" FontSize="10"
+                                            ToolTip="Immediately pings all pinned devices to update online/offline status. Normally updates every 30 seconds automatically. Shows response time and last checked timestamp. (F5)"/>
                                     <Button Grid.Column="1" x:Name="BtnDetailsPinnedDevices"
                                             Content="📊 DETAILS"
                                             Style="{StaticResource BtnPrimary}"
                                             Click="BtnDetailsPinnedDevices_Click"
-                                            Margin="1.5,0,1.5,0" Padding="6,6" FontSize="10"/>
+                                            Margin="1.5,0,1.5,0" Padding="6,6" FontSize="10"
+                                            ToolTip="Shows detailed information for selected pinned device including full WMI scan results, hardware specs, software inventory, and system details. Same as double-clicking device row."/>
                                     <Button Grid.Column="2" Content="− REMOVE"
                                             Style="{StaticResource BtnWarning}"
                                             Click="BtnRemovePinnedDevice_Click"
-                                            Margin="3,0,0,0" Padding="6,6" FontSize="10"/>
+                                            Margin="3,0,0,0" Padding="6,6" FontSize="10"
+                                            ToolTip="Removes selected device from pinned devices list. Stops monitoring for this computer. Device can be re-added anytime. Does not delete computer from database - only removes from quick access list."/>
                                 </Grid>
                             </StackPanel>
                         </Border>
@@ -604,7 +625,7 @@
                                                 </Style>
                                             </DataGridTextColumn.ElementStyle>
                                         </DataGridTextColumn>
-                                        <!-- TAG: #VERSION_7 #SERVICE_LINKS - Clickable status page links -->
+                                        <!-- TAG: #VERSION_7 #SERVICE_LINKS #TOOLTIPS #UTILITIES - Clickable status page links -->
                                         <DataGridTemplateColumn Header="Site" Width="*">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
@@ -613,7 +634,8 @@
                                                             Background="#FF2A2A2A" Foreground="{StaticResource AccentOrangeBrush}"
                                                             BorderThickness="1" BorderBrush="#FF3C3C3C"
                                                             Padding="8,4" Margin="2" FontSize="10" FontWeight="SemiBold"
-                                                            Cursor="Hand" HorizontalAlignment="Stretch">
+                                                            Cursor="Hand" HorizontalAlignment="Stretch"
+                                                            ToolTip="Opens vendor's official status page in default browser to view detailed service health, incident reports, maintenance schedules, and historical uptime data. Useful for investigating cloud service outages and planned maintenance windows.">
                                                         <Button.Style>
                                                             <Style TargetType="Button">
                                                                 <Setter Property="Template">
@@ -709,7 +731,7 @@
                                                     </Style>
                                                 </DataGridTextColumn.ElementStyle>
                                             </DataGridTextColumn>
-                                            <!-- TAG: #VERSION_7 #SERVICE_LINKS -->
+                                            <!-- TAG: #VERSION_7 #SERVICE_LINKS #TOOLTIPS #UTILITIES -->
                                             <DataGridTemplateColumn Header="Site" Width="*">
                                                 <DataGridTemplateColumn.CellTemplate>
                                                     <DataTemplate>
@@ -718,7 +740,8 @@
                                                                 Background="#FF2A2A2A" Foreground="{StaticResource AccentOrangeBrush}"
                                                                 BorderThickness="1" BorderBrush="#FF3C3C3C"
                                                                 Padding="8,4" Margin="2" FontSize="10" FontWeight="SemiBold"
-                                                                Cursor="Hand" HorizontalAlignment="Stretch">
+                                                                Cursor="Hand" HorizontalAlignment="Stretch"
+                                                                ToolTip="Opens vendor's official status page in default browser to view detailed service health, incident reports, maintenance schedules, and historical uptime data. Useful for investigating cloud service outages and planned maintenance windows.">
                                                             <Button.Style>
                                                                 <Style TargetType="Button">
                                                                     <Setter Property="Template">
@@ -815,7 +838,7 @@
                                                     </Style>
                                                 </DataGridTextColumn.ElementStyle>
                                             </DataGridTextColumn>
-                                            <!-- TAG: #VERSION_7 #SERVICE_LINKS -->
+                                            <!-- TAG: #VERSION_7 #SERVICE_LINKS #TOOLTIPS #UTILITIES -->
                                             <DataGridTemplateColumn Header="Site" Width="*">
                                                 <DataGridTemplateColumn.CellTemplate>
                                                     <DataTemplate>
@@ -824,7 +847,8 @@
                                                                 Background="#FF2A2A2A" Foreground="{StaticResource AccentOrangeBrush}"
                                                                 BorderThickness="1" BorderBrush="#FF3C3C3C"
                                                                 Padding="8,4" Margin="2" FontSize="10" FontWeight="SemiBold"
-                                                                Cursor="Hand" HorizontalAlignment="Stretch">
+                                                                Cursor="Hand" HorizontalAlignment="Stretch"
+                                                                ToolTip="Opens vendor's official status page in default browser to view detailed service health, incident reports, maintenance schedules, and historical uptime data. Useful for investigating cloud service outages and planned maintenance windows.">
                                                             <Button.Style>
                                                                 <Style TargetType="Button">
                                                                     <Setter Property="Template">
@@ -859,6 +883,7 @@
                                     </DataGrid>
                                 </Expander>
 
+                                <!-- TAG: #TOOLTIPS #ACTIONS -->
                                 <!-- Action Buttons -->
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -869,12 +894,14 @@
                                             Content="🔄 CHECK ALL"
                                             Style="{StaticResource BtnPrimary}"
                                             Click="BtnRefreshGlobalServices_Click"
-                                            Margin="0,0,3,0" Padding="6,6" FontSize="10"/>
+                                            Margin="0,0,3,0" Padding="6,6" FontSize="10"
+                                            ToolTip="Immediately checks status of all configured global cloud services (Microsoft 365, Azure, AWS, Google, etc.). Queries status APIs and updates service health indicators. Configure services in Options → Global Services."/>
                                     <Button Grid.Column="1" x:Name="BtnAutoRefreshGlobalServices"
                                             Content="⏱ AUTO (5 MIN)"
                                             Style="{StaticResource BtnPrimary}"
                                             Click="BtnAutoRefreshGlobalServices_Click"
-                                            Margin="3,0,0,0" Padding="6,6" FontSize="10"/>
+                                            Margin="3,0,0,0" Padding="6,6" FontSize="10"
+                                            ToolTip="Toggles automatic service status checking every 5 minutes. When enabled, all global services are checked continuously in background. Useful for monitoring cloud service outages during critical operations."/>
                                 </Grid>
                             </StackPanel>
                         </Border>
@@ -929,11 +956,13 @@
                                                    Foreground="{StaticResource TextMutedBrush}" FontSize="10" Margin="0,4,0,0"/>
                                     </StackPanel>
 
+                                    <!-- TAG: #TOOLTIPS #ACTIONS -->
                                     <Button Grid.Column="1" Content="🔄 REFRESH" x:Name="BtnRefreshDashboard"
                                             Click="BtnRefreshDashboard_Click"
                                             Background="#FF2A2A2A" Foreground="White" BorderThickness="1"
                                             BorderBrush="#FF444444" Padding="14,8" FontSize="11" FontWeight="SemiBold"
-                                            Cursor="Hand"/>
+                                            Cursor="Hand"
+                                            ToolTip="Refreshes fleet health dashboard statistics including total computers, online/offline counts, OS versions, pending updates, and warranty status. Queries database and live network status. (F5)"/>
                                 </Grid>
                             </Border>
 
@@ -1214,10 +1243,12 @@
                                     <TextBlock Text="Service Tag / Serial:" Foreground="{StaticResource TextMutedBrush}" FontSize="10"/>
                                     <TextBlock x:Name="TxtServiceTag" Text="--" Foreground="#FFFF4444"
                                                FontSize="14" FontWeight="Bold" Margin="0,0,0,6"/>
+                                    <!-- TAG: #TOOLTIPS #UTILITIES -->
                                     <Button x:Name="BtnWarranty" Content="Check Warranty Status"
                                             Style="{StaticResource BtnPrimary}" Click="BtnWarranty_Click"
                                             HorizontalAlignment="Left" Padding="20,6" FontSize="11"
-                                            IsEnabled="False" Margin="0,0,0,16"/>
+                                            IsEnabled="False" Margin="0,0,0,16"
+                                            ToolTip="Checks hardware warranty status using service tag/serial number. Queries manufacturer APIs (Dell, HP, Lenovo) for warranty coverage dates, support tier, and service entitlements. Requires valid service tag and target computer to be scanned first."/>
 
                                     <!-- NETWORK CONFIG -->
                                     <TextBlock Text="NETWORK CONFIGURATION" Foreground="{StaticResource AccentGreenBrush}"
@@ -1290,10 +1321,12 @@
                                                       Background="#FF2A2A2A" BorderBrush="#FF555555"
                                                       Height="32"/>
 
+                                            <!-- TAG: #TOOLTIPS #ACTIONS -->
                                             <Button x:Name="BtnManualScan" Content="🔍 SCAN SYSTEM"
                                                     Click="BtnScan_Click" Cursor="Hand"
                                                     Margin="0,0,0,0" Height="38" FontSize="12" FontWeight="Bold"
-                                                    Foreground="White" BorderThickness="0">
+                                                    Foreground="White" BorderThickness="0"
+                                                    ToolTip="Scans the specified computer using WMI/CIM queries. Retrieves hardware, software, network, and system information. Results are displayed in tabs below and automatically saved to database. Requires valid hostname or IP address. (F5)">
                                                 <Button.Background>
                                                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
                                                         <GradientStop Color="#FF8533" Offset="0"/>
@@ -1345,19 +1378,21 @@
                                                 <ComboBoxItem Content="Feature Update (Major OS In-Place Upgrade)"/>
                                             </ComboBox>
 
+                                            <!-- TAG: #TOOLTIPS #DEPLOYMENT -->
                                             <Button x:Name="BtnPush" Content="⚡ PUSH UPDATE PAYLOAD"
                                                     Style="{StaticResource BtnDanger}" Click="BtnPush_Click"
                                                     Height="36" FontSize="11" FontWeight="Bold"
-                                                    Margin="0,0,0,8" IsEnabled="False"/>
+                                                    Margin="0,0,0,8" IsEnabled="False"
+                                                    ToolTip="Pushes selected update package (General Update or Feature Update) to the target computer via PowerShell Remoting. Requires WinRM enabled and admin credentials. Script runs with configured deployment paths and ISO settings. Disabled until target is scanned and online."/>
 
                                             <Button Content="📤 SYNC SCRIPTS TO SERVER" Style="{StaticResource BtnGhost}"
                                                     Click="BtnSync_Click" Height="30" FontSize="10"
                                                     Margin="0,0,0,6"
-                                                    ToolTip="Sync scripts to server"/>
+                                                    ToolTip="Synchronizes PowerShell deployment scripts to configured server share for RMM distribution. Scripts are uploaded with current deployment configuration (log paths, ISO paths, hostname patterns). Useful for ManageEngine or GPO-based deployments."/>
 
                                             <Button Content="📥 DOWNLOAD SCRIPTS (Latest)" Style="{StaticResource BtnGhost}"
                                                     Click="BtnDownloadScripts_Click" Height="30" FontSize="10"
-                                                    ToolTip="Download latest PowerShell update scripts from embedded resources"/>
+                                                    ToolTip="Downloads latest PowerShell update scripts (GeneralUpdate.ps1 and FeatureUpdate.ps1) from embedded resources to your Downloads folder. Scripts include current deployment settings and theme colors. Opens Explorer when complete."/>
                                         </StackPanel>
                                     </Border>
 
@@ -1365,6 +1400,7 @@
                                     <Border Background="#FF252525" CornerRadius="6" Padding="14"
                                             BorderThickness="1" BorderBrush="#FF555555">
                                         <StackPanel>
+                                            <!-- TAG: #TOOLTIPS #UTILITIES -->
                                             <TextBlock Text="🔧 UTILITIES" Foreground="{StaticResource AccentOrangeBrush}"
                                                        FontSize="11" FontWeight="Bold" Margin="0,0,0,12"
                                                        HorizontalAlignment="Center"/>
@@ -1372,17 +1408,17 @@
                                             <Button Content="⚡ WAKE ON LAN" Style="{StaticResource BtnGhost}"
                                                     Click="BtnWOL_Click" Height="32" FontSize="10"
                                                     Margin="0,0,0,6"
-                                                    ToolTip="Send magic packet to wake system"/>
+                                                    ToolTip="Sends Wake-on-LAN magic packet to target computer's MAC address. Requires computer to support WoL and be configured in BIOS. Computer must be on same subnet or have WoL forwarding configured on router. Useful for powering on remote systems."/>
 
                                             <Button Content="🔌 ENABLE WinRM" Style="{StaticResource BtnGhost}"
                                                     Click="Tool_EnableWinRM_Click" Height="32" FontSize="10"
                                                     Margin="0,0,0,6"
-                                                    ToolTip="Enable WinRM remotely via WMI"/>
+                                                    ToolTip="Remotely enables Windows Remote Management (WinRM) service via WMI. Required for PowerShell Remoting and deployment scripts. Creates firewall rules and starts service. Requires admin credentials and WMI access to target computer."/>
 
                                             <Button x:Name="BtnKillFirewall" Content="🔥 KILL FIREWALL (WMI)"
                                                     Style="{StaticResource BtnWarning}"
                                                     Click="Tool_Firewall_Click" Height="32" FontSize="10"
-                                                    ToolTip="Disable Windows Firewall via WMI"/>
+                                                    ToolTip="Disables all Windows Firewall profiles (Domain, Private, Public) remotely via WMI. WARNING: This reduces system security and should only be used temporarily for troubleshooting network connectivity issues. Requires admin credentials and WMI access."/>
                                         </StackPanel>
                                     </Border>
 
@@ -1418,11 +1454,13 @@
                                                        Margin="0,4,0,8"
                                                        Visibility="Collapsed"/>
 
+                                            <!-- TAG: #TOOLTIPS #RMM_TOOLS -->
                                             <!-- Configure button -->
                                             <Button Content="⚙️  CONFIGURE RMM TOOLS"
                                                     Style="{StaticResource BtnGhost}"
                                                     Click="BtnConfigureRmm_Click"
-                                                    Height="28" FontSize="9"/>
+                                                    Height="28" FontSize="9"
+                                                    ToolTip="Opens RMM Tools configuration window. Enable/disable remote management tools (TeamViewer, ScreenConnect, ManageEngine, etc.) and configure connection settings. Enabled tools appear as quick-launch buttons above for fast access."/>
                                         </StackPanel>
                                     </Border>
                                 </StackPanel>
@@ -1438,18 +1476,23 @@
                                                FontSize="13" FontWeight="Bold" Margin="0,0,0,14"
                                                HorizontalAlignment="Center"/>
 
+                                    <!-- TAG: #TOOLTIPS #SYSTEM_TOOLS -->
                                     <!-- Row 1: File & Software - TAG: #THEME_COLORS #SECTION_HEADERS -->
                                     <TextBlock Text="FILE &amp; SOFTWARE" Foreground="{StaticResource AccentOrangeBrush}"
                                                FontSize="10" FontWeight="Bold" Margin="0,0,0,10"/>
                                     <UniformGrid Columns="2" Margin="0,0,0,14">
                                         <Button Content="📁  BROWSE C$ SHARE" Style="{StaticResource BtnTool}"
-                                                Click="Tool_Browse_Click" Margin="0,0,4,5"/>
+                                                Click="Tool_Browse_Click" Margin="0,0,4,5"
+                                                ToolTip="Opens Windows Explorer to the target computer's C$ administrative share. Provides direct file system access for copying files, viewing logs, or managing configurations. Requires admin credentials and File Sharing enabled on target."/>
                                         <Button Content="📦  SOFTWARE INVENTORY" Style="{StaticResource BtnTool}"
-                                                Click="Tool_Soft_Click" Margin="4,0,0,5"/>
+                                                Click="Tool_Soft_Click" Margin="4,0,0,5"
+                                                ToolTip="Displays complete list of installed software on target computer. Queries registry (Uninstall keys) and Windows Installer database. Shows application names, versions, publishers, and install dates. Export to CSV for reporting."/>
                                         <Button Content="📋  INSTALLED HOTFIXES" Style="{StaticResource BtnTool}"
-                                                Click="Tool_Hotfix_Click" Margin="0,0,4,5"/>
+                                                Click="Tool_Hotfix_Click" Margin="0,0,4,5"
+                                                ToolTip="Lists all installed Windows Updates and hotfixes on target computer. Shows KB numbers, install dates, and update descriptions. Useful for verifying patch compliance and troubleshooting update-related issues."/>
                                         <Button Content="🗑  DISK CLEANUP" Style="{StaticResource BtnTool}"
-                                                Click="Tool_DiskCleanup_Click" Margin="4,0,0,5"/>
+                                                Click="Tool_DiskCleanup_Click" Margin="4,0,0,5"
+                                                ToolTip="Launches Disk Cleanup wizard on target computer to free up disk space. Removes temporary files, Windows Update cleanup, recycle bin contents, and other safe-to-delete items. Runs interactively on target system."/>
                                     </UniformGrid>
 
                                     <!-- Row 2: Process & Service - TAG: #THEME_COLORS #SECTION_HEADERS -->
@@ -1457,13 +1500,17 @@
                                                FontSize="10" FontWeight="Bold" Margin="0,0,0,10"/>
                                     <UniformGrid Columns="2" Margin="0,0,0,14">
                                         <Button Content="⚙  PROCESS MANAGER" Style="{StaticResource BtnTool}"
-                                                Click="Tool_Proc_Click" Margin="0,0,4,5"/>
+                                                Click="Tool_Proc_Click" Margin="0,0,4,5"
+                                                ToolTip="Opens Task Manager on target computer to view and manage running processes. Kill unresponsive applications, check CPU/memory usage, and monitor system performance. Launches remotely via WMI or PowerShell Remoting."/>
                                         <Button Content="🔧  SERVICES MANAGER" Style="{StaticResource BtnTool}"
-                                                Click="Tool_Svc_Click" Margin="4,0,0,5"/>
+                                                Click="Tool_Svc_Click" Margin="4,0,0,5"
+                                                ToolTip="Opens Services management console (services.msc) for target computer. Start, stop, restart, or configure Windows services remotely. View service status, startup type, and dependencies. Requires admin credentials."/>
                                         <Button Content="📊  STARTUP PROGRAMS" Style="{StaticResource BtnTool}"
-                                                Click="Tool_Startup_Click" Margin="0,0,4,5"/>
+                                                Click="Tool_Startup_Click" Margin="0,0,4,5"
+                                                ToolTip="Displays programs configured to run at system startup on target computer. Shows startup location (Registry, Startup folder, Task Scheduler), program name, and path. Disable unwanted startup items to improve boot time and performance."/>
                                         <Button Content="📝  SCHEDULED TASKS" Style="{StaticResource BtnTool}"
-                                                Click="Tool_SchedTask_Click" Margin="4,0,0,5"/>
+                                                Click="Tool_SchedTask_Click" Margin="4,0,0,5"
+                                                ToolTip="Opens Task Scheduler for target computer. View, create, modify, or delete scheduled tasks. Useful for managing automated scripts, maintenance jobs, and Windows Update schedules. Full remote task management capabilities."/>
                                     </UniformGrid>
 
                                     <!-- Row 3: Diagnostics - TAG: #THEME_COLORS #SECTION_HEADERS -->
@@ -1471,17 +1518,23 @@
                                                FontSize="10" FontWeight="Bold" Margin="0,0,0,10"/>
                                     <UniformGrid Columns="2" Margin="0,0,0,14">
                                         <Button Content="📄  EVENT LOGS (SYSTEM)" Style="{StaticResource BtnTool}"
-                                                Click="Tool_Evt_Click" Margin="0,0,4,5"/>
+                                                Click="Tool_Evt_Click" Margin="0,0,4,5"
+                                                ToolTip="Opens Event Viewer to view System event logs on target computer. Review errors, warnings, and information events for troubleshooting boot issues, driver problems, and system crashes. Filter by event ID or source."/>
                                         <Button Content="🛡  OS REPAIR (DISM+SFC)" Style="{StaticResource BtnTool}"
-                                                Click="Tool_Repair_Click" Margin="4,0,0,5"/>
+                                                Click="Tool_Repair_Click" Margin="4,0,0,5"
+                                                ToolTip="Runs Windows system file repair tools (DISM and SFC) on target computer. Repairs corrupted system files, Windows component store issues, and OS integrity problems. Requires elevation and may take 15-30 minutes. System restore point recommended."/>
                                         <Button Content="🔍  DEFENDER QUICK SCAN" Style="{StaticResource BtnTool}"
-                                                Click="Tool_DefenderScan_Click" Margin="0,0,4,5"/>
+                                                Click="Tool_DefenderScan_Click" Margin="0,0,4,5"
+                                                ToolTip="Initiates Windows Defender Quick Scan on target computer. Scans common malware locations (Downloads, Temp, Startup folders). Faster than full scan. Results available in Windows Security. Requires Defender enabled and up-to-date."/>
                                         <Button Content="🌐  NETWORK DIAGNOSTICS" Style="{StaticResource BtnTool}"
-                                                Click="Tool_NetDiag_Click" Margin="4,0,0,5"/>
+                                                Click="Tool_NetDiag_Click" Margin="4,0,0,5"
+                                                ToolTip="Runs comprehensive network diagnostics on target computer including ping tests, trace routes, DNS resolution, and connectivity checks. Useful for troubleshooting internet access, VPN issues, and network performance problems."/>
                                         <Button Content="🔄  RENEW IP ADDRESS" Style="{StaticResource BtnTool}"
-                                                Click="Tool_RenewIP_Click" Margin="0,0,4,5"/>
+                                                Click="Tool_RenewIP_Click" Margin="0,0,4,5"
+                                                ToolTip="Releases and renews DHCP IP address on target computer (ipconfig /release + /renew). Fixes IP conflicts, stale DHCP leases, and network connectivity issues. Network connection briefly interrupted during renewal."/>
                                         <Button Content="🔄  FLUSH DNS" Style="{StaticResource BtnTool}"
-                                                Click="Tool_FlushDNS_Click" Margin="4,0,0,5"/>
+                                                Click="Tool_FlushDNS_Click" Margin="4,0,0,5"
+                                                ToolTip="Clears DNS resolver cache on target computer (ipconfig /flushdns). Fixes DNS resolution issues, stale cached entries, and website access problems after DNS changes. Takes effect immediately without reboot."/>
                                     </UniformGrid>
 
                                     <!-- Row 4: Remote Access - TAG: #THEME_COLORS #SECTION_HEADERS -->
@@ -1489,13 +1542,17 @@
                                                FontSize="10" FontWeight="Bold" Margin="0,0,0,10"/>
                                     <UniformGrid Columns="2" Margin="0,0,0,14">
                                         <Button Content="🖥  REMOTE DESKTOP" Style="{StaticResource BtnTool}"
-                                                Click="Tool_RDP_Click" Margin="0,0,4,5"/>
+                                                Click="Tool_RDP_Click" Margin="0,0,4,5"
+                                                ToolTip="Launches Remote Desktop Connection (mstsc.exe) to target computer. Provides full interactive desktop access. Requires RDP enabled on target, network access to port 3389, and valid user credentials. Network Level Authentication recommended."/>
                                         <Button Content="💻  REMOTE ASSIST" Style="{StaticResource BtnTool}"
-                                                Click="Tool_RemoteAssist_Click" Margin="4,0,0,5"/>
+                                                Click="Tool_RemoteAssist_Click" Margin="4,0,0,5"
+                                                ToolTip="Opens Windows Remote Assistance connection to target computer. Allows viewing and optionally controlling user's desktop with their permission. Useful for user support and troubleshooting. Requires user acceptance to establish connection."/>
                                         <Button Content="📡  REMOTE REGISTRY" Style="{StaticResource BtnTool}"
-                                                Click="Tool_RemoteReg_Click" Margin="0,0,4,5"/>
+                                                Click="Tool_RemoteReg_Click" Margin="0,0,4,5"
+                                                ToolTip="Opens Registry Editor connected to target computer's registry. Full read/write access to HKLM and HKU hives. Modify system settings, troubleshoot configuration issues, and manage registry keys remotely. CAUTION: Incorrect changes can break system."/>
                                         <Button Content="🔌  REMOTE CMD" Style="{StaticResource BtnTool}"
-                                                Click="Tool_PsExec_Click" Margin="4,0,0,5"/>
+                                                Click="Tool_PsExec_Click" Margin="4,0,0,5"
+                                                ToolTip="Opens command prompt on target computer using PsExec (if available) or PowerShell Remoting. Execute commands remotely with SYSTEM or user context. Requires PsExec in PATH or PowerShell Remoting enabled. Full command-line access."/>
                                     </UniformGrid>
 
                                     <!-- Row 5: System Actions - TAG: #THEME_COLORS #SECTION_HEADERS -->
@@ -1504,15 +1561,18 @@
                                     <UniformGrid Columns="2" Margin="0,0,0,8">
                                         <Button x:Name="BtnGP" Content="⚡  FORCE GPUPDATE"
                                                 Style="{StaticResource BtnTool}" Click="Tool_GP_Click"
-                                                IsEnabled="False" Margin="0,0,4,5"/>
+                                                IsEnabled="False" Margin="0,0,4,5"
+                                                ToolTip="Forces immediate Group Policy update on target computer (gpupdate /force). Applies latest GPO settings without waiting for background refresh interval. Useful after policy changes. Takes 1-2 minutes. May require reboot for some policies."/>
                                         <Button Content="🔄  FLUSH DNS" Style="{StaticResource BtnTool}"
-                                                Click="Tool_FlushDNS_Click" Margin="4,0,0,5"/>
+                                                Click="Tool_FlushDNS_Click" Margin="4,0,0,5"
+                                                ToolTip="Clears DNS resolver cache on target computer (ipconfig /flushdns). Fixes DNS resolution issues, stale cached entries, and website access problems after DNS changes. Takes effect immediately without reboot."/>
                                     </UniformGrid>
 
                                     <Button x:Name="BtnReboot" Content="⚠  REBOOT SYSTEM"
                                             Style="{StaticResource BtnDanger}" Click="Tool_Reboot_Click"
                                             IsEnabled="False" Margin="0,10,0,0" Padding="6,12"
-                                            FontSize="13" FontWeight="Bold"/>
+                                            FontSize="13" FontWeight="Bold"
+                                            ToolTip="Immediately reboots the target computer. WARNING: All unsaved work will be lost. Users will be logged off without warning. Use for applying critical updates, completing installations, or troubleshooting. Requires admin credentials and WMI access."/>
                                 </StackPanel>
                             </ScrollViewer>
                         </Border>
@@ -1589,10 +1649,11 @@
                                         </ComboBox>
                                     </Border>
 
+                                    <!-- TAG: #TOOLTIPS #ACTIONS -->
                                     <Button x:Name="BtnRefreshDCsFleet" Click="BtnRefreshDCsFleet_Click"
                                             Foreground="White" FontSize="10" FontWeight="SemiBold"
                                             Margin="0,0,0,0" Padding="0" BorderThickness="0" Cursor="Hand"
-                                            ToolTip="Refresh domain controllers list">
+                                            ToolTip="Refreshes list of available domain controllers in your Active Directory environment. Queries AD for all DCs including PDC emulator, GCs, and read-only DCs. Useful when DCs are added/removed or experiencing connectivity issues. (F5)">
                                         <Button.Template>
                                             <ControlTemplate TargetType="Button">
                                                 <Border x:Name="border" CornerRadius="4" Padding="10,7">
@@ -1637,10 +1698,11 @@
                                         <ComboBoxItem Content="ActiveDirectoryManager (Detailed)" Tag="ActiveDirectoryManager"/>
                                     </ComboBox>
 
+                                    <!-- TAG: #TOOLTIPS #ACTIONS -->
                                     <Button x:Name="BtnLoadADObjects" Content="🌳 LOAD AD OBJECTS"
                                             Style="{StaticResource BtnPrimary}" Click="BtnLoadADObjects_Click"
                                             Padding="12,8" FontSize="10" FontWeight="Bold" Margin="0,0,0,8"
-                                            ToolTip="Load Active Directory tree view (Users, Groups, OUs, Computers)"/>
+                                            ToolTip="Loads Active Directory hierarchical tree view showing Users, Groups, Organizational Units, and Computers in RSAT-style interface. Browse entire AD structure, view object properties, create/edit/delete AD objects. Uses selected query method (DirectorySearcher for speed, ActiveDirectoryManager for details)."/>
 
                                     <Button Grid.Column="3" Content="📊 EXPORT CSV" Style="{StaticResource BtnGhost}"
                                             Click="BtnExportInventory_Click" Padding="12,6" FontSize="10"/>
@@ -1662,10 +1724,11 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
 
+                                    <!-- TAG: #TOOLTIPS #ACTIONS -->
                                     <Button x:Name="BtnScanFleet" Grid.Column="0" Content="🔍 SCAN DOMAIN (LEGACY)"
                                             Style="{StaticResource BtnGhost}" Click="BtnInvScan_Click"
                                             Padding="16,8" FontSize="11" FontWeight="Bold"
-                                            ToolTip="Legacy fleet scan - use 'LOAD AD OBJECTS' for modern tree view"/>
+                                            ToolTip="Legacy fleet scanner that queries AD computers and performs flat-list WMI scan of entire domain. Shows progress bar with online/offline stats. NOTE: For modern tree-based browsing with OU structure, use 'LOAD AD OBJECTS' button instead. This method scans all computers sequentially."/>
 
                                     <TextBox x:Name="TxtInventorySearch" Grid.Column="1"
                                              Margin="10,0,10,0" TextChanged="TxtInventorySearch_TextChanged"
@@ -1737,16 +1800,22 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- Quick Filters -->
+                        <!-- TAG: #TOOLTIPS #SEARCH - Quick Filters -->
                         <Border Background="#1A1A1A" Padding="8" CornerRadius="4" Margin="0,8,0,8">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="🔍 Quick Filters:" Foreground="White" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                <Button Content="📋 All" x:Name="BtnFilterAll" Click="BtnFilterAll_Click" Padding="8,4" Margin="0,0,4,0" FontSize="10" Background="#333" Foreground="White" BorderThickness="0"/>
-                                <Button Content="✅ Online" x:Name="BtnFilterOnline" Click="BtnFilterOnline_Click" Padding="8,4" Margin="0,0,4,0" FontSize="10" Background="#333" Foreground="LimeGreen" BorderThickness="0"/>
-                                <Button Content="❌ Offline" x:Name="BtnFilterOffline" Click="BtnFilterOffline_Click" Padding="8,4" Margin="0,0,4,0" FontSize="10" Background="#333" Foreground="#FF6B6B" BorderThickness="0"/>
-                                <Button Content="⚠️ Win7" x:Name="BtnFilterWin7" Click="BtnFilterWin7_Click" Padding="8,4" Margin="0,0,4,0" FontSize="10" Background="#FF6B00" Foreground="White" BorderThickness="0"/>
-                                <Button Content="🖥️ Servers" x:Name="BtnFilterServers" Click="BtnFilterServers_Click" Padding="8,4" Margin="0,0,4,0" FontSize="10" Background="#333" Foreground="#00BFFF" BorderThickness="0"/>
-                                <Button Content="💻 Workstations" x:Name="BtnFilterWorkstations" Click="BtnFilterWorkstations_Click" Padding="8,4" Margin="0,0,12,0" FontSize="10" Background="#333" Foreground="#FFA500" BorderThickness="0"/>
+                                <Button Content="📋 All" x:Name="BtnFilterAll" Click="BtnFilterAll_Click" Padding="8,4" Margin="0,0,4,0" FontSize="10" Background="#333" Foreground="White" BorderThickness="0"
+                                        ToolTip="Shows all computers in fleet inventory without filtering. Clears any active filters (Online/Offline/OS/Type). Displays complete unfiltered list from database or current scan results."/>
+                                <Button Content="✅ Online" x:Name="BtnFilterOnline" Click="BtnFilterOnline_Click" Padding="8,4" Margin="0,0,4,0" FontSize="10" Background="#333" Foreground="LimeGreen" BorderThickness="0"
+                                        ToolTip="Filters fleet inventory to show only computers currently responding to ping. Excludes offline, unreachable, and powered-off systems. Useful for targeting live systems for deployment or remote management."/>
+                                <Button Content="❌ Offline" x:Name="BtnFilterOffline" Click="BtnFilterOffline_Click" Padding="8,4" Margin="0,0,4,0" FontSize="10" Background="#333" Foreground="#FF6B6B" BorderThickness="0"
+                                        ToolTip="Filters fleet inventory to show only computers not responding to ping. Includes powered-off, unreachable, and network-disconnected systems. Useful for identifying systems needing attention or removal from inventory."/>
+                                <Button Content="⚠️ Win7" x:Name="BtnFilterWin7" Click="BtnFilterWin7_Click" Padding="8,4" Margin="0,0,4,0" FontSize="10" Background="#FF6B00" Foreground="White" BorderThickness="0"
+                                        ToolTip="Filters fleet inventory to show only Windows 7 computers. Critical for identifying end-of-life systems requiring upgrade or replacement. Windows 7 support ended January 2020 - these systems pose security risks."/>
+                                <Button Content="🖥️ Servers" x:Name="BtnFilterServers" Click="BtnFilterServers_Click" Padding="8,4" Margin="0,0,4,0" FontSize="10" Background="#333" Foreground="#00BFFF" BorderThickness="0"
+                                        ToolTip="Filters fleet inventory to show only Windows Server operating systems (Server 2008-2025). Excludes workstation OS versions. Useful for server-specific patching, monitoring, and management tasks."/>
+                                <Button Content="💻 Workstations" x:Name="BtnFilterWorkstations" Click="BtnFilterWorkstations_Click" Padding="8,4" Margin="0,0,12,0" FontSize="10" Background="#333" Foreground="#FFA500" BorderThickness="0"
+                                        ToolTip="Filters fleet inventory to show only workstation operating systems (Windows 7, 8, 10, 11). Excludes Windows Server editions. Useful for desktop-specific deployment, software installation, and user support."/>
                                 <TextBlock x:Name="TxtFilterStatus" Text="Showing all computers" Foreground="#888" FontSize="10" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Border>
@@ -2078,10 +2147,11 @@
                                         </ComboBox>
                                         </Border>
 
+                                        <!-- TAG: #TOOLTIPS #ACTIONS -->
                                         <Button x:Name="BtnRefreshDCs" Click="BtnRefreshDCs_Click"
                                                 Foreground="White" FontSize="10" FontWeight="SemiBold"
                                                 Margin="0,0,0,10" Padding="0" BorderThickness="0" Cursor="Hand"
-                                                ToolTip="Rediscover domain controllers and update health status">
+                                                ToolTip="Rediscovers all domain controllers in Active Directory environment and refreshes health status indicators. Pings each DC, checks LDAP connectivity, verifies replication status, and displays role information (PDC, GC, RODC). Updates DC Health Topology grid with real-time status. (F5)">
                                             <Button.Template>
                                                 <ControlTemplate TargetType="Button">
                                                     <Border x:Name="border" CornerRadius="4" Padding="10,7">
@@ -2109,11 +2179,11 @@
                                             </StackPanel>
                                         </Button>
 
-                                        <!-- TAG: #VERSION_7 #CONNECTION_PROFILES - Manage Connection Profiles -->
+                                        <!-- TAG: #VERSION_7 #CONNECTION_PROFILES #TOOLTIPS #CONNECTION_PROFILES - Manage Connection Profiles -->
                                         <Button x:Name="BtnManageProfiles" Click="BtnManageProfiles_Click"
                                                 Background="#FF2A2A2A" Foreground="White" FontSize="10" FontWeight="SemiBold"
                                                 Margin="0,0,0,12" Padding="10,7" BorderThickness="1" BorderBrush="#FF444444"
-                                                Cursor="Hand" ToolTip="Save and manage connection profiles for quick DC switching">
+                                                Cursor="Hand" ToolTip="Opens Connection Profile Manager to save, load, edit, and delete domain controller connection profiles. Each profile stores preferred DC, credentials, query method, and connection settings. Quickly switch between multiple domains/forests without re-entering credentials. Profiles stored encrypted in database.">
                                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                                 <TextBlock Text="🔗" FontSize="12" Margin="0,0,6,0"/>
                                                 <TextBlock Text="MANAGE CONNECTION PROFILES"/>
@@ -2180,9 +2250,11 @@
                                                Foreground="{StaticResource AccentOrangeBrush}"
                                                FontSize="14" FontWeight="Bold" Margin="0,0,0,14"/>
 
+                                    <!-- TAG: #TOOLTIPS #UTILITIES -->
                                     <Button x:Name="BtnCheckLockouts" Content="📊 CHECK ACCOUNT LOCKOUTS"
                                             Style="{StaticResource BtnPrimary}" Click="BtnCheckLockouts_Click"
-                                            Padding="12,10" FontSize="12" FontWeight="Bold" Margin="0,0,0,14"/>
+                                            Padding="12,10" FontSize="12" FontWeight="Bold" Margin="0,0,0,14"
+                                            ToolTip="Queries domain controllers for recent account lockout events from Security Event Log (Event ID 4740). Shows locked accounts, lockout source computer, timestamp, and DC that logged the event. Useful for troubleshooting user login issues and identifying password attack sources. Requires domain admin privileges."/>
 
                                     <TextBlock Text="Launch Management Console:"
                                                Foreground="{StaticResource TextSecondaryBrush}"
@@ -2401,7 +2473,7 @@
                                 <Border Grid.Row="1" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
                                         BorderThickness="1" CornerRadius="8" Padding="20">
                                     <DockPanel>
-                                        <!-- Management Action Buttons (at bottom) -->
+                                        <!-- TAG: #TOOLTIPS #ACTIONS - Management Action Buttons (at bottom) -->
                                         <Grid DockPanel.Dock="Bottom" Margin="0,16,0,0">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
@@ -2412,21 +2484,25 @@
 
                                             <Button Grid.Column="0" Content="➕ CREATE OBJECT" x:Name="BtnCreateADObject"
                                                     Style="{StaticResource BtnPrimary}" Click="BtnCreateADObject_Click"
-                                                    Padding="12,10" FontSize="11" Margin="0,0,4,0"/>
+                                                    Padding="12,10" FontSize="11" Margin="0,0,4,0"
+                                                    ToolTip="Creates new Active Directory object (User, Computer, Group, OU, Contact) in selected container. Opens creation wizard with object-specific attributes. Requires domain admin or delegated OU creation rights. Changes replicate to all DCs within 15 minutes."/>
 
                                             <Button Grid.Column="1" Content="✏️ EDIT PROPERTIES" x:Name="BtnEditADObject"
                                                     Background="#FF3C3C3C" Foreground="White"
                                                     Click="BtnEditADObject_Click"
-                                                    Padding="12,10" FontSize="11" Margin="4,0" IsEnabled="False"/>
+                                                    Padding="12,10" FontSize="11" Margin="4,0" IsEnabled="False"
+                                                    ToolTip="Opens property editor for selected AD object. Modify attributes including name, description, group membership, account settings, and custom attributes. Requires appropriate AD permissions for target object. Enabled only when object is selected in tree view."/>
 
                                             <Button Grid.Column="2" Content="🗑️ DELETE OBJECT" x:Name="BtnDeleteADObject"
                                                     Style="{StaticResource BtnDanger}" Click="BtnDeleteADObject_Click"
-                                                    Padding="12,10" FontSize="11" Margin="4,0" IsEnabled="False"/>
+                                                    Padding="12,10" FontSize="11" Margin="4,0" IsEnabled="False"
+                                                    ToolTip="Permanently deletes selected Active Directory object. WARNING: Cannot be undone unless AD Recycle Bin is enabled. Deleting OUs removes all child objects. Requires domain admin or delegated delete rights. Confirmation prompt displayed before deletion."/>
 
                                             <Button Grid.Column="3" Content="🔄 REFRESH" x:Name="BtnRefreshADObjects"
                                                     Background="#FF3C3C3C" Foreground="White"
                                                     Click="BtnRefreshADObjects_Click"
-                                                    Padding="12,10" FontSize="11" Margin="4,0,0,0"/>
+                                                    Padding="12,10" FontSize="11" Margin="4,0,0,0"
+                                                    ToolTip="Refreshes Active Directory object tree view and reloads all containers, users, groups, computers, and OUs from domain controller. Updates object counts and displays recent changes made by other admins. Clears cached results and performs fresh AD query. (F5)"/>
                                         </Grid>
 
                                         <!-- AD Object Browser Control (fills remaining space) -->

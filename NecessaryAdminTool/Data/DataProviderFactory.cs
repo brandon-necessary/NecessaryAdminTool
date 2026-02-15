@@ -157,8 +157,9 @@ namespace NecessaryAdminTool.Data
                         #if !SQLITE_ENABLED
                         LogManager.LogWarning("SQLite selected but not enabled in build");
                         return false;
-                        #endif
+                        #else
                         break;
+                        #endif
 
                     case "SQLSERVER":
                         // Validate connection string format

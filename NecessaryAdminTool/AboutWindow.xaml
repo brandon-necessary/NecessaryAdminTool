@@ -130,10 +130,12 @@
                 </Border.Background>
 
                 <Grid>
+                    <!-- TAG: #TOOLTIPS #NAVIGATION -->
                     <!-- Close Button -->
                     <Button Content="✕" HorizontalAlignment="Right" VerticalAlignment="Top"
                             Style="{StaticResource CloseButton}" Click="CloseButton_Click"
-                            Margin="0,8,8,0" Width="32" Height="32"/>
+                            Margin="0,8,8,0" Width="32" Height="32"
+                            ToolTip="Closes the About window and returns to main application. (Esc)"/>
 
                     <!-- Logo and Branding -->
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,20,0,0">

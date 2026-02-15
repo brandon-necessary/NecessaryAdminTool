@@ -119,87 +119,115 @@ namespace NecessaryAdminTool
 
         /// <summary>
         /// Restart Windows Update service and clear cache
-        /// TAG: #VERSION_7.1 #REMEDIATION #WINDOWS_UPDATE
+        /// TAG: #VERSION_7.1 #REMEDIATION #WINDOWS_UPDATE #LOGGING
         /// </summary>
         private static void RestartWindowsUpdateService(string hostname, string username, string password)
         {
+            LogManager.LogInfo($"RemediationManager.RestartWindowsUpdateService() - START - Target: {hostname}");
+
             var scope = GetWmiScope(hostname, username, password);
 
             // Stop Windows Update service
+            LogManager.LogInfo($"Stopping Windows Update service (wuauserv) on {hostname}");
             StopService(scope, "wuauserv");
             Thread.Sleep(2000); // Wait for service to stop
 
             // Clear SoftwareDistribution folder (optional - requires file access)
             try
             {
+                LogManager.LogInfo($"Attempting to clear SoftwareDistribution cache on {hostname}");
                 var deleteCmd = new ManagementClass(scope, new ManagementPath("Win32_Process"), null);
                 var inParams = deleteCmd.GetMethodParameters("Create");
                 inParams["CommandLine"] = "cmd.exe /c rd /s /q C:\\Windows\\SoftwareDistribution\\Download";
                 deleteCmd.InvokeMethod("Create", inParams, null);
                 Thread.Sleep(1000);
+                LogManager.LogInfo($"SoftwareDistribution cache clear command executed on {hostname}");
             }
             catch (Exception ex)
             {
-                LogManager.LogWarning($"[Remediation] Could not clear SoftwareDistribution cache: {ex.Message}");
+                LogManager.LogWarning($"[Remediation] Could not clear SoftwareDistribution cache on {hostname}: {ex.Message}");
             }
 
             // Start Windows Update service
+            LogManager.LogInfo($"Starting Windows Update service (wuauserv) on {hostname}");
             StartService(scope, "wuauserv");
+            LogManager.LogInfo($"RemediationManager.RestartWindowsUpdateService() - SUCCESS - Windows Update restarted on {hostname}");
         }
 
         /// <summary>
         /// Clear DNS cache via ipconfig /flushdns
-        /// TAG: #VERSION_7.1 #REMEDIATION #DNS
+        /// TAG: #VERSION_7.1 #REMEDIATION #DNS #LOGGING
         /// </summary>
         private static void ClearDNSCache(string hostname, string username, string password)
         {
+            LogManager.LogInfo($"RemediationManager.ClearDNSCache() - START - Target: {hostname}");
+
             var scope = GetWmiScope(hostname, username, password);
 
             // Execute ipconfig /flushdns
+            LogManager.LogInfo($"Executing ipconfig /flushdns on {hostname}");
             var processClass = new ManagementClass(scope, new ManagementPath("Win32_Process"), null);
             var inParams = processClass.GetMethodParameters("Create");
             inParams["CommandLine"] = "ipconfig /flushdns";
 
             var outParams = processClass.InvokeMethod("Create", inParams, null);
-            if (outParams["ReturnValue"].ToString() != "0")
+            var returnCode = outParams["ReturnValue"].ToString();
+
+            if (returnCode != "0")
             {
-                throw new Exception($"Failed to execute ipconfig /flushdns (Return code: {outParams["ReturnValue"]})");
+                LogManager.LogError($"RemediationManager.ClearDNSCache() - FAILED - Return code: {returnCode} - Target: {hostname}");
+                throw new Exception($"Failed to execute ipconfig /flushdns (Return code: {returnCode})");
             }
+
+            LogManager.LogInfo($"RemediationManager.ClearDNSCache() - SUCCESS - DNS cache cleared on {hostname}");
         }
 
         /// <summary>
         /// Restart Print Spooler service
-        /// TAG: #VERSION_7.1 #REMEDIATION #PRINT_SPOOLER
+        /// TAG: #VERSION_7.1 #REMEDIATION #PRINT_SPOOLER #LOGGING
         /// </summary>
         private static void RestartPrintSpooler(string hostname, string username, string password)
         {
+            LogManager.LogInfo($"RemediationManager.RestartPrintSpooler() - START - Target: {hostname}");
+
             var scope = GetWmiScope(hostname, username, password);
 
+            LogManager.LogInfo($"Stopping Print Spooler service on {hostname}");
             StopService(scope, "spooler");
             Thread.Sleep(2000);
+
+            LogManager.LogInfo($"Starting Print Spooler service on {hostname}");
             StartService(scope, "spooler");
+
+            LogManager.LogInfo($"RemediationManager.RestartPrintSpooler() - SUCCESS - Print Spooler restarted on {hostname}");
         }
 
         /// <summary>
         /// Enable WinRM for remote management
-        /// TAG: #VERSION_7.1 #REMEDIATION #WINRM
+        /// TAG: #VERSION_7.1 #REMEDIATION #WINRM #LOGGING
         /// </summary>
         private static void EnableWinRM(string hostname, string username, string password)
         {
+            LogManager.LogInfo($"RemediationManager.EnableWinRM() - START - Target: {hostname}");
+
             var scope = GetWmiScope(hostname, username, password);
 
             // Execute winrm quickconfig -force
+            LogManager.LogInfo($"Executing 'winrm quickconfig -force -quiet' on {hostname}");
             var processClass = new ManagementClass(scope, new ManagementPath("Win32_Process"), null);
             var inParams = processClass.GetMethodParameters("Create");
             inParams["CommandLine"] = "winrm quickconfig -force -quiet";
 
             var outParams = processClass.InvokeMethod("Create", inParams, null);
-            if (outParams["ReturnValue"].ToString() != "0")
+            var returnCode = outParams["ReturnValue"].ToString();
+
+            if (returnCode != "0")
             {
-                throw new Exception($"Failed to enable WinRM (Return code: {outParams["ReturnValue"]})");
+                LogManager.LogError($"RemediationManager.EnableWinRM() - FAILED - Return code: {returnCode} - Target: {hostname}");
+                throw new Exception($"Failed to enable WinRM (Return code: {returnCode})");
             }
 
-            Thread.Sleep(3000); // Wait for WinRM to configure
+            LogManager.LogInfo($"RemediationManager.EnableWinRM() - SUCCESS - WinRM enabled on {hostname}");
         }
 
         /// <summary>

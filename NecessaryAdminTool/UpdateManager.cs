@@ -145,6 +145,27 @@ namespace NecessaryAdminTool
         }
 
         /// <summary>
+        /// Perform automatic update check (background, silent)
+        /// Called automatically on app startup
+        /// TAG: #AUTO_UPDATE #AUTOMATIC_CHECK
+        /// </summary>
+        public static async Task PerformAutomaticUpdateCheckAsync()
+        {
+            // Check if enough time has elapsed since last check
+            if (!ShouldCheckForUpdates())
+            {
+                LogManager.LogInfo("Update check skipped - frequency throttle active");
+                return;
+            }
+
+            // Perform silent check
+            await CheckForUpdatesAsync(silent: true);
+
+            // Record check time
+            RecordUpdateCheck();
+        }
+
+        /// <summary>
         /// Check for and apply updates
         /// TAG: #AUTO_UPDATE #SQUIRREL_UPDATE
         /// </summary>

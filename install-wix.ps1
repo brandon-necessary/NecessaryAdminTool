@@ -1,4 +1,6 @@
 # Install WiX Toolset Automatically
+# TAG: #AUTO_UPDATE_INSTALLER #WIX_INSTALLER #BUILD_AUTOMATION #POWERSHELL
+# FUTURE CLAUDES: Update WiX download URL if newer version released
 # Run as Administrator
 
 param([switch]$Silent)

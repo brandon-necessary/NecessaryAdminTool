@@ -96,10 +96,12 @@
                                FontSize="11" Foreground="{StaticResource TextMuted}" Margin="0,4,0,0"/>
                 </StackPanel>
 
+                <!-- TAG: #TOOLTIPS #NAVIGATION -->
                 <!-- Close Button -->
                 <Button Grid.Column="1" Content="✕" Width="40" Height="40"
                         Margin="0,0,20,0" Click="BtnClose_Click"
-                        Style="{StaticResource BtnGhost}" FontSize="18"/>
+                        Style="{StaticResource BtnGhost}" FontSize="18"
+                        ToolTip="Closes the Options window without saving any changes. Use 'SAVE &amp; CLOSE' button to save before closing. (Esc)"/>
             </Grid>
         </Border>
 
@@ -185,8 +187,11 @@
                                 <TextBox x:Name="TxtLastUser" Grid.Column="0" IsReadOnly="True"
                                          Background="{StaticResource BgDark}" Foreground="White"
                                          BorderBrush="{StaticResource BorderDim}" Padding="8,6" FontSize="11"/>
+                                <!-- TAG: #TOOLTIPS #ACTIONS -->
                                 <Button Grid.Column="1" Content="CLEAR" Style="{StaticResource BtnDanger}"
-                                        Click="BtnClearLastUser_Click" Margin="8,0,0,0" Padding="12,6" FontSize="10"/>
+                                        Click="BtnClearLastUser_Click" Margin="8,0,0,0" Padding="12,6" FontSize="10"
+                                        IsTabStop="False"
+                                        ToolTip="Clears the saved last user credential. Application will prompt for domain credentials on next Active Directory scan. Useful when switching between different domain accounts or troubleshooting authentication issues."/>
                             </Grid>
 
                             <!-- Remember DC Selection -->
@@ -209,8 +214,10 @@
                             <TextBlock Text="Recent Targets:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,6"/>
                             <ListBox x:Name="ListTargetHistory" Height="120" Background="{StaticResource BgDark}"
                                      BorderBrush="{StaticResource BorderDim}" Foreground="White" FontSize="11" Margin="0,0,0,8"/>
+                            <!-- TAG: #TOOLTIPS #ACTIONS -->
                             <Button Content="CLEAR HISTORY" Style="{StaticResource BtnDanger}"
-                                    Click="BtnClearHistory_Click" Padding="12,6" FontSize="10"/>
+                                    Click="BtnClearHistory_Click" Padding="12,6" FontSize="10"
+                                    ToolTip="Clears all recent target computer names from history. This list is used for quick access to frequently scanned computers. Does not affect database records or bookmarks. History will rebuild as you scan new computers."/>
                         </StackPanel>
                     </Border>
                 </Expander>
@@ -232,6 +239,7 @@
                             <TextBlock Text="Configure which cloud services to monitor for status and uptime. You can use the visual editor or edit the raw JSON configuration."
                                        Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="14"/>
 
+                            <!-- TAG: #TOOLTIPS #CONFIGURATION -->
                             <!-- Tab Selector - TAG: #THEME_COLORS -->
                             <Grid Margin="0,0,0,8">
                                 <Grid.ColumnDefinitions>
@@ -241,11 +249,13 @@
                                 <Button x:Name="BtnVisualEditor" Content="📋 VISUAL EDITOR" Grid.Column="0"
                                         Background="{StaticResource AccentOrange}" Foreground="White" BorderThickness="0"
                                         Padding="8,6" FontSize="10" FontWeight="Bold" Margin="0,0,2,0"
-                                        Click="BtnVisualEditor_Click" Cursor="Hand"/>
+                                        Click="BtnVisualEditor_Click" Cursor="Hand"
+                                        ToolTip="Switches to visual editor mode with grid-based service configuration. Easier to use for adding, editing, and removing cloud services. Recommended for most users. Changes are synchronized with JSON editor."/>
                                 <Button x:Name="BtnJsonEditor" Content="{}{} JSON EDITOR" Grid.Column="1"
                                         Background="#FF2A2A2A" Foreground="{StaticResource TextMuted}" BorderThickness="0"
                                         Padding="8,6" FontSize="10" FontWeight="Bold" Margin="2,0,0,0"
-                                        Click="BtnJsonEditor_Click" Cursor="Hand"/>
+                                        Click="BtnJsonEditor_Click" Cursor="Hand"
+                                        ToolTip="Switches to raw JSON editor mode for advanced users. Allows direct editing of service configuration JSON. Useful for bulk imports, complex configurations, or troubleshooting. Invalid JSON will be rejected on save."/>
                             </Grid>
 
                             <!-- Visual Editor Panel -->
@@ -366,6 +376,7 @@
                                            Foreground="#FFFF6B6B" FontSize="8" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="12"/>
                             </StackPanel>
 
+                            <!-- TAG: #TOOLTIPS #ACTIONS -->
                             <!-- Action Buttons -->
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -376,15 +387,18 @@
                                 <Button Grid.Column="0" Content="💾 SAVE" x:Name="BtnSaveServicesConfig"
                                         Background="#FF00C853" Foreground="White" BorderThickness="0"
                                         Padding="8,6" FontSize="10" FontWeight="Bold" Margin="0,0,3,0"
-                                        Click="BtnSaveServicesConfig_Click" Cursor="Hand"/>
+                                        Click="BtnSaveServicesConfig_Click" Cursor="Hand"
+                                        ToolTip="Saves global services configuration to settings. Configuration is validated before saving. Invalid service URLs or missing API keys will trigger warnings. Changes apply immediately to status monitoring."/>
                                 <Button Grid.Column="1" Content="🔄 RESET TO DEFAULTS" x:Name="BtnResetServicesConfig"
                                         Background="#FFFF6B6B" Foreground="White" BorderThickness="0"
                                         Padding="8,6" FontSize="9" FontWeight="Bold" Margin="1.5,0,1.5,0"
-                                        Click="BtnResetServicesConfig_Click" Cursor="Hand"/>
+                                        Click="BtnResetServicesConfig_Click" Cursor="Hand"
+                                        ToolTip="Resets global services configuration to factory defaults. All custom service configurations will be lost. Default configuration includes common cloud services (Microsoft 365, Azure, Google, AWS). You will be asked to confirm this action."/>
                                 <Button Grid.Column="2" Content="🧪 TEST APIS" x:Name="BtnTestAPIs"
                                         Background="#FF2196F3" Foreground="White" BorderThickness="0"
                                         Padding="8,6" FontSize="10" FontWeight="Bold" Margin="3,0,0,0"
-                                        Click="BtnTestAPIs_Click" Cursor="Hand"/>
+                                        Click="BtnTestAPIs_Click" Cursor="Hand"
+                                        ToolTip="Tests connectivity to all configured cloud service APIs. Verifies API keys, endpoints, and network connectivity. Results show response time and status for each service. Useful for troubleshooting configuration issues."/>
                             </Grid>
 
                             <TextBlock x:Name="TxtConfigStatus" Text="" Foreground="#FF00FF00"
@@ -497,17 +511,23 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
 
+                                <!-- TAG: #TOOLTIPS #FILE_OPERATIONS -->
                                 <!-- First Row: Import/Template buttons -->
                                 <Button Grid.Row="0" Grid.Column="0" Content="📥 IMPORT FROM CSV" Style="{StaticResource BtnPrimary}"
-                                        Click="BtnImportPinnedCsv_Click" Padding="12,6" FontSize="10" Margin="0,0,0,8"/>
+                                        Click="BtnImportPinnedCsv_Click" Padding="12,6" FontSize="10" Margin="0,0,0,8"
+                                        ToolTip="Imports pinned devices from a CSV file. CSV format: ComputerName,IPAddress,Description. Useful for bulk pinning computers from network scans or asset lists. Duplicate entries will be merged. Download template for correct format."/>
                                 <Button Grid.Row="0" Grid.Column="1" Content="📋 DOWNLOAD TEMPLATE" Style="{StaticResource BtnGhost}"
-                                        Click="BtnDownloadTemplate_Click" Margin="8,0,0,8" Padding="12,6" FontSize="10"/>
+                                        Click="BtnDownloadTemplate_Click" Margin="8,0,0,8" Padding="12,6" FontSize="10"
+                                        ToolTip="Downloads a CSV template file with correct column headers and sample data. Use this template as a starting point for bulk importing pinned devices. Open in Excel or text editor to populate with your computer list."/>
 
                                 <!-- Second Row: Clear/Export buttons -->
+                                <!-- TAG: #TOOLTIPS #ACTIONS -->
                                 <Button Grid.Row="1" Grid.Column="0" Content="CLEAR ALL PINNED DEVICES" Style="{StaticResource BtnDanger}"
-                                        Click="BtnClearAllPinned_Click" Padding="12,6" FontSize="10"/>
+                                        Click="BtnClearAllPinned_Click" Padding="12,6" FontSize="10"
+                                        ToolTip="Removes ALL pinned devices from the list. This action is permanent and cannot be undone. Export to CSV first if you want to keep a backup. Pinned devices provide quick access to frequently managed computers."/>
                                 <Button Grid.Row="1" Grid.Column="1" Content="📤 EXPORT TO CSV" Style="{StaticResource BtnGhost}"
-                                        Click="BtnExportPinned_Click" Margin="8,0,0,0" Padding="12,6" FontSize="10"/>
+                                        Click="BtnExportPinned_Click" Margin="8,0,0,0" Padding="12,6" FontSize="10"
+                                        ToolTip="Exports all pinned devices to a CSV file for backup or migration. File includes computer names, IP addresses, and descriptions. Can be imported into another installation or edited and re-imported."/>
                             </Grid>
                         </StackPanel>
                     </Border>
@@ -570,10 +590,12 @@
                                          Background="{StaticResource BgDark}" Foreground="White"
                                          BorderBrush="{StaticResource BorderDim}" Padding="8,6"/>
 
+                                <!-- TAG: #TOOLTIPS #ACTIONS -->
                                 <!-- Cache Cleanup - TAG: #VERSION_7 #CACHE #PERFORMANCE_AUDIT -->
                                 <TextBlock Text="Failure Cache:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,8,0,4"/>
                                 <Button Content="🗑 CLEAR FAILURE CACHE" Style="{StaticResource BtnGhost}"
-                                        Click="BtnClearFailureCache_Click" Padding="12,6" FontSize="10" HorizontalAlignment="Stretch"/>
+                                        Click="BtnClearFailureCache_Click" Padding="12,6" FontSize="10" HorizontalAlignment="Stretch"
+                                        ToolTip="Clears the cache of computers that previously failed WMI or network connectivity checks. After clearing, all computers will be re-tested on next scan. Cache automatically sizes based on domain size (2× computer count, max 10,000 entries). Useful after network changes or troubleshooting connectivity issues."/>
                                 <TextBlock Text="💡 Cache automatically sizes based on AD computer count (2× limit, max 10000)"
                                            Foreground="{StaticResource TextMuted}" FontSize="8" TextWrapping="Wrap" Margin="0,4,0,0" LineHeight="12"/>
                             </StackPanel>
@@ -613,8 +635,10 @@
                                              Background="{StaticResource BgDark}" Foreground="White"
                                              BorderBrush="{StaticResource BorderDim}" Padding="8,6" FontSize="10"
                                              Text="(Using default NecessaryAdmin logo)"/><!-- TAG: #DYNAMIC_BRANDING -->
+                                    <!-- TAG: #TOOLTIPS #FILE_OPERATIONS -->
                                     <Button Grid.Column="1" Content="BROWSE" Style="{StaticResource BtnPrimary}"
-                                            Click="BtnBrowseLogo_Click" Margin="8,0,0,0" Padding="12,6" FontSize="10"/>
+                                            Click="BtnBrowseLogo_Click" Margin="8,0,0,0" Padding="12,6" FontSize="10"
+                                            ToolTip="Browse for a custom logo image file (PNG, JPG, BMP). Logo appears in the About window and main title bar. Recommended size: 200x50 pixels. Leave empty to use default NecessaryAdminTool branding. Changes apply immediately."/>
                                 </Grid>
 
                                 <!-- Logo Preview -->
@@ -719,9 +743,11 @@
                                     <ComboBoxItem Content="Courier New"/>
                                 </ComboBox>
 
+                                <!-- TAG: #TOOLTIPS #ACTIONS -->
                                 <!-- Action Buttons -->
                                 <Button Content="🔄 RESET TO DEFAULTS" Style="{StaticResource BtnDanger}"
-                                        Click="BtnResetAppearance_Click" Padding="12,8" FontSize="10" Margin="0,20,0,0"/>
+                                        Click="BtnResetAppearance_Click" Padding="12,8" FontSize="10" Margin="0,20,0,0"
+                                        ToolTip="Resets all appearance settings to factory defaults. This includes primary accent color (Orange #FF8533), secondary accent color (Zinc #A1A1AA), custom logo path, and font family. Changes apply immediately to all windows. Theme engine uses 35+ resource keys."/>
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -772,12 +798,15 @@
                                            Foreground="White" FontSize="12" TextWrapping="Wrap"/>
                             </Border>
 
+                            <!-- TAG: #TOOLTIPS #ACTIONS -->
                             <!-- Action Buttons -->
                             <StackPanel Orientation="Horizontal">
                                 <Button Content="✓ APPLY" Style="{StaticResource BtnPrimary}"
-                                        Click="BtnApplyFontSize_Click" Padding="12,6" FontSize="10" Margin="0,0,8,0"/>
+                                        Click="BtnApplyFontSize_Click" Padding="12,6" FontSize="10" Margin="0,0,8,0"
+                                        ToolTip="Applies the selected font size multiplier to the entire application. Changes affect all windows, buttons, text, and UI elements. Range: 0.8x (smaller) to 2.0x (larger). Default: 1.0x. Changes apply immediately without restart."/>
                                 <Button Content="↺ RESET TO DEFAULT (1.0x)" Style="{StaticResource BtnGhost}"
-                                        Click="BtnResetFontSize_Click" Padding="12,6" FontSize="10"/>
+                                        Click="BtnResetFontSize_Click" Padding="12,6" FontSize="10"
+                                        ToolTip="Resets font size multiplier to default value (1.0x). Restores standard font sizes across the entire application. Changes apply immediately."/>
                             </StackPanel>
                         </StackPanel>
                     </Border>
@@ -842,14 +871,18 @@
                                                    Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,0"/>
                                     </StackPanel>
 
+                                    <!-- TAG: #TOOLTIPS #FILE_OPERATIONS -->
                                     <Button Grid.Column="1" Content="💾 BACKUP NOW" Style="{StaticResource BtnPrimary}"
-                                            Click="BtnManualBackup_Click" Padding="12,6" FontSize="10"/>
+                                            Click="BtnManualBackup_Click" Padding="12,6" FontSize="10"
+                                            ToolTip="Creates an immediate backup of the current database inventory. Backup is saved with timestamp in backup folder. Useful before major changes, bulk imports, or testing. Automatic cleanup keeps last 10 backups. Does not interfere with auto-save schedule."/>
                                 </Grid>
                             </Border>
 
+                            <!-- TAG: #TOOLTIPS #FILE_OPERATIONS -->
                             <!-- View Backups Button -->
                             <Button Content="📂 OPEN BACKUP FOLDER" Style="{StaticResource BtnGhost}"
-                                    Click="BtnOpenBackupFolder_Click" Padding="12,6" FontSize="10" HorizontalAlignment="Left"/>
+                                    Click="BtnOpenBackupFolder_Click" Padding="12,6" FontSize="10" HorizontalAlignment="Left"
+                                    ToolTip="Opens Windows Explorer to the backup folder location. View all automatic and manual backup files sorted by timestamp. Backup folder: %APPDATA%\NecessaryAdminTool\Backups\. Last 10 backups are automatically retained."/>
                         </StackPanel>
                     </Border>
                 </Expander>
@@ -906,16 +939,20 @@
                                     <DataGridTemplateColumn Header="Actions" Width="*">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
+                                                <!-- TAG: #TOOLTIPS #CONNECTION_PROFILES -->
                                                 <StackPanel Orientation="Horizontal">
                                                     <Button Content="✓ LOAD" Tag="{Binding}" Background="#FF16C60C" Foreground="White"
                                                             BorderThickness="0" Padding="10,4" Margin="0,0,8,0" FontSize="9"
-                                                            Click="BtnLoadProfile_Click" Cursor="Hand"/>
+                                                            Click="BtnLoadProfile_Click" Cursor="Hand"
+                                                            ToolTip="Loads this connection profile as the active configuration. Sets domain/server address and username for Active Directory scans. Credentials are securely stored in Windows Credential Manager. Changes apply immediately."/>
                                                     <Button Content="✏ EDIT" Tag="{Binding}" Background="#FF2A2A2A" Foreground="White"
                                                             BorderThickness="0" Padding="10,4" Margin="0,0,8,0" FontSize="9"
-                                                            Click="BtnEditProfile_Click" Cursor="Hand"/>
+                                                            Click="BtnEditProfile_Click" Cursor="Hand"
+                                                            ToolTip="Opens dialog to edit this connection profile. Modify profile name, server/domain address, or username. Password can be updated separately via Windows Credential Manager. Changes are saved immediately."/>
                                                     <Button Content="🗑 DELETE" Tag="{Binding}" Background="{StaticResource DangerRed}" Foreground="White"
                                                             BorderThickness="0" Padding="10,4" FontSize="9"
-                                                            Click="BtnDeleteProfile_Click" Cursor="Hand"/>
+                                                            Click="BtnDeleteProfile_Click" Cursor="Hand"
+                                                            ToolTip="Permanently deletes this connection profile. Associated credentials are removed from Windows Credential Manager. This action cannot be undone. You will be asked to confirm."/>
                                                 </StackPanel>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
@@ -962,9 +999,11 @@
                                 </Grid>
                             </Border>
 
+                            <!-- TAG: #TOOLTIPS #CONNECTION_PROFILES -->
                             <!-- Add Button -->
                             <Button Content="➕ ADD PROFILE" Style="{StaticResource BtnPrimary}"
-                                    Click="BtnAddProfile_Click" Padding="12,6" FontSize="10" HorizontalAlignment="Left"/>
+                                    Click="BtnAddProfile_Click" Padding="12,6" FontSize="10" HorizontalAlignment="Left"
+                                    ToolTip="Creates a new connection profile with the information entered above. Profiles store domain/server address and username for quick switching between different Active Directory environments. Credentials are securely stored in Windows Credential Manager. Requires all fields to be filled."/>
 
                             <TextBlock Text="💡 Profiles are stored locally. Credentials are saved securely in Windows Credential Manager."
                                        Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,12,0,0" TextWrapping="Wrap"/>
@@ -1032,16 +1071,20 @@
                                     <DataGridTemplateColumn Header="Actions" Width="180">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
+                                                <!-- TAG: #TOOLTIPS #BOOKMARKS -->
                                                 <StackPanel Orientation="Horizontal">
                                                     <Button Content="📋 COPY" Tag="{Binding}" Background="#FF2A2A2A" Foreground="White"
                                                             BorderThickness="0" Padding="8,4" Margin="0,0,6,0" FontSize="9"
-                                                            Click="BtnCopyBookmark_Click" Cursor="Hand"/>
+                                                            Click="BtnCopyBookmark_Click" Cursor="Hand"
+                                                            ToolTip="Copies the computer name/hostname to clipboard for quick use in other applications or search boxes. Does not modify the bookmark."/>
                                                     <Button Content="✏ EDIT" Tag="{Binding}" Background="#FF2A2A2A" Foreground="White"
                                                             BorderThickness="0" Padding="8,4" Margin="0,0,6,0" FontSize="9"
-                                                            Click="BtnEditBookmark_Click" Cursor="Hand"/>
+                                                            Click="BtnEditBookmark_Click" Cursor="Hand"
+                                                            ToolTip="Opens dialog to edit this bookmark. Modify display name, hostname/IP, folder organization, or notes. Changes are saved immediately and sync across all devices using the same database."/>
                                                     <Button Content="🗑 DELETE" Tag="{Binding}" Background="{StaticResource DangerRed}" Foreground="White"
                                                             BorderThickness="0" Padding="8,4" FontSize="9"
-                                                            Click="BtnDeleteBookmark_Click" Cursor="Hand"/>
+                                                            Click="BtnDeleteBookmark_Click" Cursor="Hand"
+                                                            ToolTip="Permanently deletes this bookmark. This action cannot be undone. The actual computer record in the database is not affected - only the bookmark reference is removed. You will be asked to confirm."/>
                                                 </StackPanel>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
@@ -1095,14 +1138,18 @@
                                 </Grid>
                             </Border>
 
+                            <!-- TAG: #TOOLTIPS #BOOKMARKS -->
                             <!-- Add Button -->
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                                 <Button Content="➕ ADD BOOKMARK" Style="{StaticResource BtnPrimary}"
-                                        Click="BtnAddBookmark_Click" Padding="12,6" FontSize="10" Margin="0,0,8,0"/>
+                                        Click="BtnAddBookmark_Click" Padding="12,6" FontSize="10" Margin="0,0,8,0"
+                                        ToolTip="Opens dialog to create a new bookmark. Bookmarks provide quick access to frequently used computers. Add computer name, optional description, and organize into folders. Bookmarks sync across all devices using the same database."/>
                                 <Button Content="📂 IMPORT FROM CSV" Style="{StaticResource BtnGhost}"
-                                        Click="BtnImportBookmarks_Click" Padding="12,6" FontSize="10" Margin="0,0,8,0"/>
+                                        Click="BtnImportBookmarks_Click" Padding="12,6" FontSize="10" Margin="0,0,8,0"
+                                        ToolTip="Imports bookmarks from a CSV file. CSV format: ComputerName,Description,Folder. Useful for bulk bookmark creation or migration from other systems. Duplicate bookmarks will be skipped. Click 'Download Template' to get sample CSV format."/>
                                 <Button Content="📤 EXPORT TO CSV" Style="{StaticResource BtnGhost}"
-                                        Click="BtnExportBookmarks_Click" Padding="12,6" FontSize="10"/>
+                                        Click="BtnExportBookmarks_Click" Padding="12,6" FontSize="10"
+                                        ToolTip="Exports all bookmarks to a CSV file for backup or migration. File includes computer names, descriptions, and folder organization. Can be imported into another installation or edited in Excel and re-imported."/>
                             </StackPanel>
 
                             <TextBlock Text="💡 Use folders to organize bookmarks (e.g., 'Production', 'Development', 'Critical')"
@@ -1224,8 +1271,10 @@
                                                    Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,0"/>
                                     </StackPanel>
 
+                                    <!-- TAG: #TOOLTIPS #ACTIONS -->
                                     <Button Grid.Column="1" Content="🔄 REFRESH" Style="{StaticResource BtnPrimary}"
-                                            Click="BtnRefreshDbStats_Click" Padding="12,6" FontSize="10"/>
+                                            Click="BtnRefreshDbStats_Click" Padding="12,6" FontSize="10"
+                                            ToolTip="Refreshes database statistics displayed above, including total records, file size, last modified date, and connection status. Useful after bulk imports or data changes. (F5)"/>
                                 </Grid>
                             </Border>
 
@@ -1244,8 +1293,10 @@
                                                    Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,0"/>
                                     </StackPanel>
 
+                                    <!-- TAG: #TOOLTIPS #FILE_OPERATIONS -->
                                     <Button Grid.Column="1" Content="💾 BACKUP" Style="{StaticResource BtnPrimary}"
-                                            Click="BtnBackupDatabase_Click" Padding="12,6" FontSize="10"/>
+                                            Click="BtnBackupDatabase_Click" Padding="12,6" FontSize="10"
+                                            ToolTip="Creates a complete backup copy of the database file with timestamp. Backup is saved to the same directory as the database with .backup extension. Recommended before major changes, updates, or migrations. Database can be backed up while in use."/>
                                 </Grid>
                             </Border>
 
@@ -1264,8 +1315,10 @@
                                                    Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,0"/>
                                     </StackPanel>
 
+                                    <!-- TAG: #TOOLTIPS #FILE_OPERATIONS -->
                                     <Button Grid.Column="1" Content="📂 RESTORE" Style="{StaticResource BtnGhost}"
-                                            Click="BtnRestoreDatabase_Click" Padding="12,6" FontSize="10"/>
+                                            Click="BtnRestoreDatabase_Click" Padding="12,6" FontSize="10"
+                                            ToolTip="Restores database from a previously created backup file. This will OVERWRITE the current database with the backup data. All current data will be lost. Application will close and restart after restore. ALWAYS backup current database first!"/>
                                 </Grid>
                             </Border>
 
@@ -1284,8 +1337,10 @@
                                                    Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,0"/>
                                     </StackPanel>
 
+                                    <!-- TAG: #TOOLTIPS #ACTIONS -->
                                     <Button Grid.Column="1" Content="⚡ OPTIMIZE" Style="{StaticResource BtnGhost}"
-                                            Click="BtnOptimizeDatabase_Click" Padding="12,6" FontSize="10"/>
+                                            Click="BtnOptimizeDatabase_Click" Padding="12,6" FontSize="10"
+                                            ToolTip="Runs VACUUM command to reclaim unused disk space and rebuild internal indexes. Improves query performance and reduces file size after bulk deletions. For SQLite databases only. May take several minutes for large databases. Database is locked during optimization."/>
                                 </Grid>
                             </Border>
 
@@ -1304,13 +1359,146 @@
                                                    Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,0"/>
                                     </StackPanel>
 
+                                    <!-- TAG: #TOOLTIPS #CONFIGURATION -->
                                     <Button Grid.Column="1" Content="🔧 RECONFIGURE" Style="{StaticResource BtnGhost}"
-                                            Click="BtnRerunSetup_Click" Padding="12,6" FontSize="10"/>
+                                            Click="BtnRerunSetup_Click" Padding="12,6" FontSize="10"
+                                            ToolTip="Re-runs the database setup wizard to change database type (SQLite/SQL Server/Access) or file location. Current database will remain unchanged but new connection will be used. Application will close and restart to complete reconfiguration. Backup database before changing!"/>
                                 </Grid>
                             </Border>
 
                             <TextBlock Text="⚠️ Always backup your database before making configuration changes"
                                        Foreground="{StaticResource DangerRed}" FontSize="9" Margin="0,8,0,0" TextWrapping="Wrap"/>
+
+                            <!-- TAG: #FIRST_RUN_RESET - Reset setup wizard flag -->
+                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                                    BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,10,0,0">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock Text="Reset Database Setup" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Re-run the database setup wizard (you can choose to restart immediately or manually)"
+                                                   Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,0"/>
+                                    </StackPanel>
+
+                                    <Button x:Name="BtnResetSetup" Grid.Column="1" VerticalAlignment="Center"
+                                            Content="🔄 Reset Setup" Click="BtnResetSetup_Click"
+                                            Background="{StaticResource AccentOrangeBrush}" Foreground="White"
+                                            Padding="12,6" FontSize="10" FontWeight="SemiBold"
+                                            ToolTip="Reset first-run flag and restart to launch setup wizard"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- TAG: #CONFIGURABLE_OPTIONS #DEPLOYMENT #POWERSHELL_SCRIPTS -->
+                            <!-- Deployment Configuration -->
+                            <TextBlock Text="DEPLOYMENT CONFIGURATION" Foreground="{StaticResource AccentOrange}"
+                                       FontSize="10" FontWeight="Bold" Margin="0,20,0,8"/>
+
+                            <!-- Deployment Log Directory -->
+                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                                    BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="Deployment Log Directory" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Network or local path for PowerShell deployment script logs (e.g., \\server\share\Logs)"
+                                               Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,8"/>
+
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBox x:Name="TxtLogDirectory" Grid.Column="0"
+                                                 Background="{StaticResource BgLight}" Foreground="White"
+                                                 BorderBrush="{StaticResource BorderDim}" BorderThickness="1"
+                                                 Padding="8,6" FontSize="10" Margin="0,0,8,0"
+                                                 ToolTip="Directory where PowerShell deployment scripts save update logs. Defaults to database directory + '\DeploymentLogs'. Leave empty to use local temp directory with automatic fallback if network unavailable."/>
+
+                                        <!-- TAG: #TOOLTIPS #FILE_OPERATIONS -->
+                                        <Button Grid.Column="1" Content="📁" Width="36" Height="32"
+                                                Background="{StaticResource BgLight}" Foreground="{StaticResource AccentOrange}"
+                                                BorderBrush="{StaticResource BorderDim}" BorderThickness="1"
+                                                Click="BtnBrowseLogDir_Click" FontSize="14"
+                                                ToolTip="Opens folder browser to select deployment log directory. Choose a network share for centralized logging or local path for single-machine scenarios."/>
+                                    </Grid>
+
+                                    <TextBlock Text="💡 Scripts will automatically fall back to local logging if network path is unavailable."
+                                               Foreground="{StaticResource AccentOrange}" FontSize="8" Margin="0,8,0,0" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Windows Update ISO Path -->
+                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                                    BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="Windows Update ISO Path" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Network path or local path to Windows Feature Update ISO (e.g., \\server\share\Win11.iso)"
+                                               Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,8"/>
+
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBox x:Name="TxtISOPath" Grid.Column="0"
+                                                 Background="{StaticResource BgLight}" Foreground="White"
+                                                 BorderBrush="{StaticResource BorderDim}" BorderThickness="1"
+                                                 Padding="8,6" FontSize="10" Margin="0,0,8,0"
+                                                 ToolTip="Path to Windows Feature Update ISO file for offline/local upgrades. Leave empty to use cloud-based Windows Update (downloads directly from Microsoft). Network paths (\\server\share) are recommended for fleet deployments."/>
+
+                                        <!-- TAG: #TOOLTIPS #FILE_OPERATIONS -->
+                                        <Button Grid.Column="1" Content="📁" Width="36" Height="32"
+                                                Background="{StaticResource BgLight}" Foreground="{StaticResource AccentOrange}"
+                                                BorderBrush="{StaticResource BorderDim}" BorderThickness="1"
+                                                Click="BtnBrowseISO_Click" FontSize="14"
+                                                ToolTip="Opens file browser to select Windows Update ISO file (.iso). Typically used for Feature Updates (e.g., Windows 11 version upgrades). ISO path is passed to PowerShell scripts via environment variables."/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Local ISO Hostname Pattern -->
+                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                                    BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="Local ISO Deployment Pattern" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Configure which computers use local ISO vs cloud update based on hostname"
+                                               Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,8"/>
+
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="140"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Column="0" Text="If hostname" VerticalAlignment="Center"
+                                                   Foreground="{StaticResource TextMuted}" FontSize="10" Margin="0,0,8,0"/>
+
+                                        <ComboBox x:Name="CmbHostnameMatchMode" Grid.Column="1"
+                                                  Background="{StaticResource BgLight}" Foreground="White"
+                                                  BorderBrush="{StaticResource BorderDim}" BorderThickness="1"
+                                                  Padding="8,6" FontSize="10" Margin="0,0,8,0">
+                                            <ComboBoxItem Content="Starts With" Tag="StartsWith"/>
+                                            <ComboBoxItem Content="Equals" Tag="Equals"/>
+                                            <ComboBoxItem Content="Contains" Tag="Contains"/>
+                                            <ComboBoxItem Content="Ends With" Tag="EndsWith"/>
+                                        </ComboBox>
+
+                                        <TextBox x:Name="TxtHostnamePattern" Grid.Column="2"
+                                                 Background="{StaticResource BgLight}" Foreground="White"
+                                                 BorderBrush="{StaticResource BorderDim}" BorderThickness="1"
+                                                 Padding="8,6" FontSize="10"
+                                                 ToolTip="e.g., 'TN' for computers starting with TN-"/>
+                                    </Grid>
+
+                                    <TextBlock Text="💡 Computers matching this pattern will use the local ISO. Others will use cloud update."
+                                               Foreground="{StaticResource AccentOrange}" FontSize="8" Margin="0,8,0,0" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
 
                             <!-- Background Service Management -->
                             <TextBlock Text="BACKGROUND SERVICE" Foreground="{StaticResource AccentOrange}"
@@ -1347,16 +1535,21 @@
                                 </Grid>
                             </Border>
 
+                            <!-- TAG: #TOOLTIPS #BACKGROUND_SERVICE -->
                             <!-- Service Actions -->
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                                 <Button x:Name="BtnEnableService" Content="⚡ ENABLE" Style="{StaticResource BtnPrimary}"
-                                        Click="BtnEnableService_Click" Padding="12,6" FontSize="10" Margin="0,0,8,0"/>
+                                        Click="BtnEnableService_Click" Padding="12,6" FontSize="10" Margin="0,0,8,0"
+                                        ToolTip="Enables and installs the background scanning service using Windows Task Scheduler. Service will automatically scan Active Directory at configured intervals and update the database. Requires administrator privileges to install. Service runs even when application is closed."/>
                                 <Button x:Name="BtnDisableService" Content="⏸ DISABLE" Style="{StaticResource BtnGhost}"
-                                        Click="BtnDisableService_Click" Padding="12,6" FontSize="10" Margin="0,0,8,0"/>
+                                        Click="BtnDisableService_Click" Padding="12,6" FontSize="10" Margin="0,0,8,0"
+                                        ToolTip="Disables the background scanning service. Scheduled scans will stop but service remains installed. Re-enable anytime to resume automatic scanning. Manual scans via the application are still available."/>
                                 <Button Content="▶ RUN NOW" Style="{StaticResource BtnGhost}"
-                                        Click="BtnRunServiceNow_Click" Padding="12,6" FontSize="10" Margin="0,0,8,0"/>
+                                        Click="BtnRunServiceNow_Click" Padding="12,6" FontSize="10" Margin="0,0,8,0"
+                                        ToolTip="Immediately runs a background scan outside the normal schedule. Scans Active Directory for all computers and updates the database. Scan runs asynchronously in background. Results appear in database when complete. Useful for testing or immediate updates."/>
                                 <Button Content="🗑 UNINSTALL" Style="{StaticResource BtnDanger}"
-                                        Click="BtnUninstallService_Click" Padding="12,6" FontSize="10"/>
+                                        Click="BtnUninstallService_Click" Padding="12,6" FontSize="10"
+                                        ToolTip="Completely removes the background scanning service from Windows Task Scheduler. All scheduled tasks will be deleted. This action requires administrator privileges. Service can be reinstalled later by clicking ENABLE."/>
                             </StackPanel>
 
                             <TextBlock Text="ℹ️ The background service uses Windows Task Scheduler to run automatic scans"
@@ -1384,31 +1577,41 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
+                <!-- TAG: #TOOLTIPS #ACTIONS -->
                 <!-- Reset All -->
                 <Button Grid.Column="0" Content="🔄 RESET ALL" Style="{StaticResource BtnDanger}"
-                        Click="BtnResetAll_Click" Padding="14,8" FontSize="11" Margin="0,0,10,0"/>
+                        Click="BtnResetAll_Click" Padding="14,8" FontSize="11" Margin="0,0,10,0"
+                        ToolTip="Resets ALL settings to factory defaults. This includes database configuration, theme colors, deployment paths, bookmarks, and all user preferences. You will be asked to confirm this action. This cannot be undone."/>
 
                 <!-- TAG: #VERSION_7 #EXPORT_IMPORT - Backup/Restore All Settings -->
+                <!-- TAG: #TOOLTIPS #FILE_OPERATIONS -->
                 <Button Grid.Column="1" Content="📤 EXPORT ALL" Style="{StaticResource BtnGhost}"
-                        Click="BtnExportAllSettings_Click" Padding="14,8" FontSize="10" Margin="0,0,10,0"/>
+                        Click="BtnExportAllSettings_Click" Padding="14,8" FontSize="10" Margin="0,0,10,0"
+                        ToolTip="Exports all application settings to a JSON file for backup or migration to another computer. Includes database configuration, theme colors, deployment settings, bookmarks, and connection profiles. Credentials are NOT exported for security."/>
 
                 <Button Grid.Column="2" Content="📥 IMPORT ALL" Style="{StaticResource BtnGhost}"
-                        Click="BtnImportAllSettings_Click" Padding="14,8" FontSize="10"/>
+                        Click="BtnImportAllSettings_Click" Padding="14,8" FontSize="10"
+                        ToolTip="Imports previously exported settings from a JSON file. Restores database configuration, theme colors, deployment settings, bookmarks, and connection profiles. Existing settings will be overwritten. Application restart required after import."/>
 
                 <!-- Spacer -->
                 <StackPanel Grid.Column="3"/>
 
+                <!-- TAG: #TOOLTIPS #NAVIGATION -->
                 <!-- Cancel -->
                 <Button Grid.Column="4" Content="CANCEL" Style="{StaticResource BtnGhost}"
-                        Click="BtnCancel_Click" Padding="20,8" Margin="0,0,10,0" FontSize="11"/>
+                        Click="BtnCancel_Click" Padding="20,8" Margin="0,0,10,0" FontSize="11"
+                        ToolTip="Closes the Options window and discards all unsaved changes. All modifications made during this session will be lost. (Esc)"/>
 
+                <!-- TAG: #TOOLTIPS #ACTIONS -->
                 <!-- Apply -->
                 <Button Grid.Column="5" Content="APPLY" Style="{StaticResource BtnPrimary}"
-                        Click="BtnApply_Click" Padding="20,8" Margin="0,0,10,0" FontSize="11"/>
+                        Click="BtnApply_Click" Padding="20,8" Margin="0,0,10,0" FontSize="11"
+                        ToolTip="Saves all settings changes to disk and applies them immediately without closing the Options window. Settings persist across application restarts. (Ctrl+S)"/>
 
                 <!-- Save & Close -->
                 <Button Grid.Column="6" Content="SAVE &amp; CLOSE" Style="{StaticResource BtnPrimary}"
-                        Click="BtnSaveAndClose_Click" Padding="20,8" FontSize="11"/>
+                        Click="BtnSaveAndClose_Click" Padding="20,8" FontSize="11"
+                        ToolTip="Saves all settings changes to disk, applies them immediately, and closes the Options window. Settings persist across application restarts. (Ctrl+Enter)"/>
             </Grid>
         </Border>
 

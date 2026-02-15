@@ -460,7 +460,9 @@ namespace NecessaryAdminTool
 
             try
             {
+                #pragma warning disable CS0219 // Variable assigned but not used - reserved for future dependency checking
                 bool allDependenciesMet = true;
+                #pragma warning restore CS0219
                 PanelDependencyActions.Visibility = Visibility.Collapsed;
                 PanelAccessEngineDownload.Visibility = Visibility.Collapsed;
                 PanelSqlServerDownload.Visibility = Visibility.Collapsed;

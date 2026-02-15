@@ -35,6 +35,19 @@ namespace NecessaryAdminTool
             }
 
             // Check if first-run setup is needed
+            // TAG: #DEBUG_BYPASS - Hold CTRL+SHIFT during startup to skip setup (DEBUG builds only)
+            #if DEBUG
+            bool debugBypass = (System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Control) != 0 &&
+                               (System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Shift) != 0;
+
+            if (debugBypass)
+            {
+                LogManager.LogWarning("DEBUG MODE: Setup wizard bypassed via CTRL+SHIFT - marking setup as complete");
+                NecessaryAdminTool.Properties.Settings.Default.SetupCompleted = true;
+                NecessaryAdminTool.Properties.Settings.Default.Save();
+            }
+            #endif
+
             if (!NecessaryAdminTool.Properties.Settings.Default.SetupCompleted)
             {
                 LogManager.LogInfo("First run detected - launching Setup Wizard");

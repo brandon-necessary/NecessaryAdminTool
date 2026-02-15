@@ -21,7 +21,9 @@ namespace NecessaryAdminTool
         private string _domainController;
         private string _username;
         private string _password;
+        #pragma warning disable CS0169 // Field is never used - reserved for future ActiveDirectoryManager integration
         private bool _useActiveDirectoryManager;
+        #pragma warning restore CS0169
         private ActiveDirectoryManager _adManager;
 
         /// <summary>

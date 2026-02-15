@@ -854,6 +854,86 @@ namespace NecessaryAdminTool
             }
         }
 
+        /// <summary>
+        /// Build MSI installer using build-installer.ps1 script
+        /// TAG: #BUILD_AUTOMATION #MSI_BUILDER #SUPERADMIN
+        /// </summary>
+        private void BtnBuildInstaller_Click(object sender, RoutedEventArgs e)
+        {
+            var result = MessageBox.Show(
+                "📦 Build MSI Installer?\n\n" +
+                "This will run build-installer.ps1 to create the MSI installer package.\n\n" +
+                "Prerequisites:\n" +
+                "• WiX Toolset 3.11+ (run install-wix.ps1 if needed)\n" +
+                "• Visual Studio with MSBuild\n" +
+                "• ACE Database Engine installer in Installer\\Dependencies\\\n\n" +
+                "The build process will:\n" +
+                "1. Build the application in Release mode\n" +
+                "2. Compile WiX installer source\n" +
+                "3. Create MSI in Installer\\Output\\\n" +
+                "4. Open output folder\n\n" +
+                "This may take 1-2 minutes. Continue?",
+                "Build MSI Installer",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    // Get project root directory (2 levels up from bin\Release or bin\Debug)
+                    string appDir = AppDomain.CurrentDomain.BaseDirectory;
+                    string projectRoot = System.IO.Path.GetFullPath(System.IO.Path.Combine(appDir, @"..\..\"));
+                    string scriptPath = System.IO.Path.Combine(projectRoot, "build-installer.ps1");
+
+                    if (!System.IO.File.Exists(scriptPath))
+                    {
+                        MessageBox.Show(
+                            $"Build script not found at:\n{scriptPath}\n\n" +
+                            "Make sure build-installer.ps1 is in the project root.",
+                            "Script Not Found",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Warning);
+                        return;
+                    }
+
+                    // Create PowerShell process to run the build script
+                    var processInfo = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "powershell.exe",
+                        Arguments = $"-ExecutionPolicy Bypass -File \"{scriptPath}\" -Verbose",
+                        WorkingDirectory = projectRoot,
+                        UseShellExecute = true, // Show console window
+                        CreateNoWindow = false
+                    };
+
+                    MessageBox.Show(
+                        "🚀 Build Started!\n\n" +
+                        "A PowerShell window will open showing the build progress.\n\n" +
+                        "The MSI will be created in:\n" +
+                        "Installer\\Output\\NecessaryAdminTool-{Version}-Setup.msi\n\n" +
+                        "The output folder will open automatically when complete.",
+                        "Build In Progress",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+
+                    System.Diagnostics.Process.Start(processInfo);
+
+                    LogManager.LogInfo($"MSI build process started from SuperAdmin panel: {scriptPath}");
+                }
+                catch (Exception ex)
+                {
+                    LogManager.LogError("Failed to start MSI build process", ex);
+                    MessageBox.Show(
+                        $"Failed to start build process:\n\n{ex.Message}\n\n" +
+                        "Make sure PowerShell is available and build-installer.ps1 exists in the project root.",
+                        "Build Error",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
+            }
+        }
+
         #endregion
     }
 }

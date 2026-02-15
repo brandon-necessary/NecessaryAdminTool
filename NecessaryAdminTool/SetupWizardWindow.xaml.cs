@@ -19,10 +19,24 @@ namespace NecessaryAdminTool
         public bool InstallService { get; private set; }
         public int ScanIntervalHours { get; private set; }
 
+        // TAG: #DEBUG_BYPASS - Track rapid clicks for debug bypass (5 clicks within 2 seconds)
+        private int _debugBypassClickCount = 0;
+        private DateTime _debugBypassFirstClick = DateTime.MinValue;
+
         public SetupWizardWindow()
         {
             InitializeComponent();
             LogManager.LogInfo("Setup Wizard opened");
+
+            // TAG: #VERSION_DISPLAY #VERSION_ENGINE - Version info pulled from LogoConfig (assembly-based)
+            TxtVersionBadge.Text = $"{LogoConfig.VERSION} ({LogoConfig.FULL_VERSION.TrimStart('v')})";
+            TxtBuildDate.Text = $"Built: {LogoConfig.COMPILED_DATE_SHORT}";
+
+            #if DEBUG
+            // Show debug bypass button in DEBUG builds only
+            BtnDebugBypassTrigger.Visibility = Visibility.Visible;
+            LogManager.LogInfo("DEBUG MODE: Debug bypass button enabled (click version badge 5x to skip setup)");
+            #endif
         }
 
         /// <summary>
@@ -359,6 +373,116 @@ namespace NecessaryAdminTool
         {
             DialogResult = false;
             Close();
+        }
+
+        /// <summary>
+        /// Open DATABASE_SETUP_GUIDE.md in default markdown viewer or text editor
+        /// TAG: #DATABASE_SETUP #USER_GUIDE
+        /// </summary>
+        private void BtnDatabaseGuide_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Get path to DATABASE_SETUP_GUIDE.md (should be in application directory or repo root)
+                string appDir = AppDomain.CurrentDomain.BaseDirectory;
+                string guidePath = Path.Combine(appDir, "DATABASE_SETUP_GUIDE.md");
+
+                // If not found in app directory, check parent directories (for development)
+                if (!File.Exists(guidePath))
+                {
+                    var parentDir = Directory.GetParent(appDir);
+                    while (parentDir != null && !File.Exists(guidePath))
+                    {
+                        guidePath = Path.Combine(parentDir.FullName, "DATABASE_SETUP_GUIDE.md");
+                        if (!File.Exists(guidePath))
+                        {
+                            parentDir = parentDir.Parent;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                if (File.Exists(guidePath))
+                {
+                    LogManager.LogInfo($"Opening Database Setup Guide: {guidePath}");
+                    System.Diagnostics.Process.Start(guidePath);
+                }
+                else
+                {
+                    LogManager.LogWarning($"DATABASE_SETUP_GUIDE.md not found in application directory");
+                    System.Windows.MessageBox.Show(
+                        "Database Setup Guide not found.\n\n" +
+                        "Expected location:\n" +
+                        $"{appDir}DATABASE_SETUP_GUIDE.md\n\n" +
+                        "The guide should be included with the installer.\n" +
+                        "You can download it from the GitHub repository.",
+                        "Guide Not Found",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to open Database Setup Guide", ex);
+                System.Windows.MessageBox.Show(
+                    $"Error opening guide: {ex.Message}",
+                    "Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Debug bypass trigger - 5 rapid clicks to bypass setup (DEBUG builds only)
+        /// TAG: #DEBUG_BYPASS #SUPERADMIN
+        /// </summary>
+        private void BtnDebugBypassTrigger_Click(object sender, RoutedEventArgs e)
+        {
+            #if DEBUG
+            var now = DateTime.Now;
+
+            // Reset if more than 2 seconds since first click
+            if ((now - _debugBypassFirstClick).TotalSeconds > 2)
+            {
+                _debugBypassClickCount = 0;
+                _debugBypassFirstClick = now;
+            }
+
+            _debugBypassClickCount++;
+            LogManager.LogInfo($"DEBUG: Debug bypass click {_debugBypassClickCount}/5");
+
+            if (_debugBypassClickCount >= 5)
+            {
+                LogManager.LogWarning("DEBUG MODE: Setup wizard bypassed via 5 rapid clicks - marking setup as complete");
+
+                // Set minimal default configuration
+                Properties.Settings.Default.DatabaseType = "CSV";
+                Properties.Settings.Default.DatabasePath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "NecessaryAdminTool");
+                Properties.Settings.Default.ServiceEnabled = false;
+                Properties.Settings.Default.ScanIntervalHours = 2;
+                Properties.Settings.Default.SetupCompleted = true;
+                Properties.Settings.Default.Save();
+
+                System.Windows.MessageBox.Show(
+                    "🔓 DEBUG MODE: Setup Bypassed!\n\n" +
+                    "Default configuration applied:\n" +
+                    "• Database: CSV/JSON (fallback)\n" +
+                    "• Location: %AppData%\\NecessaryAdminTool\n" +
+                    "• Background Service: Disabled\n\n" +
+                    "This bypass is only available in DEBUG builds.",
+                    "Debug Bypass Active",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+
+                DialogResult = true;
+                Close();
+            }
+            #endif
         }
 
         /// <summary>

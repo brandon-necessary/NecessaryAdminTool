@@ -114,26 +114,85 @@
             <!-- Footer Buttons -->
             <Border Grid.Row="2" Background="#FF1E1E1E" Padding="30,20">
                 <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                    <!-- Left side - Test button -->
-                    <Button Grid.Column="0" Content="🧪 Test Database" Click="BtnTestDatabase_Click"
-                            Width="160" HorizontalAlignment="Left"
-                            Style="{StaticResource BtnGhost}"
-                            Padding="12" FontSize="14" Cursor="Hand"/>
+                    <!-- Main button row -->
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
 
-                    <!-- Right side - Cancel and Finish buttons -->
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Content="Cancel" Click="BtnCancel_Click" Width="120" Margin="0,0,15,0"
-                                Background="{StaticResource AccentZincBrush}" Foreground="White"
-                                Padding="12" FontSize="14" Cursor="Hand"/>
-                        <Button Content="✓ Finish Setup" Click="BtnFinish_Click" Width="150"
-                                Background="{StaticResource AccentOrangeBrush}" Foreground="White"
-                                FontWeight="Bold" Padding="12" FontSize="14" Cursor="Hand"/>
-                    </StackPanel>
+                        <!-- Left side - Help and Test buttons -->
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left">
+                            <Button Content="📖 Database Guide" Click="BtnDatabaseGuide_Click"
+                                    Width="160" Margin="0,0,10,0"
+                                    Style="{StaticResource BtnGhost}"
+                                    Padding="12" FontSize="14" Cursor="Hand"
+                                    ToolTip="Opens comprehensive database setup guide with detailed comparisons, troubleshooting, and best practices for SQLite, SQL Server, Access, and CSV providers."/>
+                            <Button Content="🧪 Test Database" Click="BtnTestDatabase_Click"
+                                    Width="160" HorizontalAlignment="Left"
+                                    Style="{StaticResource BtnGhost}"
+                                    Padding="12" FontSize="14" Cursor="Hand"
+                                    ToolTip="Tests database connectivity and performs validation checks. Verifies CRUD operations, transaction support, and schema creation. Takes 10-30 seconds depending on provider."/>
+                        </StackPanel>
+
+                        <!-- Right side - Cancel and Finish buttons -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="Cancel" Click="BtnCancel_Click" Width="120" Margin="0,0,15,0"
+                                    Background="{StaticResource AccentZincBrush}" Foreground="White"
+                                    Padding="12" FontSize="14" Cursor="Hand"/>
+                            <Button Content="✓ Finish Setup" Click="BtnFinish_Click" Width="150"
+                                    Background="{StaticResource AccentOrangeBrush}" Foreground="White"
+                                    FontWeight="Bold" Padding="12" FontSize="14" Cursor="Hand"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Bottom row - Version badge (DEBUG super menu trigger) -->
+                    <!-- TAG: #VERSION_DISPLAY #DEBUG_BYPASS #SUPERADMIN #THEME_COLORS -->
+                    <Border Grid.Row="1" Margin="0,15,0,0" HorizontalAlignment="Left">
+                        <Border Background="#FF1A1A1A"
+                                BorderThickness="1"
+                                CornerRadius="3"
+                                Padding="6,2"
+                                VerticalAlignment="Center">
+                            <Border.BorderBrush>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                    <GradientStop Color="#FF8533" Offset="0"/>
+                                    <GradientStop Color="#A1A1AA" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.BorderBrush>
+                            <Grid>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock x:Name="TxtVersionBadge" FontSize="10" FontWeight="Bold" Margin="0,0,8,0">
+                                        <TextBlock.Foreground>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                                <GradientStop Color="#FF8533" Offset="0"/>
+                                                <GradientStop Color="#A1A1AA" Offset="1"/>
+                                            </LinearGradientBrush>
+                                        </TextBlock.Foreground>
+                                    </TextBlock>
+                                    <TextBlock x:Name="TxtBuildDate" Text="Built: February 15, 2026"
+                                               FontSize="9" Foreground="#A1A1AA" VerticalAlignment="Center"/>
+                                </StackPanel>
+
+                                <!-- TAG: #DEBUG_BYPASS #SUPERADMIN - Invisible button overlay - Click 5x rapidly to bypass setup (DEBUG builds only) -->
+                                <Button x:Name="BtnDebugBypassTrigger"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Cursor="Arrow"
+                                        Click="BtnDebugBypassTrigger_Click"
+                                        ToolTip=""
+                                        Opacity="0.01"
+                                        IsTabStop="False"
+                                        Visibility="Collapsed"/>
+                            </Grid>
+                        </Border>
+                    </Border>
                 </Grid>
             </Border>
         </Grid>

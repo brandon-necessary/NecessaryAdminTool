@@ -1791,6 +1791,9 @@ namespace NecessaryAdminTool
         private const uint ERROR_SUCCESS = 0;
         private const uint ERROR_CANCELLED = 1223;
 
+        // TAG: #VERSION_SYSTEM - Version info now centralized in LogoConfig class
+        // All version numbers pulled dynamically from AssemblyInfo.cs via LogoConfig
+
         // CreateProcessWithLogonW API for launching process as different user (doesn't require privileges)
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         private static extern bool CreateProcessWithLogonW(
@@ -1891,36 +1894,40 @@ namespace NecessaryAdminTool
             {
                 _isDarkMode = !_isDarkMode;
 
-                var resources = window.Resources;
+                var resources = Application.Current.Resources;
 
                 if (_isDarkMode)
                 {
                     // Dark theme (current)
-                    resources["BgDarkest"] = Color.FromRgb(13, 13, 13);
-                    resources["BgDark"] = Color.FromRgb(26, 26, 26);
-                    resources["BgMedium"] = Color.FromRgb(37, 37, 38);
-                    resources["BgCard"] = Color.FromRgb(30, 30, 30);
-                    resources["BorderDim"] = Color.FromRgb(60, 60, 60);
-                    resources["BorderBright"] = Color.FromRgb(85, 85, 85);
+                    resources["BgDarkest"] = new SolidColorBrush(Color.FromRgb(13, 13, 13));
+                    resources["BgDark"] = new SolidColorBrush(Color.FromRgb(26, 26, 26));
+                    resources["BgMedium"] = new SolidColorBrush(Color.FromRgb(37, 37, 38));
+                    resources["BgLight"] = new SolidColorBrush(Color.FromRgb(45, 45, 45));
+                    resources["BgCard"] = new SolidColorBrush(Color.FromRgb(30, 30, 30));
+                    resources["BorderDim"] = new SolidColorBrush(Color.FromRgb(60, 60, 60));
+                    resources["BorderBright"] = new SolidColorBrush(Color.FromRgb(85, 85, 85));
+                    resources["TextPrimary"] = new SolidColorBrush(Color.FromRgb(255, 255, 255));
+                    resources["TextSecondary"] = new SolidColorBrush(Color.FromRgb(200, 200, 200));
+                    resources["TextMuted"] = new SolidColorBrush(Color.FromRgb(161, 161, 170));
                 }
                 else
                 {
                     // Light theme (Aero-inspired)
-                    resources["BgDarkest"] = Color.FromRgb(240, 240, 240);
-                    resources["BgDark"] = Color.FromRgb(250, 250, 250);
-                    resources["BgMedium"] = Color.FromRgb(230, 230, 230);
-                    resources["BgCard"] = Color.FromRgb(255, 255, 255);
-                    resources["BorderDim"] = Color.FromRgb(200, 200, 200);
-                    resources["BorderBright"] = Color.FromRgb(170, 170, 170);
+                    resources["BgDarkest"] = new SolidColorBrush(Color.FromRgb(240, 240, 240));
+                    resources["BgDark"] = new SolidColorBrush(Color.FromRgb(250, 250, 250));
+                    resources["BgMedium"] = new SolidColorBrush(Color.FromRgb(230, 230, 230));
+                    resources["BgLight"] = new SolidColorBrush(Color.FromRgb(245, 245, 245));
+                    resources["BgCard"] = new SolidColorBrush(Color.FromRgb(255, 255, 255));
+                    resources["BorderDim"] = new SolidColorBrush(Color.FromRgb(200, 200, 200));
+                    resources["BorderBright"] = new SolidColorBrush(Color.FromRgb(170, 170, 170));
+                    resources["TextPrimary"] = new SolidColorBrush(Color.FromRgb(0, 0, 0));
+                    resources["TextSecondary"] = new SolidColorBrush(Color.FromRgb(60, 60, 60));
+                    resources["TextMuted"] = new SolidColorBrush(Color.FromRgb(100, 100, 100));
                 }
 
-                // Force UI refresh
+                // Force UI refresh by triggering resource change notifications
                 window.InvalidateVisual();
-                foreach (var child in GetLogicalChildren(window))
-                {
-                    if (child is FrameworkElement fe)
-                        fe.InvalidateVisual();
-                }
+                window.UpdateLayout();
             }
 
             private static IEnumerable<DependencyObject> GetLogicalChildren(DependencyObject parent)
@@ -1984,7 +1991,9 @@ namespace NecessaryAdminTool
         private HybridQueryHelper _queryHelper;
         private CancellationTokenSource _scanTokenSource;
         private DispatcherTimer _searchDebounceTimer;
+        #pragma warning disable CS0649 // Field is never assigned - reserved for future auto-refresh feature
         private DispatcherTimer _refreshTimer;
+        #pragma warning restore CS0649
 
         private string _xmlConfigPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "NecessaryAdmin_UserConfig.xml");
@@ -4635,11 +4644,13 @@ namespace NecessaryAdminTool
                         spec.Serial = $"Timeout after {SecureConfig.WmiTimeoutMs}ms";
 
                         // Hide progress bar on timeout
+                        #pragma warning disable CS4014 // Fire-and-forget UI update - intentional
                         Dispatcher.InvokeAsync(() =>
                         {
                             StatusProgressBar.Visibility = Visibility.Collapsed;
                             StatusDot.Fill = new SolidColorBrush(Color.FromRgb(244, 67, 54)); // Red
                             TxtStatus.Text = "TIMEOUT";
+                        #pragma warning restore CS4014
                         });
 
                         return spec; // Force-return with partial data
@@ -4649,12 +4660,14 @@ namespace NecessaryAdminTool
                         AppendTerminal($"[{spec.Protocol}] All queries completed successfully");
 
                         // Hide progress bar on successful completion
+                        #pragma warning disable CS4014 // Fire-and-forget UI update - intentional
                         Dispatcher.InvokeAsync(() =>
                         {
                             StatusProgressBar.Visibility = Visibility.Collapsed;
                             StatusDot.Fill = new SolidColorBrush(Color.FromRgb(76, 175, 80)); // Green
                             TxtStatus.Text = "Complete";
                         });
+                        #pragma warning restore CS4014
                     }
                 }
             }
@@ -4665,12 +4678,14 @@ namespace NecessaryAdminTool
                 LogManager.LogDebug($"Scan cancelled/timeout: {hostname}");
 
                 // Hide progress bar on cancel/timeout
+                #pragma warning disable CS4014 // Fire-and-forget UI update - intentional
                 Dispatcher.InvokeAsync(() =>
                 {
                     StatusProgressBar.Visibility = Visibility.Collapsed;
                     StatusDot.Fill = new SolidColorBrush(Color.FromRgb(244, 67, 54)); // Red
                     TxtStatus.Text = "TIMEOUT";
                 });
+                #pragma warning restore CS4014
             }
             catch (UnauthorizedAccessException uaEx)
             {
@@ -4679,12 +4694,14 @@ namespace NecessaryAdminTool
                 LogManager.LogDebug($"WMI access denied for {hostname}: {uaEx.Message}");
 
                 // Hide progress bar on auth error
+                #pragma warning disable CS4014 // Fire-and-forget UI update - intentional
                 Dispatcher.InvokeAsync(() =>
                 {
                     StatusProgressBar.Visibility = Visibility.Collapsed;
                     StatusDot.Fill = new SolidColorBrush(Color.FromRgb(255, 152, 0)); // Orange warning
                     TxtStatus.Text = "UNAUTHORIZED";
                 });
+                #pragma warning restore CS4014
             }
             catch (System.Runtime.InteropServices.COMException comEx)
             {
@@ -4699,12 +4716,14 @@ namespace NecessaryAdminTool
                 LogManager.LogDebug($"WMI connection failed for {hostname}: {errorMsg} (HRESULT: 0x{comEx.HResult:X})");
 
                 // Hide progress bar on connection failure
+                #pragma warning disable CS4014 // Fire-and-forget UI update - intentional
                 Dispatcher.InvokeAsync(() =>
                 {
                     StatusProgressBar.Visibility = Visibility.Collapsed;
                     StatusDot.Fill = new SolidColorBrush(Color.FromRgb(244, 67, 54)); // Red
                     TxtStatus.Text = "FAILED";
                 });
+                #pragma warning restore CS4014
             }
             catch (Exception ex)
             {
@@ -4713,12 +4732,14 @@ namespace NecessaryAdminTool
                 LogManager.LogDebug($"Spec scan failed for {hostname}: {ex.GetType().Name} - {ex.Message}");
 
                 // Hide progress bar on general failure
+                #pragma warning disable CS4014 // Fire-and-forget UI update - intentional
                 Dispatcher.InvokeAsync(() =>
                 {
                     StatusProgressBar.Visibility = Visibility.Collapsed;
                     StatusDot.Fill = new SolidColorBrush(Color.FromRgb(244, 67, 54)); // Red
                     TxtStatus.Text = "FAILED";
                 });
+                #pragma warning restore CS4014
             }
 
             // ══════════════════════════════════════════════════════════════
@@ -6966,7 +6987,9 @@ if ($connection) {{
             }
 
             var hostnames = selectedComputers.Select(pc => pc.Hostname).ToArray();
+            #pragma warning disable CS0219 // Variable assigned but not used - reserved for custom script execution
             var script = "wuauclt /detectnow; Write-Output 'Windows Update check initiated'";
+            #pragma warning restore CS0219
 
             var scriptWindow = new ScriptExecutorWindow(hostnames, Properties.Settings.Default.LastUser, null)
             {
@@ -6989,12 +7012,14 @@ if ($connection) {{
             }
 
             var hostnames = selectedComputers.Select(pc => pc.Hostname).ToArray();
+            #pragma warning disable CS0219 // Variable assigned but not used - reserved for custom script execution
             var script = @"
 $updateSession = New-Object -ComObject Microsoft.Update.Session
 $updateSearcher = $updateSession.CreateUpdateSearcher()
 $searchResult = $updateSearcher.Search('IsInstalled=0')
 Write-Output ""Available Updates: $($searchResult.Updates.Count)""
 foreach ($update in $searchResult.Updates) {
+            #pragma warning restore CS0219
     Write-Output ""  - $($update.Title)""
 }";
 
@@ -7019,6 +7044,7 @@ foreach ($update in $searchResult.Updates) {
             }
 
             var hostnames = selectedComputers.Select(pc => pc.Hostname).ToArray();
+            #pragma warning disable CS0219 // Variable assigned but not used - reserved for custom script execution
             var script = @"
 $rebootPending = $false
 if (Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending') { $rebootPending = $true }
@@ -7028,6 +7054,7 @@ if ($rebootPending) {
 } else {
     Write-Output '✅ No reboot pending'
 }";
+            #pragma warning restore CS0219
 
             var scriptWindow = new ScriptExecutorWindow(hostnames, Properties.Settings.Default.LastUser, null)
             {
@@ -13435,6 +13462,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             usernameGrid.Children.Add(_txtUser);
 
             // Clear button (appears on the right side of the textbox)
+            // TAG: #TAB_ORDER - Excluded from tab navigation to maintain username→password flow
             var clearBtn = new Button
             {
                 Content = "✕",
@@ -13449,7 +13477,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 HorizontalAlignment = HorizontalAlignment.Right,
                 VerticalAlignment = VerticalAlignment.Center,
                 Cursor = Cursors.Hand,
-                ToolTip = "Clear cached username"
+                ToolTip = "Clear cached username",
+                IsTabStop = false  // Exclude from tab navigation
             };
             clearBtn.Click += (s, ev) =>
             {

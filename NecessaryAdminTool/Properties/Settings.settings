@@ -1,7 +1,17 @@
 ﻿<?xml version='1.0' encoding='utf-8'?>
+<!-- TAG: #CONFIGURABLE_OPTIONS #USER_SETTINGS #VERSION_1_0 -->
+<!-- FUTURE CLAUDES: All user-configurable options are defined here. When adding new settings:
+     1. Add setting here with proper type and default value
+     2. Add property to Settings.Designer.cs
+     3. Add UI control to OptionsWindow.xaml
+     4. Add load logic to LoadAllSettings() or specific Load method
+     5. Add save logic to SaveAllSettings() or specific Save method
+     6. Tag UI section with #CONFIGURABLE_OPTIONS
+-->
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="NecessaryAdminTool.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
+    <!-- TAG: #CONFIGURABLE_OPTIONS #USER_PREFERENCES -->
     <Setting Name="LastUser" Type="System.String" Scope="User">
       <Value Profile="(Default)">process\</Value>
     </Setting>
@@ -23,6 +33,7 @@
     <Setting Name="ConnectionProfilesJson" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
+    <!-- TAG: #CONFIGURABLE_OPTIONS #UI_PREFERENCES -->
     <Setting Name="WindowPosition" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
@@ -38,35 +49,55 @@
     <Setting Name="NotificationsEnabled" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
+    <!-- TAG: #CONFIGURABLE_OPTIONS #THEME_COLORS -->
     <Setting Name="PrimaryAccentColor" Type="System.String" Scope="User">
       <Value Profile="(Default)">#FFFF8533</Value>
     </Setting>
     <Setting Name="SecondaryAccentColor" Type="System.String" Scope="User">
       <Value Profile="(Default)">#FFA1A1AA</Value>
     </Setting>
+    <!-- TAG: #CONFIGURABLE_OPTIONS #ACTIVE_DIRECTORY -->
     <Setting Name="ADQueryMethod" Type="System.String" Scope="User">
       <Value Profile="(Default)">DirectorySearcher</Value>
     </Setting>
+    <!-- TAG: #CONFIGURABLE_OPTIONS #UPDATE_SYSTEM -->
     <Setting Name="LastUpdateCheck" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
+    <!-- TAG: #CONFIGURABLE_OPTIONS #DATABASE -->
     <Setting Name="DatabaseType" Type="System.String" Scope="User">
       <Value Profile="(Default)">SQLite</Value>
     </Setting>
     <Setting Name="DatabasePath" Type="System.String" Scope="User">
       <Value Profile="(Default)">C:\ProgramData\NecessaryAdminTool</Value>
     </Setting>
+    <!-- TAG: #CONFIGURABLE_OPTIONS #BACKGROUND_SERVICE -->
     <Setting Name="ServiceEnabled" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="ScanIntervalHours" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">2</Value>
     </Setting>
+    <!-- TAG: #CONFIGURABLE_OPTIONS #SETUP_WIZARD -->
     <Setting Name="SetupCompleted" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
+    <!-- TAG: #CONFIGURABLE_OPTIONS #AUTO_UPDATE -->
     <Setting Name="DisableAutoUpdates" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
+    </Setting>
+    <!-- TAG: #CONFIGURABLE_OPTIONS #DEPLOYMENT #POWERSHELL_SCRIPTS -->
+    <Setting Name="WindowsUpdateISOPath" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="LocalISOHostnamePattern" Type="System.String" Scope="User">
+      <Value Profile="(Default)">TN</Value>
+    </Setting>
+    <Setting Name="LocalISOHostnameMatchMode" Type="System.String" Scope="User">
+      <Value Profile="(Default)">StartsWith</Value>
+    </Setting>
+    <Setting Name="DeploymentLogDirectory" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
     </Setting>
   </Settings>
 </SettingsFile>

@@ -118,6 +118,9 @@ namespace NecessaryAdminTool
                 // TAG: #VERSION_1_2 #DATABASE - Load database configuration and stats
                 LoadDatabaseConfiguration();
 
+                // TAG: #VERSION_1_0 #DEPLOYMENT - Load deployment configuration
+                LoadDeploymentConfiguration();
+
                 // TAG: #VERSION_1_2 #SERVICE - Load service status
                 LoadServiceStatus();
 
@@ -273,6 +276,24 @@ namespace NecessaryAdminTool
                 if (ComboADQueryMethod != null)
                 {
                     Properties.Settings.Default.ADQueryMethod = ComboADQueryMethod.SelectedValue?.ToString() ?? "DirectorySearcher";
+                }
+
+                // TAG: #VERSION_1_0 #DEPLOYMENT - Save deployment configuration
+                if (TxtLogDirectory != null)
+                {
+                    Properties.Settings.Default.DeploymentLogDirectory = TxtLogDirectory.Text;
+                }
+                if (TxtISOPath != null)
+                {
+                    Properties.Settings.Default.WindowsUpdateISOPath = TxtISOPath.Text;
+                }
+                if (TxtHostnamePattern != null)
+                {
+                    Properties.Settings.Default.LocalISOHostnamePattern = TxtHostnamePattern.Text;
+                }
+                if (CmbHostnameMatchMode != null && CmbHostnameMatchMode.SelectedItem is ComboBoxItem selectedItem)
+                {
+                    Properties.Settings.Default.LocalISOHostnameMatchMode = selectedItem.Tag?.ToString() ?? "StartsWith";
                 }
 
                 Properties.Settings.Default.Save();
@@ -816,6 +837,83 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             catch (Exception ex)
             {
                 ShowStatus($"Error loading logo: {ex.Message}", MessageType.Error);
+            }
+        }
+
+        /// <summary>
+        /// TAG: #VERSION_1_0 #DEPLOYMENT - Browse for Windows Update ISO file
+        /// FUTURE CLAUDES: This allows users to select the ISO file path for local Windows Feature Updates
+        /// </summary>
+        private void BtnBrowseISO_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dialog = new OpenFileDialog
+                {
+                    Filter = "ISO files (*.iso)|*.iso|All files (*.*)|*.*",
+                    Title = "Select Windows Update ISO File",
+                    CheckFileExists = true
+                };
+
+                // Try to set initial directory to network path if it exists
+                string currentPath = TxtISOPath?.Text;
+                if (!string.IsNullOrEmpty(currentPath))
+                {
+                    try
+                    {
+                        string dir = Path.GetDirectoryName(currentPath);
+                        if (Directory.Exists(dir))
+                        {
+                            dialog.InitialDirectory = dir;
+                        }
+                    }
+                    catch { /* Ignore path errors */ }
+                }
+
+                if (dialog.ShowDialog() == true)
+                {
+                    TxtISOPath.Text = dialog.FileName;
+                    ShowStatus($"ISO selected: {Path.GetFileName(dialog.FileName)}", MessageType.Success);
+                    _hasUnsavedChanges = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowStatus($"Error selecting ISO: {ex.Message}", MessageType.Error);
+            }
+        }
+
+        /// <summary>
+        /// TAG: #VERSION_1_0 #DEPLOYMENT - Browse for deployment log directory
+        /// FUTURE CLAUDES: This allows users to select the network/local path for PowerShell script logs
+        /// </summary>
+        private void BtnBrowseLogDir_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dialog = new System.Windows.Forms.FolderBrowserDialog
+                {
+                    Description = "Select folder for deployment script logs",
+                    ShowNewFolderButton = true
+                };
+
+                // Try to set initial path
+                string currentPath = TxtLogDirectory?.Text;
+                if (!string.IsNullOrEmpty(currentPath) && Directory.Exists(currentPath))
+                {
+                    dialog.SelectedPath = currentPath;
+                }
+
+                if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    TxtLogDirectory.Text = dialog.SelectedPath;
+                    ShowStatus($"Log directory selected: {dialog.SelectedPath}", MessageType.Success);
+                    _hasUnsavedChanges = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowStatus($"Error selecting folder: {ex.Message}", MessageType.Error);
             }
         }
 
@@ -2194,6 +2292,59 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         }
 
         /// <summary>
+        /// TAG: #VERSION_1_0 #DEPLOYMENT - Load deployment configuration for Windows Update ISO path and hostname patterns
+        /// FUTURE CLAUDES: This loads the ISO path and hostname pattern settings from app settings into the UI
+        /// </summary>
+        private void LoadDeploymentConfiguration()
+        {
+            try
+            {
+                // Load log directory (defaults to database path + "\Logs" if not set)
+                if (TxtLogDirectory != null)
+                {
+                    string logDir = Properties.Settings.Default.DeploymentLogDirectory;
+                    if (string.IsNullOrEmpty(logDir))
+                    {
+                        // Default to database directory + Logs subfolder
+                        string dbPath = Properties.Settings.Default.DatabasePath ?? "C:\\ProgramData\\NecessaryAdminTool";
+                        logDir = Path.Combine(dbPath, "DeploymentLogs");
+                    }
+                    TxtLogDirectory.Text = logDir;
+                }
+
+                // Load ISO path
+                if (TxtISOPath != null)
+                {
+                    TxtISOPath.Text = Properties.Settings.Default.WindowsUpdateISOPath ?? "";
+                }
+
+                // Load hostname pattern
+                if (TxtHostnamePattern != null)
+                {
+                    TxtHostnamePattern.Text = Properties.Settings.Default.LocalISOHostnamePattern ?? "TN";
+                }
+
+                // Load hostname match mode
+                if (CmbHostnameMatchMode != null)
+                {
+                    string matchMode = Properties.Settings.Default.LocalISOHostnameMatchMode ?? "StartsWith";
+                    foreach (ComboBoxItem item in CmbHostnameMatchMode.Items)
+                    {
+                        if (item.Tag?.ToString() == matchMode)
+                        {
+                            CmbHostnameMatchMode.SelectedItem = item;
+                            break;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to load deployment configuration", ex);
+            }
+        }
+
+        /// <summary>
         /// Refresh database statistics
         /// </summary>
         private async System.Threading.Tasks.Task RefreshDatabaseStatisticsAsync()
@@ -2697,6 +2848,60 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 ShowStatus($"Error uninstalling service: {ex.Message}", MessageType.Error);
                 MessageBox.Show($"Failed to uninstall service:\n\n{ex.Message}",
                     "Uninstall Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Reset first-run flag and optionally restart to launch setup wizard
+        /// TAG: #FIRST_RUN_RESET #SETUP_WIZARD #APP_RESTART
+        /// </summary>
+        private void BtnResetSetup_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var result = MessageBox.Show(
+                    "⚠️ Reset Database Setup?\n\n" +
+                    "This will mark the application as 'not configured' so the database setup wizard " +
+                    "will run when you next launch the application.\n\n" +
+                    "Current database settings will NOT be deleted, but you'll need to complete " +
+                    "the setup wizard again.\n\n" +
+                    "Would you like to restart NOW and run the setup wizard?",
+                    "Reset Setup Wizard",
+                    MessageBoxButton.YesNoCancel,
+                    MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    // Reset flag and restart immediately
+                    Properties.Settings.Default.SetupCompleted = false;
+                    Properties.Settings.Default.Save();
+                    LogManager.LogInfo("First-run setup flag reset - restarting application");
+
+                    // Restart the application
+                    System.Diagnostics.Process.Start(Application.ResourceAssembly.Location);
+                    Application.Current.Shutdown();
+                }
+                else if (result == MessageBoxResult.No)
+                {
+                    // Reset flag but don't restart - let user do it manually
+                    Properties.Settings.Default.SetupCompleted = false;
+                    Properties.Settings.Default.Save();
+                    LogManager.LogInfo("First-run setup flag reset - setup wizard will run on next manual launch");
+
+                    MessageBox.Show(
+                        "✓ Setup wizard will run on next launch\n\n" +
+                        "The database setup wizard will appear when you restart NecessaryAdminTool.",
+                        "Reset Successful",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+                // If Cancel, do nothing
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to reset setup flag", ex);
+                MessageBox.Show($"Failed to reset setup flag:\n\n{ex.Message}",
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

@@ -77,8 +77,36 @@ NecessaryAdminTool is a comprehensive Windows-based IT management application de
 - **OS:** Windows 10/11 (Administrator privileges required)
 - **Framework:** .NET Framework 4.8.1
 - **Domain:** Active Directory domain environment
+- **Database:** Microsoft Access Database Engine (bundled with installer)
 - **Minimum RAM:** 8GB (16GB+ recommended for large domain scans)
 - **CPU:** 4+ cores (high-core systems benefit from parallel optimizations)
+
+## Installation
+
+### Quick Install (End Users)
+1. Download `NecessaryAdminTool-Setup.msi`
+2. Double-click to install
+3. Follow the first-run setup wizard
+
+### Enterprise Deployment
+- **Silent Install:** `msiexec /i NecessaryAdminTool-Setup.msi /quiet /norestart`
+- **Group Policy:** Deploy via GPO Software Installation
+- **SCCM/Intune:** Use MSI as application package
+
+📘 **For complete deployment documentation, see [INSTALLER_GUIDE.md](INSTALLER_GUIDE.md)**
+
+### Building from Source
+```powershell
+# One-time setup (installs WiX Toolset)
+.\install-wix.ps1
+
+# Build installer
+.\build-installer.ps1
+
+# Output: Installer\Output\NecessaryAdminTool-{Version}-Setup.msi
+```
+
+📘 **For build automation details, see [BUILD_SCRIPTS_README.md](BUILD_SCRIPTS_README.md)**
 
 ## Performance Optimizations
 
