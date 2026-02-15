@@ -32,6 +32,7 @@ This document serves as a **master index** of all auto-update tags in the Necess
 |-----|---------|-------|------------------|
 | **#AUTO_UPDATE_README** | Main project documentation | README_COMPREHENSIVE.md, README.md | Major features/versions |
 | **#AUTO_UPDATE_FAQ** | Frequently asked questions | FAQ.md | When new common questions arise |
+| **#AUTO_UPDATE_DATABASE** | Database system documentation | DATABASE_GUIDE.md | When providers/benchmarks change |
 | **#COMPREHENSIVE_DOCS** | Master documentation identifier | README_COMPREHENSIVE.md, FAQ.md | Major updates |
 | **#QUICK_README** | Short README | README.md | Every release |
 
@@ -145,6 +146,15 @@ This document serves as a **master index** of all auto-update tags in the Necess
      - Performance benchmarks (line 219-226)
      - New test categories if added
 
+10. **DATABASE_GUIDE.md**
+    - Location: Root directory
+    - Tags: `#AUTO_UPDATE_DATABASE`
+    - What to update:
+      - Version numbers (line 3)
+      - Database provider comparison table (when new features added)
+      - Performance benchmarks (when optimization occurs)
+      - Setup instructions (if process changes)
+
 ---
 
 ## 🔍 How to Find Auto-Update Tags
@@ -233,10 +243,10 @@ When releasing a new version (e.g., v1.1.0), follow this checklist:
 | Category | Tags | Files | Total Locations |
 |----------|------|-------|-----------------|
 | **Version/Release** | 4 | 3 | 6 |
-| **Documentation** | 4 | 3 | 5 |
+| **Documentation** | 5 | 4 | 6 |
 | **Features/Metrics** | 4 | 3 | 4 |
 | **UI/Theme** | 3 | 2 | 3 |
-| **Total** | **15 unique tags** | **9 files** | **18 locations** |
+| **Total** | **16 unique tags** | **10 files** | **19 locations** |
 
 ---
 
