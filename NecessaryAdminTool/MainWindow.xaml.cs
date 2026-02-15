@@ -7405,12 +7405,36 @@ if ($rebootPending) {
 
                 if (result == true)
                 {
+                    // TAG: #SECURITY_CRITICAL #RATE_LIMITING #BRUTE_FORCE_PREVENTION
+                    // Check rate limit before validation or authentication
+                    if (!Security.SecurityValidator.CheckRateLimit(lw.Username))
+                    {
+                        Managers.UI.ToastManager.ShowError("Too many login attempts. Please wait before trying again.");
+                        LogManager.LogWarning($"[AUTH] Rate limit exceeded for user: {lw.Username}");
+                        attempt = MAX; // Force exit to prevent further attempts
+                        break;
+                    }
+
+                    // TAG: #SECURITY_CRITICAL #INPUT_VALIDATION
+                    // Validate username format
+                    if (!Security.SecurityValidator.ValidateUsername(lw.Username))
+                    {
+                        Managers.UI.ToastManager.ShowWarning("Invalid username format. Use domain\\user or user@domain format.");
+                        LogManager.LogWarning($"[AUTH] Invalid username format: {lw.Username}");
+                        attempt++;
+                        continue;
+                    }
+
+                    // Also check legacy validator for compatibility
                     if (!SecurityValidator.IsValidDomainUser(lw.Username))
                     {
                         Managers.UI.ToastManager.ShowWarning("Invalid username. Use domain\\user format.");
                         attempt++;
                         continue;
                     }
+
+                    // TAG: #SECURITY_CRITICAL #AUTHENTICATION
+                    LogManager.LogInfo($"[AUTH] Authentication attempt for user: {lw.Username}");
                     ok = await PerformAuth(lw.Username, lw.Password);
                     if (ok)
                     {
@@ -7433,20 +7457,31 @@ if ($rebootPending) {
                     }
                     else
                     {
+                        // TAG: #SECURITY_CRITICAL #AUDIT_LOG #FAILED_AUTH
                         attempt++;
+                        LogManager.LogWarning($"[AUTH] Failed authentication attempt {attempt}/{MAX} for user: {lw.Username}");
+
                         if (attempt < MAX)
                             Managers.UI.ToastManager.ShowWarning($"Authentication failed.\n\n{MAX - attempt} attempts remaining.");
                         else
+                        {
+                            LogManager.LogWarning($"[AUTH] Maximum authentication attempts ({MAX}) exceeded for user: {lw.Username}");
                             Managers.UI.ToastManager.ShowError("Maximum authentication attempts exceeded.\n\nApplication will close.");
+                        }
                     }
                 }
                 else break;
             }
         }
 
+        // TAG: #SECURITY_CRITICAL #AUTHENTICATION #RATE_LIMITING
         private async Task<bool> PerformAuth(string user, SecureString pass)
         {
             bool authenticated = false; IntPtr token = IntPtr.Zero;
+
+            // TAG: #SECURITY_CRITICAL #AUDIT_LOG
+            LogManager.LogInfo($"[AUTH] Authentication attempt initiated for user: {user}");
+
             await Task.Run(() =>
             {
                 try
@@ -7456,16 +7491,27 @@ if ($rebootPending) {
                     // SecureString → plaintext unavoidable for LogonUser P/Invoke
                     authenticated = LogonUser(cleanUser, domain, new NetworkCredential("", pass).Password, 2, 0, out token);
                 }
-                catch (Exception ex) { LogManager.LogError("Auth failed", ex); }
+                catch (Exception ex)
+                {
+                    // TAG: #SECURITY_CRITICAL #AUDIT_LOG
+                    LogManager.LogError($"[AUTH] Authentication failed for user: {user}", ex);
+                }
                 finally { if (token != IntPtr.Zero) CloseHandle(token); }
             });
+
             if (authenticated)
             {
+                // TAG: #SECURITY_CRITICAL #RATE_LIMITING
+                // Reset rate limit on successful authentication
+                Security.SecurityValidator.ResetRateLimit(user);
+
                 _authUser = user; _authPass = pass; _isLoggedIn = true;
                 _isDomainAdmin = CheckDomainAdminMembership(user);
                 TxtAuthStatus.Text = user.ToUpper(); TxtAuthStatus.Foreground = Brushes.LimeGreen;
                 BtnAuth.Content = "LOGOUT";
-                LogManager.LogInfo($"Authenticated: {user} (Admin: {_isDomainAdmin}, Elevated: {_isElevated})");
+
+                // TAG: #SECURITY_CRITICAL #AUDIT_LOG
+                LogManager.LogInfo($"[AUTH] ✓ Authentication successful: {user} (Admin: {_isDomainAdmin}, Elevated: {_isElevated})");
 
                 // Apply restrictions based on domain admin status and elevation
                 ApplyRoleRestrictions();
@@ -7479,6 +7525,12 @@ if ($rebootPending) {
                     });
                 }
             }
+            else
+            {
+                // TAG: #SECURITY_CRITICAL #AUDIT_LOG #FAILED_AUTH
+                LogManager.LogWarning($"[AUTH] ✗ Authentication failed for user: {user}");
+            }
+
             return authenticated;
         }
 

@@ -12,6 +12,64 @@ namespace NecessaryAdminTool.Security
     /// </summary>
     public static class SecurityValidator
     {
+        // TAG: #SECURITY_CRITICAL #RATE_LIMITING #BRUTE_FORCE_PREVENTION
+        // Global rate limiter for authentication attempts
+        private static readonly RateLimiter _authRateLimiter = new RateLimiter(
+            maxAttempts: 5,
+            timeWindow: TimeSpan.FromMinutes(5)
+        );
+
+        /// <summary>
+        /// Check if authentication is allowed for the given username (rate limiting)
+        /// TAG: #SECURITY_CRITICAL #RATE_LIMITING #BRUTE_FORCE_PREVENTION
+        /// </summary>
+        /// <param name="username">Username attempting authentication</param>
+        /// <returns>True if authentication attempt is allowed, false if rate limited</returns>
+        public static bool CheckRateLimit(string username)
+        {
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                LogManager.LogWarning("[SecurityValidator] Rate limit check failed: null or empty username");
+                return false;
+            }
+
+            // Use username as rate limit identifier
+            string identifier = $"auth:{username.ToLowerInvariant()}";
+            bool allowed = _authRateLimiter.IsAllowed(identifier);
+
+            if (!allowed)
+            {
+                LogManager.LogWarning($"[SecurityValidator] Authentication rate limit exceeded for user: {username}");
+            }
+
+            return allowed;
+        }
+
+        /// <summary>
+        /// Reset rate limit for a user (call after successful authentication)
+        /// TAG: #SECURITY_CRITICAL #RATE_LIMITING
+        /// </summary>
+        /// <param name="username">Username to reset rate limit for</param>
+        public static void ResetRateLimit(string username)
+        {
+            if (string.IsNullOrWhiteSpace(username)) return;
+
+            string identifier = $"auth:{username.ToLowerInvariant()}";
+            _authRateLimiter.Reset(identifier);
+            LogManager.LogInfo($"[SecurityValidator] Rate limit reset for user: {username}");
+        }
+
+        /// <summary>
+        /// Validate username format (wrapper for IsValidUsername with clearer name)
+        /// TAG: #SECURITY_CRITICAL #USERNAME_VALIDATION
+        /// </summary>
+        /// <param name="username">Username to validate</param>
+        /// <returns>True if username format is valid</returns>
+        public static bool ValidateUsername(string username)
+        {
+            return IsValidUsername(username);
+        }
+
         /// <summary>
         /// Validate hostname (DNS-safe characters only)
         /// Prevents injection attacks and ensures valid DNS names
@@ -148,6 +206,128 @@ namespace NecessaryAdminTool.Security
         }
 
         /// <summary>
+        /// Alias for SanitizePowerShellInput for consistency with security audit recommendations
+        /// TAG: #SECURITY_CRITICAL #POWERSHELL_INJECTION #COMMAND_INJECTION
+        /// </summary>
+        /// <param name="input">Input to sanitize</param>
+        /// <returns>Sanitized string safe for PowerShell interpolation</returns>
+        public static string SanitizeForPowerShell(string input)
+        {
+            return SanitizePowerShellInput(input);
+        }
+
+        /// <summary>
+        /// Validate PowerShell script content for dangerous commands
+        /// Detects common attack patterns and malicious commands
+        /// TAG: #SECURITY_CRITICAL #POWERSHELL_INJECTION_PREVENTION #MALWARE_DETECTION
+        /// </summary>
+        /// <param name="scriptContent">PowerShell script content to validate</param>
+        /// <returns>True if script is safe, false if dangerous patterns detected</returns>
+        public static bool ValidatePowerShellScript(string scriptContent)
+        {
+            if (string.IsNullOrWhiteSpace(scriptContent))
+            {
+                LogManager.LogWarning("[SecurityValidator] PowerShell script validation failed: empty script");
+                return false;
+            }
+
+            // Convert to lowercase for case-insensitive matching
+            string scriptLower = scriptContent.ToLowerInvariant();
+
+            // Dangerous command patterns that should be blocked or flagged
+            var dangerousPatterns = new[]
+            {
+                // Download and execution patterns
+                "invoke-webrequest",
+                "iwr ",
+                "wget ",
+                "curl ",
+                "downloadstring",
+                "downloadfile",
+                "net.webclient",
+                "bitstransfer",
+
+                // Encoded/obfuscated command execution
+                "invoke-expression",
+                "iex ",
+                "-encodedcommand",
+                "-enc ",
+                "frombase64string",
+
+                // System modification commands
+                "remove-item",
+                "del ",
+                "rm ",
+                "format-volume",
+                "clear-disk",
+                "initialize-disk",
+
+                // Credential theft
+                "mimikatz",
+                "invoke-mimikatz",
+                "get-credential",
+                "convertfrom-securestring",
+                "export-clixml",
+
+                // Persistence mechanisms
+                "new-scheduledtask",
+                "register-scheduledtask",
+                "set-itemproperty -path hkcu:",
+                "set-itemproperty -path hklm:",
+                "new-service",
+
+                // Disable security features
+                "set-mppreference",
+                "disable-windowsdefender",
+                "set-executionpolicy bypass",
+                "add-mppreference -exclusion",
+
+                // Reverse shells / C2
+                "new-object system.net.sockets.tcpclient",
+                "system.net.sockets.tcp",
+                "nc.exe",
+                "ncat",
+                "powercat",
+
+                // Script block logging bypass
+                "$null = ",
+                "out-null",
+                "-windowstyle hidden",
+
+                // File encryption (ransomware)
+                "cryptoserviceprovider",
+                "aes.create",
+                "rijndaelmanaged"
+            };
+
+            foreach (var pattern in dangerousPatterns)
+            {
+                if (scriptLower.Contains(pattern))
+                {
+                    LogManager.LogWarning($"[SecurityValidator] Dangerous PowerShell pattern detected: {pattern}");
+                    LogManager.LogWarning($"[SecurityValidator] Script content preview: {scriptContent.Substring(0, Math.Min(200, scriptContent.Length))}...");
+                    return false;
+                }
+            }
+
+            // Check for excessive obfuscation (multiple layers of encoding)
+            int obfuscationScore = 0;
+            if (scriptLower.Contains("char") && scriptLower.Contains("join")) obfuscationScore++;
+            if (scriptLower.Contains("replace") && scriptLower.Contains("split")) obfuscationScore++;
+            if (scriptLower.Contains("[convert]")) obfuscationScore++;
+            if (scriptLower.Contains("([char]")) obfuscationScore++;
+
+            if (obfuscationScore >= 3)
+            {
+                LogManager.LogWarning("[SecurityValidator] PowerShell script appears heavily obfuscated");
+                return false;
+            }
+
+            // All checks passed
+            return true;
+        }
+
+        /// <summary>
         /// Validate username for Active Directory compatibility
         /// Supports DOMAIN\user and user@domain.com formats
         /// TAG: #SECURITY_CRITICAL #USERNAME_VALIDATION #ACTIVE_DIRECTORY
@@ -257,6 +437,152 @@ namespace NecessaryAdminTool.Security
             input = input.Replace("\0", "\\00");
 
             return input;
+        }
+
+        /// <summary>
+        /// Escape LDAP search filter to prevent injection attacks
+        /// More comprehensive escaping including all RFC 2254 special characters
+        /// TAG: #SECURITY_CRITICAL #LDAP_INJECTION_PREVENTION
+        /// </summary>
+        /// <param name="input">User input to escape</param>
+        /// <returns>Escaped string safe for LDAP search filters</returns>
+        public static string EscapeLDAPSearchFilter(string input)
+        {
+            if (string.IsNullOrEmpty(input)) return string.Empty;
+
+            // RFC 2254 - escape special characters in LDAP search filters
+            // Must escape in this order to prevent double-escaping
+            var sb = new System.Text.StringBuilder();
+            foreach (char c in input)
+            {
+                switch (c)
+                {
+                    case '\\':
+                        sb.Append("\\5c");
+                        break;
+                    case '*':
+                        sb.Append("\\2a");
+                        break;
+                    case '(':
+                        sb.Append("\\28");
+                        break;
+                    case ')':
+                        sb.Append("\\29");
+                        break;
+                    case '\0':
+                        sb.Append("\\00");
+                        break;
+                    default:
+                        // Also escape non-ASCII characters to prevent encoding attacks
+                        if (c < 32 || c > 126)
+                        {
+                            sb.Append($"\\{((int)c).ToString("x2")}");
+                        }
+                        else
+                        {
+                            sb.Append(c);
+                        }
+                        break;
+                }
+            }
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Validate LDAP filter string to detect injection attempts
+        /// TAG: #SECURITY_CRITICAL #LDAP_INJECTION_PREVENTION
+        /// </summary>
+        /// <param name="filter">LDAP filter to validate</param>
+        /// <returns>True if filter appears safe</returns>
+        public static bool ValidateLDAPFilter(string filter)
+        {
+            if (string.IsNullOrWhiteSpace(filter))
+            {
+                LogManager.LogWarning("[SecurityValidator] LDAP filter validation failed: null or empty");
+                return false;
+            }
+
+            // Check for balanced parentheses (basic injection detection)
+            int openCount = 0;
+            int closeCount = 0;
+            foreach (char c in filter)
+            {
+                if (c == '(') openCount++;
+                if (c == ')') closeCount++;
+            }
+
+            if (openCount != closeCount)
+            {
+                LogManager.LogWarning($"[SecurityValidator] LDAP filter validation failed: unbalanced parentheses (open={openCount}, close={closeCount})");
+                return false;
+            }
+
+            // Check for common injection patterns
+            var suspiciousPatterns = new[]
+            {
+                "*)(",           // Wildcard injection to break out of filter
+                "*)(|",          // OR injection attempt
+                "*)(objectClass=*", // Object class enumeration attack
+                "*)(&",          // AND injection attempt
+                "*))%00",        // Null byte injection
+                "admin*",        // Admin enumeration (context-dependent)
+                "*)(uid=*",      // User enumeration attack
+                "*)(cn=*"        // Common name enumeration attack
+            };
+
+            foreach (var pattern in suspiciousPatterns)
+            {
+                if (filter.Contains(pattern))
+                {
+                    LogManager.LogWarning($"[SecurityValidator] LDAP filter validation failed: suspicious pattern detected: {pattern}");
+                    return false;
+                }
+            }
+
+            // Check for null bytes
+            if (filter.Contains("\0"))
+            {
+                LogManager.LogWarning("[SecurityValidator] LDAP filter validation failed: null byte detected");
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Validate and sanitize OU (Organizational Unit) filter input
+        /// TAG: #SECURITY_CRITICAL #LDAP_INJECTION_PREVENTION
+        /// </summary>
+        /// <param name="ouFilter">OU filter string to validate</param>
+        /// <returns>True if OU filter is valid</returns>
+        public static bool ValidateOUFilter(string ouFilter)
+        {
+            if (string.IsNullOrWhiteSpace(ouFilter))
+            {
+                return true; // Empty/null is acceptable (means no filter)
+            }
+
+            // OU filters should only contain safe DN characters
+            // Allow: alphanumeric, spaces, hyphens, underscores, equals, commas
+            foreach (char c in ouFilter)
+            {
+                if (!char.IsLetterOrDigit(c) && c != ' ' && c != '-' && c != '_' &&
+                    c != '=' && c != ',' && c != '.')
+                {
+                    LogManager.LogWarning($"[SecurityValidator] OU filter validation failed: invalid character '{c}'");
+                    return false;
+                }
+            }
+
+            // Check for LDAP injection patterns
+            if (ouFilter.Contains(")(") || ouFilter.Contains("*)"))
+            {
+                LogManager.LogWarning("[SecurityValidator] OU filter validation failed: LDAP injection pattern detected");
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>
