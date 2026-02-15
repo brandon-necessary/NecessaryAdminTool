@@ -815,6 +815,45 @@ namespace NecessaryAdminTool
             Close();
         }
 
+        /// <summary>
+        /// Run Setup Wizard for testing
+        /// TAG: #DEBUG_TESTING #SETUP_WIZARD
+        /// </summary>
+        private void BtnRunSetupWizard_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var result = MessageBox.Show(
+                    "⚠️ Launch Initial Setup Wizard?\n\n" +
+                    "This will open the first-run configuration wizard for testing purposes.\n\n" +
+                    "Current database settings will not be affected unless you complete the wizard.\n\n" +
+                    "Continue?",
+                    "Debug Testing - Setup Wizard",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    LogManager.LogInfo("Setup Wizard launched from SuperAdmin (debug testing)");
+
+                    var setupWizard = new SetupWizardWindow();
+                    setupWizard.Owner = this;
+                    setupWizard.ShowDialog();
+
+                    LogManager.LogInfo("Setup Wizard closed");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to launch Setup Wizard", ex);
+                MessageBox.Show(
+                    $"Failed to launch Setup Wizard:\n\n{ex.Message}",
+                    "Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
         #endregion
     }
 }

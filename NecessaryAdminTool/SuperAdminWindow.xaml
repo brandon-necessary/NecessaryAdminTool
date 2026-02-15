@@ -512,6 +512,34 @@
                                         Click="BtnImportConfig_Click"
                                         Height="45"/>
                             </Grid>
+
+                            <!-- TAG: #DEBUG_TESTING - Setup Wizard Access -->
+                            <Border Background="#1a1a1a"
+                                    BorderBrush="#FF6B35"
+                                    BorderThickness="2"
+                                    CornerRadius="6"
+                                    Padding="20"
+                                    Margin="0,20,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="🧪 Debug Testing Tools"
+                                               Foreground="#FF6B35"
+                                               FontWeight="Bold"
+                                               FontSize="14"
+                                               Margin="0,0,0,10"/>
+                                    <TextBlock Text="These tools are for development and testing only. Use with caution in production environments."
+                                               Foreground="#CCCCCC"
+                                               FontSize="11"
+                                               TextWrapping="Wrap"
+                                               Margin="0,0,0,15"/>
+
+                                    <Button Content="🔧 Run Initial Setup Wizard"
+                                            Style="{StaticResource SecondaryButton}"
+                                            Click="BtnRunSetupWizard_Click"
+                                            Height="45"
+                                            ToolTip="Launch the first-run setup wizard for testing database configuration"/>
+                                </StackPanel>
+                            </Border>
+
                         </StackPanel>
                     </Border>
                 </ScrollViewer>
