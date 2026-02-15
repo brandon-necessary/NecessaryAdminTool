@@ -33,6 +33,7 @@ This document serves as a **master index** of all auto-update tags in the Necess
 | **#AUTO_UPDATE_README** | Main project documentation | README_COMPREHENSIVE.md, README.md | Major features/versions |
 | **#AUTO_UPDATE_FAQ** | Frequently asked questions | FAQ.md | When new common questions arise |
 | **#AUTO_UPDATE_DATABASE** | Database system documentation | DATABASE_GUIDE.md | When providers/benchmarks change |
+| **#AUTO_UPDATE_DATABASE_INSTALLER** | Database setup wizard code | DatabaseSetupWizard.xaml, DatabaseSetupWizard.xaml.cs | When database setup logic changes |
 | **#COMPREHENSIVE_DOCS** | Master documentation identifier | README_COMPREHENSIVE.md, FAQ.md | Major updates |
 | **#QUICK_README** | Short README | README.md | Every release |
 
@@ -154,6 +155,22 @@ This document serves as a **master index** of all auto-update tags in the Necess
       - Database provider comparison table (when new features added)
       - Performance benchmarks (when optimization occurs)
       - Setup instructions (if process changes)
+
+11. **DatabaseSetupWizard.xaml / .xaml.cs**
+    - Location: `NecessaryAdminTool\DatabaseSetupWizard.xaml` and `.xaml.cs`
+    - Tags: `#AUTO_UPDATE_DATABASE_INSTALLER`, `#DATABASE_SETUP`, `#VERSION_1_0`
+    - What to update:
+      - Database provider download URLs (when Microsoft updates links)
+      - Dependency check logic (when new requirements emerge)
+      - Connection string templates (when providers update)
+      - ACE driver detection registry keys (if Microsoft changes installer)
+      - SQL Server version recommendations (when new versions release)
+    - Critical sections:
+      - `BtnDownloadAce_Click` - ACE download URL (line ~670)
+      - `BtnDownloadSqlExpress_Click` - SQL Server download URL (line ~690)
+      - `CheckAceDriverInstalled` - Registry paths for ACE detection (line ~620)
+      - `TestSqlServerConnectionAsync` - SQL Server connection logic (line ~350)
+      - `TestAccessConnectionAsync` - Access/ACE testing logic (line ~400)
 
 ---
 

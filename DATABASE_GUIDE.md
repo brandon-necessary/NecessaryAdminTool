@@ -634,6 +634,33 @@ Start: How many computers?
 
 ## ⚙️ Setup Instructions
 
+<!-- TAG: #AUTO_UPDATE_DATABASE_INSTALLER -->
+
+### **🚀 EASY: Automated Setup Wizard (Recommended)**
+
+**The fastest way to set up your database is using the built-in DatabaseSetupWizard!**
+
+1. **Launch the Wizard:**
+   - From SuperAdmin window: Tools → Database Setup Wizard
+   - Or from main window: Options → Configure Database
+
+2. **Follow the 3-Step Process:**
+   - **Step 1:** Choose your database type (SQLite, SQL Server, Access, or CSV)
+   - **Step 2:** Configure connection settings and test the connection
+   - **Step 3:** Check dependencies and auto-download required components
+
+3. **What the Wizard Does Automatically:**
+   - ✅ Validates database configuration
+   - ✅ Tests connectivity before finalizing
+   - ✅ Checks for required dependencies (ACE driver, SQL Server, etc.)
+   - ✅ Provides download links for missing components
+   - ✅ Creates database files if they don't exist
+   - ✅ Saves configuration to SettingsManager
+
+**For manual setup or advanced configuration, see provider-specific instructions below:**
+
+---
+
 ### **SQLite Setup:**
 
 1. **Install NuGet Package** (if not already installed):

@@ -178,15 +178,44 @@ namespace NecessaryAdminTool.Data
         private async Task<List<string>> GetExistingTablesAsync()
         {
             var tables = new List<string>();
-            await Task.Run(() =>
+            try
             {
-                var schema = _connection.GetOleDbSchemaTable(OleDbSchemaGuid.Tables,
-                    new object[] { null, null, null, "TABLE" });
-                foreach (System.Data.DataRow row in schema.Rows)
+                // Ensure connection is open
+                if (_connection == null || _connection.State != System.Data.ConnectionState.Open)
                 {
-                    tables.Add(row["TABLE_NAME"].ToString());
+                    LogManager.LogWarning("Connection not open in GetExistingTablesAsync, returning empty list");
+                    return tables;
                 }
-            });
+
+                await Task.Run(() =>
+                {
+                    try
+                    {
+                        var schema = _connection.GetOleDbSchemaTable(OleDbSchemaGuid.Tables,
+                            new object[] { null, null, null, "TABLE" });
+
+                        if (schema != null)
+                        {
+                            foreach (System.Data.DataRow row in schema.Rows)
+                            {
+                                if (row["TABLE_NAME"] != null && row["TABLE_NAME"] != DBNull.Value)
+                                {
+                                    tables.Add(row["TABLE_NAME"].ToString());
+                                }
+                            }
+                        }
+                    }
+                    catch (OleDbException ex)
+                    {
+                        // Log but don't throw - database might be new
+                        LogManager.LogWarning($"Could not retrieve Access schema (database might be new): {ex.Message}");
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Error in GetExistingTablesAsync", ex);
+            }
             return tables;
         }
 

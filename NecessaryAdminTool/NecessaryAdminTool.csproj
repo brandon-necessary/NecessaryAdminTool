@@ -124,6 +124,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="DatabaseSetupWizard.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Compile Include="AboutWindow.xaml.cs">
       <DependentUpon>AboutWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -229,6 +233,10 @@
     </Compile>
     <Compile Include="SuperAdminWindow.xaml.cs">
       <DependentUpon>SuperAdminWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DatabaseSetupWizard.xaml.cs">
+      <DependentUpon>DatabaseSetupWizard.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Data\IDataProvider.cs">
