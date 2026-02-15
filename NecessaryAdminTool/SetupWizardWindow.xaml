@@ -8,11 +8,7 @@
         WindowStyle="None"
         Background="#FF0D0D0D">
 
-    <Window.Resources>
-        <SolidColorBrush x:Key="AccentOrange" Color="#FFFF8533"/>
-        <SolidColorBrush x:Key="AccentZinc" Color="#FFA1A1AA"/>
-        <SolidColorBrush x:Key="BgDark" Color="#FF1A1A1A"/>
-    </Window.Resources>
+    <!-- Theme resources inherited from App.xaml -->
 
     <Border BorderBrush="{StaticResource AccentOrange}" BorderThickness="2" CornerRadius="8">
         <Grid>
@@ -86,7 +82,7 @@
                                Foreground="White" Margin="0,25,0,15"/>
 
                     <CheckBox x:Name="ChkInstallService"
-                              Content="Install Windows Service for automatic scanning"
+                              Content="Install Windows Service for automatic scanning (Recommended)"
                               IsChecked="True" Foreground="White" FontSize="15" FontWeight="SemiBold"/>
                     <TextBlock Text="   • Runs scans in the background every 2 hours (requires admin rights)"
                                Foreground="{StaticResource AccentZinc}" Margin="30,8,0,5"/>
@@ -111,14 +107,28 @@
 
             <!-- Footer Buttons -->
             <Border Grid.Row="2" Background="#FF1E1E1E" Padding="30,20">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="Cancel" Click="BtnCancel_Click" Width="120" Margin="0,0,15,0"
-                            Background="{StaticResource AccentZinc}" Foreground="White"
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Left side - Test button -->
+                    <Button Grid.Column="0" Content="🧪 Test Database" Click="BtnTestDatabase_Click"
+                            Width="160" HorizontalAlignment="Left"
+                            Style="{StaticResource BtnGhost}"
                             Padding="12" FontSize="14" Cursor="Hand"/>
-                    <Button Content="✓ Finish Setup" Click="BtnFinish_Click" Width="150"
-                            Background="{StaticResource AccentOrange}" Foreground="White"
-                            FontWeight="Bold" Padding="12" FontSize="14" Cursor="Hand"/>
-                </StackPanel>
+
+                    <!-- Right side - Cancel and Finish buttons -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="Cancel" Click="BtnCancel_Click" Width="120" Margin="0,0,15,0"
+                                Background="{StaticResource AccentZinc}" Foreground="White"
+                                Padding="12" FontSize="14" Cursor="Hand"/>
+                        <Button Content="✓ Finish Setup" Click="BtnFinish_Click" Width="150"
+                                Background="{StaticResource AccentOrange}" Foreground="White"
+                                FontWeight="Bold" Padding="12" FontSize="14" Cursor="Hand"/>
+                    </StackPanel>
+                </Grid>
             </Border>
         </Grid>
     </Border>

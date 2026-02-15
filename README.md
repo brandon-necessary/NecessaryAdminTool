@@ -129,10 +129,12 @@ The following configuration files are stored in `%APPDATA%`:
 ## Architecture
 
 - **Language:** C# (WPF)
-- **UI Framework:** XAML with custom dark theme
+- **UI Framework:** XAML with unified dark theme (see [THEME_SYSTEM.md](THEME_SYSTEM.md))
 - **Query Technology:** WMI (Windows Management Instrumentation)
 - **Parallelization:** Task.WhenAll, PLINQ, SemaphoreSlim throttling
 - **Networking:** WinRM, PsExec, Remote PowerShell
+- **Database:** Abstracted provider system (SQLite, SQL Server, Access, CSV)
+- **Testing:** Comprehensive database testing system (see [DATABASE_TESTING.md](DATABASE_TESTING.md))
 
 ## Version History
 
@@ -161,6 +163,11 @@ The following configuration files are stored in `%APPDATA%`:
 - Auto-update system (Squirrel.Windows)
 - Encrypted database layer (SQLCipher with AES-256)
 - Windows Service for background scanning
+
+**Documentation:**
+- 📘 [Unified Theme System](THEME_SYSTEM.md) - Complete theme architecture and customization guide
+- 📘 [Database Testing System](DATABASE_TESTING.md) - Comprehensive database validation and testing
+- 📘 [Performance Optimizations](OPTIMIZATIONS.md) - Multicore parallelization details
 
 ---
 

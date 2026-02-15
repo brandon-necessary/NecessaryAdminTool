@@ -1,13 +1,16 @@
 using System;
+using System.IO;
+using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
-// TAG: #SETUP_WIZARD #VERSION_1_2
+// TAG: #SETUP_WIZARD #VERSION_1_0 #DATABASE_TESTING
 
 namespace NecessaryAdminTool
 {
     /// <summary>
-    /// Setup Wizard for first-run configuration
-    /// TAG: #FIRST_RUN #DATABASE_CONFIG
+    /// Setup Wizard for first-run configuration with integrated database testing
+    /// TAG: #FIRST_RUN #DATABASE_CONFIG #DATABASE_TESTING
     /// </summary>
     public partial class SetupWizardWindow : Window
     {
@@ -20,6 +23,141 @@ namespace NecessaryAdminTool
         {
             InitializeComponent();
             LogManager.LogInfo("Setup Wizard opened");
+        }
+
+        /// <summary>
+        /// Test database connectivity and all provider methods
+        /// TAG: #DATABASE_TESTING
+        /// </summary>
+        private async void BtnTestDatabase_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Determine database type
+                string dbType = "SQLite";
+                if (RbSqlServer.IsChecked == true)
+                    dbType = "SqlServer";
+                else if (RbAccess.IsChecked == true)
+                    dbType = "Access";
+                else if (RbCsv.IsChecked == true)
+                    dbType = "CSV";
+
+                string dbPath = TxtDatabasePath.Text;
+
+                LogManager.LogInfo($"Starting database test: {dbType} at {dbPath}");
+
+                // Create test directory if it doesn't exist
+                if (!Directory.Exists(dbPath))
+                {
+                    Directory.CreateDirectory(dbPath);
+                }
+
+                // Temporarily save settings for test
+                var originalDbType = Properties.Settings.Default.DatabaseType;
+                var originalDbPath = Properties.Settings.Default.DatabasePath;
+
+                Properties.Settings.Default.DatabaseType = dbType;
+                Properties.Settings.Default.DatabasePath = dbPath;
+                Properties.Settings.Default.Save();
+
+                try
+                {
+                    // Create provider and run tests
+                    using (var provider = await Data.DataProviderFactory.CreateProviderAsync())
+                    {
+                        var tester = new Data.DatabaseTester(provider);
+
+                        // Show progress message
+                        var progressMsg = new System.Windows.Controls.TextBlock
+                        {
+                            Text = "Running database tests...\nThis may take 10-30 seconds.",
+                            Foreground = System.Windows.Media.Brushes.White,
+                            TextAlignment = TextAlignment.Center,
+                            FontSize = 14,
+                            Margin = new Thickness(20)
+                        };
+
+                        // Run tests (this will take some time)
+                        var result = await Task.Run(() => tester.RunAllTestsAsync());
+
+                        // Show results
+                        var resultWindow = new Window
+                        {
+                            Title = "Database Test Results",
+                            Width = 800,
+                            Height = 600,
+                            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                            Owner = this,
+                            Background = new System.Windows.Media.SolidColorBrush(
+                                System.Windows.Media.Color.FromRgb(13, 13, 13))
+                        };
+
+                        var scrollViewer = new System.Windows.Controls.ScrollViewer
+                        {
+                            VerticalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Auto,
+                            Margin = new Thickness(20)
+                        };
+
+                        var resultText = new System.Windows.Controls.TextBlock
+                        {
+                            Text = result.Log,
+                            Foreground = result.Success
+                                ? System.Windows.Media.Brushes.LightGreen
+                                : System.Windows.Media.Brushes.LightCoral,
+                            FontFamily = new System.Windows.Media.FontFamily("Consolas"),
+                            FontSize = 12,
+                            TextWrapping = TextWrapping.Wrap
+                        };
+
+                        scrollViewer.Content = resultText;
+                        resultWindow.Content = scrollViewer;
+                        resultWindow.ShowDialog();
+
+                        // Log summary
+                        LogManager.LogInfo($"Database test completed: {result.Summary}");
+
+                        if (result.Success)
+                        {
+                            System.Windows.MessageBox.Show(
+                                $"✓ All database tests passed!\n\n" +
+                                $"Tests: {result.PassedTests}/{result.TotalTests}\n" +
+                                $"Duration: {result.Duration.TotalSeconds:F2} seconds\n\n" +
+                                $"The {dbType} provider is working correctly.",
+                                "Database Test - SUCCESS",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Information);
+                        }
+                        else
+                        {
+                            System.Windows.MessageBox.Show(
+                                $"⚠ Some database tests failed!\n\n" +
+                                $"Passed: {result.PassedTests}/{result.TotalTests}\n" +
+                                $"Failed: {result.FailedTests}/{result.TotalTests}\n\n" +
+                                $"Review the test log for details.",
+                                "Database Test - WARNING",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Warning);
+                        }
+                    }
+                }
+                finally
+                {
+                    // Restore original settings
+                    Properties.Settings.Default.DatabaseType = originalDbType;
+                    Properties.Settings.Default.DatabasePath = originalDbPath;
+                    Properties.Settings.Default.Save();
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Database test failed", ex);
+                System.Windows.MessageBox.Show(
+                    $"❌ Database test error:\n\n{ex.Message}\n\n" +
+                    $"Check the log for details.",
+                    "Database Test - ERROR",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
         }
 
         private void BtnBrowse_Click(object sender, RoutedEventArgs e)

@@ -241,6 +241,9 @@
     <Compile Include="Data\DataProviderFactory.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Data\DatabaseTester.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Security\EncryptionKeyManager.cs">
       <SubType>Code</SubType>
     </Compile>
