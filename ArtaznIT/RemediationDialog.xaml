@@ -4,7 +4,10 @@
         xmlns:local="clr-namespace:ArtaznIT"
         Title="Automated Remediation" Height="600" Width="800"
         WindowStartupLocation="CenterOwner"
-        Background="#FF0D0D0D" ResizeMode="CanResize">
+        Background="{StaticResource MicaBrush}" ResizeMode="CanResize"
+        FontFamily="{StaticResource FluentFont}">
+
+    <!-- TAG: #AUTO_UPDATE_UI_ENGINE #FLUENT_THEME -->
 
     <!-- TAG: #VERSION_7.1 #REMEDIATION #UI -->
 
@@ -45,7 +48,7 @@
                 </StackPanel>
 
                 <Border Grid.Column="1" Background="#FF2A2A2A" BorderBrush="#FF3C3C3C"
-                        BorderThickness="1" CornerRadius="4" Padding="12,8">
+                        BorderThickness="1" CornerRadius="{StaticResource FluentCornerRadiusSmall}" Padding="12,8">
                     <StackPanel>
                         <TextBlock Text="PROGRESS" Foreground="{StaticResource TextMuted}"
                                    FontSize="9" FontWeight="SemiBold" Margin="0,0,0,4"/>
@@ -58,7 +61,7 @@
 
         <!-- Overall Progress Bar -->
         <Border Grid.Row="1" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
-                BorderThickness="1" CornerRadius="8" Padding="16,12" Margin="0,0,0,16">
+                BorderThickness="1" CornerRadius="{StaticResource FluentCornerRadius}" Padding="16,12" Margin="0,0,0,16">
             <StackPanel>
                 <Grid Margin="0,0,0,8">
                     <Grid.ColumnDefinitions>
@@ -89,7 +92,7 @@
 
         <!-- Results List -->
         <Border Grid.Row="2" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
-                BorderThickness="1" CornerRadius="8" Padding="0" Margin="0,0,0,16">
+                BorderThickness="1" CornerRadius="{StaticResource FluentCornerRadius}" Padding="0" Margin="0,0,0,16">
             <DataGrid x:Name="GridResults" AutoGenerateColumns="False" IsReadOnly="True"
                       Background="#FF1A1A1A" Foreground="White"
                       GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#FF2A2A2A"
@@ -140,7 +143,7 @@
 
         <!-- Summary Statistics -->
         <Border Grid.Row="3" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
-                BorderThickness="1" CornerRadius="8" Padding="16,12" Margin="0,0,0,16">
+                BorderThickness="1" CornerRadius="{StaticResource FluentCornerRadius}" Padding="16,12" Margin="0,0,0,16">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -193,7 +196,7 @@
 
             <Button Grid.Column="1" Content="⏸️ CANCEL" x:Name="BtnCancel"
                     Click="BtnCancel_Click"
-                    Background="#FFFF6B6B" Foreground="White" BorderThickness="0"
+                    Background="{StaticResource ErrorBrush}" Foreground="White" BorderThickness="0"
                     Padding="20,10" FontSize="11" FontWeight="SemiBold"
                     Margin="0,0,8,0" Visibility="Collapsed"/>
 

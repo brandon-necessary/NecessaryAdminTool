@@ -4,10 +4,13 @@
         Title="🔒 SuperAdmin Configuration"
         Height="700" Width="1000"
         WindowStartupLocation="CenterScreen"
-        Background="#1a1a1a"
+        Background="{StaticResource MicaBrush}"
         ResizeMode="CanResize"
         Icon="pack://application:,,,/Resources/icon.ico"
-        Topmost="True">
+        Topmost="True"
+        FontFamily="{StaticResource FluentFont}">
+
+    <!-- TAG: #AUTO_UPDATE_UI_ENGINE #FLUENT_THEME -->
 
     <!-- TAG: #SUPERADMIN #WHITELABEL_GUI #ADVANCED_CONFIG -->
 
@@ -21,65 +24,34 @@
         <SolidColorBrush x:Key="TextSecondaryBrush" Color="#CCCCCC"/>
         <SolidColorBrush x:Key="BorderBrush" Color="#3a3a3a"/>
 
-        <!-- Modern Button Style -->
-        <Style x:Key="ModernButton" TargetType="Button">
-            <Setter Property="Background" Value="{StaticResource AccentOrangeBrush}"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
+        <!-- Fluent Button Styles -->
+        <Style x:Key="ModernButton" TargetType="Button" BasedOn="{StaticResource FluentButtonPrimary}">
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="Padding" Value="20,10"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                CornerRadius="6"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#FF8555"/>
-                </Trigger>
-                <Trigger Property="IsEnabled" Value="False">
-                    <Setter Property="Background" Value="#555555"/>
-                    <Setter Property="Foreground" Value="#888888"/>
-                </Trigger>
-            </Style.Triggers>
         </Style>
 
         <!-- Secondary Button Style -->
-        <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
-            <Setter Property="Background" Value="{StaticResource AccentZincBrush}"/>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#8a929e"/>
-                </Trigger>
-            </Style.Triggers>
+        <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource FluentButtonSecondary}">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Padding" Value="20,10"/>
         </Style>
 
         <!-- Danger Button Style -->
-        <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
-            <Setter Property="Background" Value="#DC3545"/>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#C82333"/>
-                </Trigger>
-            </Style.Triggers>
+        <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource FluentButtonPrimary}">
+            <Setter Property="Background" Value="{StaticResource ErrorBrush}"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Padding" Value="20,10"/>
         </Style>
 
-        <!-- Modern TextBox Style -->
+        <!-- Fluent TextBox Style -->
         <Style x:Key="ModernTextBox" TargetType="TextBox">
-            <Setter Property="Background" Value="#2a2a2a"/>
+            <Setter Property="Background" Value="{StaticResource MicaAltBrush}"/>
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderBrush" Value="#3a3a3a"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderDimBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="12,10"/>
-            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontSize" Value="{StaticResource FontBody}"/>
+            <Setter Property="FontFamily" Value="{StaticResource FluentFont}"/>
             <Setter Property="CaretBrush" Value="{StaticResource AccentOrangeBrush}"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -87,7 +59,7 @@
                         <Border Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6">
+                                CornerRadius="{StaticResource FluentCornerRadius}">
                             <ScrollViewer x:Name="PART_ContentHost"
                                           Margin="{TemplateBinding Padding}"/>
                         </Border>

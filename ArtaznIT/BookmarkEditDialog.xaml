@@ -3,7 +3,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Add to Favorites" Height="350" Width="450"
         WindowStartupLocation="CenterOwner"
-        Background="#FF0D0D0D" ResizeMode="NoResize">
+        Background="{StaticResource MicaBrush}" ResizeMode="NoResize"
+        FontFamily="{StaticResource FluentFont}">
+
+    <!-- TAG: #AUTO_UPDATE_UI_ENGINE #FLUENT_THEME -->
 
     <!-- TAG: #VERSION_7 #BOOKMARKS #UI -->
 

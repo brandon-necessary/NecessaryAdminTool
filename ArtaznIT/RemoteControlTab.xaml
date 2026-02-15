@@ -1,15 +1,18 @@
 <UserControl x:Class="ArtaznIT.RemoteControlTab"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             Background="#FF0D0D0D">
+             Background="{StaticResource MicaBrush}">
+
+    <!-- TAG: #AUTO_UPDATE_UI_ENGINE #FLUENT_THEME -->
 
     <!-- TAG: #REMOTE_CONTROL #RMM_TAB #UI -->
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
         <StackPanel MaxWidth="1200">
 
             <!-- QUICK LAUNCH SECTION -->
-            <Border Background="#FF1A1A1A" BorderBrush="#FF2A2A2A" BorderThickness="1"
-                    CornerRadius="6" Padding="20" Margin="0,0,0,20">
+            <Border Background="{StaticResource MicaAltBrush}" BorderBrush="{StaticResource BorderDimBrush}"
+                    BorderThickness="1" CornerRadius="{StaticResource FluentCornerRadius}"
+                    Padding="20" Margin="0,0,0,20" Effect="{StaticResource Elevation2dp}">
                 <StackPanel>
                     <TextBlock Text="🚀 QUICK LAUNCH" FontSize="14" FontWeight="Bold"
                                Foreground="#FFFF8533" Margin="0,0,0,12"/>
@@ -80,7 +83,7 @@
 
             <!-- TOOL CONFIGURATION SECTION -->
             <Border Background="#FF1A1A1A" BorderBrush="#FF2A2A2A" BorderThickness="1"
-                    CornerRadius="6" Padding="20" Margin="0,0,0,20">
+                    CornerRadius="{StaticResource FluentCornerRadius}" Padding="20" Margin="0,0,0,20">
                 <StackPanel>
                     <TextBlock Text="⚙️ TOOL CONFIGURATION" FontSize="14" FontWeight="Bold"
                                Foreground="#FFFF8533" Margin="0,0,0,12"/>
@@ -166,7 +169,7 @@
 
             <!-- GLOBAL SETTINGS SECTION -->
             <Border Background="#FF1A1A1A" BorderBrush="#FF2A2A2A" BorderThickness="1"
-                    CornerRadius="6" Padding="20" Margin="0,0,0,20">
+                    CornerRadius="{StaticResource FluentCornerRadius}" Padding="20" Margin="0,0,0,20">
                 <StackPanel>
                     <TextBlock Text="🌐 GLOBAL SETTINGS" FontSize="14" FontWeight="Bold"
                                Foreground="#FFFF8533" Margin="0,0,0,12"/>
@@ -214,7 +217,7 @@
 
             <!-- CONNECTION HISTORY SECTION -->
             <Border Background="#FF1A1A1A" BorderBrush="#FF2A2A2A" BorderThickness="1"
-                    CornerRadius="6" Padding="20">
+                    CornerRadius="{StaticResource FluentCornerRadius}" Padding="20">
                 <StackPanel>
                     <TextBlock Text="📜 CONNECTION HISTORY" FontSize="14" FontWeight="Bold"
                                Foreground="#FFFF8533" Margin="0,0,0,12"/>

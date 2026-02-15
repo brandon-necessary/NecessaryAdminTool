@@ -5,7 +5,9 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="1000"
-             Background="#FF0D0D0D">
+             Background="{StaticResource MicaBrush}">
+
+    <!-- TAG: #AUTO_UPDATE_UI_ENGINE #FLUENT_THEME -->
 
     <!-- TAG: #AD_OBJECT_BROWSER #RSAT_ADUC #VERSION_7 -->
     <!-- Replicates RSAT Active Directory Users and Computers structure -->
@@ -52,7 +54,7 @@
                                                         BorderBrush="{TemplateBinding BorderBrush}"
                                                         BorderThickness="{TemplateBinding BorderThickness}"
                                                         Padding="{TemplateBinding Padding}"
-                                                        CornerRadius="3" Margin="0,1">
+                                                        CornerRadius="{StaticResource FluentCornerRadiusSmall}" Margin="0,1">
                                                     <Grid>
                                                         <Grid.ColumnDefinitions>
                                                             <ColumnDefinition Width="Auto"/>

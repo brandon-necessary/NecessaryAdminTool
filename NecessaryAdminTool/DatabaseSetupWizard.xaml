@@ -5,7 +5,10 @@
         Width="900" Height="700"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
-        Background="{StaticResource DarkBackgroundBrush}">
+        Background="{StaticResource MicaBrush}"
+        FontFamily="{StaticResource FluentFont}">
+
+    <!-- TAG: #AUTO_UPDATE_UI_ENGINE #FLUENT_THEME -->
 
     <!-- TAG: #AUTO_UPDATE_DATABASE_INSTALLER #DATABASE_SETUP #VERSION_1_0 -->
     <!-- FUTURE CLAUDES: This wizard helps users set up and configure database backends -->
@@ -18,7 +21,8 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Border Grid.Row="0" Background="{StaticResource AccentOrangeBrush}" Padding="20">
+        <Border Grid.Row="0" Background="{StaticResource AccentOrangeBrush}" Padding="20"
+                Effect="{StaticResource Elevation4dp}">
             <StackPanel>
                 <TextBlock Text="🗄️ Database Setup Wizard" FontSize="24" FontWeight="Bold" Foreground="White"/>
                 <TextBlock x:Name="TxtSubtitle" Text="Choose and configure your database backend"
@@ -31,9 +35,10 @@
             <StackPanel Margin="20">
 
                 <!-- Step 1: Database Type Selection -->
-                <Border x:Name="PanelStep1" Background="{StaticResource CardBackgroundBrush}"
-                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
-                        CornerRadius="4" Padding="20" Margin="0,0,0,15">
+                <Border x:Name="PanelStep1" Background="{StaticResource MicaAltBrush}"
+                        BorderBrush="{StaticResource BorderDimBrush}" BorderThickness="1"
+                        CornerRadius="{StaticResource FluentCornerRadius}" Padding="20" Margin="0,0,0,15"
+                        Effect="{StaticResource Elevation2dp}">
                     <StackPanel>
                         <TextBlock Text="Step 1: Select Database Type" FontSize="18" FontWeight="Bold"
                                    Foreground="{StaticResource AccentOrangeBrush}" Margin="0,0,0,15"/>

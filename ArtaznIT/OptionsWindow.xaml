@@ -5,9 +5,12 @@
         Height="700" Width="800"
         MinHeight="500" MinWidth="700"
         WindowStartupLocation="CenterOwner"
-        Background="#FF0D0D0D"
+        Background="{StaticResource MicaBrush}"
         ResizeMode="CanResize"
-        ShowInTaskbar="False">
+        ShowInTaskbar="False"
+        FontFamily="{StaticResource FluentFont}">
+
+    <!-- TAG: #AUTO_UPDATE_UI_ENGINE #FLUENT_THEME -->
 
     <Window.Resources>
         <!-- Match MainWindow color scheme -->
@@ -22,52 +25,18 @@
         <SolidColorBrush x:Key="AccentGreen" Color="#FF16C60C"/>
         <SolidColorBrush x:Key="DangerRed" Color="#FFE81123"/>
 
-        <!-- Button Styles -->
-        <Style x:Key="BtnPrimary" TargetType="Button">
-            <Setter Property="Background" Value="{StaticResource AccentOrange}"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Padding" Value="16,8"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="bd" Background="{TemplateBinding Background}"
-                                CornerRadius="4" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#FFFF9944"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#FFDD6622"/>
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="bd" Property="Background" Value="#FF444444"/>
-                                <Setter Property="Foreground" Value="#FF888888"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
+        <!-- Button Styles - Using Fluent Design -->
+        <Style x:Key="BtnPrimary" TargetType="Button" BasedOn="{StaticResource FluentButtonPrimary}">
+            <Setter Property="FontSize" Value="{StaticResource FontBody}"/>
         </Style>
 
-        <Style x:Key="BtnDanger" TargetType="Button" BasedOn="{StaticResource BtnPrimary}">
-            <Setter Property="Background" Value="{StaticResource DangerRed}"/>
+        <Style x:Key="BtnDanger" TargetType="Button" BasedOn="{StaticResource FluentButtonPrimary}">
+            <Setter Property="Background" Value="{StaticResource ErrorBrush}"/>
         </Style>
 
-        <Style x:Key="BtnGhost" TargetType="Button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource AccentZinc}"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
+        <Style x:Key="BtnGhost" TargetType="Button" BasedOn="{StaticResource FluentButtonSecondary}">
             <Setter Property="FontSize" Value="11"/>
             <Setter Property="Padding" Value="12,6"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="{StaticResource BorderDim}"/>
-            <Setter Property="Cursor" Value="Hand"/>
         </Style>
     </Window.Resources>
 
@@ -112,7 +81,7 @@
                 <!-- Status Message (Hidden by default) -->
                 <Border x:Name="StatusMessage" Background="{StaticResource BgCard}"
                         BorderBrush="{StaticResource AccentGreen}" BorderThickness="1"
-                        CornerRadius="4" Padding="12,8" Margin="0,0,0,15"
+                        CornerRadius="{StaticResource FluentCornerRadiusSmall}" Padding="12,8" Margin="0,0,0,15"
                         Visibility="Collapsed">
                     <TextBlock x:Name="TxtStatusMessage" Foreground="{StaticResource AccentGreen}"
                                FontSize="11" FontWeight="SemiBold" TextWrapping="Wrap"/>
@@ -130,14 +99,14 @@
                         </DataTemplate>
                     </Expander.HeaderTemplate>
                     <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
-                            BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
+                            BorderThickness="1" CornerRadius="{StaticResource FluentCornerRadius}" Padding="20">
                         <StackPanel>
                             <TextBlock Text="ADMIN LAUNCHER SETUP" Foreground="{StaticResource AccentOrange}"
                                        FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
 
                             <!-- Create Shortcut Button - TAG: #ADMIN_TOOLS -->
                             <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource AccentOrange}"
-                                    BorderThickness="1" CornerRadius="4" Padding="12,10" Margin="0,0,0,8"
+                                    BorderThickness="1" CornerRadius="{StaticResource FluentCornerRadiusSmall}" Padding="12,10" Margin="0,0,0,8"
                                     Cursor="Hand" MouseEnter="DebugButton_MouseEnter" MouseLeave="DebugButton_MouseLeave"
                                     MouseLeftButtonDown="CreateShortcut_Click">
                                 <Grid>
@@ -173,7 +142,7 @@
                         </DataTemplate>
                     </Expander.HeaderTemplate>
                     <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
-                            BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
+                            BorderThickness="1" CornerRadius="{StaticResource FluentCornerRadius}" Padding="20">
                         <StackPanel>
                             <!-- Last Username -->
                             <TextBlock Text="Cached Username:" Foreground="{StaticResource TextMuted}" FontSize="11"/>
@@ -227,7 +196,7 @@
                         </DataTemplate>
                     </Expander.HeaderTemplate>
                     <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
-                            BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
+                            BorderThickness="1" CornerRadius="{StaticResource FluentCornerRadius}" Padding="20">
                         <StackPanel>
                             <TextBlock Text="Configure which cloud services to monitor for status and uptime. You can use the visual editor or edit the raw JSON configuration."
                                        Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="14"/>
@@ -406,7 +375,7 @@
                         </DataTemplate>
                     </Expander.HeaderTemplate>
                     <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
-                            BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
+                            BorderThickness="1" CornerRadius="{StaticResource FluentCornerRadius}" Padding="20">
                         <StackPanel>
                             <TextBlock Text="Manage devices pinned for quick status monitoring (max 10)"
                                        Foreground="{StaticResource TextMuted}" FontSize="10" Margin="0,0,0,12"/>
@@ -525,7 +494,7 @@
                         </DataTemplate>
                     </Expander.HeaderTemplate>
                     <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
-                            BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
+                            BorderThickness="1" CornerRadius="{StaticResource FluentCornerRadius}" Padding="20">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -593,7 +562,7 @@
                         </DataTemplate>
                     </Expander.HeaderTemplate>
                     <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
-                            BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
+                            BorderThickness="1" CornerRadius="{StaticResource FluentCornerRadius}" Padding="20">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -738,7 +707,7 @@
                         </DataTemplate>
                     </Expander.HeaderTemplate>
                     <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
-                            BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
+                            BorderThickness="1" CornerRadius="{StaticResource FluentCornerRadius}" Padding="20">
                         <StackPanel>
                             <TextBlock Text="Adjust the font size multiplier for the entire application (0.8x - 2.0x)"
                                        Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="14"/>
@@ -766,7 +735,7 @@
 
                             <!-- Preview Text -->
                             <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
-                                    BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,12">
+                                    BorderThickness="1" CornerRadius="{StaticResource FluentCornerRadiusSmall}" Padding="12" Margin="0,0,0,12">
                                 <TextBlock x:Name="TxtFontPreview" Text="The quick brown fox jumps over the lazy dog. 0123456789"
                                            Foreground="White" FontSize="12" TextWrapping="Wrap"/>
                             </Border>
@@ -794,7 +763,7 @@
                         </DataTemplate>
                     </Expander.HeaderTemplate>
                     <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
-                            BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
+                            BorderThickness="1" CornerRadius="{StaticResource FluentCornerRadius}" Padding="20">
                         <StackPanel>
                             <TextBlock Text="Automatically save inventory backups at regular intervals. Backups are stored in %AppData%\ArtaznIT\AutoSave\"
                                        Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="14"/>
@@ -828,7 +797,7 @@
 
                             <!-- Manual Backup Button -->
                             <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
-                                    BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,12">
+                                    BorderThickness="1" CornerRadius="{StaticResource FluentCornerRadiusSmall}" Padding="12" Margin="0,0,0,12">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -865,7 +834,7 @@
                         </DataTemplate>
                     </Expander.HeaderTemplate>
                     <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
-                            BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
+                            BorderThickness="1" CornerRadius="{StaticResource FluentCornerRadius}" Padding="20">
                         <StackPanel>
                             <TextBlock Text="Save frequently used domain controller configurations for quick access"
                                        Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="14"/>
@@ -924,7 +893,7 @@
 
                             <!-- Add New Profile -->
                             <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
-                                    BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,12">
+                                    BorderThickness="1" CornerRadius="{StaticResource FluentCornerRadiusSmall}" Padding="12" Margin="0,0,0,12">
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
@@ -983,7 +952,7 @@
                         </DataTemplate>
                     </Expander.HeaderTemplate>
                     <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
-                            BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
+                            BorderThickness="1" CornerRadius="{StaticResource FluentCornerRadius}" Padding="20">
                         <StackPanel>
                             <TextBlock Text="Save frequently accessed servers and devices for quick access"
                                        Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="14"/>
@@ -1050,7 +1019,7 @@
 
                             <!-- Add New Bookmark -->
                             <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
-                                    BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,12">
+                                    BorderThickness="1" CornerRadius="{StaticResource FluentCornerRadiusSmall}" Padding="12" Margin="0,0,0,12">
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>

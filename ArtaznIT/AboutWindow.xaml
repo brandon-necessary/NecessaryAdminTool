@@ -5,9 +5,12 @@
         Height="650" Width="520"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        Background="#FF0D0D0D"
+        Background="{StaticResource MicaBrush}"
         WindowStyle="None"
-        AllowsTransparency="True">
+        AllowsTransparency="True"
+        FontFamily="{StaticResource FluentFont}">
+
+    <!-- TAG: #AUTO_UPDATE_UI_ENGINE #FLUENT_THEME -->
 
     <Window.Resources>
         <!-- Colors -->
@@ -25,20 +28,21 @@
         <!-- Close Button Style -->
         <Style x:Key="CloseButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#FF888888"/>
+            <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontFamily" Value="{StaticResource FluentFont}"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="border" Background="{TemplateBinding Background}"
-                                CornerRadius="3" Padding="8,4">
+                                CornerRadius="{StaticResource FluentCornerRadiusSmall}" Padding="8,4">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#FFFF3333"/>
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource ErrorBrush}"/>
                                 <Setter Property="Foreground" Value="White"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -108,7 +112,9 @@
         </Style>
     </Window.Resources>
 
-    <Border BorderBrush="{StaticResource AccentOrangeBrush}" BorderThickness="2" CornerRadius="8">
+    <Border BorderBrush="{StaticResource AccentOrangeBrush}" BorderThickness="2"
+            CornerRadius="{StaticResource FluentCornerRadius}"
+            Effect="{StaticResource Elevation4dp}">
         <Grid>
             <!-- Header with gradient background -->
             <Grid.RowDefinitions>
@@ -118,7 +124,7 @@
             </Grid.RowDefinitions>
 
             <!-- Header Section with Logo -->
-            <Border Grid.Row="0" CornerRadius="6,6,0,0">
+            <Border Grid.Row="0" CornerRadius="{StaticResource FluentCornerRadius}">
                 <Border.Background>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                         <GradientStop Color="#FF1A1A1A" Offset="0"/>
@@ -135,7 +141,7 @@
                     <!-- Logo and Branding -->
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,20,0,0">
                         <!-- Icon with Orange/Zinc Gradient -->
-                        <Border Width="64" Height="64" CornerRadius="12" Margin="0,0,0,16">
+                        <Border Width="64" Height="64" CornerRadius="{StaticResource FluentCornerRadiusLarge}" Margin="0,0,0,16">
                             <Border.Background>
                                 <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                                     <GradientStop Color="#FFFF8533" Offset="0"/>
@@ -179,9 +185,12 @@
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="30,20">
                 <StackPanel>
                     <!-- Version Info -->
-                    <Border Background="{StaticResource BgCardBrush}"
+                    <Border Background="{StaticResource MicaAltBrush}"
                             BorderBrush="{StaticResource BorderDimBrush}"
-                            BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,0,0,12">
+                            BorderThickness="1"
+                            CornerRadius="{StaticResource FluentCornerRadius}"
+                            Padding="{StaticResource SpacingComfortable}" Margin="0,0,0,12"
+                            Effect="{StaticResource Elevation2dp}">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
@@ -260,7 +269,7 @@
                             <StackPanel>
                                 <!-- Export Button -->
                                 <Border Background="#FF1A1A1A" BorderBrush="#FF3C3C3C" BorderThickness="1"
-                                        CornerRadius="4" Padding="10,8" Margin="0,0,0,12" Cursor="Hand"
+                                        CornerRadius="{StaticResource FluentCornerRadiusSmall}" Padding="10,8" Margin="0,0,0,12" Cursor="Hand"
                                         MouseEnter="ExportButton_MouseEnter" MouseLeave="ExportButton_MouseLeave"
                                         MouseLeftButtonDown="ExportLegalTerms_Click">
                                     <Grid>
@@ -551,7 +560,7 @@
 
                                 <!-- Create Shortcut Button -->
                                 <Border Background="#FF1A1A1A" BorderBrush="{StaticResource AccentOrangeBrush}"
-                                        BorderThickness="1" CornerRadius="4" Padding="12,10" Margin="0,0,0,8"
+                                        BorderThickness="1" CornerRadius="{StaticResource FluentCornerRadiusSmall}" Padding="12,10" Margin="0,0,0,8"
                                         Cursor="Hand" MouseEnter="DebugButton_MouseEnter" MouseLeave="DebugButton_MouseLeave"
                                         MouseLeftButtonDown="CreateShortcut_Click">
                                     <Grid>
@@ -689,15 +698,15 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <Button Grid.Column="0" Content="💾 SAVE" x:Name="BtnSaveServicesConfig"
-                                            Background="#FF00C853" Foreground="White" BorderThickness="0"
+                                            Background="{StaticResource SuccessBrush}" Foreground="White" BorderThickness="0"
                                             Padding="8,6" FontSize="10" FontWeight="Bold" Margin="0,0,3,0"
                                             Click="BtnSaveServicesConfig_Click" Cursor="Hand"/>
                                     <Button Grid.Column="1" Content="🔄 RESET TO DEFAULTS" x:Name="BtnResetServicesConfig"
-                                            Background="#FFFF6B6B" Foreground="White" BorderThickness="0"
+                                            Background="{StaticResource ErrorBrush}" Foreground="White" BorderThickness="0"
                                             Padding="8,6" FontSize="9" FontWeight="Bold" Margin="1.5,0,1.5,0"
                                             Click="BtnResetServicesConfig_Click" Cursor="Hand"/>
                                     <Button Grid.Column="2" Content="🧪 TEST APIS" x:Name="BtnTestAPIs"
-                                            Background="#FF2196F3" Foreground="White" BorderThickness="0"
+                                            Background="{StaticResource InfoBrush}" Foreground="White" BorderThickness="0"
                                             Padding="8,6" FontSize="10" FontWeight="Bold" Margin="3,0,0,0"
                                             Click="BtnTestAPIs_Click" Cursor="Hand"/>
                                 </Grid>
@@ -712,7 +721,7 @@
                     <!-- Copyright -->
                     <Border Background="{StaticResource BgCardBrush}"
                             BorderBrush="{StaticResource BorderDimBrush}"
-                            BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,8,0,0">
+                            BorderThickness="1" CornerRadius="{StaticResource FluentCornerRadius}" Padding="12" Margin="0,8,0,0">
                         <StackPanel>
                             <TextBlock x:Name="TxtCopyright" Text="Copyright © Artazn LLC 2026"
                                        Foreground="#FF888888" FontSize="10"

@@ -236,9 +236,27 @@ namespace ArtaznIT
                     switch (parts[0].Trim())
                     {
                         case "SharedLogPath":
-                            if (SecurityValidator.IsValidPath(parts[1])) SharedLogPath = parts[1].Trim(); break;
+                            if (SecurityValidator.IsValidPath(parts[1]))
+                            {
+                                SharedLogPath = parts[1].Trim();
+                            }
+                            else
+                            {
+                                // TAG: #AUTO_UPDATE_UI_ENGINE #VALIDATION_TOASTS
+                                LogManager.LogWarning($"Invalid SharedLogPath in config: {parts[1]}");
+                            }
+                            break;
                         case "InventoryDbPath":
-                            if (SecurityValidator.IsValidPath(parts[1])) InventoryDbPath = parts[1].Trim(); break;
+                            if (SecurityValidator.IsValidPath(parts[1]))
+                            {
+                                InventoryDbPath = parts[1].Trim();
+                            }
+                            else
+                            {
+                                // TAG: #AUTO_UPDATE_UI_ENGINE #VALIDATION_TOASTS
+                                LogManager.LogWarning($"Invalid InventoryDbPath in config: {parts[1]}");
+                            }
+                            break;
                         case "MaxParallelScans":
                             if (int.TryParse(parts[1], out int ms) && ms > 0 && ms <= 100) MaxParallelScans = ms; break;
                         case "WmiTimeoutMs":
@@ -3107,10 +3125,27 @@ namespace ArtaznIT
 
         private void WMIQueryOutput(string query, string actionName, string targetHost)
         {
-            if (string.IsNullOrEmpty(targetHost)) return;
-            if (!SecurityValidator.IsValidHostname(targetHost)) { AppendTerminal($"ERROR: Invalid hostname: {targetHost}", true); return; }
+            if (string.IsNullOrEmpty(targetHost))
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #VALIDATION_TOASTS
+                Managers.UI.ToastManager.ShowWarning("Target hostname is required");
+                return;
+            }
+            if (!SecurityValidator.IsValidHostname(targetHost))
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #VALIDATION_TOASTS
+                Managers.UI.ToastManager.ShowWarning($"Invalid hostname format: {targetHost}");
+                AppendTerminal($"ERROR: Invalid hostname: {targetHost}", true);
+                return;
+            }
             string sanitized = SecurityValidator.SanitizeWmiQuery(query);
-            if (string.IsNullOrEmpty(sanitized)) { AppendTerminal("ERROR: Query blocked", true); return; }
+            if (string.IsNullOrEmpty(sanitized))
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #VALIDATION_TOASTS
+                Managers.UI.ToastManager.ShowWarning("Query blocked by security validator");
+                AppendTerminal("ERROR: Query blocked", true);
+                return;
+            }
             AppendTerminal($"\n>>> QUERY: {actionName} on {targetHost}...");
             _ = Task.Run(async () =>
             {
@@ -3209,8 +3244,20 @@ namespace ArtaznIT
         private async Task WMIExecute(string command, string friendlyName)
         {
             string host = string.IsNullOrEmpty(_currentTarget) ? ComboTarget.Text : _currentTarget;
-            if (string.IsNullOrEmpty(host) || !SecurityValidator.IsValidHostname(host)) { AppendTerminal("ERROR: Invalid hostname", true); return; }
-            if (SecurityValidator.ContainsDangerousPatterns(command)) { AppendTerminal("ERROR: Blocked dangerous command", true); return; }
+            if (string.IsNullOrEmpty(host) || !SecurityValidator.IsValidHostname(host))
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #VALIDATION_TOASTS
+                Managers.UI.ToastManager.ShowWarning("Invalid or empty hostname");
+                AppendTerminal("ERROR: Invalid hostname", true);
+                return;
+            }
+            if (SecurityValidator.ContainsDangerousPatterns(command))
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #VALIDATION_TOASTS
+                Managers.UI.ToastManager.ShowWarning("Command blocked by security validator");
+                AppendTerminal("ERROR: Blocked dangerous command", true);
+                return;
+            }
             AppendTerminal($"\n>>> {friendlyName} on {host}...");
             await Task.Run(async () =>
             {
@@ -3243,7 +3290,13 @@ namespace ArtaznIT
         private async Task WMIReboot()
         {
             string host = _currentTarget;
-            if (string.IsNullOrEmpty(host) || !SecurityValidator.IsValidHostname(host)) { AppendTerminal("ERROR: Invalid hostname", true); return; }
+            if (string.IsNullOrEmpty(host) || !SecurityValidator.IsValidHostname(host))
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #VALIDATION_TOASTS
+                Managers.UI.ToastManager.ShowWarning("Invalid or empty hostname for reboot");
+                AppendTerminal("ERROR: Invalid hostname", true);
+                return;
+            }
             if (MessageBox.Show($"Reboot {host}?", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
             AppendTerminal($"\n>>> REBOOT → {host}...");
             await Task.Run(() =>
@@ -3456,6 +3509,8 @@ namespace ArtaznIT
                     BtnScanFleet.IsEnabled = false;
                     TxtScanStatus.Text = "Cancelling scan, please wait...";
                     AppendTerminal(">>> SCAN STOP REQUESTED - Cancelling tasks...");
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #STATUS_TOASTS
+                    Managers.UI.ToastManager.ShowWarning("Stopping scan - please wait...");
                     // Don't wait here - the Task.Run finally block will clean up
                     return;
                 }
@@ -3472,6 +3527,8 @@ namespace ArtaznIT
 
                 if (string.IsNullOrEmpty(targetDC))
                 {
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #VALIDATION_TOASTS
+                    Managers.UI.ToastManager.ShowWarning("Please select a Domain Controller");
                     MessageBox.Show("Select a Domain Controller", "Required", MessageBoxButton.OK, MessageBoxImage.Warning);
                     Mouse.OverrideCursor = null;
                     return;
@@ -3553,6 +3610,8 @@ namespace ArtaznIT
                             ScanProgressPanel.Visibility = Visibility.Visible;
                             TxtScanStatus.Text = $"Scanning {computers.Count} computers...";
                             StartScanAnimation();
+                            // TAG: #AUTO_UPDATE_UI_ENGINE #STATUS_TOASTS
+                            Managers.UI.ToastManager.ShowInfo($"Starting scan of {computers.Count} computers...");
                         });
 
                         int completed = 0;
@@ -3659,6 +3718,14 @@ namespace ArtaznIT
                                                 UpdateScanProgress(c, computers.Count, onlineCount, offlineCount);
                                                 _ = Dispatcher.InvokeAsync(() =>
                                                     TxtScanProgress.Text = $"{c}/{computers.Count} ({c * 100 / computers.Count}%)");
+
+                                                // TAG: #AUTO_UPDATE_UI_ENGINE #STATUS_TOASTS - Milestone toasts every 25%
+                                                int percentage = c * 100 / computers.Count;
+                                                if (percentage == 25 || percentage == 50 || percentage == 75)
+                                                {
+                                                    _ = Dispatcher.InvokeAsync(() =>
+                                                        Managers.UI.ToastManager.ShowInfo($"Scan progress: {percentage}% complete ({c}/{computers.Count})"));
+                                                }
                                             }
                                         }
                                         else
@@ -3698,7 +3765,8 @@ namespace ArtaznIT
                         AppendTerminal("Scan aborted.");
                         _ = Dispatcher.InvokeAsync(() =>
                         {
-                            Managers.UI.ToastManager.ShowInfo("Scan cancelled by user");
+                            // TAG: #AUTO_UPDATE_UI_ENGINE #STATUS_TOASTS
+                            Managers.UI.ToastManager.ShowWarning("Scan cancelled by user");
                         });
                     }
                     catch (UnauthorizedAccessException uex)
@@ -3706,12 +3774,19 @@ namespace ArtaznIT
                         AppendTerminal($"AD Access Denied: {uex.Message}", true);
                         AppendTerminal("Ensure you're logged in with Domain Admin credentials.", true);
                         _ = Dispatcher.InvokeAsync(() =>
+                        {
+                            // TAG: #AUTO_UPDATE_UI_ENGINE #STATUS_TOASTS
+                            Managers.UI.ToastManager.ShowWarning("Access denied - Domain Admin credentials required");
                             MessageBox.Show("Access denied to Active Directory.\n\nPlease log in with Domain Admin credentials and try again.",
-                                "Authentication Required", MessageBoxButton.OK, MessageBoxImage.Warning));
+                                "Authentication Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        });
                     }
                     catch (Exception ex)
                     {
                         AppendTerminal($"AD Error: {ex.Message}", true);
+                        // TAG: #AUTO_UPDATE_UI_ENGINE #STATUS_TOASTS
+                        _ = Dispatcher.InvokeAsync(() =>
+                            Managers.UI.ToastManager.ShowError($"Scan error: {ex.Message}"));
                     }
                     finally
                     {
@@ -4700,11 +4775,25 @@ namespace ArtaznIT
             {
                 Mouse.OverrideCursor = Cursors.Wait;
                 string hostname = ComboTarget.Text;
-                if (string.IsNullOrEmpty(hostname)) { MessageBox.Show("Enter a hostname", "Required"); return; }
-                if (!SecurityValidator.IsValidHostname(hostname)) { MessageBox.Show("Invalid hostname format", "Error"); return; }
+                if (string.IsNullOrEmpty(hostname))
+                {
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #VALIDATION_TOASTS
+                    Managers.UI.ToastManager.ShowWarning("Hostname is required");
+                    MessageBox.Show("Enter a hostname", "Required");
+                    return;
+                }
+                if (!SecurityValidator.IsValidHostname(hostname))
+                {
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #VALIDATION_TOASTS
+                    Managers.UI.ToastManager.ShowWarning("Invalid hostname format");
+                    MessageBox.Show("Invalid hostname format", "Error");
+                    return;
+                }
 
                 // Show progress
                 ShowBottomProgress($"Scanning {hostname}...");
+                // TAG: #AUTO_UPDATE_UI_ENGINE #STATUS_TOASTS
+                Managers.UI.ToastManager.ShowInfo($"Starting scan of {hostname}...");
 
                 // Warn if scanning in read-only mode
                 if (!_isLoggedIn)
@@ -4723,8 +4812,15 @@ namespace ArtaznIT
 
                     if (result != MessageBoxResult.Yes)
                     {
+                        // TAG: #AUTO_UPDATE_UI_ENGINE #STATUS_TOASTS
+                        Managers.UI.ToastManager.ShowInfo("Scan cancelled - admin credentials required");
                         Mouse.OverrideCursor = null;
                         return;
+                    }
+                    else
+                    {
+                        // TAG: #AUTO_UPDATE_UI_ENGINE #STATUS_TOASTS
+                        Managers.UI.ToastManager.ShowWarning("Scanning in read-only mode - limited access");
                     }
                 }
 
@@ -4817,7 +4913,13 @@ namespace ArtaznIT
 
         private void Tool_RDP_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target selected"); return; }
+            if (string.IsNullOrEmpty(_currentTarget))
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #VALIDATION_TOASTS
+                Managers.UI.ToastManager.ShowWarning("No target selected for RDP");
+                MessageBox.Show("No target selected");
+                return;
+            }
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
@@ -4858,7 +4960,13 @@ namespace ArtaznIT
 
         private void Tool_RemoteAssist_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target selected"); return; }
+            if (string.IsNullOrEmpty(_currentTarget))
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #VALIDATION_TOASTS
+                Managers.UI.ToastManager.ShowWarning("No target selected for Remote Assistance");
+                MessageBox.Show("No target selected");
+                return;
+            }
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
@@ -4877,7 +4985,13 @@ namespace ArtaznIT
 
         private void Tool_RemoteReg_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target selected"); return; }
+            if (string.IsNullOrEmpty(_currentTarget))
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #VALIDATION_TOASTS
+                Managers.UI.ToastManager.ShowWarning("No target selected for Remote Registry");
+                MessageBox.Show("No target selected");
+                return;
+            }
 
             try
             {
@@ -4942,7 +5056,13 @@ if ($connection) {{
 
         private void Tool_PsExec_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target selected"); return; }
+            if (string.IsNullOrEmpty(_currentTarget))
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #VALIDATION_TOASTS
+                Managers.UI.ToastManager.ShowWarning("No target selected for PsExec");
+                MessageBox.Show("No target selected");
+                return;
+            }
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
@@ -4997,7 +5117,13 @@ if ($connection) {{
 
         private async void Tool_RenewIP_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target selected"); return; }
+            if (string.IsNullOrEmpty(_currentTarget))
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #VALIDATION_TOASTS
+                Managers.UI.ToastManager.ShowWarning("No target selected for IP renewal");
+                MessageBox.Show("No target selected");
+                return;
+            }
 
             try
             {
@@ -5034,7 +5160,13 @@ if ($connection) {{
 
         private void Tool_Hotfix_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target selected"); return; }
+            if (string.IsNullOrEmpty(_currentTarget))
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #VALIDATION_TOASTS
+                Managers.UI.ToastManager.ShowWarning("No target selected for hotfix query");
+                MessageBox.Show("No target selected");
+                return;
+            }
             var tw = new ToolWindow(_currentTarget, "INSTALLED HOTFIXES"); tw.Show();
             tw.SetStatus("Loading hotfixes...");
             _ = Task.Run(() =>
@@ -5079,7 +5211,13 @@ if ($connection) {{
 
         private void Tool_Startup_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target selected"); return; }
+            if (string.IsNullOrEmpty(_currentTarget))
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #VALIDATION_TOASTS
+                Managers.UI.ToastManager.ShowWarning("No target selected for startup programs");
+                MessageBox.Show("No target selected");
+                return;
+            }
             var tw = new ToolWindow(_currentTarget, "STARTUP PROGRAMS"); tw.Show();
             tw.SetStatus("Loading startup items...");
             _ = Task.Run(() =>
@@ -6198,7 +6336,13 @@ if ($connection) {{
         {
             try
             {
-                if (string.IsNullOrEmpty(_currentTarget)) { MessageBox.Show("No target"); return; }
+                if (string.IsNullOrEmpty(_currentTarget))
+                {
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #VALIDATION_TOASTS
+                    Managers.UI.ToastManager.ShowWarning("No target selected for OS repair");
+                    MessageBox.Show("No target");
+                    return;
+                }
                 if (MessageBox.Show("Run SFC + DISM repair? (15-30 min)", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
                 ShowBottomProgress($"Starting OS repair on {_currentTarget}...");
                 AppendTerminal($"OS Repair → {_currentTarget}...");
@@ -6218,10 +6362,24 @@ if ($connection) {{
                             _ = Dispatcher.InvokeAsync(() => UpdateBottomProgress(80, "DISM repair started..."));
                             AppendTerminal("DISM started"); AddLog(_currentTarget, "OS_REPAIR", "SFC+DISM launched", "OK");
                             await Task.Delay(2000);
-                            _ = Dispatcher.InvokeAsync(() => HideBottomProgress("Ready • Repair running"));
+                            _ = Dispatcher.InvokeAsync(() =>
+                            {
+                                HideBottomProgress("Ready • Repair running");
+                                // TAG: #AUTO_UPDATE_UI_ENGINE #STATUS_TOASTS
+                                Managers.UI.ToastManager.ShowSuccess("OS repair tasks started successfully");
+                            });
                         }
                     }
-                    catch (Exception ex) { AppendTerminal($"Repair failed: {ex.Message}", true); _ = Dispatcher.InvokeAsync(() => HideBottomProgress("Repair failed")); }
+                    catch (Exception ex)
+                    {
+                        AppendTerminal($"Repair failed: {ex.Message}", true);
+                        _ = Dispatcher.InvokeAsync(() =>
+                        {
+                            HideBottomProgress("Repair failed");
+                            // TAG: #AUTO_UPDATE_UI_ENGINE #STATUS_TOASTS
+                            Managers.UI.ToastManager.ShowError($"OS repair failed: {ex.Message}");
+                        });
+                    }
                 });
             }
             catch (Exception ex) { LogManager.LogError("Repair error", ex); HideBottomProgress("Repair failed"); }
@@ -6235,6 +6393,8 @@ if ($connection) {{
             {
                 if (string.IsNullOrEmpty(_currentTarget))
                 {
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #VALIDATION_TOASTS
+                    Managers.UI.ToastManager.ShowWarning("No target selected for WinRM configuration");
                     MessageBox.Show("No target selected", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
@@ -7137,12 +7297,19 @@ if ($rebootPending) {
                     else
                     {
                         attempt++;
+                        // TAG: #AUTO_UPDATE_UI_ENGINE #VALIDATION_TOASTS
                         if (attempt < MAX)
+                        {
+                            Managers.UI.ToastManager.ShowWarning($"Authentication failed - {MAX - attempt} attempts remaining");
                             MessageBox.Show($"Authentication failed.\n\n{MAX - attempt} attempts remaining.",
                                 "Authentication Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        }
                         else
+                        {
+                            Managers.UI.ToastManager.ShowError("Maximum authentication attempts exceeded");
                             MessageBox.Show("Maximum authentication attempts exceeded.\n\nApplication will close.",
                                 "Access Denied", MessageBoxButton.OK, MessageBoxImage.Error);
+                        }
                     }
                 }
                 else break;
@@ -7186,6 +7353,8 @@ if ($rebootPending) {
                 {
                     Dispatcher.Invoke(() =>
                     {
+                        // TAG: #AUTO_UPDATE_UI_ENGINE #STATUS_TOASTS
+                        Managers.UI.ToastManager.ShowWarning("Limited access - not a Domain Admin");
                         MessageBox.Show(
                             "You are authenticated but NOT a Domain Admin.\n\n" +
                             "Some features (deployment, destructive tools) are disabled.\n\n" +
@@ -8099,7 +8268,14 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         private void AddToRecentTargets(string hostname)
         {
             if (string.IsNullOrWhiteSpace(hostname) || !SecurityValidator.IsValidHostname(hostname))
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #VALIDATION_TOASTS
+                if (!string.IsNullOrWhiteSpace(hostname))
+                {
+                    Managers.UI.ToastManager.ShowWarning($"Invalid hostname format: {hostname}");
+                }
                 return;
+            }
 
             // Remove if already exists (move to top)
             _recentTargets.Remove(hostname);
@@ -13419,11 +13595,15 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             {
                 if (string.IsNullOrWhiteSpace(_txtUser.Text))
                 {
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #VALIDATION_TOASTS
+                    Managers.UI.ToastManager.ShowWarning("Username is required");
                     MessageBox.Show("Enter username", "Required", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
                 if (_txtPass.SecurePassword.Length == 0)
                 {
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #VALIDATION_TOASTS
+                    Managers.UI.ToastManager.ShowWarning("Password is required");
                     MessageBox.Show("Enter password", "Required", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }

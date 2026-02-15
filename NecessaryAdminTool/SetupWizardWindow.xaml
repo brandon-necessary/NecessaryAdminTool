@@ -6,11 +6,16 @@
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
         WindowStyle="None"
-        Background="#FF0D0D0D">
+        Background="{StaticResource MicaBrush}"
+        FontFamily="{StaticResource FluentFont}">
+
+    <!-- TAG: #AUTO_UPDATE_UI_ENGINE #FLUENT_THEME -->
 
     <!-- Theme resources inherited from App.xaml -->
 
-    <Border BorderBrush="{StaticResource AccentOrangeBrush}" BorderThickness="2" CornerRadius="8">
+    <Border BorderBrush="{StaticResource AccentOrangeBrush}" BorderThickness="2"
+            CornerRadius="{StaticResource FluentCornerRadius}"
+            Effect="{StaticResource Elevation4dp}">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -19,7 +24,8 @@
             </Grid.RowDefinitions>
 
             <!-- Header -->
-            <Border Grid.Row="0" Background="{StaticResource AccentOrangeBrush}" Padding="30,20">
+            <Border Grid.Row="0" Background="{StaticResource AccentOrangeBrush}" Padding="30,20"
+                    Effect="{StaticResource Elevation4dp}">
                 <StackPanel>
                     <TextBlock Text="🚀 Welcome to NecessaryAdminTool"
                                FontSize="28" FontWeight="Bold" Foreground="White"/>
@@ -112,7 +118,8 @@
             </ScrollViewer>
 
             <!-- Footer Buttons -->
-            <Border Grid.Row="2" Background="#FF1E1E1E" Padding="30,20">
+            <Border Grid.Row="2" Background="{StaticResource MicaAltBrush}" Padding="30,20"
+                    BorderBrush="{StaticResource BorderDimBrush}" BorderThickness="0,1,0,0">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>

@@ -3,7 +3,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Connection Profiles" Height="550" Width="700"
         WindowStartupLocation="CenterOwner"
-        Background="#FF0D0D0D" ResizeMode="CanResize">
+        Background="{StaticResource MicaBrush}" ResizeMode="CanResize"
+        FontFamily="{StaticResource FluentFont}">
+
+    <!-- TAG: #AUTO_UPDATE_UI_ENGINE #FLUENT_THEME -->
 
     <!-- TAG: #VERSION_7 #CONNECTION_PROFILES #UI -->
 
@@ -32,7 +35,7 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="border" Background="{TemplateBinding Background}"
-                                CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                CornerRadius="{StaticResource FluentCornerRadiusSmall}" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -69,7 +72,7 @@
 
         <!-- Profile List -->
         <Border Grid.Row="1" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
-                BorderThickness="1" CornerRadius="6" Padding="12">
+                BorderThickness="1" CornerRadius="{StaticResource FluentCornerRadius}" Padding="12">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -94,7 +97,7 @@
                                 BorderThickness="1" Padding="12,6" FontSize="11" FontWeight="SemiBold"
                                 Margin="0,0,6,0" IsEnabled="False"/>
                         <Button Content="🗑️ DELETE" x:Name="BtnDeleteProfile" Click="BtnDeleteProfile_Click"
-                                Background="#FFCC3333" Foreground="White" BorderThickness="0"
+                                Background="{StaticResource ErrorBrush}" Foreground="White" BorderThickness="0"
                                 Padding="12,6" FontSize="11" FontWeight="SemiBold" IsEnabled="False"/>
                     </StackPanel>
                 </Grid>

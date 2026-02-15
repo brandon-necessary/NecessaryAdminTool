@@ -4,9 +4,11 @@
         Title="📜 PowerShell Script Executor"
         Height="700" Width="1200"
         WindowStartupLocation="CenterOwner"
-        Background="#0D0D0D"
-        FontFamily="Segoe UI"
+        Background="{StaticResource MicaBrush}"
+        FontFamily="{StaticResource FluentFont}"
         Loaded="Window_Loaded">
+
+    <!-- TAG: #AUTO_UPDATE_UI_ENGINE #FLUENT_THEME -->
 
     <Window.Resources>
         <!-- Orange/Zinc Theme Buttons -->
@@ -69,7 +71,9 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Border Grid.Row="0" Background="#1A1A1A" Padding="16" CornerRadius="6" Margin="0,0,0,12">
+        <Border Grid.Row="0" Background="{StaticResource MicaAltBrush}" Padding="16"
+                CornerRadius="{StaticResource FluentCornerRadius}" Margin="0,0,0,12"
+                Effect="{StaticResource Elevation2dp}">
             <StackPanel>
                 <TextBlock Text="📜 PowerShell Script Executor"
                            FontSize="20" FontWeight="Bold" Foreground="White"/>
@@ -86,7 +90,9 @@
             </Grid.ColumnDefinitions>
 
             <!-- Left Panel: Script Library -->
-            <Border Grid.Column="0" Background="#1A1A1A" Padding="12" CornerRadius="6" Margin="0,0,8,0">
+            <Border Grid.Column="0" Background="{StaticResource MicaAltBrush}" Padding="12"
+                    CornerRadius="{StaticResource FluentCornerRadius}" Margin="0,0,8,0"
+                    Effect="{StaticResource Elevation2dp}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
