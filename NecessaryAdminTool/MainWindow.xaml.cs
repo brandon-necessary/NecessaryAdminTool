@@ -2812,17 +2812,16 @@ namespace NecessaryAdminTool
                             LogManager.LogWarning($"Failed SuperAdmin access attempt by {Environment.UserName}");
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(
-                        $"Error opening SuperAdmin mode:\n\n{ex.Message}",
-                        "Error",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Error opening SuperAdmin mode:\n\n{ex.Message}",
+                    "Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
 
-                    LogManager.LogError("SuperAdmin window launch failed", ex);
-                }
+                LogManager.LogError("SuperAdmin window launch failed", ex);
             }
         }
 
