@@ -199,7 +199,7 @@
                                            Margin="0,0,0,5"/>
                                 <TextBox x:Name="TxtCompanyName"
                                          Style="{StaticResource ModernTextBox}"
-                                         Text="{{COMPANY_NAME}}"
+                                         Text="{}{COMPANY_NAME}"
                                          ToolTip="Full legal entity name (e.g., 'Contoso Corporation', 'Acme LLC')"
                                          TextChanged="OnWhiteLabelFieldChanged"/>
                                 <TextBlock Text="Used in: License agreements, warranty disclaimers, liability text"
@@ -216,7 +216,7 @@
                                            Margin="0,0,0,5"/>
                                 <TextBox x:Name="TxtCompanyDomain"
                                          Style="{StaticResource ModernTextBox}"
-                                         Text="{{COMPANY_DOMAIN}}"
+                                         Text="{}{COMPANY_DOMAIN}"
                                          ToolTip="Email domain without 'support@' prefix (e.g., 'contoso.com')"
                                          TextChanged="OnWhiteLabelFieldChanged"/>
                                 <TextBlock Text="Used in: Support email links (support@domain)"
@@ -237,7 +237,7 @@
                                         CornerRadius="6"
                                         Padding="12,10">
                                     <TextBlock x:Name="TxtSupportEmail"
-                                               Text="support@{{COMPANY_DOMAIN}}"
+                                               Text="{}support@{COMPANY_DOMAIN}"
                                                Foreground="#FF6B35"
                                                FontSize="14"
                                                FontFamily="Consolas"/>
@@ -325,7 +325,7 @@
                                                    TextWrapping="Wrap"
                                                    Foreground="#CCCCCC"
                                                    FontSize="11"
-                                                   Text="THE SOFTWARE IS PROVIDED 'AS IS' WITHOUT WARRANTY OF ANY KIND. {{COMPANY_NAME}} DOES NOT WARRANT THAT THE SOFTWARE WILL MEET YOUR REQUIREMENTS..."/>
+                                                   Text="{}THE SOFTWARE IS PROVIDED 'AS IS' WITHOUT WARRANTY OF ANY KIND. {COMPANY_NAME} DOES NOT WARRANT THAT THE SOFTWARE WILL MEET YOUR REQUIREMENTS..."/>
                                     </StackPanel>
                                 </Border>
 
@@ -346,8 +346,8 @@
                                                    TextWrapping="Wrap"
                                                    Foreground="#CCCCCC"
                                                    FontSize="11">
-                                            <Run Text="Legal Department: "/><Run x:Name="PreviewCompanyName" Text="{{COMPANY_NAME}}" FontWeight="Bold"/><LineBreak/>
-                                            <Run Text="Email: "/><Run x:Name="PreviewEmail" Text="support@{{COMPANY_DOMAIN}}" Foreground="#FF6B35"/><LineBreak/>
+                                            <Run Text="Legal Department: "/><Run x:Name="PreviewCompanyName" Text="{}{COMPANY_NAME}" FontWeight="Bold"/><LineBreak/>
+                                            <Run Text="Email: "/><Run x:Name="PreviewEmail" Text="{}support@{COMPANY_DOMAIN}" Foreground="#FF6B35"/><LineBreak/>
                                             <Run Text="Phone: "/><Run x:Name="PreviewPhone" Text="Contact your authorized representative"/>
                                         </TextBlock>
                                     </StackPanel>
