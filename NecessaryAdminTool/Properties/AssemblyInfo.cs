@@ -41,6 +41,8 @@ using System.Windows;
 )]
 
 
+// TAG: #AUTO_UPDATE_VERSION #VERSION_SYSTEM #CALVER
+// FUTURE CLAUDES: Update version numbers here with each release
 // Version information for an assembly consists of the following four values:
 //
 //      Major Version
@@ -51,23 +53,27 @@ using System.Windows;
 // CalVer Format: Major.YYMM.Minor.Build
 // 1.2602.0.0 = Version 1.0, February 2026, initial release
 //
-// Version 1.0 - "Foundation" (Initial Release)
+// CURRENT VERSION: 1.0 (1.2602.0.0) - "Foundation" (February 14, 2026)
 // - Complete rebrand from ArtaznIT to NecessaryAdminTool
-// - All v7.x features included:
+// - Unified theme system across all windows
+// - Database layer (4 providers with AES-256 encryption)
+// - Database testing system (25+ automated tests)
+// - All v7.x features included (169 total):
 //   * Dashboard Analytics with fleet health metrics
 //   * Automated Remediation (one-click fixes)
-//   * Custom Script Executor
-//   * Asset Tagging System
+//   * Custom Script Executor with PowerShell library
+//   * Asset Tagging System (manual + auto-tagging)
 //   * Advanced Filtering & Search
 //   * Patch Management Integration
-//   * Remote Control Tool Integration
-//   * AD Object Browser
-//   * Connection Profiles & Bookmarks
-//   * Export/Import Settings
+//   * RMM Tool Integration (6 platforms)
+//   * AD Object Browser with Kerberos auth
+//   * Connection Profiles & Bookmarks/Favorites
+//   * Export/Import All Settings
+//   * Performance Optimizations (3-4x faster scanning)
 // - Prepared for v1.1+ enhancements:
 //   * Auto-update system (Squirrel.Windows)
-//   * Encrypted database layer (SQLCipher)
 //   * Windows Service for background scanning
+//   * Enhanced reporting (PDF/Excel)
 //
 // Previous codebase (ArtaznIT v7.2603.5.0) - fully migrated
 [assembly: AssemblyVersion("1.2602.0.0")]

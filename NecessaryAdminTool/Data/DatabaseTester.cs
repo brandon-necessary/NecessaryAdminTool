@@ -127,10 +127,10 @@ namespace NecessaryAdminTool.Data
                 testComputer = new ComputerInfo
                 {
                     Hostname = testHostname,
-                    IpAddress = "192.168.1.100",
-                    OperatingSystem = "Windows 11 Pro",
+                    IPAddress = "192.168.1.100",
+                    OS = "Windows 11 Pro",
                     LastSeen = DateTime.Now,
-                    IsOnline = true,
+                    Status = "ONLINE",
                     Manufacturer = "Test Manufacturer",
                     Model = "Test Model",
                     SerialNumber = "TEST-12345"
@@ -151,12 +151,12 @@ namespace NecessaryAdminTool.Data
             // Test: Update computer
             await RunTestAsync("Save Computer (Update)", async () =>
             {
-                testComputer.OperatingSystem = "Windows 11 Pro Updated";
-                testComputer.IpAddress = "192.168.1.101";
+                testComputer.OS = "Windows 11 Pro Updated";
+                testComputer.IPAddress = "192.168.1.101";
                 await _provider.SaveComputerAsync(testComputer);
 
                 var updated = await _provider.GetComputerAsync(testHostname);
-                if (updated.OperatingSystem != "Windows 11 Pro Updated")
+                if (updated.OS != "Windows 11 Pro Updated")
                     throw new Exception("Computer update failed");
             });
 
@@ -200,9 +200,10 @@ namespace NecessaryAdminTool.Data
             await _provider.SaveComputerAsync(new ComputerInfo
             {
                 Hostname = testHostname,
-                IpAddress = "192.168.1.200",
-                OperatingSystem = "Windows 11",
-                LastSeen = DateTime.Now
+                IPAddress = "192.168.1.200",
+                OS = "Windows 11",
+                LastSeen = DateTime.Now,
+                Status = "ONLINE"
             });
 
             // Test: Add tag
@@ -331,8 +332,8 @@ namespace NecessaryAdminTool.Data
                 if (stats == null)
                     throw new Exception("GetDatabaseStatsAsync returned null");
                 LogInfo($"  Total Computers: {stats.TotalComputers}");
-                LogInfo($"  Online Computers: {stats.OnlineComputers}");
                 LogInfo($"  Database Size: {stats.DatabaseSizeMB} MB");
+                LogInfo($"  Database Type: {stats.DatabaseType}");
             });
         }
 
@@ -340,10 +341,10 @@ namespace NecessaryAdminTool.Data
         {
             LogSection("CLEANUP TESTS");
 
-            // Test: VacuumDatabase (if supported)
-            await RunTestAsync("Vacuum Database", async () =>
+            // Test: OptimizeDatabase (if supported)
+            await RunTestAsync("Optimize Database", async () =>
             {
-                await _provider.VacuumDatabaseAsync();
+                await _provider.OptimizeDatabaseAsync();
             });
         }
 
