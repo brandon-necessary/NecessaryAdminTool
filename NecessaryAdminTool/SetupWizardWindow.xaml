@@ -19,7 +19,7 @@
             </Grid.RowDefinitions>
 
             <!-- Header -->
-            <Border Grid.Row="0" Background="{StaticResource AccentOrange}" Padding="30,20">
+            <Border Grid.Row="0" Background="{StaticResource AccentOrangeBrush}" Padding="30,20">
                 <StackPanel>
                     <TextBlock Text="🚀 Welcome to NecessaryAdminTool"
                                FontSize="28" FontWeight="Bold" Foreground="White"/>
@@ -37,25 +37,25 @@
 
                     <RadioButton x:Name="RbSqlite" Content="SQLite (Recommended)" IsChecked="True"
                                  Foreground="White" FontSize="15" FontWeight="SemiBold" Margin="0,8"/>
-                    <TextBlock Text="   • Fast, reliable, zero configuration" Foreground="{StaticResource AccentZinc}" Margin="25,0,0,5"/>
-                    <TextBlock Text="   • AES-256 encrypted with SQLCipher" Foreground="{StaticResource AccentZinc}" Margin="25,0,0,5"/>
-                    <TextBlock Text="   • Best for single-user or small teams (100,000+ computers)" Foreground="{StaticResource AccentZinc}" Margin="25,0,0,15"/>
+                    <TextBlock Text="   • Fast, reliable, zero configuration" Foreground="{StaticResource AccentZincBrush}" Margin="25,0,0,5"/>
+                    <TextBlock Text="   • AES-256 encrypted with SQLCipher" Foreground="{StaticResource AccentZincBrush}" Margin="25,0,0,5"/>
+                    <TextBlock Text="   • Best for single-user or small teams (100,000+ computers)" Foreground="{StaticResource AccentZincBrush}" Margin="25,0,0,15"/>
 
                     <RadioButton x:Name="RbSqlServer" Content="SQL Server"
                                  Foreground="White" FontSize="15" Margin="0,8"/>
-                    <TextBlock Text="   • Enterprise-grade, multi-user support" Foreground="{StaticResource AccentZinc}" Margin="25,0,0,5"/>
-                    <TextBlock Text="   • Requires SQL Server installation" Foreground="{StaticResource AccentZinc}" Margin="25,0,0,5"/>
-                    <TextBlock Text="   • Unlimited capacity" Foreground="{StaticResource AccentZinc}" Margin="25,0,0,15"/>
+                    <TextBlock Text="   • Enterprise-grade, multi-user support" Foreground="{StaticResource AccentZincBrush}" Margin="25,0,0,5"/>
+                    <TextBlock Text="   • Requires SQL Server installation" Foreground="{StaticResource AccentZincBrush}" Margin="25,0,0,5"/>
+                    <TextBlock Text="   • Unlimited capacity" Foreground="{StaticResource AccentZincBrush}" Margin="25,0,0,15"/>
 
                     <RadioButton x:Name="RbAccess" Content="Microsoft Access"
                                  Foreground="White" FontSize="15" Margin="0,8"/>
-                    <TextBlock Text="   • Excel integration, familiar interface" Foreground="{StaticResource AccentZinc}" Margin="25,0,0,5"/>
-                    <TextBlock Text="   • 2GB database limit (~50,000 computers)" Foreground="{StaticResource AccentZinc}" Margin="25,0,0,15"/>
+                    <TextBlock Text="   • Excel integration, familiar interface" Foreground="{StaticResource AccentZincBrush}" Margin="25,0,0,5"/>
+                    <TextBlock Text="   • 2GB database limit (~50,000 computers)" Foreground="{StaticResource AccentZincBrush}" Margin="25,0,0,15"/>
 
                     <RadioButton x:Name="RbCsv" Content="CSV/JSON (Fallback)"
                                  Foreground="White" FontSize="15" Margin="0,8"/>
-                    <TextBlock Text="   • Human-readable, portable" Foreground="{StaticResource AccentZinc}" Margin="25,0,0,5"/>
-                    <TextBlock Text="   • Limited performance (~10,000 computers)" Foreground="{StaticResource AccentZinc}" Margin="25,0,0,20"/>
+                    <TextBlock Text="   • Human-readable, portable" Foreground="{StaticResource AccentZincBrush}" Margin="25,0,0,5"/>
+                    <TextBlock Text="   • Limited performance (~10,000 computers)" Foreground="{StaticResource AccentZincBrush}" Margin="25,0,0,20"/>
 
                     <!-- Database Location -->
                     <TextBlock Text="2. Database Location:" FontSize="18" FontWeight="SemiBold"
@@ -70,11 +70,11 @@
 
                         <TextBox x:Name="TxtDatabasePath" Grid.Column="0"
                                  Text="C:\ProgramData\NecessaryAdminTool"
-                                 Background="{StaticResource BgDark}" Foreground="White"
-                                 Padding="12" FontSize="14" BorderBrush="{StaticResource AccentZinc}"/>
+                                 Background="{StaticResource BgDarkBrush}" Foreground="White"
+                                 Padding="12" FontSize="14" BorderBrush="{StaticResource AccentZincBrush}"/>
                         <Button Grid.Column="1" Content="📁 Browse..." Click="BtnBrowse_Click"
                                 Width="120" Margin="10,0,0,0"
-                                Background="{StaticResource AccentOrange}" Foreground="White"
+                                Background="{StaticResource AccentOrangeBrush}" Foreground="White"
                                 Padding="12" FontSize="14" FontWeight="SemiBold" Cursor="Hand"/>
                         <Button Grid.Column="2" Content="💾 Export Template" Click="BtnExportTemplate_Click"
                                 Width="150" Margin="10,0,0,0"
@@ -91,16 +91,16 @@
                               Content="Install Windows Service for automatic scanning (Recommended)"
                               IsChecked="True" Foreground="White" FontSize="15" FontWeight="SemiBold"/>
                     <TextBlock Text="   • Runs scans in the background every 2 hours (requires admin rights)"
-                               Foreground="{StaticResource AccentZinc}" Margin="30,8,0,5"/>
+                               Foreground="{StaticResource AccentZincBrush}" Margin="30,8,0,5"/>
                     <TextBlock Text="   • Falls back to scheduled task if not admin"
-                               Foreground="{StaticResource AccentZinc}" Margin="30,0,0,20"/>
+                               Foreground="{StaticResource AccentZincBrush}" Margin="30,0,0,20"/>
 
                     <!-- Scan Interval -->
                     <TextBlock Text="4. Automatic Scan Interval:" FontSize="18" FontWeight="SemiBold"
                                Foreground="White" Margin="0,15,0,15"/>
 
                     <ComboBox x:Name="CmbScanInterval" SelectedIndex="1"
-                              Background="{StaticResource BgDark}" Foreground="White"
+                              Background="{StaticResource BgDarkBrush}" Foreground="White"
                               FontSize="14" Padding="12">
                         <ComboBoxItem Content="Every hour"/>
                         <ComboBoxItem Content="Every 2 hours (Recommended)"/>
@@ -128,10 +128,10 @@
                     <!-- Right side - Cancel and Finish buttons -->
                     <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Content="Cancel" Click="BtnCancel_Click" Width="120" Margin="0,0,15,0"
-                                Background="{StaticResource AccentZinc}" Foreground="White"
+                                Background="{StaticResource AccentZincBrush}" Foreground="White"
                                 Padding="12" FontSize="14" Cursor="Hand"/>
                         <Button Content="✓ Finish Setup" Click="BtnFinish_Click" Width="150"
-                                Background="{StaticResource AccentOrange}" Foreground="White"
+                                Background="{StaticResource AccentOrangeBrush}" Foreground="White"
                                 FontWeight="Bold" Padding="12" FontSize="14" Cursor="Hand"/>
                     </StackPanel>
                 </Grid>

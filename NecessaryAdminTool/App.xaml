@@ -25,6 +25,7 @@
         <Color x:Key="DangerRed">#FFE81123</Color>
         <Color x:Key="WarningOrange">#FFF7630C</Color>
 
+        <!-- Brushes for compatibility -->
         <SolidColorBrush x:Key="BgDarkestBrush" Color="{StaticResource BgDarkest}"/>
         <SolidColorBrush x:Key="BgDarkBrush" Color="{StaticResource BgDark}"/>
         <SolidColorBrush x:Key="BgMediumBrush" Color="{StaticResource BgMedium}"/>
@@ -33,23 +34,15 @@
         <SolidColorBrush x:Key="BorderBrightBrush" Color="{StaticResource BorderBright}"/>
         <SolidColorBrush x:Key="AccentColor" Color="{StaticResource AccentBlue}"/>
         <SolidColorBrush x:Key="AccentOrangeBrush" Color="{StaticResource AccentOrange}"/>
-        <SolidColorBrush x:Key="AccentOrange" Color="{StaticResource AccentOrange}"/>
         <SolidColorBrush x:Key="AccentZincBrush" Color="{StaticResource AccentZinc}"/>
-        <SolidColorBrush x:Key="AccentZinc" Color="{StaticResource AccentZinc}"/>
-        <!-- Legacy brush for compatibility -->
-        <SolidColorBrush x:Key="AccentCyanBrush" Color="{StaticResource AccentOrange}"/>
         <SolidColorBrush x:Key="AccentGreenBrush" Color="{StaticResource AccentGreen}"/>
-        <SolidColorBrush x:Key="AccentGreen" Color="{StaticResource AccentGreen}"/>
         <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerRed}"/>
-        <SolidColorBrush x:Key="DangerRed" Color="{StaticResource DangerRed}"/>
         <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningOrange}"/>
         <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFFFFFFF"/>
-        <SolidColorBrush x:Key="TextPrimary" Color="#FFFFFFFF"/>
         <SolidColorBrush x:Key="TextSecondaryBrush" Color="#FFB0B0B0"/>
         <SolidColorBrush x:Key="TextMutedBrush" Color="#FF808080"/>
-        <SolidColorBrush x:Key="TextMuted" Color="#FF888888"/>
-        <SolidColorBrush x:Key="BgDark" Color="{StaticResource BgDark}"/>
-        <SolidColorBrush x:Key="BorderDim" Color="{StaticResource BorderDim}"/>
+        <!-- Legacy brush for compatibility (maps to orange) -->
+        <SolidColorBrush x:Key="AccentCyanBrush" Color="{StaticResource AccentOrange}"/>
 
         <!-- ═══════════════════════════════════════════════════ -->
         <!-- BUTTON STYLE: Primary (Orange)                      -->
