@@ -18,14 +18,18 @@
     </Window.Resources>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- MAIN LAYOUT                                                 -->
+    <!-- MAIN LAYOUT - TAG: #AUTO_UPDATE_UI_ENGINE #GRID_OVERLAY    -->
     <!-- ═══════════════════════════════════════════════════════════ -->
-    <DockPanel LastChildFill="True">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Header -->
+            <RowDefinition Height="*"/>     <!-- Main Content -->
+        </Grid.RowDefinitions>
 
         <!-- ══════════════════════════════════════ -->
         <!-- TOP HEADER BAR                         -->
         <!-- ══════════════════════════════════════ -->
-        <Border DockPanel.Dock="Top" Background="{StaticResource BgMediumBrush}"
+        <Border Grid.Row="0" Background="{StaticResource BgMediumBrush}"
                 BorderBrush="{StaticResource BorderDimBrush}" BorderThickness="0,0,0,1"
                 Padding="16,8">
             <Grid>
@@ -287,6 +291,11 @@
         </Border>
 
         <!-- ══════════════════════════════════════ -->
+        <!-- MAIN CONTENT GRID WITH BOTTOM DOCKING  -->
+        <!-- ══════════════════════════════════════ -->
+        <DockPanel Grid.Row="1">
+
+        <!-- ══════════════════════════════════════ -->
         <!-- COLLAPSIBLE TERMINAL (BOTTOM)          -->
         <!-- ══════════════════════════════════════ -->
         <Border x:Name="TerminalPanel" DockPanel.Dock="Bottom"
@@ -324,7 +333,7 @@
             </DockPanel>
         </Border>
 
-        <!-- Terminal Toggle Bar -->
+        <!-- Terminal Toggle Bar - TAG: #BOTTOM_BAR -->
         <Border DockPanel.Dock="Bottom" Background="{StaticResource BgMediumBrush}"
                 BorderBrush="{StaticResource BorderDimBrush}" BorderThickness="0,1,0,0"
                 Padding="8,4">
@@ -2621,5 +2630,19 @@
             </StackPanel>
         </Border>
 
-    </DockPanel>
+        </DockPanel>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- TOAST NOTIFICATION CONTAINER - TAG: #AUTO_UPDATE_UI_ENGINE    -->
+        <!-- Overlay panel for toast notifications                          -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <StackPanel x:Name="ToastContainer"
+                    Grid.RowSpan="2"
+                    VerticalAlignment="Top"
+                    HorizontalAlignment="Right"
+                    Margin="0,80,20,0"
+                    Width="350"
+                    Panel.ZIndex="10000"/>
+
+    </Grid>
 </Window>

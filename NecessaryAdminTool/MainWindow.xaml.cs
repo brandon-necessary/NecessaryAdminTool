@@ -2142,6 +2142,32 @@ namespace NecessaryAdminTool
                 if (TxtVersionBadge != null)
                     TxtVersionBadge.Text = LogoConfig.VERSION;
 
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS - Initialize ToastManager
+                if (ToastContainer != null)
+                {
+                    Managers.UI.ToastManager.Initialize(ToastContainer);
+                    LogManager.LogInfo("ToastManager initialized successfully");
+
+                    // Show welcome toast after brief delay
+                    Task.Delay(1000).ContinueWith(_ => {
+                        Dispatcher.Invoke(() => {
+                            Managers.UI.ToastManager.ShowSuccess(
+                                $"Welcome to NecessaryAdminTool Suite {LogoConfig.VERSION}",
+                                "View Docs",
+                                () => {
+                                    try {
+                                        var aboutWindow = new AboutWindow();
+                                        aboutWindow.Owner = this;
+                                        aboutWindow.ShowDialog();
+                                    }
+                                    catch (Exception ex) {
+                                        LogManager.LogError($"Failed to open About window: {ex.Message}");
+                                    }
+                                });
+                        });
+                    });
+                }
+
                 // TAG: #VERSION_7 #AD_MANAGEMENT - Wire up tab selection changed for AD Object Browser initialization
                 if (MainTabs != null)
                 {
