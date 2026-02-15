@@ -116,10 +116,26 @@ Verifies maintenance operations.
 1. Launch NecessaryAdminTool (first run)
 2. Select database type (SQLite, SQL Server, Access, or CSV)
 3. Choose database location
-4. Click **"🧪 Test Database"** button
-5. Wait 10-30 seconds for tests to complete
-6. Review results in popup window
-7. Click **"✓ Finish Setup"** if all tests pass
+4. **Optional:** Click **"💾 Export Template"** to create an empty database file you can move/copy
+5. Click **"🧪 Test Database"** button
+6. Wait 10-30 seconds for tests to complete
+7. Review results in popup window
+8. Click **"✓ Finish Setup"** if all tests pass
+
+### Database Template Export
+
+The **"💾 Export Template"** button creates an empty, pre-configured database file with all tables and schema ready to use:
+
+- **SQLite:** Creates `.db` file with tables for Computers, Tags, ScanHistory, Settings
+- **Access:** Creates `.accdb` file with full schema
+- **SQL Server:** Displays connection instructions (templates not applicable)
+- **CSV:** Displays folder configuration instructions (templates created automatically)
+
+**Use Cases:**
+- Create a template database to copy to multiple machines
+- Backup empty schema for disaster recovery
+- Test database structure before deployment
+- Share pre-configured databases with team members
 
 ### Programmatically
 

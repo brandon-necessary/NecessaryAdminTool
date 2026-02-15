@@ -65,6 +65,7 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
                         <TextBox x:Name="TxtDatabasePath" Grid.Column="0"
@@ -75,6 +76,11 @@
                                 Width="120" Margin="10,0,0,0"
                                 Background="{StaticResource AccentOrange}" Foreground="White"
                                 Padding="12" FontSize="14" FontWeight="SemiBold" Cursor="Hand"/>
+                        <Button Grid.Column="2" Content="💾 Export Template" Click="BtnExportTemplate_Click"
+                                Width="150" Margin="10,0,0,0"
+                                Style="{StaticResource BtnGhost}"
+                                Padding="12" FontSize="14" Cursor="Hand"
+                                ToolTip="Export an empty database template file"/>
                     </Grid>
 
                     <!-- Service Installation -->

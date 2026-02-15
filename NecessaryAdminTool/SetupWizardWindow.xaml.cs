@@ -274,5 +274,146 @@ namespace NecessaryAdminTool
             DialogResult = false;
             Close();
         }
+
+        /// <summary>
+        /// Export empty database template file
+        /// TAG: #DATABASE_TEMPLATES #SETUP_WIZARD
+        /// </summary>
+        private async void BtnExportTemplate_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Determine database type
+                string dbType = "SQLite";
+                string fileExtension = ".db";
+                string fileFilter = "SQLite Database|*.db";
+
+                if (RbSqlServer.IsChecked == true)
+                {
+                    System.Windows.MessageBox.Show(
+                        "SQL Server databases are created on the server.\n\n" +
+                        "Use SQL Server Management Studio to create a new database,\n" +
+                        "then configure the connection string in NecessaryAdminTool.",
+                        "SQL Server Template",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                    return;
+                }
+                else if (RbAccess.IsChecked == true)
+                {
+                    dbType = "Access";
+                    fileExtension = ".accdb";
+                    fileFilter = "Access Database|*.accdb";
+                }
+                else if (RbCsv.IsChecked == true)
+                {
+                    System.Windows.MessageBox.Show(
+                        "CSV/JSON databases are created automatically as text files.\n\n" +
+                        "Just specify a folder location - NecessaryAdminTool will\n" +
+                        "create the necessary CSV files when you start using it.",
+                        "CSV Template",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                    return;
+                }
+
+                // Show save file dialog
+                var saveDialog = new Microsoft.Win32.SaveFileDialog
+                {
+                    Title = $"Export {dbType} Database Template",
+                    Filter = fileFilter,
+                    FileName = $"NecessaryAdminTool_Template{fileExtension}",
+                    DefaultExt = fileExtension
+                };
+
+                if (saveDialog.ShowDialog() == true)
+                {
+                    string templatePath = saveDialog.FileName;
+
+                    LogManager.LogInfo($"Exporting {dbType} database template to: {templatePath}");
+
+                    // Create empty database using the provider
+                    var originalDbType = Properties.Settings.Default.DatabaseType;
+                    var originalDbPath = Properties.Settings.Default.DatabasePath;
+
+                    try
+                    {
+                        // Set temporary configuration
+                        Properties.Settings.Default.DatabaseType = dbType;
+                        Properties.Settings.Default.DatabasePath = Path.GetDirectoryName(templatePath);
+                        Properties.Settings.Default.Save();
+
+                        // Create empty database
+                        using (var provider = await Data.DataProviderFactory.CreateProviderAsync())
+                        {
+                            // Initialize database (creates schema)
+                            var stats = await provider.GetDatabaseStatsAsync();
+
+                            LogManager.LogInfo($"Template database created: {stats.TotalComputers} computers");
+                        }
+
+                        // For SQLite, rename the created file to the user's chosen name
+                        if (dbType == "SQLite")
+                        {
+                            var createdDbPath = Path.Combine(
+                                Properties.Settings.Default.DatabasePath,
+                                "NecessaryAdminTool.db");
+
+                            if (File.Exists(createdDbPath))
+                            {
+                                // Copy to template location
+                                File.Copy(createdDbPath, templatePath, true);
+                                // Delete temporary database
+                                File.Delete(createdDbPath);
+                            }
+                        }
+                        else if (dbType == "Access")
+                        {
+                            var createdDbPath = Path.Combine(
+                                Properties.Settings.Default.DatabasePath,
+                                "NecessaryAdminTool.accdb");
+
+                            if (File.Exists(createdDbPath))
+                            {
+                                // Copy to template location
+                                File.Copy(createdDbPath, templatePath, true);
+                                // Delete temporary database
+                                File.Delete(createdDbPath);
+                            }
+                        }
+
+                        LogManager.LogInfo($"Template exported successfully: {templatePath}");
+
+                        System.Windows.MessageBox.Show(
+                            $"✓ Database template exported successfully!\n\n" +
+                            $"Location: {templatePath}\n\n" +
+                            $"You can now copy this template file to any location\n" +
+                            $"and use it as your database.",
+                            "Template Exported",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+
+                        // Open folder containing template
+                        System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{templatePath}\"");
+                    }
+                    finally
+                    {
+                        // Restore original settings
+                        Properties.Settings.Default.DatabaseType = originalDbType;
+                        Properties.Settings.Default.DatabasePath = originalDbPath;
+                        Properties.Settings.Default.Save();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to export database template", ex);
+                System.Windows.MessageBox.Show(
+                    $"❌ Failed to export database template:\n\n{ex.Message}",
+                    "Export Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
     }
 }
