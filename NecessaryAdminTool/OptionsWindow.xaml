@@ -1558,6 +1558,187 @@
                     </Border>
                 </Expander>
 
+                <!-- ══════════════════════════════ -->
+                <!-- SECTION: TOAST NOTIFICATIONS - TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS -->
+                <!-- ══════════════════════════════ -->
+                <Expander x:Name="ExpanderNotifications" Header="🔔 TOAST NOTIFICATIONS"
+                          IsExpanded="False" Margin="0,0,0,10">
+                    <Expander.HeaderTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" FontSize="13" FontWeight="Bold"
+                                       Foreground="{StaticResource AccentOrange}"/>
+                        </DataTemplate>
+                    </Expander.HeaderTemplate>
+                    <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
+                            BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
+                        <StackPanel>
+                            <TextBlock Text="Configure which toast notifications you want to see. Toasts provide non-blocking feedback for actions and events."
+                                       Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,16" LineHeight="14"/>
+
+                            <!-- Master Toggle -->
+                            <CheckBox x:Name="ChkEnableToasts" Content="Enable Toast Notifications (Master Toggle)"
+                                      Foreground="White" FontSize="12" FontWeight="Bold" IsChecked="True"
+                                      Margin="0,0,0,16"/>
+
+                            <!-- Toast Types Section -->
+                            <TextBlock Text="TOAST TYPES" FontSize="11" FontWeight="Bold"
+                                       Foreground="{StaticResource AccentOrange}" Margin="0,0,0,8"/>
+
+                            <StackPanel Margin="20,0,0,16">
+                                <CheckBox x:Name="ChkToastSuccess" Content="✓ Success Toasts (Green)"
+                                          Foreground="White" FontSize="11" IsChecked="True" Margin="0,0,0,8"/>
+                                <CheckBox x:Name="ChkToastInfo" Content="ℹ Info Toasts (Blue)"
+                                          Foreground="White" FontSize="11" IsChecked="True" Margin="0,0,0,8"/>
+                                <CheckBox x:Name="ChkToastWarning" Content="⚠ Warning Toasts (Amber)"
+                                          Foreground="White" FontSize="11" IsChecked="True" Margin="0,0,0,8"/>
+                                <CheckBox x:Name="ChkToastError" Content="✕ Error Toasts (Red)"
+                                          Foreground="White" FontSize="11" IsChecked="True"/>
+                            </StackPanel>
+
+                            <!-- Toast Categories Section -->
+                            <TextBlock Text="TOAST CATEGORIES" FontSize="11" FontWeight="Bold"
+                                       Foreground="{StaticResource AccentOrange}" Margin="0,0,0,8"/>
+
+                            <StackPanel Margin="20,0,0,16">
+                                <CheckBox x:Name="ChkToastStatus" Content="Status Update Toasts"
+                                          Foreground="White" FontSize="11" IsChecked="True" Margin="0,0,0,8"/>
+                                <CheckBox x:Name="ChkToastValidation" Content="Validation Message Toasts"
+                                          Foreground="White" FontSize="11" IsChecked="True" Margin="0,0,0,8"/>
+                                <CheckBox x:Name="ChkToastWorkflow" Content="Workflow Completion Toasts"
+                                          Foreground="White" FontSize="11" IsChecked="True" Margin="0,0,0,8"/>
+                                <CheckBox x:Name="ChkToastErrors" Content="Error Handler Toasts"
+                                          Foreground="White" FontSize="11" IsChecked="True"/>
+                            </StackPanel>
+
+                            <!-- Preview Button -->
+                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                                    BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,12">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock Text="Test Toast Notifications" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Preview what toasts will look like with current settings"
+                                                   Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,0"/>
+                                    </StackPanel>
+
+                                    <Button Grid.Column="1" Content="🧪 TEST TOASTS" Style="{StaticResource BtnPrimary}"
+                                            Click="BtnTestToasts_Click" Padding="12,6" FontSize="10"/>
+                                </Grid>
+                            </Border>
+
+                            <TextBlock Text="💡 TIP: Disable categories you find distracting while keeping critical error notifications enabled"
+                                       Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,0" LineHeight="14"/>
+                        </StackPanel>
+                    </Border>
+                </Expander>
+
+                <!-- ══════════════════════════════ -->
+                <!-- SECTION: KEYBOARD SHORTCUTS - TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS -->
+                <!-- ══════════════════════════════ -->
+                <Expander x:Name="ExpanderKeyboardShortcuts" Header="⌨️ KEYBOARD SHORTCUTS"
+                          IsExpanded="False" Margin="0,0,0,10">
+                    <Expander.HeaderTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" FontSize="13" FontWeight="Bold"
+                                       Foreground="{StaticResource AccentOrange}"/>
+                        </DataTemplate>
+                    </Expander.HeaderTemplate>
+                    <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
+                            BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
+                        <StackPanel>
+                            <TextBlock Text="Customize keyboard shortcuts for quick access to common commands. Click on a shortcut to record a new key combination."
+                                       Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,16" LineHeight="14"/>
+
+                            <!-- Shortcuts DataGrid -->
+                            <DataGrid x:Name="DgShortcuts" AutoGenerateColumns="False"
+                                      CanUserAddRows="False" CanUserDeleteRows="False"
+                                      HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                                      Background="{StaticResource BgDark}" Foreground="#FFE0E0E0"
+                                      BorderBrush="{StaticResource BorderDim}" BorderThickness="1"
+                                      RowBackground="#FF1A1A1A" AlternatingRowBackground="#FF151515"
+                                      FontSize="10" Height="300" Margin="0,0,0,16">
+
+                                <DataGrid.ColumnHeaderStyle>
+                                    <Style TargetType="DataGridColumnHeader">
+                                        <Setter Property="Background" Value="{StaticResource BgDark}"/>
+                                        <Setter Property="Foreground" Value="{StaticResource AccentOrange}"/>
+                                        <Setter Property="FontWeight" Value="Bold"/>
+                                        <Setter Property="FontSize" Value="10"/>
+                                        <Setter Property="Padding" Value="8,6"/>
+                                    </Style>
+                                </DataGrid.ColumnHeaderStyle>
+
+                                <DataGrid.CellStyle>
+                                    <Style TargetType="DataGridCell">
+                                        <Setter Property="Foreground" Value="#FFE0E0E0"/>
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="BorderThickness" Value="0"/>
+                                        <Setter Property="Padding" Value="8,4"/>
+                                    </Style>
+                                </DataGrid.CellStyle>
+
+                                <DataGrid.RowStyle>
+                                    <Style TargetType="DataGridRow">
+                                        <Setter Property="Foreground" Value="#FFE0E0E0"/>
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" Value="#FF252525"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </DataGrid.RowStyle>
+
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Command" Binding="{Binding Value.Command}" Width="*" IsReadOnly="True">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="#FFE0E0E0"/>
+                                                <Setter Property="Padding" Value="4,2"/>
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn Header="Shortcut" Binding="{Binding Value.DisplayShortcut}" Width="200" IsReadOnly="True">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{StaticResource AccentOrange}"/>
+                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                                <Setter Property="Padding" Value="4,2"/>
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTemplateColumn Header="Actions" Width="180">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Button Content="✏ EDIT" Tag="{Binding Key}" Background="#FF2A2A2A" Foreground="White"
+                                                            BorderThickness="0" Padding="10,4" Margin="0,0,8,0" FontSize="9"
+                                                            Click="BtnEditShortcut_Click" Cursor="Hand"/>
+                                                    <Button Content="↺ RESET" Tag="{Binding Key}" Background="#FF444444" Foreground="White"
+                                                            BorderThickness="0" Padding="10,4" FontSize="9"
+                                                            Click="BtnResetShortcut_Click" Cursor="Hand"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+
+                            <!-- Reset All Button -->
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                <Button Content="↺ RESET ALL TO DEFAULTS" Style="{StaticResource BtnDanger}"
+                                        Click="BtnResetAllShortcuts_Click" Padding="12,6" FontSize="10"/>
+                            </StackPanel>
+
+                            <TextBlock Text="💡 TIP: Conflicts will be detected automatically. Press Escape while editing to cancel changes."
+                                       Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,0" LineHeight="14"/>
+                        </StackPanel>
+                    </Border>
+                </Expander>
+
             </StackPanel>
         </ScrollViewer>
 

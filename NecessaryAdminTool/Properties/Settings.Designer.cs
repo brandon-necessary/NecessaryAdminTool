@@ -334,5 +334,31 @@ namespace NecessaryAdminTool.Properties {
                 this["DeploymentLogDirectory"] = value;
             }
         }
+
+        // TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string ToastNotificationSettings {
+            get {
+                return ((string)(this["ToastNotificationSettings"]));
+            }
+            set {
+                this["ToastNotificationSettings"] = value;
+            }
+        }
+
+        // TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string KeyboardShortcutSettings {
+            get {
+                return ((string)(this["KeyboardShortcutSettings"]));
+            }
+            set {
+                this["KeyboardShortcutSettings"] = value;
+            }
+        }
     }
 }

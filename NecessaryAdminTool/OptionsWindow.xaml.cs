@@ -128,6 +128,10 @@ namespace NecessaryAdminTool
                 // TAG: #VERSION_7 #BOOKMARKS - Load bookmarks
                 LoadBookmarks();
 
+                // TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS - Load toast notifications and keyboard shortcuts
+                LoadToastNotificationSettings();
+                LoadKeyboardShortcutSettings();
+
                 _hasUnsavedChanges = false;
             }
             catch (Exception ex)
@@ -300,6 +304,10 @@ namespace NecessaryAdminTool
                 Properties.Settings.Default.Save();
 
                 // TODO: Save other settings (target history, etc.)
+
+                // TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS - Save toast notifications and keyboard shortcuts
+                SaveToastNotificationSettings();
+                SaveKeyboardShortcutSettings();
 
                 _hasUnsavedChanges = false;
                 ShowStatus("Settings saved successfully!", MessageType.Success);
@@ -2879,6 +2887,331 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 LogManager.LogError("Failed to reset setup flag", ex);
                 // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
                 ToastManager.ShowError($"Failed to reset setup flag:\n\n{ex.Message}");
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════════
+        // REGION: TOAST NOTIFICATION CONFIGURATION - TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS
+        // ═══════════════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Load toast notification settings into UI controls
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS
+        /// </summary>
+        private void LoadToastNotificationSettings()
+        {
+            try
+            {
+                var appSettings = SettingsManager.LoadAllSettings();
+                var toastSettings = appSettings.ToastNotifications ?? new ToastNotificationSettings();
+
+                // Load master toggle
+                if (ChkEnableToasts != null)
+                    ChkEnableToasts.IsChecked = toastSettings.EnableToasts;
+
+                // Load toast types
+                if (ChkToastSuccess != null)
+                    ChkToastSuccess.IsChecked = toastSettings.ShowSuccessToasts;
+                if (ChkToastInfo != null)
+                    ChkToastInfo.IsChecked = toastSettings.ShowInfoToasts;
+                if (ChkToastWarning != null)
+                    ChkToastWarning.IsChecked = toastSettings.ShowWarningToasts;
+                if (ChkToastError != null)
+                    ChkToastError.IsChecked = toastSettings.ShowErrorToasts;
+
+                // Load toast categories
+                if (ChkToastStatus != null)
+                    ChkToastStatus.IsChecked = toastSettings.ShowStatusUpdateToasts;
+                if (ChkToastValidation != null)
+                    ChkToastValidation.IsChecked = toastSettings.ShowValidationToasts;
+                if (ChkToastWorkflow != null)
+                    ChkToastWorkflow.IsChecked = toastSettings.ShowWorkflowToasts;
+                if (ChkToastErrors != null)
+                    ChkToastErrors.IsChecked = toastSettings.ShowErrorHandlerToasts;
+
+                LogManager.LogInfo("OptionsWindow - Toast notification settings loaded");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("OptionsWindow - Failed to load toast notification settings", ex);
+            }
+        }
+
+        /// <summary>
+        /// Save toast notification settings from UI controls
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS
+        /// </summary>
+        private void SaveToastNotificationSettings()
+        {
+            try
+            {
+                var toastSettings = new ToastNotificationSettings
+                {
+                    EnableToasts = ChkEnableToasts?.IsChecked ?? true,
+                    ShowSuccessToasts = ChkToastSuccess?.IsChecked ?? true,
+                    ShowInfoToasts = ChkToastInfo?.IsChecked ?? true,
+                    ShowWarningToasts = ChkToastWarning?.IsChecked ?? true,
+                    ShowErrorToasts = ChkToastError?.IsChecked ?? true,
+                    ShowStatusUpdateToasts = ChkToastStatus?.IsChecked ?? true,
+                    ShowValidationToasts = ChkToastValidation?.IsChecked ?? true,
+                    ShowWorkflowToasts = ChkToastWorkflow?.IsChecked ?? true,
+                    ShowErrorHandlerToasts = ChkToastErrors?.IsChecked ?? true
+                };
+
+                SettingsManager.SaveToastNotificationSettings(toastSettings);
+                ToastManager.ReloadSettings(); // Apply immediately
+
+                LogManager.LogInfo("OptionsWindow - Toast notification settings saved and applied");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("OptionsWindow - Failed to save toast notification settings", ex);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Test toasts button - show preview of each toast type
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS
+        /// </summary>
+        private void BtnTestToasts_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Save current settings first so the test respects them
+                SaveToastNotificationSettings();
+
+                // Show sample toasts with 1 second delay between each
+                var timer = new System.Windows.Threading.DispatcherTimer
+                {
+                    Interval = TimeSpan.FromMilliseconds(1000)
+                };
+
+                int count = 0;
+                timer.Tick += (s, args) =>
+                {
+                    switch (count)
+                    {
+                        case 0:
+                            ToastManager.ShowSuccess("Success test toast - Operation completed successfully!");
+                            break;
+                        case 1:
+                            ToastManager.ShowInfo("Info test toast - Here is some useful information for you.");
+                            break;
+                        case 2:
+                            ToastManager.ShowWarning("Warning test toast - This action requires caution.");
+                            break;
+                        case 3:
+                            ToastManager.ShowError("Error test toast - Something went wrong, but it's just a test.");
+                            timer.Stop();
+                            break;
+                    }
+                    count++;
+                };
+
+                timer.Start();
+                LogManager.LogInfo("OptionsWindow - Toast notification test initiated");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("OptionsWindow - Failed to test toast notifications", ex);
+                MessageBox.Show($"Failed to test toasts:\n\n{ex.Message}", "Test Failed",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════════
+        // REGION: KEYBOARD SHORTCUTS CONFIGURATION - TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS
+        // ═══════════════════════════════════════════════════════════════════════════
+
+        private KeyValuePair<string, KeyboardShortcut>? _editingShortcut = null;
+
+        /// <summary>
+        /// Load keyboard shortcut settings into UI controls
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS
+        /// </summary>
+        private void LoadKeyboardShortcutSettings()
+        {
+            try
+            {
+                var appSettings = SettingsManager.LoadAllSettings();
+                var shortcutSettings = appSettings.KeyboardShortcuts ?? new KeyboardShortcutSettings();
+
+                // Bind to DataGrid
+                if (DgShortcuts != null)
+                {
+                    DgShortcuts.ItemsSource = shortcutSettings.Shortcuts.ToList();
+                }
+
+                LogManager.LogInfo($"OptionsWindow - Loaded {shortcutSettings.Shortcuts.Count} keyboard shortcuts");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("OptionsWindow - Failed to load keyboard shortcut settings", ex);
+            }
+        }
+
+        /// <summary>
+        /// Save keyboard shortcut settings from UI controls
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS
+        /// </summary>
+        private void SaveKeyboardShortcutSettings()
+        {
+            try
+            {
+                if (DgShortcuts?.ItemsSource == null)
+                    return;
+
+                var shortcutsList = DgShortcuts.ItemsSource as List<KeyValuePair<string, KeyboardShortcut>>;
+                if (shortcutsList == null)
+                    return;
+
+                var shortcutSettings = new KeyboardShortcutSettings
+                {
+                    Shortcuts = shortcutsList.ToDictionary(kvp => kvp.Key, kvp => kvp.Value)
+                };
+
+                SettingsManager.SaveKeyboardShortcutSettings(shortcutSettings);
+
+                LogManager.LogInfo($"OptionsWindow - Saved {shortcutSettings.Shortcuts.Count} keyboard shortcuts");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("OptionsWindow - Failed to save keyboard shortcut settings", ex);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Edit shortcut button - open dialog to record new key combination
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS
+        /// </summary>
+        private void BtnEditShortcut_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var button = sender as Button;
+                if (button == null)
+                    return;
+
+                string commandKey = button.Tag as string;
+                if (string.IsNullOrEmpty(commandKey))
+                    return;
+
+                var shortcutsList = DgShortcuts.ItemsSource as List<KeyValuePair<string, KeyboardShortcut>>;
+                if (shortcutsList == null)
+                    return;
+
+                var shortcut = shortcutsList.FirstOrDefault(kvp => kvp.Key == commandKey);
+                if (shortcut.Value == null)
+                    return;
+
+                // Show dialog to record new shortcut
+                var dialog = new ShortcutRecorderDialog(shortcut.Value.Command, shortcut.Value.DisplayShortcut, shortcutsList)
+                {
+                    Owner = this
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    // Update the shortcut
+                    var index = shortcutsList.FindIndex(kvp => kvp.Key == commandKey);
+                    if (index >= 0)
+                    {
+                        shortcut.Value.Key = dialog.RecordedKey;
+                        shortcut.Value.Modifiers = dialog.RecordedModifiers;
+
+                        // Refresh the DataGrid
+                        DgShortcuts.ItemsSource = null;
+                        DgShortcuts.ItemsSource = shortcutsList;
+
+                        LogManager.LogInfo($"OptionsWindow - Updated shortcut for {commandKey}: {shortcut.Value.DisplayShortcut}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("OptionsWindow - Failed to edit keyboard shortcut", ex);
+                MessageBox.Show($"Failed to edit shortcut:\n\n{ex.Message}", "Edit Failed",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Reset individual shortcut to default
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS
+        /// </summary>
+        private void BtnResetShortcut_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var button = sender as Button;
+                if (button == null)
+                    return;
+
+                string commandKey = button.Tag as string;
+                if (string.IsNullOrEmpty(commandKey))
+                    return;
+
+                var shortcutsList = DgShortcuts.ItemsSource as List<KeyValuePair<string, KeyboardShortcut>>;
+                if (shortcutsList == null)
+                    return;
+
+                // Get default shortcuts
+                var defaults = KeyboardShortcutSettings.GetDefaultShortcuts();
+                if (!defaults.ContainsKey(commandKey))
+                    return;
+
+                // Reset to default
+                var index = shortcutsList.FindIndex(kvp => kvp.Key == commandKey);
+                if (index >= 0)
+                {
+                    var defaultShortcut = defaults[commandKey];
+                    shortcutsList[index] = new KeyValuePair<string, KeyboardShortcut>(commandKey, defaultShortcut);
+
+                    // Refresh the DataGrid
+                    DgShortcuts.ItemsSource = null;
+                    DgShortcuts.ItemsSource = shortcutsList;
+
+                    LogManager.LogInfo($"OptionsWindow - Reset shortcut for {commandKey} to default: {defaultShortcut.DisplayShortcut}");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("OptionsWindow - Failed to reset keyboard shortcut", ex);
+                MessageBox.Show($"Failed to reset shortcut:\n\n{ex.Message}", "Reset Failed",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Reset all shortcuts to defaults
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS
+        /// </summary>
+        private void BtnResetAllShortcuts_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var result = MessageBox.Show(
+                    "Are you sure you want to reset ALL keyboard shortcuts to their default values?\n\nThis cannot be undone.",
+                    "Reset All Shortcuts",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    var defaults = KeyboardShortcutSettings.GetDefaultShortcuts();
+                    DgShortcuts.ItemsSource = defaults.ToList();
+
+                    LogManager.LogInfo("OptionsWindow - All keyboard shortcuts reset to defaults");
+                    ToastManager.ShowSuccess("All keyboard shortcuts have been reset to defaults.");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("OptionsWindow - Failed to reset all keyboard shortcuts", ex);
+                MessageBox.Show($"Failed to reset shortcuts:\n\n{ex.Message}", "Reset Failed",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

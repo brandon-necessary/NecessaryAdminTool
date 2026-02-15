@@ -43,7 +43,9 @@ namespace NecessaryAdminTool
                     Logging = LoadLoggingSettings(),
                     GlobalServices = LoadGlobalServices(),
                     PinnedDevices = LoadPinnedDevices(),
-                    Appearance = LoadAppearanceSettings()
+                    Appearance = LoadAppearanceSettings(),
+                    ToastNotifications = LoadToastNotificationSettings(), // TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG
+                    KeyboardShortcuts = LoadKeyboardShortcutSettings() // TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG
                 };
 
                 LogManager.LogInfo($"SettingsManager.LoadAllSettings() - SUCCESS - All settings loaded - Elapsed: {sw.ElapsedMilliseconds}ms");
@@ -185,6 +187,52 @@ namespace NecessaryAdminTool
             };
         }
 
+        // TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS
+        /// <summary>
+        /// Load toast notification settings from config
+        /// </summary>
+        private static ToastNotificationSettings LoadToastNotificationSettings()
+        {
+            try
+            {
+                string configJson = Settings.Default.ToastNotificationSettings;
+                if (!string.IsNullOrWhiteSpace(configJson))
+                {
+                    var serializer = new JavaScriptSerializer();
+                    return serializer.Deserialize<ToastNotificationSettings>(configJson);
+                }
+            }
+            catch
+            {
+                LogManager.LogWarning("Failed to load toast notification settings, using defaults");
+            }
+
+            return new ToastNotificationSettings(); // Return defaults
+        }
+
+        // TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS
+        /// <summary>
+        /// Load keyboard shortcut settings from config
+        /// </summary>
+        private static KeyboardShortcutSettings LoadKeyboardShortcutSettings()
+        {
+            try
+            {
+                string configJson = Settings.Default.KeyboardShortcutSettings;
+                if (!string.IsNullOrWhiteSpace(configJson))
+                {
+                    var serializer = new JavaScriptSerializer();
+                    return serializer.Deserialize<KeyboardShortcutSettings>(configJson);
+                }
+            }
+            catch
+            {
+                LogManager.LogWarning("Failed to load keyboard shortcut settings, using defaults");
+            }
+
+            return new KeyboardShortcutSettings(); // Return defaults
+        }
+
         // TAG: #SAVE_SETTINGS #LOGGING
         /// <summary>
         /// Save specific settings category
@@ -282,6 +330,54 @@ namespace NecessaryAdminTool
         {
             // Appearance settings could be saved to custom config or registry
             // For now, stored in-memory during runtime
+        }
+
+        // TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS
+        /// <summary>
+        /// Save toast notification settings
+        /// </summary>
+        public static void SaveToastNotificationSettings(ToastNotificationSettings settings)
+        {
+            LogManager.LogInfo($"SettingsManager.SaveToastNotificationSettings() - Saving toast notification preferences - EnableToasts: {settings.EnableToasts}");
+
+            try
+            {
+                var serializer = new JavaScriptSerializer();
+                string json = serializer.Serialize(settings);
+                Settings.Default.ToastNotificationSettings = json;
+                Settings.Default.Save();
+
+                LogManager.LogInfo("SettingsManager.SaveToastNotificationSettings() - SUCCESS - Toast notification settings saved");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("SettingsManager.SaveToastNotificationSettings() - FAILED", ex);
+                throw new Exception($"Failed to save toast notification settings: {ex.Message}");
+            }
+        }
+
+        // TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS
+        /// <summary>
+        /// Save keyboard shortcut settings
+        /// </summary>
+        public static void SaveKeyboardShortcutSettings(KeyboardShortcutSettings settings)
+        {
+            LogManager.LogInfo($"SettingsManager.SaveKeyboardShortcutSettings() - Saving {settings.Shortcuts.Count} keyboard shortcuts");
+
+            try
+            {
+                var serializer = new JavaScriptSerializer();
+                string json = serializer.Serialize(settings);
+                Settings.Default.KeyboardShortcutSettings = json;
+                Settings.Default.Save();
+
+                LogManager.LogInfo("SettingsManager.SaveKeyboardShortcutSettings() - SUCCESS - Keyboard shortcuts saved");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("SettingsManager.SaveKeyboardShortcutSettings() - FAILED", ex);
+                throw new Exception($"Failed to save keyboard shortcut settings: {ex.Message}");
+            }
         }
 
         // TAG: #RESET_SETTINGS
@@ -582,7 +678,9 @@ namespace NecessaryAdminTool
                     LogoPath = string.Empty,
                     PrimaryColor = "#0078D4",
                     SecondaryColor = "#00BCF2"
-                }
+                },
+                ToastNotifications = new ToastNotificationSettings(), // TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG
+                KeyboardShortcuts = new KeyboardShortcutSettings() // TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG
             };
         }
 
@@ -629,6 +727,8 @@ namespace NecessaryAdminTool
         public List<GlobalServiceStatus> GlobalServices { get; set; }
         public List<PinnedDevice> PinnedDevices { get; set; }
         public AppearanceSettings Appearance { get; set; }
+        public ToastNotificationSettings ToastNotifications { get; set; } // TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS
+        public KeyboardShortcutSettings KeyboardShortcuts { get; set; } // TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS
     }
 
     public class GeneralSettings
@@ -668,6 +768,100 @@ namespace NecessaryAdminTool
         public string LogoPath { get; set; }
         public string PrimaryColor { get; set; }
         public string SecondaryColor { get; set; }
+    }
+
+    // TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS
+    /// <summary>
+    /// Toast notification user preferences
+    /// </summary>
+    public class ToastNotificationSettings
+    {
+        public bool EnableToasts { get; set; }
+        public bool ShowSuccessToasts { get; set; }
+        public bool ShowInfoToasts { get; set; }
+        public bool ShowWarningToasts { get; set; }
+        public bool ShowErrorToasts { get; set; }
+        public bool ShowStatusUpdateToasts { get; set; }
+        public bool ShowValidationToasts { get; set; }
+        public bool ShowWorkflowToasts { get; set; }
+        public bool ShowErrorHandlerToasts { get; set; }
+
+        public ToastNotificationSettings()
+        {
+            // All enabled by default
+            EnableToasts = true;
+            ShowSuccessToasts = true;
+            ShowInfoToasts = true;
+            ShowWarningToasts = true;
+            ShowErrorToasts = true;
+            ShowStatusUpdateToasts = true;
+            ShowValidationToasts = true;
+            ShowWorkflowToasts = true;
+            ShowErrorHandlerToasts = true;
+        }
+    }
+
+    // TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS
+    /// <summary>
+    /// Keyboard shortcut customization
+    /// </summary>
+    public class KeyboardShortcutSettings
+    {
+        public Dictionary<string, KeyboardShortcut> Shortcuts { get; set; }
+
+        public KeyboardShortcutSettings()
+        {
+            Shortcuts = GetDefaultShortcuts();
+        }
+
+        public static Dictionary<string, KeyboardShortcut> GetDefaultShortcuts()
+        {
+            return new Dictionary<string, KeyboardShortcut>
+            {
+                { "CommandPalette", new KeyboardShortcut { Command = "Open Command Palette", Key = "K", Modifiers = "Control" } },
+                { "ScanDomain", new KeyboardShortcut { Command = "Scan Domain (Fleet)", Key = "F", Modifiers = "Control+Shift" } },
+                { "ScanSingle", new KeyboardShortcut { Command = "Scan Single Computer", Key = "S", Modifiers = "Control" } },
+                { "LoadADObjects", new KeyboardShortcut { Command = "Load AD Objects", Key = "L", Modifiers = "Control" } },
+                { "Authenticate", new KeyboardShortcut { Command = "Authenticate", Key = "A", Modifiers = "Control+Alt" } },
+                { "RDP", new KeyboardShortcut { Command = "RDP", Key = "R", Modifiers = "Control" } },
+                { "PowerShell", new KeyboardShortcut { Command = "PowerShell", Key = "P", Modifiers = "Control" } },
+                { "ToggleView", new KeyboardShortcut { Command = "Toggle View", Key = "T", Modifiers = "Control" } },
+                { "ToggleTerminal", new KeyboardShortcut { Command = "Toggle Terminal", Key = "OemTilde", Modifiers = "Control" } },
+                { "Settings", new KeyboardShortcut { Command = "Settings", Key = "OemComma", Modifiers = "Control" } },
+                { "Refresh", new KeyboardShortcut { Command = "Refresh", Key = "F5", Modifiers = "None" } }
+            };
+        }
+    }
+
+    /// <summary>
+    /// Individual keyboard shortcut definition
+    /// </summary>
+    public class KeyboardShortcut
+    {
+        public string Command { get; set; }
+        public string Key { get; set; }
+        public string Modifiers { get; set; }
+
+        public string DisplayShortcut
+        {
+            get
+            {
+                if (Modifiers == "None")
+                    return FormatKey(Key);
+                return $"{Modifiers}+{FormatKey(Key)}";
+            }
+        }
+
+        private string FormatKey(string key)
+        {
+            // Format special keys
+            return key switch
+            {
+                "OemTilde" => "`",
+                "OemComma" => ",",
+                _ => key
+            };
+        }
     }
 
     #endregion

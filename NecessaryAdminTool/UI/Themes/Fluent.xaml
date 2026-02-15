@@ -1,7 +1,7 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- TAG: #FLUENT_DESIGN #THEME_SYSTEM #WINDOWS11 #MODULAR -->
+    <!-- TAG: #AUTO_UPDATE_UI_ENGINE #FLUENT_DESIGN #THEME_SYSTEM #WINDOWS11 #MODULAR -->
     <!-- Fluent Design System Resources for Windows 11 Native Look -->
     <!-- Research: https://fluent2.microsoft.design/ -->
 

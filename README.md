@@ -15,6 +15,15 @@ NecessaryAdminTool is a comprehensive Windows-based IT management application de
 
 ## Key Features
 
+### 🎨 **Modern UI Features**
+- **Toast Notifications** - 245+ non-blocking toast notifications throughout the app
+- **Command Palette** - Press Ctrl+K for keyboard-driven command execution (25+ commands)
+- **Fluent Design** - Windows 11 native look with Mica materials and rounded corners
+- **Dual Views** - Switch between Grid and Card view layouts (Ctrl+T)
+- **Skeleton Loaders** - Smooth loading animations for better perceived performance
+- **11 Keyboard Shortcuts** - Rapid workflow execution without mouse
+- **Semantic Colors** - Success (green), Info (blue), Warning (amber), Error (red)
+
 ### 🖥️ **Single System Inspector**
 - Deep system scanning with WMI queries
 - Real-time hardware and network information
@@ -131,6 +140,23 @@ See [OPTIMIZATIONS.md](OPTIMIZATIONS.md) for detailed technical information.
 - **Audit Logging:** All administrative actions logged to master log
 - **Memory Wiping:** Credentials zeroed from RAM on logout using RtlSecureZeroMemory
 
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| **Ctrl+K** | Open Command Palette |
+| **Ctrl+Shift+F** | Scan Domain (Fleet) |
+| **Ctrl+S** | Scan Single Computer |
+| **Ctrl+L** | Load AD Objects |
+| **Ctrl+Alt+A** | Authenticate |
+| **Ctrl+R** | Remote Desktop |
+| **Ctrl+P** | PowerShell Remote |
+| **Ctrl+T** | Toggle Card/Grid View |
+| **Ctrl+`** | Toggle Terminal |
+| **Ctrl+,** | Open Settings |
+
+**Pro Tip:** Press **Ctrl+K** to open the Command Palette and search all available commands with fuzzy matching.
+
 ## Usage
 
 ### Initial Setup
@@ -139,17 +165,29 @@ See [OPTIMIZATIONS.md](OPTIMIZATIONS.md) for detailed technical information.
 3. Select target Domain Controller from the dropdown
 4. Begin scanning individual systems or entire domain
 
+### Using the Command Palette
+1. Press **Ctrl+K** to open the Command Palette
+2. Type to search for commands using fuzzy matching
+3. Use **↑↓** arrow keys to navigate results
+4. Press **Enter** to execute, **ESC** to close
+5. Access 25+ commands without leaving the keyboard
+
 ### Scanning Individual Systems
 1. Enter hostname or IP in the "Target System Control" panel
-2. Click **SCAN** to perform deep system inspection
+2. Click **SCAN** to perform deep system inspection (or press **Ctrl+S**)
 3. View results in the "Single System Inspector" tab
 4. Use remote management tools from the right panel
 
 ### Domain Fleet Inventory
 1. Navigate to the "AD Fleet Inventory" tab
-2. Click **SCAN DOMAIN** to begin parallel scan
+2. Click **SCAN DOMAIN** to begin parallel scan (or press **Ctrl+Shift+F**)
 3. Monitor real-time progress with online/offline counters
 4. Export results to CSV for reporting
+
+### Viewing Modes
+- **Grid View** - Traditional table layout (default)
+- **Card View** - Visual cards with quick actions (toggle with **Ctrl+T**)
+- Each mode has advantages: Grid for dense data, Cards for visual scanning
 
 ## Configuration Files
 

@@ -99,5 +99,13 @@
     <Setting Name="DeploymentLogDirectory" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
+    <!-- TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS #TOAST_NOTIFICATIONS -->
+    <Setting Name="ToastNotificationSettings" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <!-- TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS #KEYBOARD_SHORTCUTS -->
+    <Setting Name="KeyboardShortcutSettings" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
   </Settings>
 </SettingsFile>

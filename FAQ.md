@@ -12,6 +12,7 @@
 - [Database Questions](#-database-questions)
 - [Performance & Optimization](#-performance--optimization)
 - [Security & Credentials](#-security--credentials)
+- [Modern UI Features](#-modern-ui-features)
 - [Features & Functionality](#-features--functionality)
 - [Troubleshooting](#-troubleshooting)
 - [Advanced Topics](#-advanced-topics)
@@ -271,6 +272,229 @@ See [OPTIMIZATIONS.md](OPTIMIZATIONS.md) for technical details.
 
 ---
 
+## 🎨 Modern UI Features
+
+### Q: How do I use the Command Palette?
+**A:** Press **Ctrl+K** to open the Command Palette. Type to search for commands using fuzzy matching (searches command titles, descriptions, and keywords). Use **↑↓** arrow keys to navigate, **Enter** to execute the selected command, **ESC** to close.
+
+**Features:**
+- 25+ registered commands covering all major operations
+- Fuzzy search (type "scan" to find "Scan Domain", "Scan Single", etc.)
+- Categories: Scanning, Authentication, Remote Tools, Quick Fixes, Filters, Settings
+- Visual indicators: Command icon, title, description, keyboard shortcut
+- Non-blocking: Doesn't interrupt your current workflow
+
+**Examples:**
+- Type "scan" → Shows all scan-related commands
+- Type "rdp" → Shows Remote Desktop command
+- Type "auth" → Shows authentication commands
+
+### Q: Can I disable toast notifications?
+**A:** Toast notification settings are planned for a future release (v1.1+). Currently, all toast notifications are enabled by default.
+
+**Current Behavior:**
+- 245+ toast notifications throughout the app
+- 4 types: Success (green), Info (blue), Warning (amber), Error (red)
+- Auto-dismiss based on message length (500ms per word + 1 second, max 10 seconds)
+- Max 5 concurrent toasts (auto-queues additional notifications)
+- Non-blocking (doesn't stop your work)
+
+**Planned Features (v1.1+):**
+- Options → Notifications → Customize which toast types you want to see
+- Per-category filtering (Scanning, Authentication, Remote Tools, etc.)
+- Duration customization
+- Position customization (top-right, bottom-right, etc.)
+
+### Q: How do I customize keyboard shortcuts?
+**A:** Keyboard shortcut customization is planned for a future release (v1.2+).
+
+**Current Shortcuts (11 total, fixed):**
+- **Ctrl+K** - Open Command Palette
+- **Ctrl+Shift+F** - Scan Domain (Fleet)
+- **Ctrl+S** - Scan Single Computer
+- **Ctrl+L** - Load AD Objects
+- **Ctrl+Alt+A** - Authenticate
+- **Ctrl+R** - Remote Desktop
+- **Ctrl+P** - PowerShell Remote
+- **Ctrl+T** - Toggle Card/Grid View
+- **Ctrl+`** - Toggle Terminal
+- **Ctrl+,** - Open Settings
+
+**Planned Features (v1.2+):**
+- Options → Keyboard Shortcuts → View and customize all shortcuts
+- Click "Edit" next to any shortcut to record a new key combination
+- Conflict detection (warns if shortcut is already in use)
+- Reset to defaults button
+- Import/export shortcut profiles
+
+**Workaround:** Use the Command Palette (Ctrl+K) to search and execute commands without remembering shortcuts.
+
+### Q: What's the difference between Card View and Grid View?
+**A:** Both views display the same computer inventory data but in different layouts.
+
+**Grid View (Default):**
+- Traditional table format with columns
+- Dense data display (more computers visible at once)
+- Easy sorting by clicking column headers
+- Best for: Comparing specific properties across many computers
+- Toggle: Press **Ctrl+T** or click toolbar button
+
+**Card View:**
+- Visual cards (300x180 pixels each) in a grid layout
+- Status badges, CPU/RAM progress bars, quick action buttons
+- Better visual hierarchy (easier to scan at a glance)
+- Best for: Visual scanning, quick actions, status overview
+- Toggle: Press **Ctrl+T** or click toolbar button
+
+**Pro Tip:** Use Grid View for data analysis, Card View for quick status checks and actions.
+
+### Q: What are the toast notification types?
+**A:** There are 4 toast notification types, each with a distinct color and icon:
+
+| Type | Color | Icon | Usage |
+|------|-------|------|-------|
+| **Success** | Green (#10B981) | ✓ | Successful operations ("Scan completed", "Settings saved") |
+| **Info** | Blue (#3B82F6) | ℹ | Status updates and information ("Loading 500 computers...", "Connected to DC") |
+| **Warning** | Amber (#F59E0B) | ⚠ | Validation failures and cautions ("Authentication expires in 5 min", "Database optimization recommended") |
+| **Error** | Red (#EF4444) | ✕ | Errors and failures ("Failed to connect", "Access denied") |
+
+**Visual Design:**
+- Dark background (#1E1E1E) with colored left border
+- 320-480px wide, auto-height
+- Slide-in animation from right
+- Fade-out animation on dismiss
+- Optional action button (orange, "View", "Retry", "Undo", etc.)
+
+**Usage Stats:** 245+ toast notifications throughout the application.
+
+### Q: How long do toast notifications stay visible?
+**A:** Toast duration is automatically calculated based on message length:
+
+**Formula:** `(word count × 500ms) + 1000ms`
+
+**Examples:**
+- "Scan completed" (2 words) = 2 seconds
+- "Loading 500 computers from Active Directory" (6 words) = 4 seconds
+- Long error messages (15+ words) = 8.5 seconds
+- **Maximum:** 10 seconds (regardless of message length)
+
+**Interaction:**
+- Toasts auto-dismiss after their calculated duration
+- Click action button (if present) to execute action and dismiss immediately
+- Max 5 concurrent toasts (oldest auto-removed if limit reached)
+
+**Pro Tip:** You don't need to manually dismiss toasts - they auto-clear based on message complexity.
+
+### Q: What commands are available in the Command Palette?
+**A:** 25+ commands across 6 categories:
+
+**Scanning (3 commands):**
+- Scan Domain (Fleet) - Ctrl+Shift+F
+- Scan Single Computer - Ctrl+S
+- Load AD Objects - Ctrl+L
+
+**Authentication (2 commands):**
+- Authenticate - Ctrl+Alt+A
+- Logout
+
+**Remote Tools (6 commands):**
+- Remote Desktop - Ctrl+R
+- PowerShell Remote - Ctrl+P
+- Services Manager
+- Process Manager
+- Event Logs
+- Browse C$ Share
+
+**Quick Fixes (6 commands):**
+- Restart Windows Update
+- Clear DNS Cache
+- Restart Print Spooler
+- Enable WinRM
+- Fix Time Sync
+- Clear Event Logs
+
+**Filters (4 commands):**
+- Show Online Only
+- Show Offline Only
+- Show Servers Only
+- Clear Filters
+
+**Settings (4 commands):**
+- Open Settings - Ctrl+,
+- Toggle Card/Grid View - Ctrl+T
+- Toggle Terminal - Ctrl+`
+- About
+
+**How to Access:** Press **Ctrl+K** and start typing. The palette uses fuzzy search across command titles, descriptions, and keywords.
+
+### Q: What is Fluent Design?
+**A:** Fluent Design is Microsoft's design language for Windows 11. NecessaryAdminTool v1.0 uses Fluent Design principles for a native Windows 11 look and feel.
+
+**Fluent Design Elements in NecessaryAdminTool:**
+- **Mica Materials** - Opaque, wallpaper-tinted backgrounds (#1A1A1A, #1E1E1E)
+- **Acrylic Materials** - Semi-transparent surfaces for transient UI (90% opacity)
+- **Rounded Corners** - 8px standard, 4px small, 12px large
+- **Elevation Shadows** - 2dp, 4dp, 8dp drop shadows for depth
+- **Typography** - Segoe UI Variable font (10px-32px scale)
+- **Spacing Scale** - 4px base unit (8px, 12px, 16px, 24px, 32px, 48px, 64px)
+- **Semantic Colors** - Success (#10B981), Warning (#F59E0B), Error (#EF4444), Info (#3B82F6)
+
+**Implementation:** `UI/Themes/Fluent.xaml` - Auto-merged into App.xaml resources
+
+**References:**
+- Fluent 2 Design Specs: https://fluent2.microsoft.design/
+- TAG: `#FLUENT_THEME` in codebase
+
+### Q: Are there any new tags in the code?
+**A:** Yes! All UI Engine code is tagged with `#AUTO_UPDATE_UI_ENGINE` and specific feature tags:
+
+**Primary Tag:**
+- `#AUTO_UPDATE_UI_ENGINE` - Core UI engine code (119+ occurrences across 7 files)
+
+**Feature-Specific Tags:**
+- `#TOAST_NOTIFICATIONS` - Toast notification system (245+ calls across 5 files)
+- `#COMMAND_PALETTE` - Command palette features
+- `#FLUENT_THEME` - Fluent Design resources
+- `#SKELETON_LOADERS` - Loading screen animations
+- `#CARD_VIEW` - Card view components
+- `#VALUE_CONVERTERS` - Data binding converters
+- `#KEYBOARD_SHORTCUTS` - Keyboard shortcut handlers
+
+**How to Use Tags:**
+```bash
+# Find all UI Engine code
+Grep pattern="#AUTO_UPDATE_UI_ENGINE" glob="*.{cs,xaml}"
+
+# Find all toast notifications
+Grep pattern="ToastManager\.(ShowSuccess|ShowInfo|ShowWarning|ShowError)" glob="*.cs"
+
+# Find keyboard shortcuts
+Grep pattern="#KEYBOARD_SHORTCUTS" glob="MainWindow.xaml.cs"
+```
+
+**Pro Tip:** Use tags to quickly locate and update related code across the entire codebase.
+
+### Q: How do I toggle between Card View and Grid View?
+**A:** There are two ways to toggle between viewing modes:
+
+**Method 1: Keyboard Shortcut**
+- Press **Ctrl+T** to instantly toggle between Grid and Card view
+
+**Method 2: Toolbar Button**
+- Click the view toggle button in the main toolbar
+
+**Current View Indicator:**
+- The toolbar button shows which view is currently active
+- View preference persists between application sessions
+
+**When to Use Each View:**
+- **Grid View** - Best for data analysis, sorting, comparing specific properties
+- **Card View** - Best for visual scanning, quick actions, status overview
+
+**Performance:** Both views render the same data with minimal performance difference.
+
+---
+
 ## 🛠️ Features & Functionality
 
 ### Q: Can I scan computers outside my domain?
@@ -341,9 +565,20 @@ See [OPTIMIZATIONS.md](OPTIMIZATIONS.md) for technical details.
 ### Q: Can I customize the colors/theme?
 **A:** Currently limited:
 - **Unified Dark Theme:** Orange (#FFFF8533) / Zinc (#FFA1A1AA)
+- **Fluent Design:** Windows 11 native look with Mica materials
+- **Semantic Colors:** Success (green), Info (blue), Warning (amber), Error (red)
 - **Font Scaling:** Options → UI → Font Size (0.8x - 2.0x)
 
-**Planned for v1.1+:** Color picker for accent colors, light mode toggle.
+**Current Theming:**
+- Dark mode only (optimized for extended use, reduces eye strain)
+- Fluent Design resources (see `UI/Themes/Fluent.xaml`)
+- Automatic color application via StaticResource bindings
+
+**Planned for v1.1+:**
+- Color picker for accent colors
+- Light mode toggle
+- Custom theme profiles
+- Import/export theme settings
 
 See [THEME_SYSTEM.md](THEME_SYSTEM.md) for technical details.
 

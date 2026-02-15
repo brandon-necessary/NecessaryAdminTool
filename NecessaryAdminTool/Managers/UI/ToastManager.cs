@@ -10,30 +10,104 @@ namespace NecessaryAdminTool.Managers.UI
 {
     /// <summary>
     /// Centralized toast notification manager
-    /// TAG: #TOAST_MANAGER #MODULAR #UI_MANAGER #NON_BLOCKING_FEEDBACK
+    /// TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_MANAGER #MODULAR #UI_MANAGER #NON_BLOCKING_FEEDBACK
     /// Research: https://blog.logrocket.com/ux-design/toast-notifications/
     /// </summary>
     public static class ToastManager
     {
         private static Panel _toastContainer;
         private const int MAX_TOASTS = 5;
+        private static ToastNotificationSettings _settings; // TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG
 
         /// <summary>
         /// Initialize the toast manager with a container panel
-        /// TAG: #INITIALIZATION
+        /// TAG: #INITIALIZATION #AUTO_UPDATE_UI_ENGINE #USER_CONFIG
         /// </summary>
         public static void Initialize(Panel container)
         {
             _toastContainer = container;
+            LoadSettings();
             LogManager.LogInfo("ToastManager initialized");
         }
 
         /// <summary>
-        /// Show a success toast (green)
-        /// TAG: #SUCCESS_FEEDBACK
+        /// Load toast notification settings
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG
         /// </summary>
-        public static void ShowSuccess(string message, string actionText = null, Action actionCallback = null)
+        private static void LoadSettings()
         {
+            try
+            {
+                var appSettings = SettingsManager.LoadAllSettings();
+                _settings = appSettings.ToastNotifications ?? new ToastNotificationSettings();
+            }
+            catch
+            {
+                _settings = new ToastNotificationSettings();
+            }
+        }
+
+        /// <summary>
+        /// Reload settings (call after user changes preferences)
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG
+        /// </summary>
+        public static void ReloadSettings()
+        {
+            LoadSettings();
+            LogManager.LogInfo("ToastManager settings reloaded");
+        }
+
+        /// <summary>
+        /// Check if a toast should be shown based on user preferences
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG
+        /// </summary>
+        private static bool ShouldShowToast(ToastType type, string category = null)
+        {
+            if (_settings == null)
+                LoadSettings();
+
+            // Master toggle
+            if (!_settings.EnableToasts)
+                return false;
+
+            // Type-based toggle
+            bool typeAllowed = type switch
+            {
+                ToastType.Success => _settings.ShowSuccessToasts,
+                ToastType.Info => _settings.ShowInfoToasts,
+                ToastType.Warning => _settings.ShowWarningToasts,
+                ToastType.Error => _settings.ShowErrorToasts,
+                _ => true
+            };
+
+            if (!typeAllowed)
+                return false;
+
+            // Category-based toggle (if provided)
+            if (!string.IsNullOrEmpty(category))
+            {
+                return category.ToLower() switch
+                {
+                    "status" => _settings.ShowStatusUpdateToasts,
+                    "validation" => _settings.ShowValidationToasts,
+                    "workflow" => _settings.ShowWorkflowToasts,
+                    "error" => _settings.ShowErrorHandlerToasts,
+                    _ => true // Unknown categories are always shown
+                };
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Show a success toast (green)
+        /// TAG: #SUCCESS_FEEDBACK #AUTO_UPDATE_UI_ENGINE #USER_CONFIG
+        /// </summary>
+        public static void ShowSuccess(string message, string actionText = null, Action actionCallback = null, string category = null)
+        {
+            if (!ShouldShowToast(ToastType.Success, category))
+                return;
+
             var toast = new ToastNotification(message, ToastType.Success)
             {
                 ActionText = actionText,
@@ -45,10 +119,13 @@ namespace NecessaryAdminTool.Managers.UI
 
         /// <summary>
         /// Show an info toast (blue)
-        /// TAG: #INFO_FEEDBACK
+        /// TAG: #INFO_FEEDBACK #AUTO_UPDATE_UI_ENGINE #USER_CONFIG
         /// </summary>
-        public static void ShowInfo(string message, string actionText = null, Action actionCallback = null)
+        public static void ShowInfo(string message, string actionText = null, Action actionCallback = null, string category = null)
         {
+            if (!ShouldShowToast(ToastType.Info, category))
+                return;
+
             var toast = new ToastNotification(message, ToastType.Info)
             {
                 ActionText = actionText,
@@ -60,10 +137,13 @@ namespace NecessaryAdminTool.Managers.UI
 
         /// <summary>
         /// Show a warning toast (amber)
-        /// TAG: #WARNING_FEEDBACK
+        /// TAG: #WARNING_FEEDBACK #AUTO_UPDATE_UI_ENGINE #USER_CONFIG
         /// </summary>
-        public static void ShowWarning(string message, string actionText = null, Action actionCallback = null)
+        public static void ShowWarning(string message, string actionText = null, Action actionCallback = null, string category = null)
         {
+            if (!ShouldShowToast(ToastType.Warning, category))
+                return;
+
             var toast = new ToastNotification(message, ToastType.Warning)
             {
                 ActionText = actionText,
@@ -75,10 +155,13 @@ namespace NecessaryAdminTool.Managers.UI
 
         /// <summary>
         /// Show an error toast (red)
-        /// TAG: #ERROR_FEEDBACK
+        /// TAG: #ERROR_FEEDBACK #AUTO_UPDATE_UI_ENGINE #USER_CONFIG
         /// </summary>
-        public static void ShowError(string message, string actionText = null, Action actionCallback = null)
+        public static void ShowError(string message, string actionText = null, Action actionCallback = null, string category = null)
         {
+            if (!ShouldShowToast(ToastType.Error, category))
+                return;
+
             var toast = new ToastNotification(message, ToastType.Error)
             {
                 ActionText = actionText,

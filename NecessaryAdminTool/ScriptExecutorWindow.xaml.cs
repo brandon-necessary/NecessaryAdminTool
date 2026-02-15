@@ -53,6 +53,7 @@ namespace NecessaryAdminTool
             }
             catch (Exception ex)
             {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
                 ToastManager.ShowError($"Failed to initialize script library: {ex.Message}");
                 TxtStatus.Text = "Error: Failed to load script library";
             }

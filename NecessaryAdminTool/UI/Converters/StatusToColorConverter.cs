@@ -7,7 +7,7 @@ namespace NecessaryAdminTool.UI.Converters
 {
     /// <summary>
     /// Converts computer status to semantic color
-    /// TAG: #VALUE_CONVERTER #SEMANTIC_COLORS #MODULAR
+    /// TAG: #AUTO_UPDATE_UI_ENGINE #VALUE_CONVERTER #SEMANTIC_COLORS #MODULAR
     /// </summary>
     public class StatusToColorConverter : IValueConverter
     {

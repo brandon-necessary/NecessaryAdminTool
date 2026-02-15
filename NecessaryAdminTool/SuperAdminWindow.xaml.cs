@@ -75,6 +75,7 @@ namespace NecessaryAdminTool
             }
             catch (Exception ex)
             {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
                 ToastManager.ShowWarning($"Error loading current settings: {ex.Message}");
             }
         }
@@ -122,12 +123,14 @@ namespace NecessaryAdminTool
             // Validation
             if (string.IsNullOrWhiteSpace(companyName) || companyName == "{{COMPANY_NAME}}")
             {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #VALIDATION_TOASTS
                 ToastManager.ShowWarning("Please enter a valid company name.");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(domain) || domain == "{{COMPANY_DOMAIN}}" || !domain.Contains("."))
             {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #VALIDATION_TOASTS
                 ToastManager.ShowWarning("Please enter a valid domain (e.g., contoso.com).");
                 return;
             }
@@ -169,6 +172,7 @@ namespace NecessaryAdminTool
                 // Log the change
                 LogWhiteLabelChange(companyName, domain);
 
+                // TAG: #AUTO_UPDATE_UI_ENGINE #STATUS_TOASTS
                 ToastManager.ShowSuccess($"White-label configuration applied! {filesModified} files modified. Restart to see changes.");
             }
             catch (Exception ex)
@@ -176,6 +180,7 @@ namespace NecessaryAdminTool
                 TxtWhiteLabelStatus.Text = "✗ Error applying changes!";
                 TxtWhiteLabelStatus.Foreground = System.Windows.Media.Brushes.Red;
 
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
                 ToastManager.ShowError($"Error applying white-label changes: {ex.Message}. Files restored from backup.");
 
                 // Restore from backup on error
@@ -313,6 +318,7 @@ namespace NecessaryAdminTool
 
                 if (!backups.Any())
                 {
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
                     ToastManager.ShowWarning("No backups found.");
                     return;
                 }
@@ -333,10 +339,12 @@ namespace NecessaryAdminTool
                     File.Copy(backupCs, GetAboutWindowCsPath(), true);
                 }
 
+                // TAG: #AUTO_UPDATE_UI_ENGINE #STATUS_TOASTS
                 ToastManager.ShowSuccess($"Files restored from backup: {latestBackup}");
             }
             catch (Exception ex)
             {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
                 ToastManager.ShowError($"Error restoring from backup: {ex.Message}");
             }
         }
@@ -355,6 +363,7 @@ namespace NecessaryAdminTool
             // Save to config
             SaveAdvancedSetting("DebugMode", enabled.ToString());
 
+            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
             ToastManager.ShowInfo($"Debug mode {(enabled ? "enabled" : "disabled")}. Restart required.");
         }
 
@@ -368,6 +377,7 @@ namespace NecessaryAdminTool
             // Save to config
             SaveAdvancedSetting("HiddenFeatures", enabled.ToString());
 
+            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
             ToastManager.ShowInfo($"Hidden features {(enabled ? "unlocked" : "locked")}. Restart required.");
         }
 
@@ -422,12 +432,14 @@ namespace NecessaryAdminTool
                     }
                 }
 
+                // TAG: #AUTO_UPDATE_UI_ENGINE #STATUS_TOASTS
                 ToastManager.ShowSuccess($"Settings reset! {deleted} files deleted. Application will close.");
 
                 Application.Current.Shutdown();
             }
             catch (Exception ex)
             {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
                 ToastManager.ShowError($"Error resetting settings: {ex.Message}");
             }
         }
@@ -465,10 +477,12 @@ namespace NecessaryAdminTool
 
                 File.WriteAllText(dialog.FileName, json, Encoding.UTF8);
 
+                // TAG: #AUTO_UPDATE_UI_ENGINE #STATUS_TOASTS
                 ToastManager.ShowSuccess($"Configuration exported: {dialog.FileName}");
             }
             catch (Exception ex)
             {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
                 ToastManager.ShowError($"Error exporting configuration: {ex.Message}");
             }
         }
@@ -501,10 +515,12 @@ namespace NecessaryAdminTool
 
                 UpdatePreview();
 
+                // TAG: #AUTO_UPDATE_UI_ENGINE #STATUS_TOASTS
                 ToastManager.ShowSuccess("Configuration imported! Click 'Apply Changes' to save.");
             }
             catch (Exception ex)
             {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
                 ToastManager.ShowError($"Error importing configuration: {ex.Message}");
             }
         }
@@ -520,11 +536,13 @@ namespace NecessaryAdminTool
         {
             try
             {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
                 // This would call the actual database provider's optimize method
                 ToastManager.ShowInfo("Database optimization: SQLite VACUUM, SQL Server INDEX REBUILD, Access COMPACT & REPAIR");
             }
             catch (Exception ex)
             {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
                 ToastManager.ShowError($"Error optimizing database: {ex.Message}");
             }
         }
@@ -545,11 +563,13 @@ namespace NecessaryAdminTool
 
                 if (dialog.ShowDialog() != true) return;
 
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
                 // This would call the actual database backup method
                 ToastManager.ShowInfo($"Database backup saved: {dialog.FileName}");
             }
             catch (Exception ex)
             {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
                 ToastManager.ShowError($"Error backing up database: {ex.Message}");
             }
         }
@@ -573,6 +593,7 @@ namespace NecessaryAdminTool
 
             if (result != MessageBoxResult.Yes) return;
 
+            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
             ToastManager.ShowInfo("Production: DELETE FROM Computers/ScanHistory/AssetTags. Function not implemented in preview.");
         }
 

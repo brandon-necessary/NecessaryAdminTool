@@ -4,7 +4,7 @@ namespace NecessaryAdminTool.Models.UI
 {
     /// <summary>
     /// Model for toast notifications
-    /// TAG: #TOAST_NOTIFICATIONS #MODULAR #UI_MODELS
+    /// TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS #MODULAR #UI_MODELS
     /// Research: https://blog.logrocket.com/ux-design/toast-notifications/
     /// </summary>
     public class ToastNotification
