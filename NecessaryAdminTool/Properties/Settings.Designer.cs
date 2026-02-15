@@ -360,5 +360,18 @@ namespace NecessaryAdminTool.Properties {
                 this["KeyboardShortcutSettings"] = value;
             }
         }
+
+        // TAG: #FILTER_SYSTEM #USER_CONFIG #SETTINGS
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string FilterSettings {
+            get {
+                return ((string)(this["FilterSettings"]));
+            }
+            set {
+                this["FilterSettings"] = value;
+            }
+        }
     }
 }

@@ -152,6 +152,14 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="UI\Dialogs\FilterPresetDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Windows\BulkOperationsWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Compile Include="AboutWindow.xaml.cs">
       <DependentUpon>AboutWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -325,7 +333,33 @@
       <DependentUpon>ADTreeView.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="UI\Dialogs\FilterPresetDialog.xaml.cs">
+      <DependentUpon>FilterPresetDialog.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Windows\BulkOperationsWindow.xaml.cs">
+      <DependentUpon>BulkOperationsWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Models\ADTreeNode.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Models\FilterPreset.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Models\BulkOperation.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Models\BulkOperationResult.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Managers\FilterManager.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Managers\BulkOperationManager.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Managers\BulkOperationExecutor.cs">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>

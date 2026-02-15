@@ -103,7 +103,7 @@ namespace NecessaryAdminTool.Models
             };
         }
 
-        public static ComputerOperationResult Skipped(string computerName, string reason)
+        public static ComputerOperationResult CreateSkipped(string computerName, string reason)
         {
             return new ComputerOperationResult
             {

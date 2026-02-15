@@ -115,7 +115,7 @@ namespace NecessaryAdminTool.Managers
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    return ComputerOperationResult.Skipped(target, "Operation cancelled");
+                    return ComputerOperationResult.CreateSkipped(target, "Operation cancelled");
                 }
 
                 try
@@ -138,7 +138,7 @@ namespace NecessaryAdminTool.Managers
                 {
                     if (cancellationToken.IsCancellationRequested)
                     {
-                        return ComputerOperationResult.Skipped(target, "Operation cancelled");
+                        return ComputerOperationResult.CreateSkipped(target, "Operation cancelled");
                     }
                     else
                     {

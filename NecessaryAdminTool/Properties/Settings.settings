@@ -107,5 +107,9 @@
     <Setting Name="KeyboardShortcutSettings" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
+    <!-- TAG: #FILTER_SYSTEM #USER_CONFIG #SETTINGS -->
+    <Setting Name="FilterSettings" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
   </Settings>
 </SettingsFile>
