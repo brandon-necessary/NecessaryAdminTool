@@ -201,4 +201,58 @@
         </Setter>
     </Style>
 
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- FILTER TOGGLE BUTTON (TAG: #AUTO_UPDATE_UI_ENGINE #FILTER_SYSTEM) -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <Style x:Key="FilterToggleButton" TargetType="ToggleButton">
+        <Setter Property="Background" Value="#FF2A2A2A"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="BorderBrush" Value="#FF444"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="12,6"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <!-- Checked State (Active Filter) -->
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="#FFFF8533"/>
+                            <Setter TargetName="border" Property="BorderBrush" Value="#FFFF8533"/>
+                            <Setter Property="Foreground" Value="White"/>
+                        </Trigger>
+                        <!-- Hover State -->
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="#FF333"/>
+                        </Trigger>
+                        <!-- Hover + Checked -->
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                                <Condition Property="IsChecked" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="border" Property="Background" Value="#FFFFAA66"/>
+                        </MultiTrigger>
+                        <!-- Disabled -->
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
 </ResourceDictionary>

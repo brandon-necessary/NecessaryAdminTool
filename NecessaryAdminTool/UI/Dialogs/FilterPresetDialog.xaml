@@ -1,0 +1,155 @@
+<Window x:Class="NecessaryAdminTool.UI.Dialogs.FilterPresetDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Save Filter Preset" Height="600" Width="700"
+        WindowStartupLocation="CenterOwner"
+        Background="#FF1A1A1A"
+        ResizeMode="CanResize"
+        ShowInTaskbar="False">
+
+    <!-- TAG: #AUTO_UPDATE_UI_ENGINE #FILTER_SYSTEM #FLUENT_DESIGN #DIALOG -->
+
+    <Window.Resources>
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="#FF2A2A2A"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#FF444"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style TargetType="ComboBox">
+            <Setter Property="Background" Value="#FF2A2A2A"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#FF444"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="FontSize" Value="14"/>
+        </Style>
+
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="#FF333"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#FF444"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,24">
+            <TextBlock Text="💾 Save Filter Preset" FontSize="24" FontWeight="SemiBold" Foreground="White" Margin="0,0,0,8"/>
+            <TextBlock Text="Save your current filter criteria for quick reuse" FontSize="14" Foreground="#999"/>
+        </StackPanel>
+
+        <!-- Content -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- Preset Name -->
+                <TextBlock Text="Preset Name" Foreground="White" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                <TextBox x:Name="TxtPresetName" Margin="0,0,0,16" MaxLength="100"/>
+
+                <!-- Description -->
+                <TextBlock Text="Description (Optional)" Foreground="White" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                <TextBox x:Name="TxtDescription" TextWrapping="Wrap" AcceptsReturn="True" Height="80" Margin="0,0,0,16" MaxLength="500"/>
+
+                <!-- Filter Criteria Summary -->
+                <Border Background="#FF2A2A2A" BorderBrush="#FF444" BorderThickness="1" CornerRadius="4" Padding="16" Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="Filter Criteria" Foreground="White" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,12"/>
+
+                        <!-- Name Pattern -->
+                        <StackPanel x:Name="PanelNamePattern" Visibility="Collapsed" Margin="0,0,0,8">
+                            <TextBlock Text="Computer Name Pattern:" Foreground="#999" FontSize="12" Margin="0,0,0,4"/>
+                            <TextBlock x:Name="TxtCriteriaName" Foreground="White" FontSize="14"/>
+                        </StackPanel>
+
+                        <!-- Status -->
+                        <StackPanel x:Name="PanelStatus" Visibility="Collapsed" Margin="0,0,0,8">
+                            <TextBlock Text="Status:" Foreground="#999" FontSize="12" Margin="0,0,0,4"/>
+                            <TextBlock x:Name="TxtCriteriaStatus" Foreground="White" FontSize="14"/>
+                        </StackPanel>
+
+                        <!-- OS -->
+                        <StackPanel x:Name="PanelOS" Visibility="Collapsed" Margin="0,0,0,8">
+                            <TextBlock Text="Operating System:" Foreground="#999" FontSize="12" Margin="0,0,0,4"/>
+                            <TextBlock x:Name="TxtCriteriaOS" Foreground="White" FontSize="14"/>
+                        </StackPanel>
+
+                        <!-- OU -->
+                        <StackPanel x:Name="PanelOU" Visibility="Collapsed" Margin="0,0,0,8">
+                            <TextBlock Text="Organizational Unit:" Foreground="#999" FontSize="12" Margin="0,0,0,4"/>
+                            <TextBlock x:Name="TxtCriteriaOU" Foreground="White" FontSize="14"/>
+                        </StackPanel>
+
+                        <!-- RAM -->
+                        <StackPanel x:Name="PanelRAM" Visibility="Collapsed" Margin="0,0,0,8">
+                            <TextBlock Text="RAM (GB):" Foreground="#999" FontSize="12" Margin="0,0,0,4"/>
+                            <TextBlock x:Name="TxtCriteriaRAM" Foreground="White" FontSize="14"/>
+                        </StackPanel>
+
+                        <!-- Last Seen -->
+                        <StackPanel x:Name="PanelLastSeen" Visibility="Collapsed" Margin="0,0,0,8">
+                            <TextBlock Text="Last Seen:" Foreground="#999" FontSize="12" Margin="0,0,0,4"/>
+                            <TextBlock x:Name="TxtCriteriaLastSeen" Foreground="White" FontSize="14"/>
+                        </StackPanel>
+
+                        <!-- Logic Operator -->
+                        <StackPanel Margin="0,8,0,0">
+                            <TextBlock Text="Logic Operator:" Foreground="#999" FontSize="12" Margin="0,0,0,4"/>
+                            <TextBlock x:Name="TxtCriteriaLogic" Foreground="#FF8533" FontSize="14" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Existing Presets -->
+                <TextBlock Text="Existing Presets" Foreground="White" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                <Border Background="#FF2A2A2A" BorderBrush="#FF444" BorderThickness="1" CornerRadius="4" Height="150">
+                    <ListBox x:Name="ListPresets" Background="Transparent" Foreground="White" BorderThickness="0"/>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Footer Buttons -->
+        <Grid Grid.Row="2" Margin="0,24,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="1" Content="Save" x:Name="BtnSave" Click="BtnSave_Click"
+                    Background="#FF10B981" Margin="0,0,8,0" Padding="24,10"/>
+            <Button Grid.Column="2" Content="Cancel" x:Name="BtnCancel" Click="BtnCancel_Click"
+                    Background="#FF555" Padding="24,10"/>
+        </Grid>
+    </Grid>
+</Window>

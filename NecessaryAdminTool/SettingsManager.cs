@@ -46,7 +46,9 @@ namespace NecessaryAdminTool
                     PinnedDevices = LoadPinnedDevices(),
                     Appearance = LoadAppearanceSettings(),
                     ToastNotifications = LoadToastNotificationSettings(), // TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG
-                    KeyboardShortcuts = LoadKeyboardShortcutSettings() // TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG
+                    KeyboardShortcuts = LoadKeyboardShortcutSettings(), // TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG
+                    BulkOperations = LoadBulkOperationSettings(), // TAG: #FEATURE_BULK_OPERATIONS
+                    FilterSettings = LoadFilterSettings() // TAG: #FILTER_SYSTEM #USER_CONFIG
                 };
 
                 LogManager.LogInfo($"SettingsManager.LoadAllSettings() - SUCCESS - All settings loaded - Elapsed: {sw.ElapsedMilliseconds}ms");
@@ -234,6 +236,15 @@ namespace NecessaryAdminTool
             return new KeyboardShortcutSettings(); // Return defaults
         }
 
+        // TAG: #FEATURE_BULK_OPERATIONS #SETTINGS
+        /// <summary>
+        /// Load bulk operation settings from config
+        /// </summary>
+        private static BulkOperationSettings LoadBulkOperationSettings()
+        {
+            return new BulkOperationSettings(); // Return defaults
+        }
+
         // TAG: #SAVE_SETTINGS #LOGGING
         /// <summary>
         /// Save specific settings category
@@ -378,6 +389,53 @@ namespace NecessaryAdminTool
             {
                 LogManager.LogError("SettingsManager.SaveKeyboardShortcutSettings() - FAILED", ex);
                 throw new Exception($"Failed to save keyboard shortcut settings: {ex.Message}");
+            }
+        }
+
+        // TAG: #FILTER_SYSTEM #USER_CONFIG #SETTINGS
+        /// <summary>
+        /// Load filter settings from config
+        /// </summary>
+        private static FilterSettings LoadFilterSettings()
+        {
+            try
+            {
+                string configJson = Settings.Default.FilterSettings;
+                if (!string.IsNullOrWhiteSpace(configJson))
+                {
+                    var serializer = new JavaScriptSerializer();
+                    return serializer.Deserialize<FilterSettings>(configJson);
+                }
+            }
+            catch
+            {
+                LogManager.LogWarning("Failed to load filter settings, using defaults");
+            }
+
+            return new FilterSettings(); // Return defaults
+        }
+
+        // TAG: #FILTER_SYSTEM #USER_CONFIG #SETTINGS
+        /// <summary>
+        /// Save filter settings
+        /// </summary>
+        public static void SaveFilterSettings(FilterSettings settings)
+        {
+            LogManager.LogInfo($"SettingsManager.SaveFilterSettings() - Saving filter settings");
+
+            try
+            {
+                var serializer = new JavaScriptSerializer();
+                string json = serializer.Serialize(settings);
+                Settings.Default.FilterSettings = json;
+                Settings.Default.Save();
+
+                LogManager.LogInfo("SettingsManager.SaveFilterSettings() - SUCCESS - Filter settings saved");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("SettingsManager.SaveFilterSettings() - FAILED", ex);
+                throw new Exception($"Failed to save filter settings: {ex.Message}");
             }
         }
 
@@ -768,7 +826,8 @@ namespace NecessaryAdminTool
                     SecondaryColor = "#00BCF2"
                 },
                 ToastNotifications = new ToastNotificationSettings(), // TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG
-                KeyboardShortcuts = new KeyboardShortcutSettings() // TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG
+                KeyboardShortcuts = new KeyboardShortcutSettings(), // TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG
+                BulkOperations = new BulkOperationSettings() // TAG: #FEATURE_BULK_OPERATIONS
             };
         }
 
@@ -817,6 +876,8 @@ namespace NecessaryAdminTool
         public AppearanceSettings Appearance { get; set; }
         public ToastNotificationSettings ToastNotifications { get; set; } // TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS
         public KeyboardShortcutSettings KeyboardShortcuts { get; set; } // TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS
+        public BulkOperationSettings BulkOperations { get; set; } // TAG: #FEATURE_BULK_OPERATIONS #SETTINGS
+        public FilterSettings FilterSettings { get; set; } // TAG: #FILTER_SYSTEM #USER_CONFIG #SETTINGS
     }
 
     public class GeneralSettings
@@ -949,6 +1010,46 @@ namespace NecessaryAdminTool
                 "OemComma" => ",",
                 _ => key
             };
+        }
+    }
+
+    // TAG: #FEATURE_BULK_OPERATIONS #SETTINGS
+    /// <summary>
+    /// Bulk operation execution settings
+    /// </summary>
+    public class BulkOperationSettings
+    {
+        public int DefaultThreadCount { get; set; }
+        public int DefaultTimeoutSeconds { get; set; }
+        public int DefaultRetryAttempts { get; set; }
+        public int MaxTargetsPerOperation { get; set; }
+
+        public BulkOperationSettings()
+        {
+            DefaultThreadCount = 10;
+            DefaultTimeoutSeconds = 300; // 5 minutes
+            DefaultRetryAttempts = 3;
+            MaxTargetsPerOperation = 1000;
+        }
+    }
+
+    // TAG: #FILTER_SYSTEM #USER_CONFIG #SETTINGS
+    /// <summary>
+    /// Filter system user preferences
+    /// </summary>
+    public class FilterSettings
+    {
+        public bool RememberLastFilter { get; set; }
+        public bool ShowFilterHistory { get; set; }
+        public int MaxHistoryEntries { get; set; }
+        public bool EnableQuickFilters { get; set; }
+
+        public FilterSettings()
+        {
+            RememberLastFilter = true;
+            ShowFilterHistory = true;
+            MaxHistoryEntries = 10;
+            EnableQuickFilters = true;
         }
     }
 

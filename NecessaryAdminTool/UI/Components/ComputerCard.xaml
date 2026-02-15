@@ -38,20 +38,34 @@
                 <RowDefinition Height="Auto"/> <!-- Actions -->
             </Grid.RowDefinitions>
 
-            <!-- Header: Computer Name + IP -->
-            <StackPanel Grid.Row="0" Margin="0,0,0,8">
-                <TextBlock x:Name="TxtComputerName"
-                          Text="{Binding Name}"
-                          FontSize="16"
-                          FontWeight="Bold"
-                          Foreground="White"
-                          TextTrimming="CharacterEllipsis"/>
-                <TextBlock x:Name="TxtIPAddress"
-                          Text="{Binding IPAddress}"
-                          FontSize="12"
-                          Foreground="#FFA1A1AA"
-                          Margin="0,2,0,0"/>
-            </StackPanel>
+            <!-- Header: Computer Name + IP with Selection Checkbox -->
+            <Grid Grid.Row="0" Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- TAG: #FEATURE_BULK_OPERATIONS #MULTI_SELECT -->
+                <!-- Selection Checkbox for Bulk Operations -->
+                <CheckBox Grid.Column="0" x:Name="ChkSelectComputer"
+                         VerticalAlignment="Top"
+                         Margin="0,0,8,0"
+                         ToolTip="Select for bulk operations"/>
+
+                <StackPanel Grid.Column="1">
+                    <TextBlock x:Name="TxtComputerName"
+                              Text="{Binding Name}"
+                              FontSize="16"
+                              FontWeight="Bold"
+                              Foreground="White"
+                              TextTrimming="CharacterEllipsis"/>
+                    <TextBlock x:Name="TxtIPAddress"
+                              Text="{Binding IPAddress}"
+                              FontSize="12"
+                              Foreground="#FFA1A1AA"
+                              Margin="0,2,0,0"/>
+                </StackPanel>
+            </Grid>
 
             <!-- Status Badge -->
             <Border Grid.Row="1"

@@ -2,7 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Threading.Tasks;
-using SecValidator = NecessaryAdminTool.Security.SecValidator;
+using SecValidator = NecessaryAdminTool.Security.SecurityValidator;
 
 namespace NecessaryAdminTool.Integrations
 {

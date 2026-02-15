@@ -2,7 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using SecValidator = NecessaryAdminTool.Security.SecValidator;
+using SecValidator = NecessaryAdminTool.Security.SecurityValidator;
 
 namespace NecessaryAdminTool.Integrations
 {

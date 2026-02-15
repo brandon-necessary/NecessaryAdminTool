@@ -2213,6 +2213,9 @@ namespace NecessaryAdminTool
             // TAG: #VERSION_7.1 #ASSET_TAGGING - Initialize asset tag system
             AssetTagManager.Initialize();
 
+            // TAG: #AUTO_UPDATE_UI_ENGINE #FILTER_SYSTEM - Initialize filter manager
+            Managers.FilterManager.Initialize();
+
             // TAG: #VERSION_7 #QUICK_WINS - Restore window state and apply settings
             Loaded += (s, e) => {
                 // Restore window position and size
@@ -7189,60 +7192,336 @@ if ($connection) {{
             }
         }
 
-        // TAG: #VERSION_7.1 #ADVANCED_FILTERING - Quick filter handlers
+        // TAG: #AUTO_UPDATE_UI_ENGINE #FILTER_SYSTEM #FLUENT_DESIGN - Advanced Filter Handlers
+
+        /// <summary>
+        /// Clear all filters
+        /// TAG: #FILTER_SYSTEM #KEYBOARD_SHORTCUTS
+        /// </summary>
         private void BtnFilterAll_Click(object sender, RoutedEventArgs e)
         {
-            ApplyQuickFilter(null);
-            TxtFilterStatus.Text = "Showing all computers";
-        }
-
-        private void BtnFilterOnline_Click(object sender, RoutedEventArgs e)
-        {
-            ApplyQuickFilter(pc => pc.Status == "ONLINE");
-            TxtFilterStatus.Text = $"Showing online computers ({GridInventory.Items.Count} found)";
-        }
-
-        private void BtnFilterOffline_Click(object sender, RoutedEventArgs e)
-        {
-            ApplyQuickFilter(pc => pc.Status == "OFFLINE" || pc.Status == "Access Denied");
-            TxtFilterStatus.Text = $"Showing offline computers ({GridInventory.Items.Count} found)";
-        }
-
-        private void BtnFilterWin7_Click(object sender, RoutedEventArgs e)
-        {
-            ApplyQuickFilter(pc => pc.DisplayOS != null && pc.DisplayOS.Contains("Windows 7"));
-            TxtFilterStatus.Text = $"Showing Windows 7 computers ({GridInventory.Items.Count} found)";
-        }
-
-        private void BtnFilterServers_Click(object sender, RoutedEventArgs e)
-        {
-            ApplyQuickFilter(pc => pc.Chassis != null && pc.Chassis.Contains("Server"));
-            TxtFilterStatus.Text = $"Showing servers ({GridInventory.Items.Count} found)";
-        }
-
-        private void BtnFilterWorkstations_Click(object sender, RoutedEventArgs e)
-        {
-            ApplyQuickFilter(pc => pc.Chassis != null && (pc.Chassis.Contains("Desktop") || pc.Chassis.Contains("Laptop") || pc.Chassis.Contains("Notebook")));
-            TxtFilterStatus.Text = $"Showing workstations ({GridInventory.Items.Count} found)";
+            Managers.FilterManager.ClearFilter();
+            ApplyCurrentFilter();
+            UpdateFilterButtons();
+            Managers.UI.ToastManager.ShowInfo("Filters cleared", category: "workflow");
         }
 
         /// <summary>
-        /// Apply quick filter to inventory grid
-        /// TAG: #VERSION_7.1 #ADVANCED_FILTERING
+        /// Filter: Online computers only
         /// </summary>
-        private void ApplyQuickFilter(Func<PCInventory, bool> filterPredicate)
+        private void BtnFilterOnline_Click(object sender, RoutedEventArgs e)
         {
-            if (filterPredicate == null)
+            Managers.FilterManager.CurrentFilter = Managers.FilterManager.GetOnlineFilter();
+            ApplyCurrentFilter();
+            UpdateFilterButtons();
+        }
+
+        /// <summary>
+        /// Filter: Offline computers only
+        /// </summary>
+        private void BtnFilterOffline_Click(object sender, RoutedEventArgs e)
+        {
+            Managers.FilterManager.CurrentFilter = Managers.FilterManager.GetOfflineFilter();
+            ApplyCurrentFilter();
+            UpdateFilterButtons();
+        }
+
+        /// <summary>
+        /// Filter: Windows 11 only
+        /// </summary>
+        private void BtnFilterWin11_Click(object sender, RoutedEventArgs e)
+        {
+            Managers.FilterManager.CurrentFilter = Managers.FilterManager.GetWindows11Filter();
+            ApplyCurrentFilter();
+            UpdateFilterButtons();
+        }
+
+        /// <summary>
+        /// Filter: Windows 10 only
+        /// </summary>
+        private void BtnFilterWin10_Click(object sender, RoutedEventArgs e)
+        {
+            Managers.FilterManager.CurrentFilter = new Models.FilterCriteria { OSFilter = "Windows 10" };
+            ApplyCurrentFilter();
+            UpdateFilterButtons();
+        }
+
+        /// <summary>
+        /// Filter: Windows 7 only (EOL warning)
+        /// </summary>
+        private void BtnFilterWin7_Click(object sender, RoutedEventArgs e)
+        {
+            Managers.FilterManager.CurrentFilter = Managers.FilterManager.GetWindows7Filter();
+            ApplyCurrentFilter();
+            UpdateFilterButtons();
+            Managers.UI.ToastManager.ShowWarning("Windows 7 is end-of-life. Consider upgrading these systems.", category: "status");
+        }
+
+        /// <summary>
+        /// Filter: Servers only
+        /// </summary>
+        private void BtnFilterServers_Click(object sender, RoutedEventArgs e)
+        {
+            Managers.FilterManager.CurrentFilter = Managers.FilterManager.GetServersFilter();
+            ApplyCurrentFilter();
+            UpdateFilterButtons();
+        }
+
+        /// <summary>
+        /// Filter: Workstations only
+        /// </summary>
+        private void BtnFilterWorkstations_Click(object sender, RoutedEventArgs e)
+        {
+            Managers.FilterManager.CurrentFilter = Managers.FilterManager.GetWorkstationsFilter();
+            ApplyCurrentFilter();
+            UpdateFilterButtons();
+        }
+
+        /// <summary>
+        /// Save current filter as preset
+        /// TAG: #FILTER_SYSTEM #PRESET_MANAGEMENT #KEYBOARD_SHORTCUTS
+        /// </summary>
+        private void BtnSaveFilterPreset_Click(object sender, RoutedEventArgs e)
+        {
+            try
             {
-                // Show all
+                var criteria = Managers.FilterManager.CurrentFilter;
+                if (criteria.IsEmpty())
+                {
+                    Managers.UI.ToastManager.ShowWarning("No active filter to save", category: "validation");
+                    return;
+                }
+
+                var dialog = new UI.Dialogs.FilterPresetDialog(criteria)
+                {
+                    Owner = this,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+
+                if (dialog.ShowDialog() == true && dialog.SaveSuccessful)
+                {
+                    LogManager.LogInfo("[MainWindow] Filter preset saved successfully");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("[MainWindow] Failed to save filter preset", ex);
+                Managers.UI.ToastManager.ShowError($"Failed to save preset: {ex.Message}", category: "error");
+            }
+        }
+
+        /// <summary>
+        /// Load a saved filter preset
+        /// TAG: #FILTER_SYSTEM #PRESET_MANAGEMENT
+        /// </summary>
+        private void BtnLoadFilterPreset_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var presets = Managers.FilterManager.GetPresets();
+                if (presets.Count == 0)
+                {
+                    Managers.UI.ToastManager.ShowInfo("No saved presets found", category: "status");
+                    return;
+                }
+
+                // Create simple preset selector dialog
+                var dialog = new Window
+                {
+                    Title = "Load Filter Preset",
+                    Width = 500,
+                    Height = 400,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                    Owner = this,
+                    Background = new SolidColorBrush(Color.FromRgb(26, 26, 26))
+                };
+
+                var grid = new Grid { Margin = new Thickness(16) };
+                grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+                grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+                var listBox = new ListBox
+                {
+                    Background = new SolidColorBrush(Color.FromRgb(42, 42, 42)),
+                    Foreground = Brushes.White,
+                    BorderBrush = new SolidColorBrush(Color.FromRgb(68, 68, 68)),
+                    BorderThickness = new Thickness(1),
+                    ItemsSource = presets.Select(p => new
+                    {
+                        p.Id,
+                        Display = p.IsBuiltIn ? $"🔒 {p.Name}" : $"📌 {p.Name}",
+                        p.Description,
+                        p.Criteria
+                    })
+                };
+
+                Grid.SetRow(listBox, 0);
+                grid.Children.Add(listBox);
+
+                var buttonPanel = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    Margin = new Thickness(0, 16, 0, 0)
+                };
+
+                var btnLoad = new Button
+                {
+                    Content = "Load",
+                    Padding = new Thickness(16, 8, 16, 8),
+                    Background = new SolidColorBrush(Color.FromRgb(16, 185, 129)),
+                    Foreground = Brushes.White,
+                    BorderThickness = new Thickness(0),
+                    Margin = new Thickness(0, 0, 8, 0),
+                    Cursor = Cursors.Hand
+                };
+
+                var btnCancel = new Button
+                {
+                    Content = "Cancel",
+                    Padding = new Thickness(16, 8, 16, 8),
+                    Background = new SolidColorBrush(Color.FromRgb(85, 85, 85)),
+                    Foreground = Brushes.White,
+                    BorderThickness = new Thickness(0),
+                    Cursor = Cursors.Hand
+                };
+
+                btnLoad.Click += (s, ev) =>
+                {
+                    if (listBox.SelectedItem != null)
+                    {
+                        dynamic selected = listBox.SelectedItem;
+                        string presetId = selected.Id;
+                        Managers.FilterManager.LoadPreset(presetId);
+                        ApplyCurrentFilter();
+                        UpdateFilterButtons();
+                        dialog.DialogResult = true;
+                        dialog.Close();
+                    }
+                };
+
+                btnCancel.Click += (s, ev) =>
+                {
+                    dialog.DialogResult = false;
+                    dialog.Close();
+                };
+
+                buttonPanel.Children.Add(btnLoad);
+                buttonPanel.Children.Add(btnCancel);
+                Grid.SetRow(buttonPanel, 1);
+                grid.Children.Add(buttonPanel);
+
+                dialog.Content = grid;
+                dialog.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("[MainWindow] Failed to load filter preset", ex);
+                Managers.UI.ToastManager.ShowError($"Failed to load preset: {ex.Message}", category: "error");
+            }
+        }
+
+        /// <summary>
+        /// Clear filter button handler
+        /// TAG: #FILTER_SYSTEM #KEYBOARD_SHORTCUTS
+        /// </summary>
+        private void BtnClearFilter_Click(object sender, RoutedEventArgs e)
+        {
+            BtnFilterAll_Click(sender, e);
+        }
+
+        /// <summary>
+        /// Apply current filter from FilterManager
+        /// TAG: #FILTER_SYSTEM #CORE_FILTERING
+        /// </summary>
+        private void ApplyCurrentFilter()
+        {
+            try
+            {
+                var criteria = Managers.FilterManager.CurrentFilter;
+
+                if (criteria.IsEmpty())
+                {
+                    // No filter - show all
+                    GridInventory.ItemsSource = _inventory;
+                    CardViewPanel.ItemsSource = _inventory;
+                    UpdateFilterStatus("Showing all computers", _inventory.Count);
+                    return;
+                }
+
+                // Apply filter using FilterManager
+                var filtered = Managers.FilterManager.ApplyFilter(
+                    _inventory.ToList(),
+                    criteria,
+                    pc => pc.Hostname,
+                    pc => pc.Status,
+                    pc => pc.DisplayOS,
+                    pc => pc.DistinguishedName,
+                    pc =>
+                    {
+                        if (int.TryParse(pc.TotalRAM?.Replace("GB", "").Trim(), out int ram))
+                            return ram;
+                        return null;
+                    },
+                    pc => pc.LastScanDate
+                );
+
+                GridInventory.ItemsSource = filtered;
+                CardViewPanel.ItemsSource = filtered;
+
+                string description = criteria.GetDescription();
+                UpdateFilterStatus($"Filter: {description}", filtered.Count);
+
+                LogManager.LogInfo($"[MainWindow] Filter applied: {filtered.Count}/{_inventory.Count} computers matched");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("[MainWindow] Failed to apply filter", ex);
+                Managers.UI.ToastManager.ShowError($"Failed to apply filter: {ex.Message}", category: "error");
+
+                // Fallback: show all
                 GridInventory.ItemsSource = _inventory;
+                CardViewPanel.ItemsSource = _inventory;
+            }
+        }
+
+        /// <summary>
+        /// Update filter status display
+        /// TAG: #FILTER_SYSTEM #UI_FEEDBACK
+        /// </summary>
+        private void UpdateFilterStatus(string message, int count)
+        {
+            TxtFilterStatus.Text = message;
+            TxtFilterCount.Text = $"{count} results";
+
+            // Update icon based on filter state
+            if (Managers.FilterManager.CurrentFilter.IsEmpty())
+            {
+                TxtFilterIcon.Text = "ℹ️";
             }
             else
             {
-                // Apply filter
-                var filtered = _inventory.Where(filterPredicate).ToList();
-                GridInventory.ItemsSource = filtered;
+                TxtFilterIcon.Text = "🔍";
             }
+        }
+
+        /// <summary>
+        /// Update filter button checked states
+        /// TAG: #FILTER_SYSTEM #UI_FEEDBACK
+        /// </summary>
+        private void UpdateFilterButtons()
+        {
+            var criteria = Managers.FilterManager.CurrentFilter;
+
+            // Reset all buttons
+            BtnFilterAll.IsChecked = criteria.IsEmpty();
+            BtnFilterOnline.IsChecked = criteria.StatusFilter == "Online";
+            BtnFilterOffline.IsChecked = criteria.StatusFilter == "Offline";
+            BtnFilterWin11.IsChecked = criteria.OSFilter == "Windows 11";
+            BtnFilterWin10.IsChecked = criteria.OSFilter == "Windows 10";
+            BtnFilterWin7.IsChecked = criteria.OSFilter == "Windows 7";
+            BtnFilterServers.IsChecked = criteria.OSFilter == "Server";
+            BtnFilterWorkstations.IsChecked = criteria.OSFilter == "Workstation";
         }
 
         // TAG: #VERSION_7.1 #PATCH_MANAGEMENT - Windows Update handlers
@@ -9047,6 +9326,25 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         private void BtnWarranty_Click(object sender, RoutedEventArgs e) { if (!string.IsNullOrEmpty(_currentServiceTag) && _currentServiceTag != "N/A") try { Process.Start(new ProcessStartInfo($"https://www.dell.com/support/home/en-us/product-support/servicetag/{_currentServiceTag}/overview") { UseShellExecute = true }); } catch { } }
         private void BtnWOL_Click(object sender, RoutedEventArgs e) => Managers.UI.ToastManager.ShowInfo("WOL — implement Magic Packet logic");
         private void BtnOpenLog_Click(object sender, RoutedEventArgs e) { if (File.Exists(LogManager.GetDebugLogPath())) Process.Start("notepad.exe", LogManager.GetDebugLogPath()); }
+
+        // TAG: #FEATURE_BULK_OPERATIONS #WINDOW_LAUNCH
+        /// <summary>
+        /// Open Bulk Operations window
+        /// </summary>
+        private void BtnBulkOperations_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var bulkOpsWindow = new Windows.BulkOperationsWindow();
+                bulkOpsWindow.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("[MainWindow] Failed to open Bulk Operations window", ex);
+                Managers.UI.ToastManager.ShowError($"Failed to open Bulk Operations: {ex.Message}");
+            }
+        }
+
         private void Menu_RefreshLogs_Click(object sender, RoutedEventArgs e) => LoadMasterLog();
         private void ComboTarget_KeyDown(object sender, KeyEventArgs e) { if (e.Key == Key.Enter) BtnScan_Click(sender, e); }
         private void ComboTarget_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -14503,6 +14801,9 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                         else
                             Managers.UI.ToastManager.ShowWarning("No target selected");
                         break;
+                    case "bulk_operations":
+                        BtnBulkOperations_Click(null, null);
+                        break;
 
                     // Quick Fixes
                     case "fix_windows_update":
@@ -14523,18 +14824,40 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                         BtnToggleTerminal_Click(null, null);
                         break;
 
-                    // Filters
+                    // Filters - TAG: #AUTO_UPDATE_UI_ENGINE #FILTER_SYSTEM #COMMAND_PALETTE
                     case "filter_online":
                         BtnFilterOnline_Click(null, null);
                         break;
                     case "filter_offline":
                         BtnFilterOffline_Click(null, null);
                         break;
+                    case "filter_win11":
+                        BtnFilterWin11_Click(null, null);
+                        break;
+                    case "filter_win10":
+                        BtnFilterWin10_Click(null, null);
+                        break;
+                    case "filter_win7":
+                        BtnFilterWin7_Click(null, null);
+                        break;
                     case "filter_servers":
                         BtnFilterServers_Click(null, null);
                         break;
-                    case "filter_all":
-                        BtnFilterAll_Click(null, null);
+                    case "filter_workstations":
+                        BtnFilterWorkstations_Click(null, null);
+                        break;
+                    case "filter_save_preset":
+                        BtnSaveFilterPreset_Click(null, null);
+                        break;
+                    case "filter_load_preset":
+                        BtnLoadFilterPreset_Click(null, null);
+                        break;
+                    case "filter_advanced":
+                        // TODO: Implement advanced filter dialog
+                        Managers.UI.ToastManager.ShowInfo("Advanced filters coming soon!", category: "status");
+                        break;
+                    case "filter_clear":
+                        BtnClearFilter_Click(null, null);
                         break;
 
                     // Settings
@@ -14569,6 +14892,14 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             if (e.Key == Key.K && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
             {
                 ShowCommandPalette();
+                e.Handled = true;
+            }
+
+            // TAG: #FEATURE_BULK_OPERATIONS #KEYBOARD_SHORTCUT
+            // Ctrl+Shift+B - Open Bulk Operations
+            if (e.Key == Key.B && (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)) == (ModifierKeys.Control | ModifierKeys.Shift))
+            {
+                BtnBulkOperations_Click(null, null);
                 e.Handled = true;
             }
         }

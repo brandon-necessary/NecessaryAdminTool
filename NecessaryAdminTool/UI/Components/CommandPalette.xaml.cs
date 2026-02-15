@@ -142,6 +142,16 @@ namespace NecessaryAdminTool.UI.Components
                     Category = "Remote Tools",
                     Keywords = new[] { "event logs", "events", "errors" }
                 },
+                new CommandItem
+                {
+                    Id = "bulk_operations",
+                    Title = "Bulk Operations",
+                    Description = "Execute commands on multiple computers",
+                    Icon = "⚡",
+                    Shortcut = "Ctrl+Shift+B",
+                    Category = "Remote Tools",
+                    Keywords = new[] { "bulk", "multi", "mass", "parallel", "batch" }
+                },
 
                 // Quick Fixes
                 new CommandItem
@@ -194,7 +204,7 @@ namespace NecessaryAdminTool.UI.Components
                     Keywords = new[] { "terminal", "console", "debug", "output" }
                 },
 
-                // Filters
+                // Filters - TAG: #AUTO_UPDATE_UI_ENGINE #FILTER_SYSTEM #COMMAND_PALETTE
                 new CommandItem
                 {
                     Id = "filter_online",
@@ -215,6 +225,33 @@ namespace NecessaryAdminTool.UI.Components
                 },
                 new CommandItem
                 {
+                    Id = "filter_win11",
+                    Title = "Filter: Windows 11",
+                    Description = "Show only Windows 11 computers",
+                    Icon = "🪟",
+                    Category = "Filters",
+                    Keywords = new[] { "filter", "windows 11", "win11", "os" }
+                },
+                new CommandItem
+                {
+                    Id = "filter_win10",
+                    Title = "Filter: Windows 10",
+                    Description = "Show only Windows 10 computers",
+                    Icon = "🔟",
+                    Category = "Filters",
+                    Keywords = new[] { "filter", "windows 10", "win10", "os" }
+                },
+                new CommandItem
+                {
+                    Id = "filter_win7",
+                    Title = "Filter: Windows 7 (EOL)",
+                    Description = "Show only Windows 7 computers",
+                    Icon = "⚠️",
+                    Category = "Filters",
+                    Keywords = new[] { "filter", "windows 7", "win7", "eol", "legacy" }
+                },
+                new CommandItem
+                {
                     Id = "filter_servers",
                     Title = "Filter: Servers Only",
                     Description = "Show only Windows Server OS",
@@ -224,12 +261,51 @@ namespace NecessaryAdminTool.UI.Components
                 },
                 new CommandItem
                 {
-                    Id = "filter_all",
-                    Title = "Clear Filters",
-                    Description = "Show all computers",
-                    Icon = "📋",
+                    Id = "filter_workstations",
+                    Title = "Filter: Workstations Only",
+                    Description = "Show only workstation OS",
+                    Icon = "💻",
                     Category = "Filters",
-                    Keywords = new[] { "filter", "clear", "all", "reset" }
+                    Keywords = new[] { "filter", "workstation", "desktop", "client" }
+                },
+                new CommandItem
+                {
+                    Id = "filter_save_preset",
+                    Title = "Save Filter Preset",
+                    Description = "Save current filter as reusable preset",
+                    Icon = "💾",
+                    Shortcut = "Ctrl+Shift+S",
+                    Category = "Filters",
+                    Keywords = new[] { "filter", "save", "preset", "bookmark" }
+                },
+                new CommandItem
+                {
+                    Id = "filter_load_preset",
+                    Title = "Load Filter Preset",
+                    Description = "Load a saved filter preset",
+                    Icon = "📂",
+                    Category = "Filters",
+                    Keywords = new[] { "filter", "load", "preset", "bookmark" }
+                },
+                new CommandItem
+                {
+                    Id = "filter_advanced",
+                    Title = "Advanced Filters",
+                    Description = "Open advanced filter dialog",
+                    Icon = "🔍",
+                    Shortcut = "Ctrl+Shift+F",
+                    Category = "Filters",
+                    Keywords = new[] { "filter", "advanced", "search", "criteria" }
+                },
+                new CommandItem
+                {
+                    Id = "filter_clear",
+                    Title = "Clear All Filters",
+                    Description = "Remove all active filters",
+                    Icon = "🗑️",
+                    Shortcut = "Esc",
+                    Category = "Filters",
+                    Keywords = new[] { "filter", "clear", "all", "reset", "remove" }
                 },
 
                 // Settings

@@ -49,6 +49,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/> <!-- Bulk Operations -->
                 </Grid.ColumnDefinitions>
 
                 <!-- ══════════════════════════════════════════════════════════════ -->
@@ -290,6 +291,13 @@
                         Style="{StaticResource BtnGhost}" Click="BtnOpenLog_Click"
                         Padding="8,6" FontSize="10"
                         ToolTip="Opens application debug log file in default text editor. Logs are stored at %APPDATA%\NecessaryAdminTool\Logs\. Contains detailed information about application operations, errors, and diagnostic data. Useful for troubleshooting issues."/>
+
+                <!-- TAG: #FEATURE_BULK_OPERATIONS #TOOLTIPS -->
+                <!-- Bulk Operations -->
+                <Button x:Name="BtnBulkOperations" Grid.Column="12" Content="⚡ BULK OPS"
+                        Style="{StaticResource BtnGhost}" Click="BtnBulkOperations_Click"
+                        Padding="8,6" FontSize="10"
+                        ToolTip="Opens Bulk Operations window for executing commands on multiple computers simultaneously. Supports restart, PowerShell scripts, service control, inventory collection, and more. Execute operations in parallel with configurable thread count and retry logic."/>
             </Grid>
         </Border>
 
@@ -1820,24 +1828,81 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- TAG: #TOOLTIPS #SEARCH - Quick Filters -->
-                        <Border Background="#1A1A1A" Padding="8" CornerRadius="4" Margin="0,8,0,8">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="🔍 Quick Filters:" Foreground="White" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                <Button Content="📋 All" x:Name="BtnFilterAll" Click="BtnFilterAll_Click" Padding="8,4" Margin="0,0,4,0" FontSize="10" Background="#333" Foreground="White" BorderThickness="0"
-                                        ToolTip="Shows all computers in fleet inventory without filtering. Clears any active filters (Online/Offline/OS/Type). Displays complete unfiltered list from database or current scan results."/>
-                                <Button Content="✅ Online" x:Name="BtnFilterOnline" Click="BtnFilterOnline_Click" Padding="8,4" Margin="0,0,4,0" FontSize="10" Background="#333" Foreground="LimeGreen" BorderThickness="0"
-                                        ToolTip="Filters fleet inventory to show only computers currently responding to ping. Excludes offline, unreachable, and powered-off systems. Useful for targeting live systems for deployment or remote management."/>
-                                <Button Content="❌ Offline" x:Name="BtnFilterOffline" Click="BtnFilterOffline_Click" Padding="8,4" Margin="0,0,4,0" FontSize="10" Background="#333" Foreground="#FF6B6B" BorderThickness="0"
-                                        ToolTip="Filters fleet inventory to show only computers not responding to ping. Includes powered-off, unreachable, and network-disconnected systems. Useful for identifying systems needing attention or removal from inventory."/>
-                                <Button Content="⚠️ Win7" x:Name="BtnFilterWin7" Click="BtnFilterWin7_Click" Padding="8,4" Margin="0,0,4,0" FontSize="10" Background="#FF6B00" Foreground="White" BorderThickness="0"
-                                        ToolTip="Filters fleet inventory to show only Windows 7 computers. Critical for identifying end-of-life systems requiring upgrade or replacement. Windows 7 support ended January 2020 - these systems pose security risks."/>
-                                <Button Content="🖥️ Servers" x:Name="BtnFilterServers" Click="BtnFilterServers_Click" Padding="8,4" Margin="0,0,4,0" FontSize="10" Background="#333" Foreground="#00BFFF" BorderThickness="0"
-                                        ToolTip="Filters fleet inventory to show only Windows Server operating systems (Server 2008-2025). Excludes workstation OS versions. Useful for server-specific patching, monitoring, and management tasks."/>
-                                <Button Content="💻 Workstations" x:Name="BtnFilterWorkstations" Click="BtnFilterWorkstations_Click" Padding="8,4" Margin="0,0,12,0" FontSize="10" Background="#333" Foreground="#FFA500" BorderThickness="0"
-                                        ToolTip="Filters fleet inventory to show only workstation operating systems (Windows 7, 8, 10, 11). Excludes Windows Server editions. Useful for desktop-specific deployment, software installation, and user support."/>
-                                <TextBlock x:Name="TxtFilterStatus" Text="Showing all computers" Foreground="#888" FontSize="10" VerticalAlignment="Center"/>
-                            </StackPanel>
+                        <!-- TAG: #AUTO_UPDATE_UI_ENGINE #FILTER_SYSTEM #FLUENT_DESIGN - Advanced Filter Panel -->
+                        <Border Background="#1A1A1A" Padding="12" CornerRadius="6" Margin="0,8,0,8" BorderBrush="#FF444" BorderThickness="1">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Row 1: Quick Filters Header + Actions -->
+                                <Grid Grid.Row="0" Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0" Text="🔍 Filters" Foreground="White" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                        <Button Content="💾 Save Preset" x:Name="BtnSaveFilterPreset" Click="BtnSaveFilterPreset_Click"
+                                                Padding="8,4" Margin="0,0,4,0" FontSize="10" Background="#333" Foreground="#10B981" BorderThickness="0" Cursor="Hand"
+                                                ToolTip="Save current filter criteria as a reusable preset (Ctrl+Shift+S)"/>
+                                        <Button Content="📂 Load Preset" x:Name="BtnLoadFilterPreset" Click="BtnLoadFilterPreset_Click"
+                                                Padding="8,4" Margin="0,0,4,0" FontSize="10" Background="#333" Foreground="#3B82F6" BorderThickness="0" Cursor="Hand"
+                                                ToolTip="Load a saved filter preset"/>
+                                        <Button Content="🗑️ Clear" x:Name="BtnClearFilter" Click="BtnClearFilter_Click"
+                                                Padding="8,4" FontSize="10" Background="#333" Foreground="#EF4444" BorderThickness="0" Cursor="Hand"
+                                                ToolTip="Clear all active filters (Esc)"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- Row 2: Quick Filter Buttons -->
+                                <WrapPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+                                    <ToggleButton Content="📋 All" x:Name="BtnFilterAll" Click="BtnFilterAll_Click"
+                                                  Style="{StaticResource FilterToggleButton}" Margin="0,0,4,4"
+                                                  ToolTip="Show all computers without filtering"/>
+                                    <ToggleButton Content="✅ Online" x:Name="BtnFilterOnline" Click="BtnFilterOnline_Click"
+                                                  Style="{StaticResource FilterToggleButton}" Margin="0,0,4,4"
+                                                  ToolTip="Show only computers currently responding to ping"/>
+                                    <ToggleButton Content="❌ Offline" x:Name="BtnFilterOffline" Click="BtnFilterOffline_Click"
+                                                  Style="{StaticResource FilterToggleButton}" Margin="0,0,4,4"
+                                                  ToolTip="Show only computers not responding to ping"/>
+                                    <ToggleButton Content="🪟 Win11" x:Name="BtnFilterWin11" Click="BtnFilterWin11_Click"
+                                                  Style="{StaticResource FilterToggleButton}" Margin="0,0,4,4"
+                                                  ToolTip="Show only Windows 11 computers"/>
+                                    <ToggleButton Content="🔟 Win10" x:Name="BtnFilterWin10" Click="BtnFilterWin10_Click"
+                                                  Style="{StaticResource FilterToggleButton}" Margin="0,0,4,4"
+                                                  ToolTip="Show only Windows 10 computers"/>
+                                    <ToggleButton Content="⚠️ Win7" x:Name="BtnFilterWin7" Click="BtnFilterWin7_Click"
+                                                  Style="{StaticResource FilterToggleButton}" Margin="0,0,4,4"
+                                                  ToolTip="Show only Windows 7 computers (end-of-life warning)"/>
+                                    <ToggleButton Content="🖥️ Servers" x:Name="BtnFilterServers" Click="BtnFilterServers_Click"
+                                                  Style="{StaticResource FilterToggleButton}" Margin="0,0,4,4"
+                                                  ToolTip="Show only Windows Server operating systems"/>
+                                    <ToggleButton Content="💻 Workstations" x:Name="BtnFilterWorkstations" Click="BtnFilterWorkstations_Click"
+                                                  Style="{StaticResource FilterToggleButton}" Margin="0,0,4,4"
+                                                  ToolTip="Show only workstation operating systems"/>
+                                </WrapPanel>
+
+                                <!-- Row 3: Filter Status -->
+                                <Border Grid.Row="2" Background="#FF2A2A2A" CornerRadius="4" Padding="8,4">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Column="0" x:Name="TxtFilterIcon" Text="ℹ️" FontSize="12" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" x:Name="TxtFilterStatus" Text="Showing all computers" Foreground="#999" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Grid.Column="2" x:Name="TxtFilterCount" Text="" Foreground="#FF8533" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                    </Grid>
+                                </Border>
+                            </Grid>
                         </Border>
 
                         <!-- Fleet Grid Container - TAG: #AUTO_UPDATE_UI_ENGINE #VIEW_TOGGLE -->

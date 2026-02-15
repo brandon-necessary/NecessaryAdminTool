@@ -1,6 +1,6 @@
 using System;
 using System.Diagnostics;
-using SecValidator = NecessaryAdminTool.Security.SecValidator;
+using SecValidator = NecessaryAdminTool.Security.SecurityValidator;
 
 namespace NecessaryAdminTool.Integrations
 {

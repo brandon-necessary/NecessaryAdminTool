@@ -614,6 +614,168 @@ namespace NecessaryAdminTool.Security
         }
 
         /// <summary>
+        /// Alias for IsValidComputerName for consistency with security audit recommendations
+        /// TAG: #SECURITY_CRITICAL #COMPUTER_NAME_VALIDATION
+        /// </summary>
+        /// <param name="computerName">Computer name to validate</param>
+        /// <returns>True if computer name is valid</returns>
+        public static bool ValidateComputerName(string computerName)
+        {
+            return IsValidComputerName(computerName);
+        }
+
+        /// <summary>
+        /// Alias for ValidatePowerShellScript for consistency
+        /// TAG: #SECURITY_CRITICAL #FILE_PATH_VALIDATION
+        /// </summary>
+        /// <param name="filePath">File path to validate</param>
+        /// <returns>True if file path is valid</returns>
+        public static bool ValidateFilePath(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+            {
+                LogManager.LogWarning("[SecurityValidator] File path validation failed: null or empty");
+                return false;
+            }
+
+            // Check for invalid characters
+            var invalidChars = Path.GetInvalidPathChars();
+            if (filePath.Any(c => invalidChars.Contains(c)))
+            {
+                LogManager.LogWarning("[SecurityValidator] File path validation failed: contains invalid characters");
+                return false;
+            }
+
+            // Check for path traversal attempts
+            if (filePath.Contains(".."))
+            {
+                LogManager.LogWarning("[SecurityValidator] File path validation failed: path traversal attempt detected");
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Validate filter pattern to prevent wildcard injection attacks
+        /// TAG: #SECURITY_CRITICAL #FILTER_SYSTEM #WILDCARD_INJECTION_PREVENTION
+        /// </summary>
+        /// <param name="pattern">Filter pattern to validate (supports * and ?)</param>
+        /// <returns>True if pattern is safe</returns>
+        public static bool ValidateFilterPattern(string pattern)
+        {
+            if (string.IsNullOrWhiteSpace(pattern))
+            {
+                return true; // Empty pattern is allowed (no filter)
+            }
+
+            // Limit pattern length to prevent ReDoS attacks
+            if (pattern.Length > 100)
+            {
+                LogManager.LogWarning($"[SecurityValidator] Filter pattern validation failed: exceeds 100 characters ({pattern.Length})");
+                return false;
+            }
+
+            // Allow only safe characters: alphanumeric, wildcards (*, ?), hyphens, underscores, dots, spaces
+            var allowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789*?-_. ";
+            bool isValid = pattern.All(c => allowedChars.Contains(c));
+
+            if (!isValid)
+            {
+                LogManager.LogWarning($"[SecurityValidator] Filter pattern validation failed: contains invalid characters");
+                return false;
+            }
+
+            // Prevent excessive wildcards (DoS prevention)
+            int wildcardCount = pattern.Count(c => c == '*' || c == '?');
+            if (wildcardCount > 10)
+            {
+                LogManager.LogWarning($"[SecurityValidator] Filter pattern validation failed: too many wildcards ({wildcardCount})");
+                return false;
+            }
+
+            // Prevent patterns like ***** (catastrophic backtracking)
+            if (pattern.Contains("***") || pattern.Contains("???"))
+            {
+                LogManager.LogWarning("[SecurityValidator] Filter pattern validation failed: excessive consecutive wildcards");
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Validate OU path to prevent LDAP injection attacks
+        /// TAG: #SECURITY_CRITICAL #FILTER_SYSTEM #LDAP_INJECTION_PREVENTION
+        /// </summary>
+        /// <param name="ouPath">OU path to validate</param>
+        /// <returns>True if OU path is safe</returns>
+        public static bool ValidateOUPath(string ouPath)
+        {
+            if (string.IsNullOrWhiteSpace(ouPath))
+            {
+                return true; // Empty is acceptable (no filter)
+            }
+
+            // Limit length to prevent buffer overflow
+            if (ouPath.Length > 500)
+            {
+                LogManager.LogWarning($"[SecurityValidator] OU path validation failed: exceeds 500 characters ({ouPath.Length})");
+                return false;
+            }
+
+            // Allow only safe DN characters: alphanumeric, spaces, hyphens, underscores, equals, commas, dots
+            foreach (char c in ouPath)
+            {
+                if (!char.IsLetterOrDigit(c) && c != ' ' && c != '-' && c != '_' &&
+                    c != '=' && c != ',' && c != '.')
+                {
+                    LogManager.LogWarning($"[SecurityValidator] OU path validation failed: invalid character '{c}'");
+                    return false;
+                }
+            }
+
+            // Check for LDAP injection patterns
+            var suspiciousPatterns = new[] { ")(", "*)", "(*", "|(", "&(" };
+            foreach (var pattern in suspiciousPatterns)
+            {
+                if (ouPath.Contains(pattern))
+                {
+                    LogManager.LogWarning($"[SecurityValidator] OU path validation failed: LDAP injection pattern detected: {pattern}");
+                    return false;
+                }
+            }
+
+            // Check for null bytes
+            if (ouPath.Contains("\0"))
+            {
+                LogManager.LogWarning("[SecurityValidator] OU path validation failed: null byte detected");
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Validate numeric filter value (range validation)
+        /// TAG: #SECURITY_CRITICAL #FILTER_SYSTEM #NUMERIC_VALIDATION
+        /// </summary>
+        /// <param name="value">Numeric value to validate</param>
+        /// <param name="min">Minimum allowed value</param>
+        /// <param name="max">Maximum allowed value</param>
+        /// <returns>True if value is within valid range</returns>
+        public static bool ValidateNumericFilter(int value, int min, int max)
+        {
+            if (value < min || value > max)
+            {
+                LogManager.LogWarning($"[SecurityValidator] Numeric filter validation failed: value {value} outside range [{min}, {max}]");
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Rate limiter to prevent brute force attacks
         /// TAG: #SECURITY_CRITICAL #RATE_LIMITING #BRUTE_FORCE_PROTECTION
         /// </summary>

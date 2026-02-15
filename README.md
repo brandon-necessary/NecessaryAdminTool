@@ -17,11 +17,12 @@ NecessaryAdminTool is a comprehensive Windows-based IT management application de
 
 ### 🎨 **Modern UI Features**
 - **Toast Notifications** - 245+ non-blocking toast notifications throughout the app
-- **Command Palette** - Press Ctrl+K for keyboard-driven command execution (25+ commands)
+- **Command Palette** - Press Ctrl+K for keyboard-driven command execution (30+ commands)
+- **Advanced Filtering** - Multi-criteria filtering with save/load presets, AND/OR logic, history tracking
 - **Fluent Design** - Windows 11 native look with Mica materials and rounded corners
 - **Dual Views** - Switch between Grid and Card view layouts (Ctrl+T)
 - **Skeleton Loaders** - Smooth loading animations for better perceived performance
-- **11 Keyboard Shortcuts** - Rapid workflow execution without mouse
+- **15+ Keyboard Shortcuts** - Rapid workflow execution without mouse
 - **Semantic Colors** - Success (green), Info (blue), Warning (amber), Error (red)
 
 ### 🖥️ **Single System Inspector**
@@ -35,6 +36,10 @@ NecessaryAdminTool is a comprehensive Windows-based IT management application de
 - Real-time progress tracking with online/offline counters
 - Windows version tracking with color-coded status indicators
 - BitLocker and TPM status reporting
+- **Advanced Filtering System** - Filter by status, OS, name pattern, OU, RAM, last seen date
+- **Filter Presets** - Save and reuse custom filter configurations
+- **Quick Filters** - One-click filters for Online, Offline, Win11, Win7, Servers, Workstations
+- **Filter History** - Track last 10 filter operations
 - CSV export capabilities
 
 ### 🛠️ **Remote Management Tools**
