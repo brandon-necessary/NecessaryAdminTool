@@ -5,6 +5,15 @@
              StartupUri="MainWindow.xaml">
     <Application.Resources>
         <!-- ═══════════════════════════════════════════════════ -->
+        <!-- FLUENT DESIGN SYSTEM - Windows 11 Native Look      -->
+        <!-- TAG: #FLUENT_DESIGN #MODULAR_THEMES                -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="UI/Themes/Fluent.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+        <!-- ═══════════════════════════════════════════════════ -->
         <!-- UNIFIED THEME SYSTEM - NecessaryAdminTool           -->
         <!-- All windows inherit these resources                 -->
         <!-- ═══════════════════════════════════════════════════ -->
@@ -489,5 +498,7 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

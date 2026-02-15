@@ -1,0 +1,168 @@
+<UserControl x:Class="NecessaryAdminTool.UI.Components.ComputerCard"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="180" d:DesignWidth="300">
+
+    <!-- TAG: #CARD_VIEW #COMPUTER_CARD #FLUENT_DESIGN #MODULAR -->
+    <!-- Research: GitHub Projects card layout pattern -->
+
+    <Border Background="#FF1E1E1E"
+            BorderBrush="#FF3C3C3C"
+            BorderThickness="1"
+            CornerRadius="8"
+            Padding="16"
+            Margin="8"
+            Width="280"
+            Height="160"
+            Cursor="Hand">
+
+        <Border.Style>
+            <Style TargetType="Border">
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="BorderBrush" Value="#FFFF8533"/>
+                        <Setter Property="Background" Value="#FF252525"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+        </Border.Style>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/> <!-- Header -->
+                <RowDefinition Height="Auto"/> <!-- Status -->
+                <RowDefinition Height="*"/>    <!-- Metrics -->
+                <RowDefinition Height="Auto"/> <!-- Actions -->
+            </Grid.RowDefinitions>
+
+            <!-- Header: Computer Name + IP -->
+            <StackPanel Grid.Row="0" Margin="0,0,0,8">
+                <TextBlock x:Name="TxtComputerName"
+                          Text="{Binding Name}"
+                          FontSize="16"
+                          FontWeight="Bold"
+                          Foreground="White"
+                          TextTrimming="CharacterEllipsis"/>
+                <TextBlock x:Name="TxtIPAddress"
+                          Text="{Binding IPAddress}"
+                          FontSize="12"
+                          Foreground="#FFA1A1AA"
+                          Margin="0,2,0,0"/>
+            </StackPanel>
+
+            <!-- Status Badge -->
+            <Border Grid.Row="1"
+                    x:Name="StatusBadge"
+                    Background="#FF10B981"
+                    CornerRadius="12"
+                    Padding="8,4"
+                    HorizontalAlignment="Left"
+                    Margin="0,0,0,12">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="TxtStatus"
+                              Text="🟢 Online"
+                              FontSize="11"
+                              FontWeight="SemiBold"
+                              Foreground="White"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Metrics: CPU + RAM -->
+            <StackPanel Grid.Row="2" VerticalAlignment="Center">
+                <!-- CPU -->
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0"
+                              Text="CPU:"
+                              FontSize="11"
+                              Foreground="#FFA1A1AA"
+                              Margin="0,0,8,0"/>
+
+                    <ProgressBar Grid.Column="1"
+                                x:Name="ProgressCPU"
+                                Value="{Binding CpuUsage}"
+                                Maximum="100"
+                                Height="4"
+                                Background="#FF3C3C3C"
+                                Foreground="#FFFF8533"
+                                BorderThickness="0"/>
+
+                    <TextBlock Grid.Column="2"
+                              x:Name="TxtCPU"
+                              Text="{Binding CpuUsage, StringFormat='{}{0}%'}"
+                              FontSize="11"
+                              Foreground="White"
+                              Margin="8,0,0,0"/>
+                </Grid>
+
+                <!-- RAM -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0"
+                              Text="RAM:"
+                              FontSize="11"
+                              Foreground="#FFA1A1AA"
+                              Margin="0,0,8,0"/>
+
+                    <ProgressBar Grid.Column="1"
+                                x:Name="ProgressRAM"
+                                Value="{Binding RamUsagePercent}"
+                                Maximum="100"
+                                Height="4"
+                                Background="#FF3C3C3C"
+                                Foreground="#FF3B82F6"
+                                BorderThickness="0"/>
+
+                    <TextBlock Grid.Column="2"
+                              x:Name="TxtRAM"
+                              Text="{Binding RamUsageDisplay}"
+                              FontSize="11"
+                              Foreground="White"
+                              Margin="8,0,0,0"/>
+                </Grid>
+            </StackPanel>
+
+            <!-- Quick Actions -->
+            <StackPanel Grid.Row="3"
+                       Orientation="Horizontal"
+                       HorizontalAlignment="Left"
+                       Margin="0,12,0,0">
+                <Button x:Name="BtnRDP"
+                       Content="RDP"
+                       Width="50"
+                       Height="24"
+                       FontSize="10"
+                       Margin="0,0,8,0"
+                       ToolTip="Remote Desktop Connection"/>
+
+                <Button x:Name="BtnPowerShell"
+                       Content="PS"
+                       Width="40"
+                       Height="24"
+                       FontSize="10"
+                       Margin="0,0,8,0"
+                       ToolTip="PowerShell Remote Session"/>
+
+                <Button x:Name="BtnSettings"
+                       Content="⚙"
+                       Width="30"
+                       Height="24"
+                       FontSize="12"
+                       ToolTip="Computer Settings"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>
