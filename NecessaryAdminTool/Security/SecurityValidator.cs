@@ -625,35 +625,17 @@ namespace NecessaryAdminTool.Security
         }
 
         /// <summary>
-        /// Alias for ValidatePowerShellScript for consistency
-        /// TAG: #SECURITY_CRITICAL #FILE_PATH_VALIDATION
+        /// Validate file path to prevent path traversal attacks (main method)
+        /// Ensures file path is within allowed base directory
+        /// TAG: #SECURITY_CRITICAL #FILE_PATH_VALIDATION #PATH_TRAVERSAL
         /// </summary>
         /// <param name="filePath">File path to validate</param>
+        /// <param name="allowedBasePath">Allowed base directory</param>
         /// <returns>True if file path is valid</returns>
-        public static bool ValidateFilePath(string filePath)
+        public static bool ValidateFilePath(string filePath, string allowedBasePath)
         {
-            if (string.IsNullOrWhiteSpace(filePath))
-            {
-                LogManager.LogWarning("[SecurityValidator] File path validation failed: null or empty");
-                return false;
-            }
-
-            // Check for invalid characters
-            var invalidChars = Path.GetInvalidPathChars();
-            if (filePath.Any(c => invalidChars.Contains(c)))
-            {
-                LogManager.LogWarning("[SecurityValidator] File path validation failed: contains invalid characters");
-                return false;
-            }
-
-            // Check for path traversal attempts
-            if (filePath.Contains(".."))
-            {
-                LogManager.LogWarning("[SecurityValidator] File path validation failed: path traversal attempt detected");
-                return false;
-            }
-
-            return true;
+            // TAG: #SECURITY_CRITICAL - Path traversal prevention
+            return IsValidFilePath(filePath, allowedBasePath);
         }
 
         /// <summary>
@@ -757,7 +739,7 @@ namespace NecessaryAdminTool.Security
         }
 
         /// <summary>
-        /// Validate numeric filter value (range validation)
+        /// Validate numeric filter value (range validation) - overload for int values
         /// TAG: #SECURITY_CRITICAL #FILTER_SYSTEM #NUMERIC_VALIDATION
         /// </summary>
         /// <param name="value">Numeric value to validate</param>
@@ -769,6 +751,40 @@ namespace NecessaryAdminTool.Security
             if (value < min || value > max)
             {
                 LogManager.LogWarning($"[SecurityValidator] Numeric filter validation failed: value {value} outside range [{min}, {max}]");
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Validate numeric filter value (string to int with range validation)
+        /// TAG: #SECURITY_CRITICAL #FILTER_SYSTEM #NUMERIC_VALIDATION #INPUT_PARSING
+        /// </summary>
+        /// <param name="value">String numeric value to validate</param>
+        /// <param name="min">Minimum allowed value</param>
+        /// <param name="max">Maximum allowed value</param>
+        /// <returns>True if value is valid and within range</returns>
+        public static bool ValidateNumericFilter(string value, int min, int max)
+        {
+            // TAG: #SECURITY_CRITICAL
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                LogManager.LogWarning("[SecurityValidator] Numeric filter validation failed: null or empty value");
+                return false;
+            }
+
+            // TAG: #SECURITY_CRITICAL - Attempt to parse the string value to int
+            if (!int.TryParse(value, out int intValue))
+            {
+                LogManager.LogWarning($"[SecurityValidator] Numeric filter validation failed: '{value}' is not a valid integer");
+                return false;
+            }
+
+            // TAG: #SECURITY_CRITICAL - Validate the range
+            if (intValue < min || intValue > max)
+            {
+                LogManager.LogWarning($"[SecurityValidator] Numeric filter validation failed: value {intValue} outside range [{min}, {max}]");
                 return false;
             }
 
