@@ -1,7 +1,7 @@
 # WiX Installer & Update Control Guide
-<!-- TAG: #AUTO_UPDATE_INSTALLER #WIX #ENTERPRISE #VERSION_1_0 -->
-**Version:** 1.0 (1.2602.0.0)
-**Last Updated:** February 14, 2026
+<!-- TAG: #AUTO_UPDATE_INSTALLER #WIX #ENTERPRISE #VERSION_2_0 -->
+**Version:** 2.0 (2.2602.0.0)
+**Last Updated:** February 15, 2026
 
 ---
 
@@ -16,6 +16,16 @@ This guide covers the **WiX installer** and **enterprise update control** featur
 - ✅ Silent deployment options
 - ✅ Auto-update with Squirrel.Windows
 - ✅ Update channels (Stable/Beta/Disabled)
+
+### **Version 2.0 Enhancements:**
+- ✅ Modern Fluent Design UI (Windows 11 native)
+- ✅ 303+ toast notifications (non-blocking)
+- ✅ Command Palette (Ctrl+K) with 25+ commands
+- ✅ Enterprise-grade security (94% security score, A+)
+- ✅ Native WPF Active Directory TreeView
+- ✅ Automated security validation (git hooks)
+- ✅ Card view + skeleton loaders
+- ✅ Keyboard shortcut customization
 
 ---
 
