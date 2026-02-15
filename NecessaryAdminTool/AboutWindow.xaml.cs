@@ -522,9 +522,9 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
             <div class=""contact"">
                 <strong>For licensing inquiries, permission requests, legal questions, or to report violations of this EULA, please contact:</strong><br><br>
-                <strong>Brandon Necessary - Legal Department</strong><br>
-                Email: <a href=""mailto:brandon.necessary@jadexinc.com"" style=""color: #FF8533;"">brandon.necessary@jadexinc.com</a><br>
-                Phone: Contact your authorized Brandon Necessary representative
+                <strong>{{COMPANY_NAME}} - Legal Department</strong><br>
+                Email: <a href=""mailto:support@{{COMPANY_DOMAIN}}"" style=""color: #FF8533;"">support@{{COMPANY_DOMAIN}}</a><br>
+                Phone: Contact your authorized {{COMPANY_NAME}} representative
             </div>
         </div>
 
@@ -565,10 +565,10 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             <p>The Software contains proprietary and confidential information of Brandon Necessary. You agree to maintain the confidentiality of the Software and to not disclose, provide, or otherwise make available such proprietary and confidential information to any third party without the prior written consent of Brandon Necessary.</p>
 
             <h2>5. WARRANTY DISCLAIMER</h2>
-            <p>THE SOFTWARE IS PROVIDED ""AS IS"" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. ARTAZN LLC DOES NOT WARRANT THAT THE SOFTWARE WILL MEET YOUR REQUIREMENTS OR THAT THE OPERATION OF THE SOFTWARE WILL BE UNINTERRUPTED OR ERROR-FREE.</p>
+            <p>THE SOFTWARE IS PROVIDED ""AS IS"" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. {{COMPANY_NAME}} DOES NOT WARRANT THAT THE SOFTWARE WILL MEET YOUR REQUIREMENTS OR THAT THE OPERATION OF THE SOFTWARE WILL BE UNINTERRUPTED OR ERROR-FREE.</p>
 
             <h2>6. LIMITATION OF LIABILITY</h2>
-            <p>IN NO EVENT SHALL ARTAZN LLC BE LIABLE FOR ANY SPECIAL, INCIDENTAL, INDIRECT, OR CONSEQUENTIAL DAMAGES WHATSOEVER (INCLUDING, WITHOUT LIMITATION, DAMAGES FOR LOSS OF BUSINESS PROFITS, BUSINESS INTERRUPTION, LOSS OF BUSINESS INFORMATION, OR ANY OTHER PECUNIARY LOSS) ARISING OUT OF THE USE OF OR INABILITY TO USE THE SOFTWARE, EVEN IF ARTAZN LLC HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.</p>
+            <p>IN NO EVENT SHALL {{COMPANY_NAME}} BE LIABLE FOR ANY SPECIAL, INCIDENTAL, INDIRECT, OR CONSEQUENTIAL DAMAGES WHATSOEVER (INCLUDING, WITHOUT LIMITATION, DAMAGES FOR LOSS OF BUSINESS PROFITS, BUSINESS INTERRUPTION, LOSS OF BUSINESS INFORMATION, OR ANY OTHER PECUNIARY LOSS) ARISING OUT OF THE USE OF OR INABILITY TO USE THE SOFTWARE, EVEN IF {{COMPANY_NAME}} HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.</p>
 
             <h2>7. TERMINATION</h2>
             <p>This license is effective until terminated. Your rights under this license will terminate automatically without notice from Brandon Necessary if you fail to comply with any term(s) of this Agreement. Upon termination, you shall cease all use of the Software and destroy all copies, full or partial, of the Software.</p>

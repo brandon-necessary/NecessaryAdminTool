@@ -1994,7 +1994,7 @@ namespace NecessaryAdminTool
         // GENERAL UPDATE: Downloads and installs all pending Windows Updates
         // including driver packs and firmware from Windows Update catalog
         private const string Script_General = @"
-            Write-Output '>>> JADEX GENERAL UPDATE ENGINE';
+            Write-Output '>>> GENERAL UPDATE ENGINE';
             $ErrorActionPreference = 'Continue';
             $Session = New-Object -ComObject Microsoft.Update.Session;
             $Searcher = $Session.CreateUpdateSearcher();
@@ -2052,7 +2052,7 @@ namespace NecessaryAdminTool
         // FEATURE UPDATE: In-place upgrade to latest Windows version
         // (e.g., 22H2 → 23H2 → 24H2) keeping all apps, settings, data
         private const string Script_Feature = @"
-            Write-Output '>>> JADEX FEATURE UPDATE ENGINE (IN-PLACE UPGRADE)';
+            Write-Output '>>> FEATURE UPDATE ENGINE (IN-PLACE UPGRADE)';
             $ErrorActionPreference = 'Continue';
             $Session = New-Object -ComObject Microsoft.Update.Session;
             $Searcher = $Session.CreateUpdateSearcher();

@@ -1,6 +1,11 @@
+<!-- TAG: #AUTO_UPDATE_README #QUICK_README #VERSION_DISPLAY -->
+<!-- FUTURE CLAUDES: This is the QUICK README - update version here -->
+<!-- For COMPREHENSIVE docs, see README_COMPREHENSIVE.md -->
 # NecessaryAdminTool Suite
 
 **Version 1.0** (1.2602.0.0) - Enterprise IT Management Suite by Brandon Necessary
+
+**📘 For complete documentation, see [README_COMPREHENSIVE.md](README_COMPREHENSIVE.md)**
 
 ---
 
@@ -77,7 +82,7 @@ NecessaryAdminTool is a comprehensive Windows-based IT management application de
 
 ## Performance Optimizations
 
-ArtaznIT Suite v4.0 includes extensive multicore optimizations:
+NecessaryAdminTool v1.0 includes extensive multicore optimizations:
 
 - **Parallel WMI Queries:** 11 independent queries run simultaneously per computer
 - **Dynamic Scan Throttling:** Automatically scales parallel operations based on CPU cores and RAM
@@ -101,7 +106,7 @@ See [OPTIMIZATIONS.md](OPTIMIZATIONS.md) for detailed technical information.
 ## Usage
 
 ### Initial Setup
-1. Launch ArtaznIT Suite with administrator privileges
+1. Launch NecessaryAdminTool with administrator privileges
 2. Authenticate with domain credentials
 3. Select target Domain Controller from the dropdown
 4. Begin scanning individual systems or entire domain
@@ -121,10 +126,10 @@ See [OPTIMIZATIONS.md](OPTIMIZATIONS.md) for detailed technical information.
 ## Configuration Files
 
 The following configuration files are stored in `%APPDATA%`:
-- `Artazn_Config_v2.xml` - Application configuration
-- `Artazn_UserConfig.xml` - User preferences
-- `Artazn_Debug.log` - Debug logging (warning-level events)
-- `Artazn_Runtime.log` - Runtime logging (info-level events)
+- `NecessaryAdmin_Config_v2.xml` - Application configuration
+- `NecessaryAdmin_UserConfig.xml` - User preferences
+- `NecessaryAdmin_Debug.log` - Debug logging (warning-level events)
+- `NecessaryAdmin_Runtime.log` - Runtime logging (info-level events)
 
 ## Architecture
 

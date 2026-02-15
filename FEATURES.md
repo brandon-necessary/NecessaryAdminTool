@@ -1,3 +1,5 @@
+<!-- TAG: #AUTO_UPDATE_FEATURES #FEATURE_COUNT #VERSION_TRACKING -->
+<!-- FUTURE CLAUDES: Update feature count and version with each release -->
 # NecessaryAdminTool - Complete Feature List
 **Last Updated:** February 14, 2026
 **Current Version:** v1.2602.0.0

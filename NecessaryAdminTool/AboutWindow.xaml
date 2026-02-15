@@ -1,3 +1,6 @@
+<!-- TAG: #AUTO_UPDATE_VERSION #ABOUT_WINDOW #VERSION_DISPLAY -->
+<!-- FUTURE CLAUDES: Update version and build date in this file with each release -->
+<!-- Current Version: 1.0 (1.2602.0.0) | Build Date: February 14, 2026 -->
 <Window x:Class="NecessaryAdminTool.AboutWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -325,12 +328,12 @@
 
                                     <Run FontWeight="Bold">5. WARRANTY DISCLAIMER</Run>
                                     <LineBreak/>
-                                    THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. ARTAZN LLC DOES NOT WARRANT THAT THE SOFTWARE WILL MEET YOUR REQUIREMENTS OR THAT THE OPERATION OF THE SOFTWARE WILL BE UNINTERRUPTED OR ERROR-FREE.
+                                    THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. {{COMPANY_NAME}} DOES NOT WARRANT THAT THE SOFTWARE WILL MEET YOUR REQUIREMENTS OR THAT THE OPERATION OF THE SOFTWARE WILL BE UNINTERRUPTED OR ERROR-FREE.
                                     <LineBreak/><LineBreak/>
 
                                     <Run FontWeight="Bold">6. LIMITATION OF LIABILITY</Run>
                                     <LineBreak/>
-                                    IN NO EVENT SHALL ARTAZN LLC BE LIABLE FOR ANY SPECIAL, INCIDENTAL, INDIRECT, OR CONSEQUENTIAL DAMAGES WHATSOEVER (INCLUDING, WITHOUT LIMITATION, DAMAGES FOR LOSS OF BUSINESS PROFITS, BUSINESS INTERRUPTION, LOSS OF BUSINESS INFORMATION, OR ANY OTHER PECUNIARY LOSS) ARISING OUT OF THE USE OF OR INABILITY TO USE THE SOFTWARE, EVEN IF ARTAZN LLC HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+                                    IN NO EVENT SHALL {{COMPANY_NAME}} BE LIABLE FOR ANY SPECIAL, INCIDENTAL, INDIRECT, OR CONSEQUENTIAL DAMAGES WHATSOEVER (INCLUDING, WITHOUT LIMITATION, DAMAGES FOR LOSS OF BUSINESS PROFITS, BUSINESS INTERRUPTION, LOSS OF BUSINESS INFORMATION, OR ANY OTHER PECUNIARY LOSS) ARISING OUT OF THE USE OF OR INABILITY TO USE THE SOFTWARE, EVEN IF {{COMPANY_NAME}} HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
                                     <LineBreak/><LineBreak/>
 
                                     <Run FontWeight="Bold">7. TERMINATION</Run>
@@ -504,9 +507,9 @@
 
                                     <Run FontWeight="Bold" Foreground="#FF888888" FontSize="9">For licensing inquiries, permission requests, legal questions, or to report violations of this EULA, please contact:</Run>
                                     <LineBreak/>
-                                    <Run FontWeight="Bold" Foreground="#FF888888" FontSize="9">Brandon Necessary - Legal Department</Run>
+                                    <Run FontWeight="Bold" Foreground="#FF888888" FontSize="9">{{COMPANY_NAME}} - Legal Department</Run>
                                     <LineBreak/>
-                                    <Run FontWeight="Bold" Foreground="#FF888888" FontSize="9">Email: brandon.necessary@jadexinc.com</Run>
+                                    <Run FontWeight="Bold" Foreground="#FF888888" FontSize="9">Email: support@{{COMPANY_DOMAIN}}</Run>
                                     <LineBreak/>
                                     <Run FontWeight="Bold" Foreground="#FF888888" FontSize="9">Phone: Contact your authorized Brandon Necessary representative</Run>
                                     <LineBreak/><LineBreak/>
