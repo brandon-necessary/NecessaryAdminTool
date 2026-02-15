@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- TAG: #AUTO_UPDATE_INSTALLER #WIX_INSTALLER #VERSION_1_0 -->
+<!-- FUTURE CLAUDES: Update version numbers, bundle paths, and registry keys -->
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+
+  <?define ProductName = "NecessaryAdminTool" ?>
+  <?define ProductVersion = "1.2602.0.0" ?>
+  <?define ProductManufacturer = "Brandon Necessary" ?>
+  <?define ProductUpgradeCode = "A1B2C3D4-E5F6-4A5B-8C9D-0E1F2A3B4C5D" ?>
+
+  <Product Id="*"
+           Name="$(var.ProductName)"
+           Language="1033"
+           Version="$(var.ProductVersion)"
+           Manufacturer="$(var.ProductManufacturer)"
+           UpgradeCode="$(var.ProductUpgradeCode)">
+
+    <Package InstallerVersion="500"
+             Compressed="yes"
+             InstallScope="perMachine"
+             Platform="x64"
+             Description="Enterprise IT Management Suite"
+             Comments="NecessaryAdminTool v1.0 Installer" />
+
+    <!-- Upgrade logic - allow major upgrades -->
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed."
+                  AllowSameVersionUpgrades="yes" />
+
+    <!-- Embedded CAB for single-file installer -->
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- ========================================
+         PREREQUISITES CHECK
+         ======================================== -->
+
+    <!-- Require .NET Framework 4.8.1 -->
+    <PropertyRef Id="NETFRAMEWORK481"/>
+    <Condition Message="This application requires .NET Framework 4.8.1 or higher. Please install it then run this installer again.">
+      <![CDATA[Installed OR NETFRAMEWORK481]]>
+    </Condition>
+
+    <!-- Require Windows 10/11 -->
+    <Condition Message="This application requires Windows 10 or Windows 11.">
+      <![CDATA[Installed OR (VersionNT >= 603)]]>
+    </Condition>
+
+    <!-- Require 64-bit OS -->
+    <Condition Message="This application requires a 64-bit operating system.">
+      <![CDATA[Installed OR VersionNT64]]>
+    </Condition>
+
+    <!-- ========================================
+         PROPERTIES & FEATURES
+         ======================================== -->
+
+    <!-- Installation directory -->
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+
+    <!-- App data directory -->
+    <SetProperty Id="APPDATAFOLDER"
+                 Value="[AppDataFolder]NecessaryAdminTool"
+                 Before="CostFinalize" />
+
+    <!-- Auto-update control properties -->
+    <Property Id="ENABLE_AUTO_UPDATES" Value="1" />
+    <Property Id="UPDATE_CHECK_FREQUENCY" Value="24" />
+    <Property Id="UPDATE_CHANNEL" Value="stable" />
+
+    <!-- Launch app after install -->
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT"
+              Value="Launch NecessaryAdminTool" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
+    <Property Id="WixShellExecTarget" Value="[#NecessaryAdminTool.exe]" />
+    <CustomAction Id="LaunchApplication"
+                  BinaryKey="WixCA"
+                  DllEntry="WixShellExec"
+                  Impersonate="yes" />
+
+    <!-- ========================================
+         DIRECTORY STRUCTURE
+         ======================================== -->
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <!-- Program Files -->
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="INSTALLFOLDER" Name="NecessaryAdminTool">
+
+          <!-- Main application directory -->
+          <Directory Id="BinFolder" Name="bin" />
+
+          <!-- Dependencies directory -->
+          <Directory Id="DependenciesFolder" Name="Dependencies" />
+
+          <!-- Scripts directory -->
+          <Directory Id="ScriptsFolder" Name="Scripts" />
+
+          <!-- Documentation directory -->
+          <Directory Id="DocsFolder" Name="Docs" />
+
+        </Directory>
+      </Directory>
+
+      <!-- Start Menu -->
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="NecessaryAdminTool"/>
+      </Directory>
+
+      <!-- Desktop (optional) -->
+      <Directory Id="DesktopFolder" Name="Desktop" />
+
+    </Directory>
+
+    <!-- ========================================
+         COMPONENTS - Main Application
+         ======================================== -->
+
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+
+      <!-- Main executable -->
+      <Component Id="MainExecutable" Guid="B1C2D3E4-F5A6-4B5C-8D9E-0F1A2B3C4D5E" Win64="yes">
+        <File Id="NecessaryAdminTool.exe"
+              Source="..\NecessaryAdminTool\bin\Release\NecessaryAdminTool.exe"
+              KeyPath="yes">
+          <Shortcut Id="StartMenuShortcut"
+                    Directory="ApplicationProgramsFolder"
+                    Name="NecessaryAdminTool"
+                    Description="Enterprise IT Management Suite"
+                    WorkingDirectory="INSTALLFOLDER"
+                    Icon="AppIcon.exe"
+                    IconIndex="0"
+                    Advertise="yes" />
+        </File>
+
+        <!-- Registry keys for auto-update control -->
+        <RegistryKey Root="HKLM" Key="Software\NecessaryAdminTool\Updates">
+          <RegistryValue Type="integer" Name="EnableAutoUpdates" Value="[ENABLE_AUTO_UPDATES]" />
+          <RegistryValue Type="integer" Name="CheckFrequencyHours" Value="[UPDATE_CHECK_FREQUENCY]" />
+          <RegistryValue Type="string" Name="UpdateChannel" Value="[UPDATE_CHANNEL]" />
+          <RegistryValue Type="string" Name="InstalledVersion" Value="$(var.ProductVersion)" />
+        </RegistryKey>
+
+        <!-- Uninstall registry entry -->
+        <RegistryValue Root="HKLM"
+                       Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\[ProductCode]"
+                       Name="DisplayName"
+                       Type="string"
+                       Value="$(var.ProductName)" />
+      </Component>
+
+      <!-- Configuration files -->
+      <Component Id="ConfigFiles" Guid="C2D3E4F5-A6B7-4C5D-8E9F-0A1B2C3D4E5F" Win64="yes">
+        <File Source="..\NecessaryAdminTool\bin\Release\NecessaryAdminTool.exe.config" />
+        <File Source="..\NecessaryAdminTool\App.config" Name="App.config.template" />
+      </Component>
+
+      <!-- Core DLLs -->
+      <Component Id="CoreLibraries" Guid="D3E4F5A6-B7C8-4D5E-9F0A-1B2C3D4E5F6A" Win64="yes">
+        <!-- These will be added from your bin\Release folder -->
+        <File Source="..\NecessaryAdminTool\bin\Release\System.Data.SQLite.dll" />
+        <File Source="..\NecessaryAdminTool\bin\Release\Squirrel.dll" />
+      </Component>
+
+    </ComponentGroup>
+
+    <!-- ========================================
+         COMPONENTS - Desktop Shortcut (Optional)
+         ======================================== -->
+
+    <Component Id="DesktopShortcutComponent"
+               Directory="DesktopFolder"
+               Guid="E4F5A6B7-C8D9-4E5F-0A1B-2C3D4E5F6A7B"
+               Win64="yes">
+      <Shortcut Id="DesktopShortcut"
+                Name="NecessaryAdminTool"
+                Description="Enterprise IT Management Suite"
+                Target="[INSTALLFOLDER]NecessaryAdminTool.exe"
+                WorkingDirectory="INSTALLFOLDER"
+                Icon="AppIcon.exe"
+                IconIndex="0" />
+      <RemoveFolder Id="RemoveDesktopShortcut" On="uninstall" />
+      <RegistryValue Root="HKCU"
+                     Key="Software\NecessaryAdminTool"
+                     Name="DesktopShortcut"
+                     Type="integer"
+                     Value="1"
+                     KeyPath="yes" />
+    </Component>
+
+    <!-- ========================================
+         COMPONENTS - AppData Directory
+         ======================================== -->
+
+    <Component Id="AppDataDirectory"
+               Directory="APPDATAFOLDER"
+               Guid="F5A6B7C8-D9E0-4F5A-1B2C-3D4E5F6A7B8C"
+               Win64="yes">
+      <CreateFolder />
+      <RemoveFolder Id="RemoveAppDataFolder" On="uninstall" />
+      <RegistryValue Root="HKCU"
+                     Key="Software\NecessaryAdminTool"
+                     Name="AppDataCreated"
+                     Type="integer"
+                     Value="1"
+                     KeyPath="yes" />
+    </Component>
+
+    <!-- ========================================
+         FEATURES - What Gets Installed
+         ======================================== -->
+
+    <Feature Id="ProductFeature"
+             Title="NecessaryAdminTool Core"
+             Level="1"
+             Description="Main application and core components"
+             ConfigurableDirectory="INSTALLFOLDER"
+             AllowAdvertise="no"
+             Display="expand">
+
+      <ComponentGroupRef Id="ProductComponents" />
+      <ComponentRef Id="AppDataDirectory" />
+
+      <!-- Start Menu shortcut (always install) -->
+      <ComponentRef Id="MainExecutable" />
+
+      <!-- Optional features -->
+      <Feature Id="DesktopShortcut"
+               Title="Desktop Shortcut"
+               Level="1"
+               Description="Create a shortcut on the desktop">
+        <ComponentRef Id="DesktopShortcutComponent" />
+      </Feature>
+
+    </Feature>
+
+    <!-- ========================================
+         CUSTOM ACTIONS - Dependency Installation
+         ======================================== -->
+
+    <!-- Check if ACE Database Engine is installed -->
+    <Property Id="ACE_INSTALLED">
+      <RegistrySearch Id="SearchACE"
+                      Root="HKLM"
+                      Key="SOFTWARE\Microsoft\Office\ClickToRun\REGISTRY\MACHINE\Software\Classes\CLSID\{3BE786A0-0366-4F5C-9434-25CF162E475E}"
+                      Type="raw" />
+    </Property>
+
+    <!-- Embed ACE installer -->
+    <Binary Id="ACEInstaller" SourceFile="Dependencies\AccessDatabaseEngine_X64.exe" />
+
+    <!-- Custom action to install ACE if not present -->
+    <CustomAction Id="InstallACE"
+                  BinaryKey="ACEInstaller"
+                  ExeCommand="/quiet /passive"
+                  Execute="deferred"
+                  Return="check"
+                  Impersonate="no" />
+
+    <!-- Only run ACE install if not already installed -->
+    <InstallExecuteSequence>
+      <Custom Action="InstallACE" After="InstallFiles">
+        <![CDATA[NOT ACE_INSTALLED AND NOT Installed]]>
+      </Custom>
+      <Custom Action="LaunchApplication" After="InstallFinalize">
+        <![CDATA[WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed]]>
+      </Custom>
+    </InstallExecuteSequence>
+
+    <!-- ========================================
+         UI DIALOGS
+         ======================================== -->
+
+    <UIRef Id="WixUI_FeatureTree" />
+    <UIRef Id="WixUI_ErrorProgressText" />
+
+    <!-- Custom dialog for update settings -->
+    <UI>
+      <Publish Dialog="CustomizeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" Order="3">1</Publish>
+    </UI>
+
+    <!-- Application icon -->
+    <Icon Id="AppIcon.exe" SourceFile="..\NecessaryAdminTool\bin\Release\NecessaryAdminTool.exe" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.exe" />
+
+    <!-- Add/Remove Programs properties -->
+    <Property Id="ARPHELPLINK" Value="https://github.com/brandon-necessary/NecessaryAdminTool" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/brandon-necessary/NecessaryAdminTool" />
+    <Property Id="ARPNOREPAIR" Value="yes" Secure="yes" />
+    <Property Id="ARPNOMODIFY" Value="yes" Secure="yes" />
+
+  </Product>
+</Wix>

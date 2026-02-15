@@ -1,98 +1,266 @@
 using System;
+using System.Diagnostics;
+using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Reflection;
-// TAG: #AUTO_UPDATE #SQUIRREL
+using Microsoft.Win32;
+// TAG: #AUTO_UPDATE_INSTALLER #SQUIRREL #UPDATE_CONTROL #VERSION_1_0
 
 namespace NecessaryAdminTool
 {
     /// <summary>
-    /// Manages application updates using Squirrel.Windows
-    /// TAG: #AUTO_UPDATE #VERSION_1_1
+    /// Manages application updates with granular enterprise control
+    /// TAG: #AUTO_UPDATE #ENTERPRISE_CONTROL #REGISTRY_SETTINGS
     /// </summary>
     public static class UpdateManager
     {
-        private const string GitHubRepoUrl = "https://github.com/brandon-necessary/NecessaryAdminTool";
+        private const string REGISTRY_KEY = @"Software\NecessaryAdminTool\Updates";
+        private const string UPDATE_URL = "https://github.com/brandon-necessary/NecessaryAdminTool/releases";
+
+        // Update channels
+        public enum UpdateChannel
+        {
+            Stable,      // Production releases only
+            Beta,        // Pre-release builds
+            Disabled     // No updates
+        }
 
         /// <summary>
-        /// Check for updates and prompt user to install
+        /// Check if auto-updates are enabled via registry or config
+        /// TAG: #UPDATE_CONTROL #ENTERPRISE_POLICY
         /// </summary>
-        /// <param name="silent">If true, only show UI if update is available</param>
-        /// <returns>True if update was installed</returns>
-        public static async Task<bool> CheckForUpdatesAsync(bool silent = false)
+        public static bool AreUpdatesEnabled()
         {
             try
             {
-                // NOTE: Squirrel.Windows package must be installed via NuGet first
-                // Install-Package Squirrel.Windows
+                // Check registry first (set by GPO or installer)
+                using (var key = Registry.LocalMachine.OpenSubKey(REGISTRY_KEY, false))
+                {
+                    if (key != null)
+                    {
+                        var enabled = key.GetValue("EnableAutoUpdates", 1);
+                        if (enabled is int intValue && intValue == 0)
+                        {
+                            LogManager.LogInfo("Auto-updates disabled via registry (HKLM)");
+                            return false;
+                        }
+                    }
+                }
+
+                // Check current user registry (user override)
+                using (var key = Registry.CurrentUser.OpenSubKey(REGISTRY_KEY, false))
+                {
+                    if (key != null)
+                    {
+                        var enabled = key.GetValue("EnableAutoUpdates", 1);
+                        if (enabled is int intValue && intValue == 0)
+                        {
+                            LogManager.LogInfo("Auto-updates disabled via registry (HKCU)");
+                            return false;
+                        }
+                    }
+                }
+
+                // Check app settings
+                if (Properties.Settings.Default.DisableAutoUpdates)
+                {
+                    LogManager.LogInfo("Auto-updates disabled via application settings");
+                    return false;
+                }
+
+                // Check for marker file (for air-gapped environments)
+                string markerFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".no-updates");
+                if (File.Exists(markerFile))
+                {
+                    LogManager.LogInfo("Auto-updates disabled via marker file (.no-updates)");
+                    return false;
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to check update settings", ex);
+                return true; // Default to enabled if check fails
+            }
+        }
+
+        /// <summary>
+        /// Get update check frequency in hours
+        /// TAG: #UPDATE_FREQUENCY
+        /// </summary>
+        public static int GetUpdateFrequencyHours()
+        {
+            try
+            {
+                // Check registry (GPO setting)
+                using (var key = Registry.LocalMachine.OpenSubKey(REGISTRY_KEY, false))
+                {
+                    if (key != null)
+                    {
+                        var frequency = key.GetValue("CheckFrequencyHours", 24);
+                        if (frequency is int intValue)
+                        {
+                            return intValue;
+                        }
+                    }
+                }
+
+                // Default: Check every 24 hours
+                return 24;
+            }
+            catch
+            {
+                return 24;
+            }
+        }
+
+        /// <summary>
+        /// Get configured update channel
+        /// TAG: #UPDATE_CHANNEL
+        /// </summary>
+        public static UpdateChannel GetUpdateChannel()
+        {
+            try
+            {
+                // Check registry
+                using (var key = Registry.LocalMachine.OpenSubKey(REGISTRY_KEY, false))
+                {
+                    if (key != null)
+                    {
+                        var channel = key.GetValue("UpdateChannel", "stable") as string;
+                        if (Enum.TryParse<UpdateChannel>(channel, true, out var result))
+                        {
+                            return result;
+                        }
+                    }
+                }
+
+                return UpdateChannel.Stable;
+            }
+            catch
+            {
+                return UpdateChannel.Stable;
+            }
+        }
+
+        /// <summary>
+        /// Check for and apply updates
+        /// TAG: #AUTO_UPDATE #SQUIRREL_UPDATE
+        /// </summary>
+        public static async Task CheckForUpdatesAsync(bool silent = true)
+        {
+            try
+            {
+                // Respect update settings
+                if (!AreUpdatesEnabled())
+                {
+                    LogManager.LogInfo("Update check skipped - updates disabled");
+                    return;
+                }
+
+                var channel = GetUpdateChannel();
+                if (channel == UpdateChannel.Disabled)
+                {
+                    LogManager.LogInfo("Update check skipped - channel is Disabled");
+                    return;
+                }
+
+                // Check if enough time has elapsed since last check
+                if (!ShouldCheckForUpdates())
+                {
+                    LogManager.LogInfo("Update check skipped - too soon since last check");
+                    return;
+                }
+
+                LogManager.LogInfo($"Checking for updates (Channel: {channel}, Silent: {silent})");
 
                 #if SQUIRREL_ENABLED
-                using (var mgr = new Squirrel.UpdateManager(GitHubRepoUrl))
+                // Use Squirrel for updates
+                using (var manager = new Squirrel.UpdateManager(UPDATE_URL))
                 {
-                    var updateInfo = await mgr.CheckForUpdate();
+                    var updateInfo = await manager.CheckForUpdate();
 
                     if (updateInfo.ReleasesToApply.Count > 0)
                     {
-                        var newVersion = updateInfo.FutureReleaseEntry.Version;
-                        var currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
+                        var latestVersion = updateInfo.FutureReleaseEntry.Version;
+                        LogManager.LogInfo($"Update available: v{latestVersion}");
 
-                        var result = MessageBox.Show(
-                            $"New version available: v{newVersion}\n" +
-                            $"Current version: v{currentVersion}\n\n" +
-                            $"Download and install now?\n\n" +
-                            $"The application will restart after the update.",
-                            "Update Available - NecessaryAdminTool",
-                            MessageBoxButton.YesNo,
-                            MessageBoxImage.Question);
-
-                        if (result == MessageBoxResult.Yes)
+                        if (silent)
                         {
-                            // Download and apply update
-                            await mgr.UpdateApp();
+                            // Download in background, notify user
+                            await manager.DownloadReleases(updateInfo.ReleasesToApply);
 
-                            MessageBox.Show(
-                                "Update installed successfully!\n\n" +
-                                "Please restart the application to use the new version.",
-                                "Update Complete",
-                                MessageBoxButton.OK,
+                            ShowUpdateNotification(latestVersion.ToString());
+                        }
+                        else
+                        {
+                            // Interactive update
+                            var result = MessageBox.Show(
+                                $"A new version is available!\n\n" +
+                                $"Current: v{GetCurrentVersion()}\n" +
+                                $"Latest:  v{latestVersion}\n\n" +
+                                $"Download and install update?\n" +
+                                $"(Application will restart)",
+                                "Update Available",
+                                MessageBoxButton.YesNo,
                                 MessageBoxImage.Information);
 
-                            // Log the update
-                            LogManager.LogInfo($"Updated from v{currentVersion} to v{newVersion}");
+                            if (result == MessageBoxResult.Yes)
+                            {
+                                await manager.UpdateApp();
 
-                            return true;
+                                MessageBox.Show(
+                                    "Update downloaded successfully!\n\n" +
+                                    "The application will now restart to apply the update.",
+                                    "Update Ready",
+                                    MessageBoxButton.OK,
+                                    MessageBoxImage.Information);
+
+                                // Restart application
+                                Squirrel.UpdateManager.RestartApp();
+                            }
                         }
                     }
-                    else if (!silent)
+                    else
                     {
-                        var currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
-                        MessageBox.Show(
-                            $"You are running the latest version!\n\n" +
-                            $"Current version: v{currentVersion}",
-                            "No Updates Available",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
+                        LogManager.LogInfo("No updates available");
+
+                        if (!silent)
+                        {
+                            MessageBox.Show(
+                                $"You are running the latest version!\n\nVersion: {GetCurrentVersion()}",
+                                "No Updates Available",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Information);
+                        }
                     }
                 }
                 #else
-                // Squirrel not yet installed - show placeholder
+                LogManager.LogWarning("Squirrel not enabled - manual update checking not available");
+
                 if (!silent)
                 {
-                    var currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
-                    MessageBox.Show(
-                        $"Auto-update system is being configured.\n\n" +
-                        $"Current version: v{currentVersion}\n\n" +
-                        $"To enable auto-updates:\n" +
-                        $"1. Install Squirrel.Windows NuGet package\n" +
-                        $"2. Rebuild the solution\n" +
-                        $"3. Define SQUIRREL_ENABLED in project properties",
-                        "Update System - Configuration Required",
-                        MessageBoxButton.OK,
+                    var result = MessageBox.Show(
+                        "Auto-update system is not configured.\n\n" +
+                        "Would you like to visit the download page to check for updates manually?",
+                        "Manual Update Required",
+                        MessageBoxButton.YesNo,
                         MessageBoxImage.Information);
+
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        Process.Start(new ProcessStartInfo
+                        {
+                            FileName = "https://github.com/brandon-necessary/NecessaryAdminTool/releases",
+                            UseShellExecute = true
+                        });
+                    }
                 }
                 #endif
 
-                return false;
+                // Update last check timestamp
+                RecordUpdateCheck();
             }
             catch (Exception ex)
             {
@@ -101,100 +269,49 @@ namespace NecessaryAdminTool
                 if (!silent)
                 {
                     MessageBox.Show(
-                        $"Failed to check for updates:\n\n{ex.Message}\n\n" +
-                        $"Please check your internet connection and try again.",
+                        $"Failed to check for updates:\n\n{ex.Message}",
                         "Update Error",
                         MessageBoxButton.OK,
-                        MessageBoxImage.Error);
+                        MessageBoxImage.Warning);
                 }
-
-                return false;
             }
         }
 
         /// <summary>
-        /// Check if this is the first run after an update
+        /// Check if enough time has elapsed since last update check
+        /// TAG: #UPDATE_THROTTLE
         /// </summary>
-        public static void HandleSquirrelEvents()
+        private static bool ShouldCheckForUpdates()
         {
             try
             {
-                #if SQUIRREL_ENABLED
-                using (var mgr = new Squirrel.UpdateManager(GitHubRepoUrl))
+                var lastCheckStr = Properties.Settings.Default.LastUpdateCheck;
+                if (string.IsNullOrEmpty(lastCheckStr))
                 {
-                    Squirrel.SquirrelAwareApp.HandleEvents(
-                        onInitialInstall: v => OnAppInstall(v),
-                        onAppUpdate: v => OnAppUpdate(v),
-                        onAppUninstall: v => OnAppUninstall(v),
-                        onFirstRun: () => OnFirstRun()
-                    );
+                    return true;
                 }
-                #endif
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError("Squirrel event handling failed", ex);
-            }
-        }
 
-        /// <summary>
-        /// Called on initial installation
-        /// </summary>
-        private static void OnAppInstall(Version version)
-        {
-            LogManager.LogInfo($"NecessaryAdminTool v{version} installed");
-            // Create desktop shortcut, start menu entry, etc.
-        }
+                var lastCheck = DateTime.Parse(lastCheckStr);
+                var frequency = TimeSpan.FromHours(GetUpdateFrequencyHours());
 
-        /// <summary>
-        /// Called when app is updated
-        /// </summary>
-        private static void OnAppUpdate(Version version)
-        {
-            LogManager.LogInfo($"NecessaryAdminTool updated to v{version}");
-            // Update shortcuts, registry entries, etc.
-        }
+                if (DateTime.Now - lastCheck < frequency)
+                {
+                    return false;
+                }
 
-        /// <summary>
-        /// Called when app is uninstalled
-        /// </summary>
-        private static void OnAppUninstall(Version version)
-        {
-            LogManager.LogInfo($"NecessaryAdminTool v{version} uninstalled");
-            // Clean up settings, shortcuts, etc.
-        }
-
-        /// <summary>
-        /// Called on first run after install/update
-        /// </summary>
-        private static void OnFirstRun()
-        {
-            LogManager.LogInfo("First run detected");
-        }
-
-        /// <summary>
-        /// Get the last time update check was performed
-        /// </summary>
-        public static DateTime GetLastUpdateCheck()
-        {
-            try
-            {
-                var lastCheck = Properties.Settings.Default.LastUpdateCheck;
-                if (string.IsNullOrEmpty(lastCheck))
-                    return DateTime.MinValue;
-
-                return DateTime.Parse(lastCheck);
+                return true;
             }
             catch
             {
-                return DateTime.MinValue;
+                return true; // If check fails, allow update
             }
         }
 
         /// <summary>
-        /// Save the last update check timestamp
+        /// Record timestamp of update check
+        /// TAG: #UPDATE_TRACKING
         /// </summary>
-        public static void SaveLastUpdateCheck()
+        private static void RecordUpdateCheck()
         {
             try
             {
@@ -203,40 +320,168 @@ namespace NecessaryAdminTool
             }
             catch (Exception ex)
             {
-                LogManager.LogError("Failed to save last update check time", ex);
+                LogManager.LogError("Failed to record update check time", ex);
             }
         }
 
         /// <summary>
-        /// Check if it's time for an automatic update check (weekly)
+        /// Show toast notification for available update
+        /// TAG: #UPDATE_NOTIFICATION
         /// </summary>
-        public static bool ShouldCheckForUpdates()
-        {
-            var lastCheck = GetLastUpdateCheck();
-            var daysSinceLastCheck = (DateTime.Now - lastCheck).TotalDays;
-
-            // Check weekly (7 days)
-            return daysSinceLastCheck >= 7;
-        }
-
-        /// <summary>
-        /// Perform automatic update check (called on startup)
-        /// </summary>
-        public static async Task PerformAutomaticUpdateCheckAsync()
+        private static void ShowUpdateNotification(string version)
         {
             try
             {
-                if (ShouldCheckForUpdates())
+                Application.Current.Dispatcher.Invoke(() =>
                 {
-                    LogManager.LogInfo("Performing automatic weekly update check");
-                    await CheckForUpdatesAsync(silent: true);
-                    SaveLastUpdateCheck();
+                    MessageBox.Show(
+                        $"A new version (v{version}) has been downloaded in the background.\n\n" +
+                        $"Click 'Help → Check for Updates' to install and restart.",
+                        "Update Ready",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                });
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to show update notification", ex);
+            }
+        }
+
+        /// <summary>
+        /// Get current application version
+        /// TAG: #VERSION_INFO
+        /// </summary>
+        public static string GetCurrentVersion()
+        {
+            try
+            {
+                var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+                var version = assembly.GetName().Version;
+                return $"{version.Major}.{version.Minor}.{version.Build}.{version.Revision}";
+            }
+            catch
+            {
+                return "Unknown";
+            }
+        }
+
+        /// <summary>
+        /// Disable auto-updates (user preference)
+        /// TAG: #UPDATE_CONTROL #USER_PREFERENCE
+        /// </summary>
+        public static void DisableAutoUpdates()
+        {
+            try
+            {
+                Properties.Settings.Default.DisableAutoUpdates = true;
+                Properties.Settings.Default.Save();
+                LogManager.LogInfo("Auto-updates disabled by user");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to disable auto-updates", ex);
+            }
+        }
+
+        /// <summary>
+        /// Enable auto-updates (user preference)
+        /// TAG: #UPDATE_CONTROL #USER_PREFERENCE
+        /// </summary>
+        public static void EnableAutoUpdates()
+        {
+            try
+            {
+                Properties.Settings.Default.DisableAutoUpdates = false;
+                Properties.Settings.Default.Save();
+                LogManager.LogInfo("Auto-updates enabled by user");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to enable auto-updates", ex);
+            }
+        }
+
+        /// <summary>
+        /// Create marker file to disable updates (for deployment)
+        /// TAG: #DEPLOYMENT #AIR_GAPPED
+        /// </summary>
+        public static void CreateNoUpdateMarker()
+        {
+            try
+            {
+                string markerFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".no-updates");
+                File.WriteAllText(markerFile, $"Auto-updates disabled at {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                LogManager.LogInfo("Created .no-updates marker file");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to create .no-updates marker", ex);
+            }
+        }
+
+        /// <summary>
+        /// Remove marker file to re-enable updates
+        /// TAG: #DEPLOYMENT
+        /// </summary>
+        public static void RemoveNoUpdateMarker()
+        {
+            try
+            {
+                string markerFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".no-updates");
+                if (File.Exists(markerFile))
+                {
+                    File.Delete(markerFile);
+                    LogManager.LogInfo("Removed .no-updates marker file");
                 }
             }
             catch (Exception ex)
             {
-                LogManager.LogError("Automatic update check failed", ex);
+                LogManager.LogError("Failed to remove .no-updates marker", ex);
             }
+        }
+
+        /// <summary>
+        /// Handle Squirrel lifecycle events
+        /// TAG: #SQUIRREL_EVENTS
+        /// </summary>
+        public static void HandleSquirrelEvents()
+        {
+            try
+            {
+                #if SQUIRREL_ENABLED
+                Squirrel.SquirrelAwareApp.HandleEvents(
+                    onInitialInstall: v => OnAppInstall(v),
+                    onAppUpdate: v => OnAppUpdate(v),
+                    onAppUninstall: v => OnAppUninstall(v),
+                    onFirstRun: () => OnFirstRun()
+                );
+                #endif
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Squirrel event handling failed", ex);
+            }
+        }
+
+        private static void OnAppInstall(Version version)
+        {
+            LogManager.LogInfo($"NecessaryAdminTool v{version} installed");
+        }
+
+        private static void OnAppUpdate(Version version)
+        {
+            LogManager.LogInfo($"NecessaryAdminTool updated to v{version}");
+        }
+
+        private static void OnAppUninstall(Version version)
+        {
+            LogManager.LogInfo($"NecessaryAdminTool v{version} uninstalled");
+        }
+
+        private static void OnFirstRun()
+        {
+            LogManager.LogInfo("First run detected");
         }
     }
 }
