@@ -2120,6 +2120,10 @@ namespace NecessaryAdminTool
         {
             InitializeComponent();
 
+            // TAG: #SUPERADMIN - Register secret keyboard shortcut for SuperAdmin window
+            // Secret combo: Ctrl+Shift+Alt+S
+            this.KeyDown += MainWindow_KeyDown_SuperAdmin;
+
             // Set window title with version from AssemblyInfo (modular)
             // TAG: #MODULAR #VERSION
             Title = $"NecessaryAdminTool Suite {LogoConfig.VERSION}";
@@ -2591,6 +2595,254 @@ namespace NecessaryAdminTool
                 LogManager.LogInfo("Application closing — credentials wiped from memory");
             }
             catch (Exception ex) { LogManager.LogError("Window_Closing failed", ex); }
+        }
+
+        // ────────────────────────────────────────────────────────────────────────
+        // REGION: SUPERADMIN ACCESS
+        // TAG: #SUPERADMIN #HIDDEN_FEATURE #WHITELABEL_GUI
+        // ────────────────────────────────────────────────────────────────────────
+
+        // SuperAdmin secret button click tracking
+        private int _superAdminClickCount = 0;
+        private DateTime _lastSuperAdminClick = DateTime.MinValue;
+        private const int SUPERADMIN_CLICK_THRESHOLD = 5; // Require 5 rapid clicks
+        private const int SUPERADMIN_CLICK_WINDOW_MS = 2000; // Within 2 seconds
+
+        /// <summary>
+        /// Invisible button click handler for SuperAdmin access
+        /// Requires 5 rapid clicks within 2 seconds
+        /// Located over the version badge in header
+        /// </summary>
+        private void BtnSuperAdminTrigger_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                DateTime now = DateTime.Now;
+                TimeSpan timeSinceLastClick = now - _lastSuperAdminClick;
+
+                // Reset counter if too much time has passed
+                if (timeSinceLastClick.TotalMilliseconds > SUPERADMIN_CLICK_WINDOW_MS)
+                {
+                    _superAdminClickCount = 0;
+                }
+
+                _superAdminClickCount++;
+                _lastSuperAdminClick = now;
+
+                // Visual feedback (subtle pulse animation on version badge)
+                if (_superAdminClickCount > 1 && _superAdminClickCount < SUPERADMIN_CLICK_THRESHOLD)
+                {
+                    if (TxtVersionBadge != null)
+                    {
+                        var pulseAnimation = new DoubleAnimation
+                        {
+                            From = 1.0,
+                            To = 0.5,
+                            Duration = TimeSpan.FromMilliseconds(100),
+                            AutoReverse = true
+                        };
+                        TxtVersionBadge.BeginAnimation(UIElement.OpacityProperty, pulseAnimation);
+                    }
+                }
+
+                // Trigger SuperAdmin if threshold reached
+                if (_superAdminClickCount >= SUPERADMIN_CLICK_THRESHOLD)
+                {
+                    _superAdminClickCount = 0; // Reset counter
+                    OpenSuperAdminWindow();
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("SuperAdmin trigger button click failed", ex);
+            }
+        }
+
+        /// <summary>
+        /// Secret keyboard shortcut handler for SuperAdmin window
+        /// Combo: Ctrl+Shift+Alt+S
+        /// </summary>
+        private void MainWindow_KeyDown_SuperAdmin(object sender, KeyEventArgs e)
+        {
+            // Secret combo: Ctrl+Shift+Alt+S
+            if (e.Key == Key.S &&
+                Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift | ModifierKeys.Alt))
+            {
+                e.Handled = true;
+                OpenSuperAdminWindow();
+            }
+        }
+
+        /// <summary>
+        /// Open SuperAdmin window with password authentication
+        /// Shared method for both keyboard shortcut and secret button
+        /// </summary>
+        private void OpenSuperAdminWindow()
+        {
+            try
+            {
+                // Require admin privileges
+                if (!IsUserAdmin())
+                {
+                    MessageBox.Show(
+                        "SuperAdmin mode requires administrator privileges.\n\n" +
+                        "Please run NecessaryAdminTool as Administrator.",
+                        "Access Denied",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return;
+                }
+
+                    // Optional: Password challenge
+                    var passwordWindow = new Window
+                    {
+                        Title = "SuperAdmin Authentication",
+                        Width = 400,
+                        Height = 200,
+                        WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                        Owner = this,
+                        Background = new SolidColorBrush(Color.FromRgb(26, 26, 26)),
+                        ResizeMode = ResizeMode.NoResize
+                    };
+
+                    var stack = new StackPanel { Margin = new Thickness(20) };
+
+                    var headerText = new TextBlock
+                    {
+                        Text = "🔒 Enter SuperAdmin Password",
+                        FontSize = 16,
+                        FontWeight = FontWeights.Bold,
+                        Foreground = Brushes.White,
+                        Margin = new Thickness(0, 0, 0, 15)
+                    };
+                    stack.Children.Add(headerText);
+
+                    var passwordBox = new PasswordBox
+                    {
+                        Height = 35,
+                        FontSize = 14,
+                        Margin = new Thickness(0, 0, 0, 15)
+                    };
+                    stack.Children.Add(passwordBox);
+
+                    var buttonPanel = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+
+                    var okButton = new Button
+                    {
+                        Content = "OK",
+                        Width = 80,
+                        Height = 35,
+                        Margin = new Thickness(0, 0, 10, 0),
+                        Background = new SolidColorBrush(Color.FromRgb(255, 107, 53)),
+                        Foreground = Brushes.White,
+                        BorderThickness = new Thickness(0)
+                    };
+                    okButton.Click += (s, args) => {
+                        passwordWindow.DialogResult = true;
+                        passwordWindow.Close();
+                    };
+                    buttonPanel.Children.Add(okButton);
+
+                    var cancelButton = new Button
+                    {
+                        Content = "Cancel",
+                        Width = 80,
+                        Height = 35,
+                        Background = new SolidColorBrush(Color.FromRgb(113, 121, 126)),
+                        Foreground = Brushes.White,
+                        BorderThickness = new Thickness(0)
+                    };
+                    cancelButton.Click += (s, args) => {
+                        passwordWindow.DialogResult = false;
+                        passwordWindow.Close();
+                    };
+                    buttonPanel.Children.Add(cancelButton);
+
+                    stack.Children.Add(buttonPanel);
+
+                    var hintText = new TextBlock
+                    {
+                        Text = "Hint: Check WHITELABEL_GUIDE.md",
+                        FontSize = 11,
+                        Foreground = new SolidColorBrush(Color.FromRgb(136, 136, 136)),
+                        FontStyle = FontStyles.Italic,
+                        Margin = new Thickness(0, 15, 0, 0)
+                    };
+                    stack.Children.Add(hintText);
+
+                    passwordWindow.Content = stack;
+                    passwordBox.Focus();
+
+                    // Allow Enter key to submit
+                    passwordBox.KeyDown += (s, args) =>
+                    {
+                        if (args.Key == Key.Enter)
+                        {
+                            okButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                        }
+                    };
+
+                    if (passwordWindow.ShowDialog() == true)
+                    {
+                        // SuperAdmin password
+                        // In production, use hashed password with salt
+                        string enteredPassword = passwordBox.Password;
+                        string correctPassword = "08282021";
+
+                        if (enteredPassword == correctPassword)
+                        {
+                            // Open SuperAdmin window
+                            var superAdminWindow = new SuperAdminWindow
+                            {
+                                Owner = this
+                            };
+                            superAdminWindow.ShowDialog();
+
+                            LogManager.LogInfo($"SuperAdmin mode accessed by {Environment.UserName}");
+                        }
+                        else
+                        {
+                            MessageBox.Show(
+                                "Incorrect password.\n\n" +
+                                "Access denied.",
+                                "Authentication Failed",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Error);
+
+                            LogManager.LogWarning($"Failed SuperAdmin access attempt by {Environment.UserName}");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(
+                        $"Error opening SuperAdmin mode:\n\n{ex.Message}",
+                        "Error",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+
+                    LogManager.LogError("SuperAdmin window launch failed", ex);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Check if current user has administrator privileges
+        /// </summary>
+        private bool IsUserAdmin()
+        {
+            try
+            {
+                using (WindowsIdentity identity = WindowsIdentity.GetCurrent())
+                {
+                    WindowsPrincipal principal = new WindowsPrincipal(identity);
+                    return principal.IsInRole(WindowsBuiltInRole.Administrator);
+                }
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         // ── Role-Based Access Control ──

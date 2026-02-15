@@ -106,14 +106,26 @@
                                 <GradientStop Color="#A1A1AA" Offset="1"/>
                             </LinearGradientBrush>
                         </Border.BorderBrush>
-                        <TextBlock x:Name="TxtVersionBadge" FontSize="10" FontWeight="Bold">
-                            <TextBlock.Foreground>
-                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                    <GradientStop Color="#FF8533" Offset="0"/>
-                                    <GradientStop Color="#A1A1AA" Offset="1"/>
-                                </LinearGradientBrush>
-                            </TextBlock.Foreground>
-                        </TextBlock>
+                        <Grid>
+                            <TextBlock x:Name="TxtVersionBadge" FontSize="10" FontWeight="Bold">
+                                <TextBlock.Foreground>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                        <GradientStop Color="#FF8533" Offset="0"/>
+                                        <GradientStop Color="#A1A1AA" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </TextBlock.Foreground>
+                            </TextBlock>
+
+                            <!-- TAG: #SUPERADMIN - Invisible button overlay - Click 5x rapidly to access SuperAdmin -->
+                            <Button x:Name="BtnSuperAdminTrigger"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Cursor="Arrow"
+                                    Click="BtnSuperAdminTrigger_Click"
+                                    ToolTip=""
+                                    Opacity="0.01"
+                                    IsTabStop="False"/>
+                        </Grid>
                     </Border>
                 </StackPanel>
 
