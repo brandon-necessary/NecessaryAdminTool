@@ -10,8 +10,8 @@
     <!-- TAG: #MMC_EMBEDDING #WIN32_INTEROP #EXTERNAL_PROCESS -->
 
     <Grid>
-        <!-- Loading indicator -->
-        <Border x:Name="LoadingPanel" Background="#FF1E1E1E" Visibility="Visible">
+        <!-- Loading indicator (hidden until tab is active) -->
+        <Border x:Name="LoadingPanel" Background="#FF1E1E1E" Visibility="Collapsed">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                 <TextBlock Text="⏳" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,16"/>
                 <TextBlock x:Name="TxtLoadingMessage" Text="Loading MMC console..."

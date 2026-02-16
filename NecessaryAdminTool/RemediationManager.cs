@@ -61,42 +61,42 @@ namespace NecessaryAdminTool
 
             try
             {
-                await Task.Run(() =>
+                await Task.Run(async () =>
                 {
                     switch (action)
                     {
                         case RemediationAction.RestartWindowsUpdate:
-                            RestartWindowsUpdateService(hostname, username, password);
+                            await RestartWindowsUpdateServiceAsync(hostname, username, password);
                             result.Success = true;
                             result.Message = "Windows Update service restarted and cache cleared";
                             break;
 
                         case RemediationAction.ClearDNSCache:
-                            ClearDNSCache(hostname, username, password);
+                            await ClearDNSCacheAsync(hostname, username, password);
                             result.Success = true;
                             result.Message = "DNS cache flushed successfully";
                             break;
 
                         case RemediationAction.RestartPrintSpooler:
-                            RestartPrintSpooler(hostname, username, password);
+                            await RestartPrintSpoolerAsync(hostname, username, password);
                             result.Success = true;
                             result.Message = "Print Spooler service restarted";
                             break;
 
                         case RemediationAction.EnableWinRM:
-                            EnableWinRM(hostname, username, password);
+                            await EnableWinRMAsync(hostname, username, password);
                             result.Success = true;
                             result.Message = "WinRM enabled and configured";
                             break;
 
                         case RemediationAction.FixTimeSync:
-                            FixTimeSync(hostname, username, password);
+                            await FixTimeSyncAsync(hostname, username, password);
                             result.Success = true;
                             result.Message = "Time synchronized with domain";
                             break;
 
                         case RemediationAction.ClearEventLogs:
-                            ClearEventLogs(hostname, username, password);
+                            await ClearEventLogsAsync(hostname, username, password);
                             result.Success = true;
                             result.Message = "Event logs cleared (Application, System, Security)";
                             break;
@@ -121,7 +121,7 @@ namespace NecessaryAdminTool
         /// Restart Windows Update service and clear cache
         /// TAG: #VERSION_7.1 #REMEDIATION #WINDOWS_UPDATE #LOGGING
         /// </summary>
-        private static void RestartWindowsUpdateService(string hostname, string username, string password)
+        private static async Task RestartWindowsUpdateServiceAsync(string hostname, string username, string password)
         {
             LogManager.LogInfo($"RemediationManager.RestartWindowsUpdateService() - START - Target: {hostname}");
 
@@ -130,7 +130,7 @@ namespace NecessaryAdminTool
             // Stop Windows Update service
             LogManager.LogInfo($"Stopping Windows Update service (wuauserv) on {hostname}");
             StopService(scope, "wuauserv");
-            Thread.Sleep(2000); // Wait for service to stop
+            await Task.Delay(2000); // Wait for service to stop
 
             // Clear SoftwareDistribution folder (optional - requires file access)
             try
@@ -140,7 +140,7 @@ namespace NecessaryAdminTool
                 var inParams = deleteCmd.GetMethodParameters("Create");
                 inParams["CommandLine"] = "cmd.exe /c rd /s /q C:\\Windows\\SoftwareDistribution\\Download";
                 deleteCmd.InvokeMethod("Create", inParams, null);
-                Thread.Sleep(1000);
+                await Task.Delay(1000);
                 LogManager.LogInfo($"SoftwareDistribution cache clear command executed on {hostname}");
             }
             catch (Exception ex)
@@ -158,7 +158,7 @@ namespace NecessaryAdminTool
         /// Clear DNS cache via ipconfig /flushdns
         /// TAG: #VERSION_7.1 #REMEDIATION #DNS #LOGGING
         /// </summary>
-        private static void ClearDNSCache(string hostname, string username, string password)
+        private static Task ClearDNSCacheAsync(string hostname, string username, string password)
         {
             LogManager.LogInfo($"RemediationManager.ClearDNSCache() - START - Target: {hostname}");
 
@@ -180,13 +180,14 @@ namespace NecessaryAdminTool
             }
 
             LogManager.LogInfo($"RemediationManager.ClearDNSCache() - SUCCESS - DNS cache cleared on {hostname}");
+            return Task.CompletedTask;
         }
 
         /// <summary>
         /// Restart Print Spooler service
         /// TAG: #VERSION_7.1 #REMEDIATION #PRINT_SPOOLER #LOGGING
         /// </summary>
-        private static void RestartPrintSpooler(string hostname, string username, string password)
+        private static async Task RestartPrintSpoolerAsync(string hostname, string username, string password)
         {
             LogManager.LogInfo($"RemediationManager.RestartPrintSpooler() - START - Target: {hostname}");
 
@@ -194,7 +195,7 @@ namespace NecessaryAdminTool
 
             LogManager.LogInfo($"Stopping Print Spooler service on {hostname}");
             StopService(scope, "spooler");
-            Thread.Sleep(2000);
+            await Task.Delay(2000);
 
             LogManager.LogInfo($"Starting Print Spooler service on {hostname}");
             StartService(scope, "spooler");
@@ -206,7 +207,7 @@ namespace NecessaryAdminTool
         /// Enable WinRM for remote management
         /// TAG: #VERSION_7.1 #REMEDIATION #WINRM #LOGGING
         /// </summary>
-        private static void EnableWinRM(string hostname, string username, string password)
+        private static Task EnableWinRMAsync(string hostname, string username, string password)
         {
             LogManager.LogInfo($"RemediationManager.EnableWinRM() - START - Target: {hostname}");
 
@@ -228,19 +229,20 @@ namespace NecessaryAdminTool
             }
 
             LogManager.LogInfo($"RemediationManager.EnableWinRM() - SUCCESS - WinRM enabled on {hostname}");
+            return Task.CompletedTask;
         }
 
         /// <summary>
         /// Fix time synchronization with domain controller
         /// TAG: #VERSION_7.1 #REMEDIATION #TIME_SYNC
         /// </summary>
-        private static void FixTimeSync(string hostname, string username, string password)
+        private static async Task FixTimeSyncAsync(string hostname, string username, string password)
         {
             var scope = GetWmiScope(hostname, username, password);
 
             // Stop Windows Time service
             StopService(scope, "w32time");
-            Thread.Sleep(1000);
+            await Task.Delay(1000);
 
             // Resync time
             var processClass = new ManagementClass(scope, new ManagementPath("Win32_Process"), null);
@@ -248,7 +250,7 @@ namespace NecessaryAdminTool
             inParams["CommandLine"] = "w32tm /resync /force";
 
             processClass.InvokeMethod("Create", inParams, null);
-            Thread.Sleep(1000);
+            await Task.Delay(1000);
 
             // Start Windows Time service
             StartService(scope, "w32time");
@@ -258,7 +260,7 @@ namespace NecessaryAdminTool
         /// Clear Windows Event Logs (Application, System, Security)
         /// TAG: #VERSION_7.1 #REMEDIATION #EVENT_LOGS
         /// </summary>
-        private static void ClearEventLogs(string hostname, string username, string password)
+        private static Task ClearEventLogsAsync(string hostname, string username, string password)
         {
             var scope = GetWmiScope(hostname, username, password);
 
@@ -269,12 +271,16 @@ namespace NecessaryAdminTool
                 try
                 {
                     var query = $"SELECT * FROM Win32_NTEventLogFile WHERE LogfileName='{logName}'";
-                    var searcher = new ManagementObjectSearcher(scope, new ObjectQuery(query));
-
-                    foreach (ManagementObject log in searcher.Get())
+                    using (var searcher = new ManagementObjectSearcher(scope, new ObjectQuery(query)))
+                    using (var results = searcher.Get())
                     {
-                        log.InvokeMethod("ClearEventLog", null);
-                        log.Dispose();
+                        foreach (ManagementObject log in results)
+                        {
+                            using (log)
+                            {
+                                log.InvokeMethod("ClearEventLog", null);
+                            }
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -282,6 +288,7 @@ namespace NecessaryAdminTool
                     LogManager.LogWarning($"[Remediation] Could not clear {logName} log: {ex.Message}");
                 }
             }
+            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -290,15 +297,19 @@ namespace NecessaryAdminTool
         private static void StopService(ManagementScope scope, string serviceName)
         {
             var query = $"SELECT * FROM Win32_Service WHERE Name='{serviceName}'";
-            var searcher = new ManagementObjectSearcher(scope, new ObjectQuery(query));
-
-            foreach (ManagementObject service in searcher.Get())
+            using (var searcher = new ManagementObjectSearcher(scope, new ObjectQuery(query)))
+            using (var results = searcher.Get())
             {
-                if (service["State"].ToString() == "Running")
+                foreach (ManagementObject service in results)
                 {
-                    service.InvokeMethod("StopService", null);
+                    using (service)
+                    {
+                        if (service["State"].ToString() == "Running")
+                        {
+                            service.InvokeMethod("StopService", null);
+                        }
+                    }
                 }
-                service.Dispose();
             }
         }
 
@@ -308,15 +319,19 @@ namespace NecessaryAdminTool
         private static void StartService(ManagementScope scope, string serviceName)
         {
             var query = $"SELECT * FROM Win32_Service WHERE Name='{serviceName}'";
-            var searcher = new ManagementObjectSearcher(scope, new ObjectQuery(query));
-
-            foreach (ManagementObject service in searcher.Get())
+            using (var searcher = new ManagementObjectSearcher(scope, new ObjectQuery(query)))
+            using (var results = searcher.Get())
             {
-                if (service["State"].ToString() != "Running")
+                foreach (ManagementObject service in results)
                 {
-                    service.InvokeMethod("StartService", null);
+                    using (service)
+                    {
+                        if (service["State"].ToString() != "Running")
+                        {
+                            service.InvokeMethod("StartService", null);
+                        }
+                    }
                 }
-                service.Dispose();
             }
         }
 

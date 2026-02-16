@@ -1184,51 +1184,80 @@
                                             </StackPanel>
                                         </Grid>
 
-                                        <!-- DC Health List - TAG: #DC_HEALTH #UI_IMPROVEMENT - Horizontal side-by-side layout -->
+                                        <!-- DC Health List - TAG: #DC_HEALTH #UI_IMPROVEMENT #RESPONSIVE_LAYOUT - Auto-expanding cards -->
                                         <Border Background="#FF2A2A2A" BorderBrush="#FF3C3C3C" BorderThickness="1"
                                                 CornerRadius="4" Padding="12">
-                                            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                                            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                                                 <ItemsControl x:Name="ListDCHealth">
-                                                    <!-- TAG: #DC_HEALTH #UI_IMPROVEMENT - WrapPanel for horizontal side-by-side cards -->
+                                                    <!-- TAG: #DC_HEALTH #UI_IMPROVEMENT - WrapPanel with responsive card sizing -->
                                                     <ItemsControl.ItemsPanel>
                                                         <ItemsPanelTemplate>
-                                                            <WrapPanel Orientation="Horizontal"/>
+                                                            <WrapPanel Orientation="Horizontal" ItemWidth="200" ItemHeight="120"/>
                                                         </ItemsPanelTemplate>
                                                     </ItemsControl.ItemsPanel>
 
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
-                                                            <!-- DC Card - TAG: #DC_HEALTH #UI_IMPROVEMENT #READABILITY_ENHANCED -->
+                                                            <!-- DC Card - TAG: #DC_HEALTH #UI_IMPROVEMENT #READABILITY_ENHANCED #RESPONSIVE #FAVORITES -->
                                                             <Border Background="#FF2C2C2C" BorderBrush="#FF4A4A4A"
                                                                     BorderThickness="1.5" CornerRadius="8" Padding="16,14"
-                                                                    Margin="0,0,12,10" MinWidth="180">
-                                                                <StackPanel>
-                                                                    <!-- DC Hostname - Larger, more prominent -->
-                                                                    <TextBlock Text="{Binding Hostname, Mode=OneWay}"
-                                                                               Foreground="#FFEEEEEE" FontSize="13" FontWeight="Bold"
-                                                                               TextAlignment="Center" TextTrimming="CharacterEllipsis"
-                                                                               Margin="0,0,0,10"/>
+                                                                    Margin="6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                                                    AllowDrop="True" Tag="{Binding Hostname}">
+                                                                <Grid>
+                                                                    <!-- Favorite Star Button - Top Right -->
+                                                                    <Button x:Name="BtnFavoriteDC"
+                                                                            HorizontalAlignment="Right" VerticalAlignment="Top"
+                                                                            Width="24" Height="24" Padding="0" Margin="-8,-8,0,0"
+                                                                            Background="Transparent" BorderThickness="0"
+                                                                            Cursor="Hand"
+                                                                            Click="BtnFavoriteDC_Click"
+                                                                            Tag="{Binding Hostname}"
+                                                                            ToolTip="Click to favorite/unfavorite this DC">
+                                                                        <TextBlock Text="{Binding FavoriteIcon}" FontSize="16"/>
+                                                                    </Button>
 
-                                                                    <!-- Latency Badge - Larger, primary metric -->
-                                                                    <Border Background="{Binding LatencyBg, Mode=OneWay}"
-                                                                            CornerRadius="12" Padding="14,6"
-                                                                            HorizontalAlignment="Center" Margin="0,0,0,10">
-                                                                        <TextBlock Foreground="{Binding LatencyColor, Mode=OneWay}"
-                                                                                   FontSize="14" FontWeight="Bold" TextAlignment="Center">
-                                                                            <Run Text="{Binding AvgLatency, Mode=OneWay, StringFormat={}{0}ms}"/>
-                                                                        </TextBlock>
-                                                                    </Border>
+                                                                    <StackPanel>
+                                                                        <!-- DC Hostname - Larger, more prominent -->
+                                                                        <TextBlock Text="{Binding Hostname, Mode=OneWay}"
+                                                                                   Foreground="#FFEEEEEE" FontSize="13" FontWeight="Bold"
+                                                                                   TextAlignment="Center" TextTrimming="CharacterEllipsis"
+                                                                                   Margin="0,0,0,10"/>
 
-                                                                    <!-- Health Icon - Larger for better visibility -->
-                                                                    <TextBlock Text="{Binding HealthIcon, Mode=OneWay}"
-                                                                               FontSize="24" TextAlignment="Center"/>
-                                                                </StackPanel>
+                                                                        <!-- Latency Badge - Larger, primary metric -->
+                                                                        <Border Background="{Binding LatencyBg, Mode=OneWay}"
+                                                                                CornerRadius="12" Padding="14,6"
+                                                                                HorizontalAlignment="Center" Margin="0,0,0,10">
+                                                                            <TextBlock Foreground="{Binding LatencyColor, Mode=OneWay}"
+                                                                                       FontSize="14" FontWeight="Bold" TextAlignment="Center">
+                                                                                <Run Text="{Binding AvgLatency, Mode=OneWay, StringFormat={}{0}ms}"/>
+                                                                            </TextBlock>
+                                                                        </Border>
+
+                                                                        <!-- Health Icon - Larger for better visibility -->
+                                                                        <TextBlock Text="{Binding HealthIcon, Mode=OneWay}"
+                                                                                   FontSize="24" TextAlignment="Center"/>
+                                                                    </StackPanel>
+                                                                </Grid>
                                                             </Border>
                                                         </DataTemplate>
                                                     </ItemsControl.ItemTemplate>
                                                 </ItemsControl>
                                             </ScrollViewer>
                                         </Border>
+
+                                        <!-- TAG: #DC_HEALTH #FAVORITES #EXPAND_COLLAPSE -->
+                                        <!-- Expand/Collapse Button -->
+                                        <Button x:Name="BtnToggleDCHealth" Click="BtnToggleDCHealth_Click"
+                                                Background="Transparent" BorderThickness="0" Padding="6,4"
+                                                Margin="0,8,0,0" HorizontalAlignment="Center" Cursor="Hand"
+                                                Visibility="Collapsed"
+                                                ToolTip="Show more / Show less domain controllers">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock x:Name="TxtToggleDCHealth" Text="▼ SHOW MORE"
+                                                           Foreground="{StaticResource AccentOrangeBrush}"
+                                                           FontSize="9" FontWeight="SemiBold"/>
+                                            </StackPanel>
+                                        </Button>
 
                                         <!-- Refresh Button -->
                                         <Button x:Name="BtnRefreshDCHealth" Content="🔄 REFRESH DCs"
@@ -2342,7 +2371,6 @@
                                                 </LinearGradientBrush>
                                             </Border.BorderBrush>
                                             <ComboBox x:Name="ComboDC"
-                                                      DisplayMemberPath="Hostname"
                                                       Foreground="White" FontWeight="SemiBold" FontSize="12"
                                                       Background="Transparent" BorderThickness="0"
                                                       Padding="10,8">
@@ -2532,8 +2560,8 @@
                                                Foreground="{StaticResource TextMutedBrush}" FontSize="12"
                                                Margin="0,0,0,16" TextWrapping="Wrap"/>
 
-                                    <!-- TAG: #DC_DISCOVERY #THEME_COLORS #UI_IMPROVEMENT - MUCH larger cards, 4 columns for better readability -->
-                                    <UniformGrid x:Name="GridDCHealth" Columns="4" Margin="0,0,0,0"/>
+                                    <!-- TAG: #DC_DISCOVERY #THEME_COLORS #UI_IMPROVEMENT #RESPONSIVE - Auto-wrapping cards that fill space -->
+                                    <WrapPanel x:Name="GridDCHealth" Orientation="Horizontal" Margin="0,0,0,0"/>
                                 </StackPanel>
                             </Border>
 

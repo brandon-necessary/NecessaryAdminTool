@@ -373,5 +373,79 @@ namespace NecessaryAdminTool.Properties {
                 this["FilterSettings"] = value;
             }
         }
+
+        // TAG: #CONFIGURABLE_OPTIONS #DC_HEALTH #DASHBOARD
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string FavoriteDCs {
+            get {
+                return ((string)(this["FavoriteDCs"]));
+            }
+            set {
+                this["FavoriteDCs"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string DCDisplayOrder {
+            get {
+                return ((string)(this["DCDisplayOrder"]));
+            }
+            set {
+                this["DCDisplayOrder"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool DCHealthExpanded {
+            get {
+                return ((bool)(this["DCHealthExpanded"]));
+            }
+            set {
+                this["DCHealthExpanded"] = value;
+            }
+        }
+
+        // TAG: #SECURITY #AUTHENTICATION #CREDENTIAL_STORAGE
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool RememberCredentials {
+            get {
+                return ((bool)(this["RememberCredentials"]));
+            }
+            set {
+                this["RememberCredentials"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ShowPasswordExpiryWarnings {
+            get {
+                return ((bool)(this["ShowPasswordExpiryWarnings"]));
+            }
+            set {
+                this["ShowPasswordExpiryWarnings"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("30")]
+        public int PasswordExpiryWarningDays {
+            get {
+                return ((int)(this["PasswordExpiryWarningDays"]));
+            }
+            set {
+                this["PasswordExpiryWarningDays"] = value;
+            }
+        }
     }
 }

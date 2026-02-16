@@ -198,6 +198,82 @@
                             <CheckBox x:Name="ChkRememberDC" Content="Remember Domain Controller selection"
                                       Foreground="White" FontSize="11" Margin="0,0,0,12"/>
 
+                            <!-- TAG: #SECURITY #AUTHENTICATION #CREDENTIAL_STORAGE -->
+                            <!-- Security &amp; Credential Settings -->
+                            <TextBlock Text="Security &amp; Authentication:" Foreground="{StaticResource AccentOrange}"
+                                       FontSize="10" FontWeight="Bold" Margin="0,8,0,8"/>
+
+                            <!-- Remember Credentials -->
+                            <CheckBox x:Name="ChkRememberCredentials"
+                                      Content="Remember admin credentials between sessions"
+                                      Foreground="White" FontSize="11" Margin="0,0,0,8"
+                                      ToolTip="When enabled, credentials are securely stored in Windows Credential Manager (DPAPI-encrypted). When disabled, you'll need to re-enter credentials each time you launch the app. Credentials are tied to your Windows user account and cannot be accessed by other users."/>
+
+                            <!-- Password Expiry Warnings -->
+                            <CheckBox x:Name="ChkShowPasswordExpiryWarnings"
+                                      Content="Show password expiration warnings"
+                                      Foreground="White" FontSize="11" Margin="0,0,0,8"
+                                      ToolTip="When enabled, you'll receive warnings when your password is approaching expiration. This helps prevent unexpected service interruptions."/>
+
+                            <!-- Password Warning Days -->
+                            <Grid Margin="20,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Warn when password expires within:"
+                                           Foreground="{StaticResource TextMuted}" FontSize="10" VerticalAlignment="Center"/>
+                                <TextBox x:Name="TxtPasswordWarningDays" Grid.Column="1"
+                                         Background="{StaticResource BgDark}" Foreground="White"
+                                         BorderBrush="{StaticResource BorderDim}" Padding="6,4" FontSize="10"
+                                         Margin="8,0,8,0" HorizontalContentAlignment="Center"
+                                         ToolTip="Number of days before password expiration to show warnings (1-90 days)"/>
+                                <TextBlock Grid.Column="2" Text="days"
+                                           Foreground="{StaticResource TextMuted}" FontSize="10" VerticalAlignment="Center"/>
+                            </Grid>
+
+                            <!-- Credential Storage Info -->
+                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                                    BorderThickness="1" CornerRadius="4" Padding="12,10" Margin="0,0,0,16">
+                                <StackPanel>
+                                    <TextBlock Text="🔐 Credential Storage Information"
+                                               Foreground="{StaticResource AccentOrange}" FontSize="10" FontWeight="Bold" Margin="0,0,0,6"/>
+                                    <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextMuted}" FontSize="9" LineHeight="14">
+                                        <Run Text="• Credentials are encrypted using Windows Data Protection API (DPAPI)"/>
+                                        <LineBreak/>
+                                        <Run Text="• Stored in Windows Credential Manager (same as RDP, Edge passwords)"/>
+                                        <LineBreak/>
+                                        <Run Text="• Location: Control Panel → Credential Manager → Windows Credentials"/>
+                                        <LineBreak/>
+                                        <Run Text="• Target Name: NecessaryAdminTool_*"/>
+                                        <LineBreak/>
+                                        <Run Text="• Only your Windows user account can access these credentials"/>
+                                        <LineBreak/>
+                                        <Run Text="• HIPAA/PCI compliant when using Windows enterprise policies"/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- DC Health Display Settings - TAG: #DC_HEALTH #CONFIGURABLE_OPTIONS #DASHBOARD -->
+                            <TextBlock Text="DC Health Widget Settings:" Foreground="{StaticResource AccentOrange}"
+                                       FontSize="10" FontWeight="Bold" Margin="0,8,0,8"/>
+
+                            <!-- Expand DC Health by Default -->
+                            <CheckBox x:Name="ChkDCHealthExpanded" Content="Show expanded DC Health widget by default (6 cards)"
+                                      Foreground="White" FontSize="11" Margin="0,0,0,8"
+                                      ToolTip="When enabled, the DC Health widget on the dashboard will show 6 domain controllers by default. When disabled, it shows collapsed view with expand button."/>
+
+                            <!-- Favorite DCs Info -->
+                            <TextBlock Text="💡 To favorite a domain controller, click the star (⭐) button on its health card in the dashboard. Favorited DCs will be displayed first in the widget."
+                                       Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,8" LineHeight="14"/>
+
+                            <!-- Clear DC Preferences -->
+                            <Button Content="RESET DC PREFERENCES" Style="{StaticResource BtnDanger}"
+                                    Click="BtnResetDCPreferences_Click" Padding="12,6" FontSize="10"
+                                    Margin="0,0,0,16"
+                                    ToolTip="Resets all domain controller preferences including favorites, display order, and expansion state. The DC Health widget will return to default settings."/>
+
                             <!-- AD Query Method - TAG: #VERSION_7 #AD_QUERY_BACKEND_SELECTION #PERFORMANCE_AUDIT -->
                             <TextBlock Text="AD Query Method:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
                             <ComboBox x:Name="ComboADQueryMethod" Margin="0,0,0,12"

@@ -33,6 +33,16 @@
     <Setting Name="ConnectionProfilesJson" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
+    <!-- TAG: #CONFIGURABLE_OPTIONS #DC_HEALTH #DASHBOARD -->
+    <Setting Name="FavoriteDCs" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="DCDisplayOrder" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="DCHealthExpanded" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
     <!-- TAG: #CONFIGURABLE_OPTIONS #UI_PREFERENCES -->
     <Setting Name="WindowPosition" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
@@ -110,6 +120,16 @@
     <!-- TAG: #FILTER_SYSTEM #USER_CONFIG #SETTINGS -->
     <Setting Name="FilterSettings" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
+    </Setting>
+    <!-- TAG: #SECURITY #AUTHENTICATION #CREDENTIAL_STORAGE -->
+    <Setting Name="RememberCredentials" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="ShowPasswordExpiryWarnings" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="PasswordExpiryWarningDays" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">30</Value>
     </Setting>
   </Settings>
 </SettingsFile>

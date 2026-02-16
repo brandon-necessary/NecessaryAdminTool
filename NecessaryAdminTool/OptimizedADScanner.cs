@@ -306,11 +306,23 @@ namespace NecessaryAdminTool
                 var biosTask = QueryCimInstanceAsync(session, "Win32_BIOS",
                     "SerialNumber,SMBIOSBIOSVersion", ct);
 
-                await Task.WhenAll(osTask, csTask, biosTask);
+                CimInstance osInstance = null;
+                CimInstance csInstance = null;
+                CimInstance biosInstance = null;
 
-                var osInstance = osTask.Result;
-                var csInstance = csTask.Result;
-                var biosInstance = biosTask.Result;
+                try
+                {
+                    await Task.WhenAll(osTask, csTask, biosTask);
+                    // Now safe - WhenAll already caught exceptions
+                    osInstance = osTask.Result;
+                    csInstance = csTask.Result;
+                    biosInstance = biosTask.Result;
+                }
+                catch (Exception ex)
+                {
+                    LogManager.LogError("CIM queries failed", ex);
+                    throw;
+                }
 
                 // Parse OS information
                 if (osInstance != null)
@@ -416,7 +428,7 @@ namespace NecessaryAdminTool
             SecureString password,
             CancellationToken ct)
         {
-            return await Task.Run(() =>
+            return await Task.Run(async () =>
             {
                 var spec = new HardwareSpec { Protocol = "WMI (Legacy)" };
                 ManagementScope scope = null;
@@ -450,12 +462,24 @@ namespace NecessaryAdminTool
                     var csTask = Task.Run(() => QueryWmiClass(scope, "Win32_ComputerSystem"), ct);
                     var biosTask = Task.Run(() => QueryWmiClass(scope, "Win32_BIOS"), ct);
 
-                    // Wait for all three to complete (or timeout)
-                    Task.WaitAll(new[] { osTask, csTask, biosTask }, ct);
+                    ManagementObject osResult = null;
+                    ManagementObject csResult = null;
+                    ManagementObject biosResult = null;
 
-                    var osResult = osTask.Result;
-                    var csResult = csTask.Result;
-                    var biosResult = biosTask.Result;
+                    try
+                    {
+                        // Wait for all three to complete (or timeout)
+                        await Task.WhenAll(osTask, csTask, biosTask);
+                        // Now safe - WhenAll already caught exceptions
+                        osResult = osTask.Result;
+                        csResult = csTask.Result;
+                        biosResult = biosTask.Result;
+                    }
+                    catch (Exception ex)
+                    {
+                        LogManager.LogError("WMI queries failed", ex);
+                        throw;
+                    }
 
                     // STEP 3: Parse results (sequential - no I/O, just object access)
                     if (osResult != null)

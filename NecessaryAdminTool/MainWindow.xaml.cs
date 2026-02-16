@@ -36,6 +36,7 @@ using System.Runtime.CompilerServices;
 using System.Windows.Data;
 using System.Windows.Threading;
 using NecessaryAdminTool.Security;
+using NecessaryAdminTool.Helpers;
 
 namespace NecessaryAdminTool
 {
@@ -111,12 +112,18 @@ namespace NecessaryAdminTool
         /// <summary>
         /// Force garbage collection to attempt clearing any managed string copies.
         /// Not guaranteed but helps with defense-in-depth.
+        /// TAG: #PHASE_2_OPTIMIZATIONS #GC_OPTIMIZATION
+        /// NOTE: This is one of the few places where GC.Collect() is acceptable because:
+        /// 1. It's for security (clearing password strings from memory)
+        /// 2. It's explicitly called by user (not automatic)
+        /// 3. It's infrequent (only after credential operations)
+        /// Use GCCollectionMode.Optimized to minimize STW pause
         /// </summary>
         public static void ForceCleanup()
         {
-            GC.Collect();
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Optimized, false);
             GC.WaitForPendingFinalizers();
-            GC.Collect();
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Optimized, false);
         }
 
         /// <summary>Converts a plain text string to SecureString</summary>
@@ -1920,6 +1927,11 @@ namespace NecessaryAdminTool
         private ObservableCollection<GlobalServiceStatus> _essentialServices = new ObservableCollection<GlobalServiceStatus>();
         private ObservableCollection<GlobalServiceStatus> _highPriorityServices = new ObservableCollection<GlobalServiceStatus>();
         private ObservableCollection<GlobalServiceStatus> _mediumPriorityServices = new ObservableCollection<GlobalServiceStatus>();
+
+        // TAG: #DC_HEALTH #FAVORITES #DASHBOARD
+        private HashSet<string> _favoriteDCs = new HashSet<string>();
+        private List<string> _dcDisplayOrder = new List<string>();
+        private bool _dcHealthExpanded = false;
         private object _inventoryLock = new object();
         private object _logLock = new object();
         private object _pinnedDevicesLock = new object();
@@ -2164,6 +2176,9 @@ namespace NecessaryAdminTool
                 {
                     MainTabs.SelectionChanged += MainTabs_SelectionChanged;
                 }
+
+                // TAG: #DC_HEALTH #FAVORITES #DASHBOARD - Load DC Health preferences
+                LoadDCHealthPreferences();
             };
 
             AuditGrid.ItemsSource = _logs;
@@ -2955,11 +2970,13 @@ namespace NecessaryAdminTool
                     }
                     finally
                     {
-                        // Wipe password from memory
+                        // TAG: #PHASE_2_OPTIMIZATIONS #GC_REMOVAL
+                        // Removed GC.Collect() - CLR will collect password string when needed
+                        // Manual collection causes 50-500ms STW pause and is unnecessary here
+                        // The SecureString is already protected, nulling reference is sufficient
                         if (password != null)
                         {
                             password = null;
-                            GC.Collect();
                         }
                     }
                 }
@@ -3250,7 +3267,7 @@ namespace NecessaryAdminTool
                     }
                 });
                 LogManager.LogInfo($"AUDIT: {target} | {action} | {status} | {details}");
-                _ = Task.Run(() =>
+                _ = Task.Run(async () =>
                 {
                     try
                     {
@@ -3287,7 +3304,7 @@ namespace NecessaryAdminTool
                                 }
                                 catch (IOException) when (retry < 2)
                                 {
-                                    Thread.Sleep(100); // Wait 100ms before retry
+                                    await Task.Delay(100); // Wait 100ms before retry
                                 }
                             }
                         }
@@ -3348,7 +3365,7 @@ namespace NecessaryAdminTool
 
         private void UpdateMasterInventoryFile(PCInventory pc)
         {
-            _ = Task.Run(() =>
+            _ = Task.Run(async () =>
             {
                 try
                 {
@@ -3385,7 +3402,7 @@ namespace NecessaryAdminTool
                             }
                             catch (IOException) when (retry < 2)
                             {
-                                Thread.Sleep(100); // Wait 100ms before retry
+                                await Task.Delay(100); // Wait 100ms before retry
                             }
                         }
                     }
@@ -3733,8 +3750,10 @@ namespace NecessaryAdminTool
                                 string errors = proc.StandardError.ReadToEnd();
                                 proc.WaitForExit();
 
+                                // TAG: #PHASE_2_OPTIMIZATIONS #GC_REMOVAL
+                                // Removed GC.Collect() - password is already cleared by nulling
+                                // Manual GC causes 50-500ms STW pause and is unnecessary
                                 capturedPassword = null;
-                                GC.Collect();
 
                                 if (proc.ExitCode == 0 || !string.IsNullOrWhiteSpace(output))
                                 {
@@ -5029,9 +5048,10 @@ namespace NecessaryAdminTool
                         }
                     }
 
-                    // Clear password from memory
+                    // TAG: #PHASE_2_OPTIMIZATIONS #GC_REMOVAL
+                    // Removed GC.Collect() - password cleared by nulling reference
+                    // Manual GC causes 50-500ms STW pause unnecessarily
                     capturedPassword = null;
-                    GC.Collect();
                 }
                 catch (Exception ex)
                 {
@@ -5863,7 +5883,7 @@ if ($connection) {{
         }
 
         /// <summary>Launches MMC snap-ins with cached credentials using runas /netonly</summary>
-        private void LaunchMMCWithCreds(string executable, string args, string logAction)
+        private async Task LaunchMMCWithCredsAsync(string executable, string args, string logAction)
         {
             try
             {
@@ -6228,7 +6248,7 @@ if ($connection) {{
                     AppendTerminal($"✓ Launched {executable} {args} (PID: {proc.Id})");
 
                     // Verify MMC process started
-                    System.Threading.Thread.Sleep(1000);
+                    await Task.Delay(1000);
                     string processName = System.IO.Path.GetFileNameWithoutExtension(executable);
                     if (processName == "mmc")
                     {
@@ -6861,8 +6881,10 @@ if ($connection) {{
                             string errors = proc.StandardError.ReadToEnd();
                             proc.WaitForExit();
 
+                            // TAG: #PHASE_2_OPTIMIZATIONS #GC_REMOVAL
+                            // Removed GC.Collect() - password cleared by nulling
+                            // Manual GC causes unnecessary 50-500ms pause
                             capturedPassword = null;
-                            GC.Collect();
 
                             if (output.Contains("SUCCESS"))
                             {
@@ -7153,7 +7175,15 @@ if ($connection) {{
         /// </summary>
         private async void Ctx_FixWindowsUpdate_Click(object sender, RoutedEventArgs e)
         {
-            await ExecuteQuickFixAsync(RemediationManager.RemediationAction.RestartWindowsUpdate);
+            try
+            {
+                await ExecuteQuickFixAsync(RemediationManager.RemediationAction.RestartWindowsUpdate);
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Ctx_FixWindowsUpdate_Click failed", ex);
+                Managers.UI.ToastManager.ShowError($"Failed to fix Windows Update: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -7162,7 +7192,15 @@ if ($connection) {{
         /// </summary>
         private async void Ctx_FixDNS_Click(object sender, RoutedEventArgs e)
         {
-            await ExecuteQuickFixAsync(RemediationManager.RemediationAction.ClearDNSCache);
+            try
+            {
+                await ExecuteQuickFixAsync(RemediationManager.RemediationAction.ClearDNSCache);
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Ctx_FixDNS_Click failed", ex);
+                Managers.UI.ToastManager.ShowError($"Failed to clear DNS cache: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -7171,7 +7209,15 @@ if ($connection) {{
         /// </summary>
         private async void Ctx_FixPrintSpooler_Click(object sender, RoutedEventArgs e)
         {
-            await ExecuteQuickFixAsync(RemediationManager.RemediationAction.RestartPrintSpooler);
+            try
+            {
+                await ExecuteQuickFixAsync(RemediationManager.RemediationAction.RestartPrintSpooler);
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Ctx_FixPrintSpooler_Click failed", ex);
+                Managers.UI.ToastManager.ShowError($"Failed to restart Print Spooler: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -7180,7 +7226,15 @@ if ($connection) {{
         /// </summary>
         private async void Ctx_FixWinRM_Click(object sender, RoutedEventArgs e)
         {
-            await ExecuteQuickFixAsync(RemediationManager.RemediationAction.EnableWinRM);
+            try
+            {
+                await ExecuteQuickFixAsync(RemediationManager.RemediationAction.EnableWinRM);
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Ctx_FixWinRM_Click failed", ex);
+                Managers.UI.ToastManager.ShowError($"Failed to enable WinRM: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -7189,7 +7243,15 @@ if ($connection) {{
         /// </summary>
         private async void Ctx_FixTimeSync_Click(object sender, RoutedEventArgs e)
         {
-            await ExecuteQuickFixAsync(RemediationManager.RemediationAction.FixTimeSync);
+            try
+            {
+                await ExecuteQuickFixAsync(RemediationManager.RemediationAction.FixTimeSync);
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Ctx_FixTimeSync_Click failed", ex);
+                Managers.UI.ToastManager.ShowError($"Failed to fix time sync: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -7198,7 +7260,15 @@ if ($connection) {{
         /// </summary>
         private async void Ctx_FixEventLogs_Click(object sender, RoutedEventArgs e)
         {
-            await ExecuteQuickFixAsync(RemediationManager.RemediationAction.ClearEventLogs);
+            try
+            {
+                await ExecuteQuickFixAsync(RemediationManager.RemediationAction.ClearEventLogs);
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Ctx_FixEventLogs_Click failed", ex);
+                Managers.UI.ToastManager.ShowError($"Failed to clear event logs: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -8404,11 +8474,15 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                         string ip = "---";
                         try
                         {
-                            var dnsTask = Dns.GetHostEntryAsync(dc);
+                            // OPTIMIZATION: Use cached DNS lookup (10-minute TTL)
+                            var dnsTask = DnsHelper.GetHostEntryAsync(dc);
                             if (await Task.WhenAny(dnsTask, Task.Delay(3000)) == dnsTask)
                             {
                                 var hi = await dnsTask;
-                                ip = hi.AddressList.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork)?.ToString() ?? "IPv6";
+                                if (hi != null)
+                                    ip = hi.AddressList.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork)?.ToString() ?? "IPv6";
+                                else
+                                    ip = "DNS Failed";
                             }
                             else
                             {
@@ -9011,7 +9085,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             try
             {
                 ComboTarget.ItemsSource = null;
-                ComboTarget.ItemsSource = _recentTargets.ToList();
+                // OPTIMIZATION: Avoid unnecessary ToList() - ItemsSource accepts IEnumerable
+                ComboTarget.ItemsSource = _recentTargets;
             }
             catch (Exception ex)
             {
@@ -10188,7 +10263,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 if (result == MessageBoxResult.Yes)
                 {
                     // Launch AD Users & Computers with cached credentials
-                    LaunchMMCWithCreds("mmc", $"dsa.msc /server={dc}", "AD_CREATE_OBJECT");
+                    _ = LaunchMMCWithCredsAsync("mmc", $"dsa.msc /server={dc}", "AD_CREATE_OBJECT");
                     AppendTerminal($"[AD Management] Launched AD Users & Computers for object creation");
                     AddLog(dc, "AD_CREATE_OBJECT", "ADUC", "OK");
                 }
@@ -10244,7 +10319,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 if (result == MessageBoxResult.Yes)
                 {
                     // Launch AD Users & Computers with cached credentials
-                    LaunchMMCWithCreds("mmc", $"dsa.msc /server={dc}", "AD_EDIT_OBJECT");
+                    _ = LaunchMMCWithCredsAsync("mmc", $"dsa.msc /server={dc}", "AD_EDIT_OBJECT");
                     AppendTerminal($"[AD Management] Launched AD Users & Computers for object editing");
                     AddLog(dc, "AD_EDIT_OBJECT", "ADUC", "OK");
                 }
@@ -10301,7 +10376,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     AppendTerminal($"[AD Management] Delete Object requested for {dc}", isError: false);
 
                     // Launch AD Users & Computers with cached credentials
-                    LaunchMMCWithCreds("mmc", $"dsa.msc /server={dc}", "AD_DELETE_OBJECT");
+                    _ = LaunchMMCWithCredsAsync("mmc", $"dsa.msc /server={dc}", "AD_DELETE_OBJECT");
                     AppendTerminal($"[AD Management] Launched AD Users & Computers for object deletion");
                     AddLog(dc, "AD_DELETE_OBJECT", "ADUC", "OK");
                 }
@@ -10640,12 +10715,12 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     // Wait for all pings to complete
                     dcList = (await Task.WhenAll(pingTasks)).ToList();
 
-                    // TAG: #DC_HEALTH #UI_IMPROVEMENT - Create display items with short names and styled latency
-                    var dcHealthItems = dcList.Select(dc => new
+                    // TAG: #DC_HEALTH #UI_IMPROVEMENT #FAVORITES - Create display items with short names and styled latency
+                    var dcHealthItems = dcList.Select(dc => new Models.DCHealthItem
                     {
                         // Strip domain suffix for cleaner display
                         Hostname = dc.Hostname.Contains(".") ? dc.Hostname.Split('.')[0] : dc.Hostname,
-                        dc.AvgLatency,
+                        AvgLatency = dc.AvgLatency,
                         HealthIcon = dc.AvgLatency < 50 ? "✅" :
                                     dc.AvgLatency < 100 ? "⚠️" :
                                     dc.AvgLatency < 200 ? "🔶" : "❌",
@@ -10657,10 +10732,13 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                         LatencyBg = dc.AvgLatency < 50 ? "#1A10B981" :  // Light green with transparency
                                    dc.AvgLatency < 100 ? "#1AF59E0B" :  // Light amber
                                    dc.AvgLatency < 200 ? "#1AFF8533" :  // Light orange
-                                   "#1AEF4444"  // Light red
+                                   "#1AEF4444",  // Light red
+                        FavoriteIcon = "☆"  // Will be updated by RefreshDCHealthDisplay
                     }).ToList();
 
+                    // TAG: #DC_HEALTH #FAVORITES - Apply sorting and visibility based on preferences
                     ListDCHealth.ItemsSource = dcHealthItems;
+                    RefreshDCHealthDisplay();
 
                     LogManager.LogInfo($"[Dashboard] DC Health refreshed: {dcList.Count} DCs, avg latency: {dcList.Average(d => d.AvgLatency):F0}ms");
                     Managers.UI.ToastManager.ShowSuccess($"Found {dcList.Count} domain controllers");
@@ -10693,6 +10771,178 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     BtnRefreshDCHealth.IsEnabled = true;
                     BtnRefreshDCHealth.Content = "🔄 REFRESH DCs";
                 }
+            }
+        }
+
+        // TAG: #DC_HEALTH #FAVORITES #DASHBOARD - DC Health Preference Management
+        /// <summary>
+        /// Load DC Health preferences from settings (favorites, display order, expanded state)
+        /// </summary>
+        private void LoadDCHealthPreferences()
+        {
+            try
+            {
+                // Load favorites
+                if (!string.IsNullOrEmpty(Properties.Settings.Default.FavoriteDCs))
+                {
+                    _favoriteDCs = new HashSet<string>(
+                        Properties.Settings.Default.FavoriteDCs.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                    );
+                    LogManager.LogInfo($"[DC Health] Loaded {_favoriteDCs.Count} favorite DCs");
+                }
+
+                // Load display order
+                if (!string.IsNullOrEmpty(Properties.Settings.Default.DCDisplayOrder))
+                {
+                    _dcDisplayOrder = new List<string>(
+                        Properties.Settings.Default.DCDisplayOrder.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                    );
+                    LogManager.LogInfo($"[DC Health] Loaded custom display order for {_dcDisplayOrder.Count} DCs");
+                }
+
+                // Load expanded state
+                _dcHealthExpanded = Properties.Settings.Default.DCHealthExpanded;
+                if (TxtToggleDCHealth != null)
+                {
+                    TxtToggleDCHealth.Text = _dcHealthExpanded ? "▲ SHOW LESS" : "▼ SHOW MORE";
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("[DC Health] Failed to load preferences", ex);
+            }
+        }
+
+        /// <summary>
+        /// Save DC Health preferences to settings
+        /// </summary>
+        private void SaveDCHealthPreferences()
+        {
+            try
+            {
+                Properties.Settings.Default.FavoriteDCs = string.Join(",", _favoriteDCs);
+                Properties.Settings.Default.DCDisplayOrder = string.Join(",", _dcDisplayOrder);
+                Properties.Settings.Default.DCHealthExpanded = _dcHealthExpanded;
+                Properties.Settings.Default.Save();
+                LogManager.LogInfo($"[DC Health] Saved preferences: {_favoriteDCs.Count} favorites, expanded={_dcHealthExpanded}");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("[DC Health] Failed to save preferences", ex);
+            }
+        }
+
+        /// <summary>
+        /// Toggle favorite status for a DC
+        /// TAG: #DC_HEALTH #FAVORITES
+        /// </summary>
+        private void BtnFavoriteDC_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var button = sender as Button;
+                if (button == null || button.Tag == null) return;
+
+                string hostname = button.Tag.ToString();
+
+                if (_favoriteDCs.Contains(hostname))
+                {
+                    _favoriteDCs.Remove(hostname);
+                    LogManager.LogInfo($"[DC Health] Unfavorited DC: {hostname}");
+                }
+                else
+                {
+                    _favoriteDCs.Add(hostname);
+                    LogManager.LogInfo($"[DC Health] Favorited DC: {hostname}");
+                }
+
+                SaveDCHealthPreferences();
+                RefreshDCHealthDisplay();
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("[DC Health] Failed to toggle favorite", ex);
+            }
+        }
+
+        /// <summary>
+        /// Toggle expanded/collapsed state of DC Health list
+        /// TAG: #DC_HEALTH #EXPAND_COLLAPSE
+        /// </summary>
+        private void BtnToggleDCHealth_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                _dcHealthExpanded = !_dcHealthExpanded;
+                SaveDCHealthPreferences();
+                RefreshDCHealthDisplay();
+
+                TxtToggleDCHealth.Text = _dcHealthExpanded ? "▲ SHOW LESS" : "▼ SHOW MORE";
+                LogManager.LogInfo($"[DC Health] Toggled display: expanded={_dcHealthExpanded}");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("[DC Health] Failed to toggle display", ex);
+            }
+        }
+
+        /// <summary>
+        /// Refresh DC Health display with sorting and visibility
+        /// TAG: #DC_HEALTH #FAVORITES #SORTING
+        /// </summary>
+        private void RefreshDCHealthDisplay()
+        {
+            try
+            {
+                // Get current DC list from ListDCHealth.ItemsSource
+                var dcList = ListDCHealth.ItemsSource as System.Collections.Generic.IEnumerable<Models.DCHealthItem>;
+                if (dcList == null) return;
+
+                var dcArray = dcList.ToList();
+
+                // Update display order with any new DCs not in the list
+                foreach (var dc in dcArray)
+                {
+                    if (!_dcDisplayOrder.Contains(dc.Hostname))
+                    {
+                        _dcDisplayOrder.Add(dc.Hostname);
+                    }
+                }
+
+                // Sort: Favorites first, then by custom order, then alphabetically
+                var sortedList = dcArray
+                    .OrderByDescending(dc => _favoriteDCs.Contains(dc.Hostname))
+                    .ThenBy(dc =>
+                    {
+                        int index = _dcDisplayOrder.IndexOf(dc.Hostname);
+                        return index >= 0 ? index : int.MaxValue;
+                    })
+                    .ThenBy(dc => dc.Hostname)
+                    .ToList();
+
+                // Update FavoriteIcon property
+                foreach (var dc in sortedList)
+                {
+                    dc.FavoriteIcon = _favoriteDCs.Contains(dc.Hostname) ? "⭐" : "☆";
+                }
+
+                // Apply visibility (show only 6 if collapsed)
+                int visibleCount = _dcHealthExpanded ? sortedList.Count : Math.Min(6, sortedList.Count);
+                var visibleItems = sortedList.Take(visibleCount).ToList();
+
+                ListDCHealth.ItemsSource = new System.Collections.ObjectModel.ObservableCollection<Models.DCHealthItem>(visibleItems);
+
+                // Update toggle button visibility
+                if (BtnToggleDCHealth != null)
+                {
+                    BtnToggleDCHealth.Visibility = sortedList.Count > 6 ? Visibility.Visible : Visibility.Collapsed;
+                }
+
+                LogManager.LogDebug($"[DC Health] Display refreshed: {visibleCount}/{sortedList.Count} visible, {_favoriteDCs.Count} favorites");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("[DC Health] Failed to refresh display", ex);
             }
         }
 
@@ -10872,7 +11122,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             }
 
             // Uses LaunchMMCWithCreds which handles credential passing via runas /netonly
-            LaunchMMCWithCreds("mmc", $"{mmc} {args}", "ADMIN_TOOL");
+            _ = LaunchMMCWithCredsAsync("mmc", $"{mmc} {args}", "ADMIN_TOOL");
             AppendTerminal($"Launched: {tool} → {dc}");
             AddLog(dc, "ADMIN_TOOL", tool, "OK");
         }
@@ -11354,45 +11604,76 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     });
                 };
 
-                // Add tab and select it
+                // Handle console loaded event - select tab when ready
+                mmcHost.ConsoleLoaded += (s, e) =>
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        TabControlDomainDirectory.SelectedItem = newTab;
+                        LogManager.LogInfo($"[MMC] Console loaded - selected tab for {consoleName}");
+                    });
+                };
+
+                // Add tab (but don't select it yet - wait for ConsoleLoaded event)
                 TabControlDomainDirectory.Items.Add(newTab);
-                TabControlDomainDirectory.SelectedItem = newTab;
 
                 // Get cached domain credentials for Kerberos passthrough
-                string username = null;
-                string domain = null;
+                // TAG: #KERBEROS #CREDENTIAL_PASSTHROUGH #MMC_EMBEDDING
+                string username = _authUser;
+                string domain = CurrentDomainName;
+                System.Security.SecureString password = _authPass;
 
-                // Try to get current domain from the domain name property
-                if (!string.IsNullOrEmpty(CurrentDomainName))
+                // Strip domain prefix from username if present (e.g., "DOMAIN\user" -> "user")
+                if (!string.IsNullOrEmpty(username) && username.Contains("\\"))
                 {
-                    domain = CurrentDomainName;
-
-                    // Try to get username from Windows identity
-                    try
+                    string[] parts = username.Split('\\');
+                    if (parts.Length == 2)
                     {
-                        var identity = WindowsIdentity.GetCurrent();
-                        if (identity != null && !string.IsNullOrEmpty(identity.Name))
-                        {
-                            // Extract username from DOMAIN\username format
-                            string[] parts = identity.Name.Split('\\');
-                            if (parts.Length == 2)
-                            {
-                                username = parts[1];
-                                LogManager.LogInfo($"[MMC] Using current Windows identity: {domain}\\{username}");
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        LogManager.LogWarning($"[MMC] Could not get Windows identity: {ex.Message}");
+                        username = parts[1]; // Take only the username part
+                        LogManager.LogInfo($"[MMC] Stripped domain prefix from username: {_authUser} -> {username}");
                     }
                 }
 
-                // Load the MMC console with credential passthrough
-                await mmcHost.LoadConsoleAsync(consoleName, mmcFile, username, domain);
+                // Diagnostic logging
+                LogManager.LogInfo($"[MMC] Credential check before passing to MMCHost:");
+                LogManager.LogInfo($"[MMC]   - _authUser (original): {(string.IsNullOrEmpty(_authUser) ? "NULL/EMPTY" : _authUser)}");
+                LogManager.LogInfo($"[MMC]   - Username (cleaned): {(string.IsNullOrEmpty(username) ? "NULL/EMPTY" : username)}");
+                LogManager.LogInfo($"[MMC]   - CurrentDomainName: {(string.IsNullOrEmpty(CurrentDomainName) ? "NULL/EMPTY" : CurrentDomainName)}");
+                LogManager.LogInfo($"[MMC]   - _authPass: {(_authPass == null ? "NULL" : $"LENGTH={_authPass.Length}")}");
+
+                if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(domain) && password != null)
+                {
+                    LogManager.LogInfo($"[MMC] Using cached admin credentials: {domain}\\{username} (password length: {password.Length})");
+                }
+                else
+                {
+                    LogManager.LogWarning($"[MMC] No cached credentials available - MMC will use current user context");
+                    LogManager.LogWarning($"[MMC]   - Username check: {(string.IsNullOrEmpty(username) ? "FAIL" : "PASS")}");
+                    LogManager.LogWarning($"[MMC]   - Domain check: {(string.IsNullOrEmpty(domain) ? "FAIL" : "PASS")}");
+                    LogManager.LogWarning($"[MMC]   - Password check: {(password == null ? "FAIL (NULL)" : "PASS")}");
+                    username = null;
+                    domain = null;
+                    password = null;
+                }
+
+                // Get selected domain controller for DC targeting
+                // TAG: #DC_TARGETING #MMC_EMBEDDING
+                string targetDC = null;
+                if (ComboDC != null && ComboDC.SelectedItem is ComboBoxItem dcItem && dcItem.Tag != null)
+                {
+                    targetDC = dcItem.Tag.ToString();
+                    LogManager.LogInfo($"[MMC] Selected DC for targeting: {targetDC}");
+                }
+                else
+                {
+                    LogManager.LogWarning($"[MMC] No DC selected - snap-in will use default DC discovery");
+                }
+
+                // Load the MMC console with credential passthrough and DC targeting
+                await mmcHost.LoadConsoleAsync(consoleName, mmcFile, username, domain, password, targetDC);
 
                 Managers.UI.ToastManager.ShowSuccess($"Opened {consoleName}");
-                AppendTerminal($"[MMC] Opened {consoleName} in new tab");
+                AppendTerminal($"[MMC] Opened {consoleName} in new tab" + (targetDC != null ? $" (targeting {targetDC})" : ""));
                 LogManager.LogInfo($"[MMC] Successfully created and loaded tab for {consoleName}");
             }
             catch (Exception ex)
@@ -11717,11 +11998,11 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     if (isIP)
                     {
                         resolvedIP = input;
-                        // Try reverse DNS lookup
+                        // Try reverse DNS lookup (cached 10min)
                         try
                         {
-                            var hostEntry = await Dns.GetHostEntryAsync(input);
-                            resolvedName = hostEntry.HostName;
+                            var hostEntry = await DnsHelper.GetHostEntryAsync(input);
+                            resolvedName = hostEntry?.HostName ?? "N/A";
                         }
                         catch
                         {
@@ -11731,11 +12012,11 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     else
                     {
                         resolvedName = input;
-                        // Try forward DNS lookup
+                        // Try forward DNS lookup (cached 10min)
                         try
                         {
-                            var hostEntry = await Dns.GetHostEntryAsync(input);
-                            if (hostEntry.AddressList.Length > 0)
+                            var hostEntry = await DnsHelper.GetHostEntryAsync(input);
+                            if (hostEntry != null && hostEntry.AddressList.Length > 0)
                             {
                                 // Get first IPv4 address
                                 var ipv4 = hostEntry.AddressList.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);

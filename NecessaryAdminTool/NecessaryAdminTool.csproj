@@ -15,6 +15,8 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
     <LangVersion>9.0</LangVersion>
+    <!-- TAG: #DPI_AWARENESS #HIGH_DPI #UI_SCALING_FIX -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>x64</PlatformTarget>
@@ -337,6 +339,12 @@
     <Compile Include="Helpers\Win32Helper.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Helpers\CacheHelper.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Helpers\DnsHelper.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="UI\Dialogs\FilterPresetDialog.xaml.cs">
       <DependentUpon>FilterPresetDialog.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -360,6 +368,9 @@
     <Compile Include="Models\MMCConsole.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Models\DCHealthItem.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Managers\FilterManager.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -367,6 +378,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Managers\BulkOperationExecutor.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Managers\WmiConnectionPool.cs">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
@@ -395,6 +409,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <!-- TAG: #DPI_AWARENESS #HIGH_DPI -->
+    <None Include="app.manifest" />
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Connected Services\" />

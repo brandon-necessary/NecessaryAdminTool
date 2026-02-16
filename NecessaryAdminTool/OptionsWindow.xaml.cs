@@ -48,6 +48,26 @@ namespace NecessaryAdminTool
                     ComboADQueryMethod.SelectedValue = queryMethod;
                 }
 
+                // TAG: #DC_HEALTH #CONFIGURABLE_OPTIONS - Load DC Health settings
+                if (ChkDCHealthExpanded != null)
+                {
+                    ChkDCHealthExpanded.IsChecked = Properties.Settings.Default.DCHealthExpanded;
+                }
+
+                // TAG: #SECURITY #AUTHENTICATION - Load credential storage settings
+                if (ChkRememberCredentials != null)
+                {
+                    ChkRememberCredentials.IsChecked = Properties.Settings.Default.RememberCredentials;
+                }
+                if (ChkShowPasswordExpiryWarnings != null)
+                {
+                    ChkShowPasswordExpiryWarnings.IsChecked = Properties.Settings.Default.ShowPasswordExpiryWarnings;
+                }
+                if (TxtPasswordWarningDays != null)
+                {
+                    TxtPasswordWarningDays.Text = Properties.Settings.Default.PasswordExpiryWarningDays.ToString();
+                }
+
                 // Load target history from UserConfig
                 _targetHistory = new List<string>();
                 // TODO: Load from UserConfig.TargetHistory
@@ -302,6 +322,34 @@ namespace NecessaryAdminTool
                     Properties.Settings.Default.LocalISOHostnameMatchMode = selectedItem.Tag?.ToString() ?? "StartsWith";
                 }
 
+                // TAG: #DC_HEALTH #CONFIGURABLE_OPTIONS - Save DC Health settings
+                if (ChkDCHealthExpanded != null)
+                {
+                    Properties.Settings.Default.DCHealthExpanded = ChkDCHealthExpanded.IsChecked ?? false;
+                }
+
+                // TAG: #SECURITY #AUTHENTICATION - Save credential storage settings
+                if (ChkRememberCredentials != null)
+                {
+                    Properties.Settings.Default.RememberCredentials = ChkRememberCredentials.IsChecked ?? true;
+                }
+                if (ChkShowPasswordExpiryWarnings != null)
+                {
+                    Properties.Settings.Default.ShowPasswordExpiryWarnings = ChkShowPasswordExpiryWarnings.IsChecked ?? true;
+                }
+                if (TxtPasswordWarningDays != null && int.TryParse(TxtPasswordWarningDays.Text, out int warningDays))
+                {
+                    if (warningDays >= 1 && warningDays <= 90)
+                    {
+                        Properties.Settings.Default.PasswordExpiryWarningDays = warningDays;
+                    }
+                    else
+                    {
+                        ShowStatus("Password warning days must be between 1 and 90", MessageType.Error);
+                        return;
+                    }
+                }
+
                 Properties.Settings.Default.Save();
 
                 // TODO: Save other settings (target history, etc.)
@@ -337,6 +385,54 @@ namespace NecessaryAdminTool
         }
 
         #region Event Handlers
+
+        /// <summary>
+        /// Reset all DC preferences (favorites, ordering, expansion state)
+        /// TAG: #DC_HEALTH #CONFIGURABLE_OPTIONS
+        /// </summary>
+        private void BtnResetDCPreferences_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var result = MessageBox.Show(
+                    "This will reset all domain controller preferences including:\n\n" +
+                    "• Favorite DCs\n" +
+                    "• DC display order\n" +
+                    "• DC Health widget expansion state\n\n" +
+                    "Are you sure you want to continue?",
+                    "Reset DC Preferences",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    // Clear all DC preferences
+                    Properties.Settings.Default.FavoriteDCs = "";
+                    Properties.Settings.Default.DCDisplayOrder = "";
+                    Properties.Settings.Default.DCHealthExpanded = false;
+                    Properties.Settings.Default.Save();
+
+                    // Update UI
+                    if (ChkDCHealthExpanded != null)
+                        ChkDCHealthExpanded.IsChecked = false;
+
+                    ShowStatus("DC preferences have been reset to defaults", MessageType.Success);
+                    LogManager.LogInfo("[Options] DC preferences reset to defaults");
+
+                    // Notify user to refresh dashboard
+                    MessageBox.Show(
+                        "DC preferences have been reset. Please refresh the dashboard to see the changes.",
+                        "Reset Complete",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowStatus($"Error resetting DC preferences: {ex.Message}", MessageType.Error);
+                LogManager.LogError("[Options] Error resetting DC preferences", ex);
+            }
+        }
 
         /// <summary>
         /// Clear cached username

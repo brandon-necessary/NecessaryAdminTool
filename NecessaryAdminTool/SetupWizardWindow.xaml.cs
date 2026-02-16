@@ -325,6 +325,7 @@ namespace NecessaryAdminTool
                     $"Service={InstallService}, Interval={ScanIntervalHours}h");
 
                 // Create scheduled task if service is enabled
+                // TAG: #BACKGROUND_SERVICE #SCHEDULED_TASK #ERROR_HANDLING
                 if (InstallService && ScanIntervalHours > 0)
                 {
                     try
@@ -335,21 +336,49 @@ namespace NecessaryAdminTool
                         if (taskCreated)
                         {
                             LogManager.LogInfo($"Scheduled task created successfully for {ScanIntervalHours}h interval");
+
+                            // Enhanced success message with clear next steps
+                            string intervalText = ScanIntervalHours == 1 ? "hour" :
+                                                 ScanIntervalHours == 24 ? "day" :
+                                                 $"{ScanIntervalHours} hours";
+
                             System.Windows.MessageBox.Show(
-                                $"Scheduled task created successfully!\n\n" +
-                                $"NecessaryAdminTool will automatically scan every {ScanIntervalHours} hour(s).\n\n" +
-                                $"Running as: {(isAdmin ? "Administrator" : "Current User")}",
-                                "Service Configured",
+                                $"✅ Background Service Configured Successfully!\n\n" +
+                                $"📅 Automatic Scanning Schedule:\n" +
+                                $"   • Runs every {intervalText}\n" +
+                                $"   • Scans all domain computers\n" +
+                                $"   • Logs results to: {DatabasePath}\\DeploymentLogs\n\n" +
+                                $"🔒 Security:\n" +
+                                $"   • Running as: {(isAdmin ? "Administrator (HIGHEST privileges)" : "Current User (LIMITED privileges)")}\n" +
+                                $"   • Task Name: NecessaryAdminTool_AutoScan\n" +
+                                $"   • Location: Task Scheduler → \\NecessaryAdminTool\\\n\n" +
+                                $"⚙️ You can change these settings anytime in:\n" +
+                                $"   Options → Background Service",
+                                "Background Service Enabled",
                                 MessageBoxButton.OK,
                                 MessageBoxImage.Information);
                         }
                         else
                         {
                             LogManager.LogWarning("Failed to create scheduled task during setup");
+
+                            // Enhanced failure message with actionable guidance
                             System.Windows.MessageBox.Show(
-                                "Failed to create scheduled task.\n\n" +
-                                "You can manually configure it later from Options > Database Management.",
-                                "Service Warning",
+                                "⚠️ Background Service Setup Failed\n\n" +
+                                "The scheduled task could not be created.\n\n" +
+                                "🔍 Common Causes:\n" +
+                                "   • Task Scheduler service is not running\n" +
+                                "   • Group Policy restrictions prevent task creation\n" +
+                                "   • Antivirus software blocked the operation\n" +
+                                "   • Insufficient system permissions\n\n" +
+                                "✅ What You Can Do:\n" +
+                                "   1. Try manually enabling in: Options → Background Service\n" +
+                                "   2. Run the application as Administrator\n" +
+                                "   3. Check Windows Event Viewer → Task Scheduler logs\n" +
+                                "   4. Contact your IT administrator if in a managed environment\n\n" +
+                                "💡 The application will still work normally, but automatic scanning\n" +
+                                "   will not be enabled. You can scan manually anytime.",
+                                "Service Setup Warning",
                                 MessageBoxButton.OK,
                                 MessageBoxImage.Warning);
                         }
@@ -357,6 +386,23 @@ namespace NecessaryAdminTool
                     catch (Exception taskEx)
                     {
                         LogManager.LogError("Exception creating scheduled task during setup", taskEx);
+
+                        // Enhanced exception message with technical details
+                        System.Windows.MessageBox.Show(
+                            $"❌ Background Service Setup Error\n\n" +
+                            $"An error occurred while creating the scheduled task:\n\n" +
+                            $"Error: {taskEx.Message}\n\n" +
+                            $"📋 Technical Details:\n" +
+                            $"   • Exception Type: {taskEx.GetType().Name}\n" +
+                            $"   • Check logs at: %APPDATA%\\NecessaryAdminTool\\Logs\\\n\n" +
+                            $"✅ Next Steps:\n" +
+                            $"   1. The application will work without background scanning\n" +
+                            $"   2. Try enabling manually in: Options → Background Service\n" +
+                            $"   3. If problem persists, run as Administrator\n\n" +
+                            $"💡 You can still use all other features normally.",
+                            "Service Configuration Error",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Error);
                     }
                 }
 
