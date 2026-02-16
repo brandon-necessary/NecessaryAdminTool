@@ -1981,7 +1981,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     var backupData = new Dictionary<string, object>
                     {
                         ["ExportDate"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                        ["Version"] = "7.0",
+                        ["Version"] = LogoConfig.VERSION, // TAG: #VERSION_ENGINE - Uses centralized version
                         ["ConnectionProfiles"] = _connectionProfiles.ToList(),
                         ["Bookmarks"] = _bookmarks.ToList(),
                         ["FontSizeMultiplier"] = SliderFontSize?.Value ?? 1.0,

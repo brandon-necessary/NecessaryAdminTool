@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using NecessaryAdminTool.Security;
 
@@ -53,11 +54,12 @@ namespace NecessaryAdminTool
         /// <summary>
         /// Initialize asset tag system
         /// </summary>
-        public static void Initialize()
+        // TAG: #ASYNC_OPTIMIZATION - Made async to load tags without blocking UI
+        public static async Task InitializeAsync()
         {
             try
             {
-                LoadTags();
+                await LoadTagsAsync();
                 CreateSystemTags();
                 LogManager.LogInfo("[AssetTagManager] Initialized");
             }
@@ -139,7 +141,7 @@ namespace NecessaryAdminTool
                 tag.IsSystemTag = false;
                 _tags.Add(tag);
 
-                SaveTags();
+                _ = SaveTagsAsync(); // Fire-and-forget async save
                 LogManager.LogInfo($"[AssetTagManager] Created tag: {tag.Name}");
                 return true;
             }
@@ -175,7 +177,7 @@ namespace NecessaryAdminTool
                     computerTags.RemoveAll(t => t.Equals(tagName, StringComparison.OrdinalIgnoreCase));
                 }
 
-                SaveTags();
+                _ = SaveTagsAsync(); // Fire-and-forget async save
                 LogManager.LogInfo($"[AssetTagManager] Deleted tag: {tagName}");
                 return true;
             }
@@ -206,7 +208,7 @@ namespace NecessaryAdminTool
                 if (!_computerTags[hostname].Contains(tagName, StringComparer.OrdinalIgnoreCase))
                 {
                     _computerTags[hostname].Add(tagName);
-                    SaveTags();
+                    _ = SaveTagsAsync(); // Fire-and-forget async save
                     LogManager.LogInfo($"[AssetTagManager] Added tag '{tagName}' to {hostname}");
                     return true;
                 }
@@ -233,7 +235,7 @@ namespace NecessaryAdminTool
                 bool removed = _computerTags[hostname].RemoveAll(t => t.Equals(tagName, StringComparison.OrdinalIgnoreCase)) > 0;
                 if (removed)
                 {
-                    SaveTags();
+                    _ = SaveTagsAsync(); // Fire-and-forget async save
                     LogManager.LogInfo($"[AssetTagManager] Removed tag '{tagName}' from {hostname}");
                 }
                 return removed;
@@ -326,7 +328,7 @@ namespace NecessaryAdminTool
             try
             {
                 _autoTagRules.Add(rule);
-                SaveTags();
+                _ = SaveTagsAsync(); // Fire-and-forget async save
                 LogManager.LogInfo($"[AssetTagManager] Added auto-tag rule: {rule.RuleName}");
                 return true;
             }
@@ -340,7 +342,8 @@ namespace NecessaryAdminTool
         /// <summary>
         /// Save tags and mappings to disk
         /// </summary>
-        private static void SaveTags()
+        // TAG: #ASYNC_OPTIMIZATION #PERFORMANCE - Made async to prevent UI lag when saving tags
+        private static async Task SaveTagsAsync()
         {
             try
             {
@@ -366,11 +369,17 @@ namespace NecessaryAdminTool
                 var serializer = new JavaScriptSerializer();
                 string json = serializer.Serialize(data);
 
-                string directory = Path.GetDirectoryName(TagStoragePath);
-                if (!Directory.Exists(directory))
-                    Directory.CreateDirectory(directory);
+                // TAG: #ASYNC_OPTIMIZATION - Run file I/O on background thread
+                await Task.Run(() =>
+                {
+                    string directory = Path.GetDirectoryName(TagStoragePath);
+                    if (!Directory.Exists(directory))
+                        Directory.CreateDirectory(directory);
 
-                File.WriteAllText(TagStoragePath, json);
+                    File.WriteAllText(TagStoragePath, json);
+                });
+
+                LogManager.LogDebug("[AssetTagManager] Tags saved successfully");
             }
             catch (Exception ex)
             {
@@ -380,8 +389,9 @@ namespace NecessaryAdminTool
 
         /// <summary>
         /// Load tags and mappings from disk
+        /// TAG: #ASYNC_OPTIMIZATION #PERFORMANCE - Made async to prevent UI lag during startup
         /// </summary>
-        private static void LoadTags()
+        private static async Task LoadTagsAsync()
         {
             try
             {
@@ -400,7 +410,8 @@ namespace NecessaryAdminTool
                 if (!File.Exists(TagStoragePath))
                     return;
 
-                string json = File.ReadAllText(TagStoragePath);
+                // TAG: #ASYNC_OPTIMIZATION - Run file I/O on background thread
+                string json = await Task.Run(() => File.ReadAllText(TagStoragePath));
                 var serializer = new JavaScriptSerializer();
                 var data = serializer.Deserialize<Dictionary<string, object>>(json);
 
@@ -455,7 +466,7 @@ namespace NecessaryAdminTool
                 if (_computerTags.ContainsKey(hostname))
                 {
                     _computerTags[hostname].Clear();
-                    SaveTags();
+                    _ = SaveTagsAsync(); // Fire-and-forget async save
                     LogManager.LogInfo($"[AssetTagManager] Cleared all tags from {hostname}");
                     return true;
                 }

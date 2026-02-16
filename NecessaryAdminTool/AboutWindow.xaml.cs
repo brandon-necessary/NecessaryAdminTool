@@ -82,6 +82,8 @@ namespace NecessaryAdminTool
         }
 
         // Debug button hover effects
+        // TAG: #REMOVED - Moved to OptionsWindow - Debugging & Admin Tools section removed from About window
+        /* COMMENTED OUT - UI elements removed, functionality moved to Options panel
         private void DebugButton_MouseEnter(object sender, MouseEventArgs e)
         {
             if (sender is System.Windows.Controls.Border border)
@@ -179,6 +181,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     MessageBoxImage.Error);
             }
         }
+        */ // END COMMENTED OUT - CreateShortcut_Click
 
         // Export legal terms to HTML
         private void ExportLegalTerms_Click(object sender, MouseButtonEventArgs e)
@@ -683,6 +686,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
         private ObservableCollection<ServiceConfigItem> _serviceConfigItems = new ObservableCollection<ServiceConfigItem>();
 
+        // TAG: #REMOVED - Moved to OptionsWindow - Global Services Configuration methods
+        /* COMMENTED OUT - UI elements removed, functionality moved to Options panel
         /// <summary>
         /// Load global services configuration into the editor
         /// </summary>
@@ -778,7 +783,10 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             var serializer = new JavaScriptSerializer();
             TxtJsonConfig.Text = FormatJson(serializer.Serialize(_serviceConfigItems));
         }
+        */ // END COMMENTED OUT - LoadGlobalServicesConfig and LoadDefaultServices methods
 
+        // TAG: #REMOVED - Moved to OptionsWindow - Global Services Configuration event handlers
+        /* COMMENTED OUT - UI elements removed, functionality moved to Options panel
         /// <summary>
         /// Switch to visual editor view
         /// </summary>
@@ -969,6 +977,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 BtnTestAPIs.Content = "🧪 TEST APIS";
             }
         }
+        */ // END COMMENTED OUT - Global Services Configuration event handlers
 
         /// <summary>
         /// Simple JSON formatter for pretty-printing

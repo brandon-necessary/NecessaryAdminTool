@@ -1,0 +1,43 @@
+<UserControl x:Class="NecessaryAdminTool.UI.Components.MMCHostControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:wfi="clr-namespace:System.Windows.Forms.Integration;assembly=WindowsFormsIntegration"
+             mc:Ignorable="d"
+             d:DesignHeight="600" d:DesignWidth="800"
+             Background="#FF1A1A1A">
+    <!-- TAG: #MMC_EMBEDDING #WIN32_INTEROP #EXTERNAL_PROCESS -->
+
+    <Grid>
+        <!-- Loading indicator -->
+        <Border x:Name="LoadingPanel" Background="#FF1E1E1E" Visibility="Visible">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock Text="⏳" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,16"/>
+                <TextBlock x:Name="TxtLoadingMessage" Text="Loading MMC console..."
+                           Foreground="White" FontSize="14" HorizontalAlignment="Center"/>
+                <TextBlock x:Name="TxtConsoleName" Text=""
+                           Foreground="#FF8533" FontSize="12" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Error panel -->
+        <Border x:Name="ErrorPanel" Background="#FF1E1E1E" Visibility="Collapsed">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="500">
+                <TextBlock Text="❌" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,16"/>
+                <TextBlock Text="Failed to Load Console"
+                           Foreground="#EF4444" FontSize="16" FontWeight="Bold"
+                           HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                <TextBlock x:Name="TxtErrorMessage" Text=""
+                           Foreground="White" FontSize="12" TextWrapping="Wrap"
+                           HorizontalAlignment="Center" Margin="0,0,0,16"/>
+                <Button x:Name="BtnRetry" Content="🔄 RETRY" Click="BtnRetry_Click"
+                        Background="#FF8533" Foreground="White" Padding="16,8"
+                        FontSize="11" FontWeight="SemiBold" BorderThickness="0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- WindowsFormsHost container for MMC -->
+        <wfi:WindowsFormsHost x:Name="WinFormsHost" Visibility="Collapsed"/>
+    </Grid>
+</UserControl>

@@ -792,6 +792,99 @@ namespace NecessaryAdminTool.Security
         }
 
         /// <summary>
+        /// Validate file path (alias for compatibility)
+        /// TAG: #SECURITY_CRITICAL #PATH_VALIDATION
+        /// </summary>
+        public static bool IsValidPath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return false;
+            try
+            {
+                Path.GetFullPath(path);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Sanitize hostname for safe usage
+        /// TAG: #SECURITY_CRITICAL #HOSTNAME_SANITIZATION
+        /// </summary>
+        public static string SanitizeHostname(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+            return System.Text.RegularExpressions.Regex.Replace(input.Trim(), @"[^a-zA-Z0-9\-\.]", "");
+        }
+
+        /// <summary>
+        /// Escape CSV value for safe output
+        /// TAG: #SECURITY_CRITICAL #CSV_INJECTION_PREVENTION
+        /// </summary>
+        public static string EscapeCsv(string value)
+        {
+            return (value ?? "").Replace("\"", "\"\"");
+        }
+
+        /// <summary>
+        /// Sanitize WMI query to remove dangerous patterns
+        /// TAG: #SECURITY_CRITICAL #WMI_INJECTION_PREVENTION
+        /// </summary>
+        public static string SanitizeWmiQuery(string query)
+        {
+            if (string.IsNullOrWhiteSpace(query)) return string.Empty;
+
+            string[] dangerousPatterns = {
+                ";", "|", "`", "$", "(", ")", "{", "}", "[", "]",
+                "<", ">", "\n", "\r", "&&", "||", "powershell -enc", "invoke-expression"
+            };
+
+            foreach (var pattern in dangerousPatterns)
+                query = query.Replace(pattern, "");
+
+            return query.Trim();
+        }
+
+        /// <summary>
+        /// Check if input contains dangerous command patterns
+        /// TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+        /// </summary>
+        public static bool ContainsDangerousPatterns(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return false;
+
+            string[] whitelistedCommands = {
+                "sfc /scannow", "dism /online", "gpupdate /force",
+                "shutdown /r", "netsh advfirewall", "ipconfig /flushdns",
+                "start-mpcompliance", "start-mpdefenderscan",
+                "get-netipaddress", "get-netroute", "get-dnsclientcache",
+                "ipconfig /release", "ipconfig /renew"
+            };
+
+            string lowerInput = input.ToLower();
+            if (whitelistedCommands.Any(cmd => lowerInput.Contains(cmd.ToLower())))
+                return false;
+
+            string[] dangerousPatterns = {
+                ";", "|", "`", "$", "(", ")", "{", "}", "[", "]",
+                "<", ">", "\n", "\r", "&&", "||", "powershell -enc", "invoke-expression"
+            };
+
+            return dangerousPatterns.Any(p => input.Contains(p));
+        }
+
+        /// <summary>
+        /// Validate domain user format (DOMAIN\user or user@domain.com)
+        /// TAG: #SECURITY_CRITICAL #DOMAIN_USER_VALIDATION
+        /// </summary>
+        public static bool IsValidDomainUser(string username)
+        {
+            return IsValidUsername(username);
+        }
+
+        /// <summary>
         /// Rate limiter to prevent brute force attacks
         /// TAG: #SECURITY_CRITICAL #RATE_LIMITING #BRUTE_FORCE_PROTECTION
         /// </summary>

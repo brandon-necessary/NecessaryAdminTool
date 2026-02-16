@@ -54,6 +54,7 @@
     <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Windows.Forms" />
+    <Reference Include="WindowsFormsIntegration" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Core" />
@@ -140,15 +141,15 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="UI\Components\MMCHostControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="UI\Components\ComputerCard.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
     <Page Include="UI\Components\CommandPalette.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="UI\Components\ADTreeView.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -329,8 +330,11 @@
       <DependentUpon>CommandPalette.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="UI\Components\ADTreeView.xaml.cs">
-      <DependentUpon>ADTreeView.xaml</DependentUpon>
+    <Compile Include="UI\Components\MMCHostControl.xaml.cs">
+      <DependentUpon>MMCHostControl.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Helpers\Win32Helper.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="UI\Dialogs\FilterPresetDialog.xaml.cs">
@@ -351,6 +355,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Models\BulkOperationResult.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Models\MMCConsole.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Managers\FilterManager.cs">

@@ -2,8 +2,9 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using NecessaryAdminTool.Security;
-// TAG: #LOGGING #DIAGNOSTICS #VERSION_1_2 #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+// TAG: #LOGGING #DIAGNOSTICS #VERSION_1_2 #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION #ASYNC_OPTIMIZATION
 
 namespace NecessaryAdminTool
 {
@@ -39,8 +40,8 @@ namespace NecessaryAdminTool
 
                 _initialized = true;
 
-                // Clean up old log files (keep last 30 days)
-                CleanOldLogs();
+                // TAG: #ASYNC_OPTIMIZATION - Clean up old log files asynchronously (fire-and-forget)
+                _ = CleanOldLogsAsync();
             }
             catch
             {
@@ -49,7 +50,11 @@ namespace NecessaryAdminTool
             }
         }
 
-        private static void CleanOldLogs()
+        /// <summary>
+        /// Clean old log files asynchronously
+        /// TAG: #ASYNC_OPTIMIZATION - Made async to prevent UI blocking during initialization
+        /// </summary>
+        private static async Task CleanOldLogsAsync()
         {
             try
             {
@@ -64,26 +69,30 @@ namespace NecessaryAdminTool
                     return;
                 }
 
-                var cutoffDate = DateTime.Now.AddDays(-30);
-                var logFiles = Directory.GetFiles(LogDirectory, "NAT_*.log");
-
-                foreach (var logFile in logFiles)
+                // TAG: #ASYNC_OPTIMIZATION - Run file system operations on background thread
+                await Task.Run(() =>
                 {
-                    // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
-                    // Validate each log file path before deletion
-                    string fullLogPath = Path.GetFullPath(logFile);
-                    if (!SecurityValidator.IsValidFilePath(fullLogPath, LogDirectory))
-                    {
-                        LogWarning($"[LogManager] Blocked deletion of file outside log directory: {logFile}");
-                        continue;
-                    }
+                    var cutoffDate = DateTime.Now.AddDays(-30);
+                    var logFiles = Directory.GetFiles(LogDirectory, "NAT_*.log");
 
-                    var fileInfo = new FileInfo(logFile);
-                    if (fileInfo.LastWriteTime < cutoffDate)
+                    foreach (var logFile in logFiles)
                     {
-                        File.Delete(logFile);
+                        // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                        // Validate each log file path before deletion
+                        string fullLogPath = Path.GetFullPath(logFile);
+                        if (!SecurityValidator.IsValidFilePath(fullLogPath, LogDirectory))
+                        {
+                            LogWarning($"[LogManager] Blocked deletion of file outside log directory: {logFile}");
+                            continue;
+                        }
+
+                        var fileInfo = new FileInfo(logFile);
+                        if (fileInfo.LastWriteTime < cutoffDate)
+                        {
+                            File.Delete(logFile);
+                        }
                     }
-                }
+                });
             }
             catch
             {
@@ -136,6 +145,16 @@ namespace NecessaryAdminTool
                 return;
             }
 
+            // TAG: #ASYNC_OPTIMIZATION #PERFORMANCE - Fire-and-forget async to prevent UI blocking
+            _ = WriteLogAsync(level, message);
+        }
+
+        /// <summary>
+        /// Async log writer to prevent UI blocking on file I/O
+        /// TAG: #ASYNC_OPTIMIZATION - All file writes run on background thread
+        /// </summary>
+        private static async Task WriteLogAsync(string level, string message)
+        {
             try
             {
                 // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
@@ -150,13 +169,17 @@ namespace NecessaryAdminTool
                     return;
                 }
 
-                lock (_lockObject)
-                {
-                    var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-                    var logEntry = $"[{timestamp}] [{level}] {message}\n";
+                var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+                var logEntry = $"[{timestamp}] [{level}] {message}\n";
 
-                    File.AppendAllText(LogFile, logEntry, Encoding.UTF8);
-                }
+                // TAG: #ASYNC_OPTIMIZATION - Run file I/O on background thread
+                await Task.Run(() =>
+                {
+                    lock (_lockObject)
+                    {
+                        File.AppendAllText(LogFile, logEntry, Encoding.UTF8);
+                    }
+                });
             }
             catch
             {
@@ -182,8 +205,9 @@ namespace NecessaryAdminTool
 
         /// <summary>
         /// Read recent log entries
+        /// TAG: #ASYNC_OPTIMIZATION - Made async to prevent UI blocking on file read
         /// </summary>
-        public static string GetRecentLogs(int lines = 100)
+        public static async Task<string> GetRecentLogsAsync(int lines = 100)
         {
             try
             {
@@ -203,12 +227,16 @@ namespace NecessaryAdminTool
                     return "No log file found.";
                 }
 
-                var allLines = File.ReadAllLines(LogFile, Encoding.UTF8);
-                var recentLines = allLines.Length > lines
-                    ? allLines.Skip(allLines.Length - lines).ToArray()
-                    : allLines;
+                // TAG: #ASYNC_OPTIMIZATION - Run file I/O on background thread
+                return await Task.Run(() =>
+                {
+                    var allLines = File.ReadAllLines(LogFile, Encoding.UTF8);
+                    var recentLines = allLines.Length > lines
+                        ? allLines.Skip(allLines.Length - lines).ToArray()
+                        : allLines;
 
-                return string.Join(Environment.NewLine, recentLines);
+                    return string.Join(Environment.NewLine, recentLines);
+                });
             }
             catch (Exception ex)
             {
@@ -217,9 +245,18 @@ namespace NecessaryAdminTool
         }
 
         /// <summary>
-        /// Clear all log files
+        /// Read recent log entries (synchronous wrapper for backward compatibility)
         /// </summary>
-        public static void ClearAllLogs()
+        public static string GetRecentLogs(int lines = 100)
+        {
+            return GetRecentLogsAsync(lines).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Clear all log files asynchronously
+        /// TAG: #ASYNC_OPTIMIZATION - Made async to prevent UI blocking
+        /// </summary>
+        public static async Task ClearAllLogsAsync()
         {
             try
             {
@@ -234,20 +271,24 @@ namespace NecessaryAdminTool
                     return;
                 }
 
-                var logFiles = Directory.GetFiles(LogDirectory, "NAT_*.log");
-                foreach (var logFile in logFiles)
+                // TAG: #ASYNC_OPTIMIZATION - Run file system operations on background thread
+                await Task.Run(() =>
                 {
-                    // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
-                    // Validate each file path before deletion
-                    string fullLogPath = Path.GetFullPath(logFile);
-                    if (!SecurityValidator.IsValidFilePath(fullLogPath, LogDirectory))
+                    var logFiles = Directory.GetFiles(LogDirectory, "NAT_*.log");
+                    foreach (var logFile in logFiles)
                     {
-                        LogWarning($"[LogManager] Blocked deletion of file outside log directory: {logFile}");
-                        continue;
-                    }
+                        // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+                        // Validate each file path before deletion
+                        string fullLogPath = Path.GetFullPath(logFile);
+                        if (!SecurityValidator.IsValidFilePath(fullLogPath, LogDirectory))
+                        {
+                            LogWarning($"[LogManager] Blocked deletion of file outside log directory: {logFile}");
+                            continue;
+                        }
 
-                    File.Delete(logFile);
-                }
+                        File.Delete(logFile);
+                    }
+                });
 
                 LogInfo("All log files cleared");
             }
@@ -255,6 +296,14 @@ namespace NecessaryAdminTool
             {
                 LogError("Failed to clear log files", ex);
             }
+        }
+
+        /// <summary>
+        /// Clear all log files (synchronous wrapper for backward compatibility)
+        /// </summary>
+        public static void ClearAllLogs()
+        {
+            _ = ClearAllLogsAsync();
         }
 
         /// <summary>

@@ -19,9 +19,11 @@ namespace NecessaryAdminTool
         public bool InstallService { get; private set; }
         public int ScanIntervalHours { get; private set; }
 
+#if DEBUG
         // TAG: #DEBUG_BYPASS - Track rapid clicks for debug bypass (5 clicks within 2 seconds)
         private int _debugBypassClickCount = 0;
         private DateTime _debugBypassFirstClick = DateTime.MinValue;
+#endif
 
         public SetupWizardWindow()
         {

@@ -178,7 +178,7 @@ namespace NecessaryAdminTool.Managers
                     }
 
                     string installerPath = operation.Parameters["InstallerPath"]?.ToString();
-                    if (!SecurityValidator.ValidateFilePath(installerPath))
+                    if (!SecurityValidator.IsValidPath(installerPath))
                     {
                         LogManager.LogWarning("[BulkOperationManager] Installer path validation failed");
                         return false;

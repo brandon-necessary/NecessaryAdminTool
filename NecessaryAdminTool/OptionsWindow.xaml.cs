@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -417,7 +418,8 @@ namespace NecessaryAdminTool
         /// <summary>
         /// Export pinned devices to CSV
         /// </summary>
-        private void BtnExportPinned_Click(object sender, RoutedEventArgs e)
+        // TAG: #ASYNC_OPTIMIZATION - Made async to prevent UI blocking on file write
+        private async void BtnExportPinned_Click(object sender, RoutedEventArgs e)
         {
             try
             {
@@ -433,7 +435,8 @@ namespace NecessaryAdminTool
                     var csv = "Device,Status,Last Checked\n" +
                               string.Join("\n", _pinnedDevices.Select(d => $"{d.Input},{d.Status},{d.LastChecked}"));
 
-                    File.WriteAllText(dialog.FileName, csv);
+                    // TAG: #ASYNC_OPTIMIZATION - Run file I/O on background thread
+                    await Task.Run(() => File.WriteAllText(dialog.FileName, csv));
                     ShowStatus($"Exported {_pinnedDevices.Count} devices to {Path.GetFileName(dialog.FileName)}", MessageType.Success);
                 }
             }
@@ -1348,8 +1351,9 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         // TAG: #CSV_IMPORT #PINNED_DEVICES
         /// <summary>
         /// Import pinned devices from CSV file
+        /// TAG: #ASYNC_OPTIMIZATION - Made async to prevent UI blocking on file read
         /// </summary>
-        private void BtnImportPinnedCsv_Click(object sender, RoutedEventArgs e)
+        private async void BtnImportPinnedCsv_Click(object sender, RoutedEventArgs e)
         {
             try
             {
@@ -1362,7 +1366,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
                 if (openFileDialog.ShowDialog() == true)
                 {
-                    string[] lines = File.ReadAllLines(openFileDialog.FileName);
+                    // TAG: #ASYNC_OPTIMIZATION - Run file I/O on background thread
+                    string[] lines = await Task.Run(() => File.ReadAllLines(openFileDialog.FileName));
                     int importedCount = 0;
 
                     // Skip header row if it exists
@@ -1990,7 +1995,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             }
         }
 
-        private void BtnImportBookmarks_Click(object sender, RoutedEventArgs e)
+        // TAG: #ASYNC_OPTIMIZATION - Made async to prevent UI blocking on file read
+        private async void BtnImportBookmarks_Click(object sender, RoutedEventArgs e)
         {
             try
             {
@@ -2002,7 +2008,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
                 if (dialog.ShowDialog() == true)
                 {
-                    var lines = File.ReadAllLines(dialog.FileName);
+                    // TAG: #ASYNC_OPTIMIZATION - Run file I/O on background thread
+                    var lines = await Task.Run(() => File.ReadAllLines(dialog.FileName));
                     int imported = 0;
 
                     // Skip header if present
@@ -2034,7 +2041,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             }
         }
 
-        private void BtnExportBookmarks_Click(object sender, RoutedEventArgs e)
+        // TAG: #ASYNC_OPTIMIZATION - Made async to prevent UI blocking on file write
+        private async void BtnExportBookmarks_Click(object sender, RoutedEventArgs e)
         {
             try
             {
@@ -2055,7 +2063,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                         sb.AppendLine($"{bookmark.Hostname},{bookmark.Description},{bookmark.Category}");
                     }
 
-                    File.WriteAllText(dialog.FileName, sb.ToString());
+                    // TAG: #ASYNC_OPTIMIZATION - Run file I/O on background thread
+                    await Task.Run(() => File.WriteAllText(dialog.FileName, sb.ToString()));
                     ShowStatus($"✅ Exported {_bookmarks.Count} bookmarks to {dialog.FileName}", MessageType.Success);
                 }
             }
@@ -2069,7 +2078,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         // EXPORT/IMPORT ALL SETTINGS - TAG: #VERSION_7 #EXPORT_IMPORT
         // ═══════════════════════════════════════════════════════
 
-        private void BtnExportAllSettings_Click(object sender, RoutedEventArgs e)
+        // TAG: #ASYNC_OPTIMIZATION - Made async to prevent UI blocking on file write
+        private async void BtnExportAllSettings_Click(object sender, RoutedEventArgs e)
         {
             try
             {
@@ -2086,7 +2096,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     var backupData = new Dictionary<string, object>
                     {
                         ["ExportDate"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                        ["Version"] = "7.0",
+                        ["Version"] = LogoConfig.VERSION, // TAG: #VERSION_ENGINE - Uses centralized version
                         ["ConnectionProfiles"] = _connectionProfiles.ToList(),
                         ["Bookmarks"] = _bookmarks.ToList(),
                         ["FontSizeMultiplier"] = SliderFontSize?.Value ?? 1.0,
@@ -2102,8 +2112,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     var serializer = new JavaScriptSerializer();
                     string json = serializer.Serialize(backupData);
 
-                    // Pretty print the JSON
-                    File.WriteAllText(dialog.FileName, json);
+                    // TAG: #ASYNC_OPTIMIZATION - Run file I/O on background thread
+                    await Task.Run(() => File.WriteAllText(dialog.FileName, json));
 
                     ShowStatus($"✅ All settings exported to {Path.GetFileName(dialog.FileName)}", MessageType.Success);
                     // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
@@ -2126,7 +2136,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             }
         }
 
-        private void BtnImportAllSettings_Click(object sender, RoutedEventArgs e)
+        // TAG: #ASYNC_OPTIMIZATION - Made async to prevent UI blocking on file read
+        private async void BtnImportAllSettings_Click(object sender, RoutedEventArgs e)
         {
             try
             {
@@ -2150,7 +2161,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
                 if (dialog.ShowDialog() == true)
                 {
-                    string json = File.ReadAllText(dialog.FileName);
+                    // TAG: #ASYNC_OPTIMIZATION - Run file I/O on background thread
+                    string json = await Task.Run(() => File.ReadAllText(dialog.FileName));
                     var serializer = new JavaScriptSerializer();
                     var backupData = serializer.Deserialize<Dictionary<string, object>>(json);
 
@@ -3024,7 +3036,10 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         // REGION: KEYBOARD SHORTCUTS CONFIGURATION - TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS
         // ═══════════════════════════════════════════════════════════════════════════
 
+        // Reserved for future keyboard shortcut editing functionality
+#pragma warning disable CS0414
         private KeyValuePair<string, KeyboardShortcut>? _editingShortcut = null;
+#pragma warning restore CS0414
 
         /// <summary>
         /// Load keyboard shortcut settings into UI controls

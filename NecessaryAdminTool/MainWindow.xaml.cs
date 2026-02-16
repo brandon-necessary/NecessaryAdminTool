@@ -133,79 +133,6 @@ namespace NecessaryAdminTool
         }
     }
 
-    // ############################################################################
-    // REGION: SECURITY & VALIDATION UTILITIES
-    // ############################################################################
-
-    public static class SecurityValidator
-    {
-        private static readonly Regex _hostnamePattern = new Regex(@"^[a-zA-Z0-9\-\.]{1,255}$", RegexOptions.Compiled);
-        private static readonly Regex _ipPattern = new Regex(@"^(\d{1,3}\.){3}\d{1,3}$", RegexOptions.Compiled);
-        private static readonly Regex _domainPattern = new Regex(@"^[a-zA-Z0-9\-\.\\]{1,255}$", RegexOptions.Compiled);
-        private static readonly Regex _pathPattern = new Regex(@"^[a-zA-Z]:\\[\w\s\-\\.\\]+$", RegexOptions.Compiled);
-
-        private static readonly string[] _dangerousPatterns = new[]
-        {
-            ";", "|", "`", "$", "(", ")", "{", "}", "[", "]",
-            "<", ">", "\n", "\r", "&&", "||", "powershell -enc", "invoke-expression"
-        };
-
-        private static readonly string[] _whitelistedCommands = new[]
-        {
-            "sfc /scannow", "dism /online", "gpupdate /force",
-            "shutdown /r", "netsh advfirewall", "ipconfig /flushdns",
-            "start-mpcompliance", "start-mpdefenderscan",
-            "get-netipaddress", "get-netroute", "get-dnsclientcache",
-            "ipconfig /release", "ipconfig /renew"
-        };
-
-        public static bool IsValidHostname(string hostname)
-        {
-            if (string.IsNullOrWhiteSpace(hostname)) return false;
-            if (hostname.Length > 255) return false;
-            return _hostnamePattern.IsMatch(hostname) || _ipPattern.IsMatch(hostname);
-        }
-
-        public static bool IsValidDomainUser(string username)
-        {
-            if (string.IsNullOrWhiteSpace(username)) return false;
-            return _domainPattern.IsMatch(username);
-        }
-
-        public static bool IsValidPath(string path)
-        {
-            if (string.IsNullOrWhiteSpace(path)) return false;
-            return _pathPattern.IsMatch(path);
-        }
-
-        public static string SanitizeHostname(string input)
-        {
-            if (string.IsNullOrWhiteSpace(input)) return string.Empty;
-            return Regex.Replace(input.Trim(), @"[^a-zA-Z0-9\-\.]", "");
-        }
-
-        public static string SanitizeWmiQuery(string query)
-        {
-            if (string.IsNullOrWhiteSpace(query)) return string.Empty;
-            foreach (var pattern in _dangerousPatterns)
-                query = query.Replace(pattern, "");
-            return query.Trim();
-        }
-
-        public static bool ContainsDangerousPatterns(string input)
-        {
-            if (string.IsNullOrWhiteSpace(input)) return false;
-            string lowerInput = input.ToLower();
-            if (_whitelistedCommands.Any(cmd => lowerInput.Contains(cmd.ToLower())))
-                return false;
-            return _dangerousPatterns.Any(p => input.Contains(p));
-        }
-
-        public static string EscapeCsv(string value)
-        {
-            return (value ?? "").Replace("\"", "\"\"");
-        }
-    }
 
     // ############################################################################
     // REGION: CONFIGURATION
@@ -650,6 +577,12 @@ namespace NecessaryAdminTool
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "NecessaryAdmin_DCConfiguration.xml");
 
+        // TAG: #DC_SYNC #RACE_CONDITION_FIX - Prevent concurrent DC discoveries
+        private readonly System.Threading.SemaphoreSlim _discoveryLock = new System.Threading.SemaphoreSlim(1, 1);
+        private List<DCInfo> _lastDiscoveredDCs = null;
+        private DateTime _lastDiscoveryTime = DateTime.MinValue;
+        private const int CACHE_TTL_SECONDS = 30; // Cache DC list for 30 seconds
+
         public class DCInfo
         {
             public string Hostname { get; set; }
@@ -761,15 +694,34 @@ namespace NecessaryAdminTool
 
         /// <summary>
         /// Discover DCs for current domain using Active Directory
+        /// TAG: #DC_SYNC #RACE_CONDITION_FIX - Prevents concurrent discoveries with semaphore + cache
         /// </summary>
         public async Task<List<DCInfo>> DiscoverDomainControllersAsync()
         {
-            var dcList = new List<DCInfo>();
+            // TAG: #DC_SYNC #CACHE - Return cached DCs if fresh (within 30 seconds)
+            if (_lastDiscoveredDCs != null && (DateTime.Now - _lastDiscoveryTime).TotalSeconds < CACHE_TTL_SECONDS)
+            {
+                LogManager.LogDebug($"[DC Discovery] Using cached DC list ({_lastDiscoveredDCs.Count} DCs, age: {(DateTime.Now - _lastDiscoveryTime).TotalSeconds:F1}s)");
+                return _lastDiscoveredDCs;
+            }
 
+            // TAG: #DC_SYNC #RACE_CONDITION_FIX - Prevent concurrent AD queries
+            await _discoveryLock.WaitAsync();
             try
             {
-                // Run AD discovery on thread pool to avoid blocking UI
-                await Task.Run(() =>
+                // Double-check cache after acquiring lock (another thread may have just updated it)
+                if (_lastDiscoveredDCs != null && (DateTime.Now - _lastDiscoveryTime).TotalSeconds < CACHE_TTL_SECONDS)
+                {
+                    LogManager.LogDebug($"[DC Discovery] Using cached DC list (acquired after lock)");
+                    return _lastDiscoveredDCs;
+                }
+
+                var dcList = new List<DCInfo>();
+
+                try
+                {
+                    // Run AD discovery on thread pool to avoid blocking UI
+                    await Task.Run(() =>
                 {
                     try
                     {
@@ -814,24 +766,40 @@ namespace NecessaryAdminTool
                     }
                 });
 
-                SaveConfiguration();
+                    SaveConfiguration();
 
-                LogManager.LogDebug($"Discovered {dcList.Count} DCs");
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogDebug($"DC discovery failed: {ex.Message} - using cached list");
+                    LogManager.LogDebug($"[DC Discovery] Discovered {dcList.Count} DCs");
 
-                // Fall back to cached DCs from configuration
-                var currentDomain = _domains.FirstOrDefault();
-                if (currentDomain != null)
-                {
-                    dcList = currentDomain.DomainControllers ?? new List<DCInfo>();
+                    // TAG: #DC_SYNC #CACHE - Update cache
+                    _lastDiscoveredDCs = dcList;
+                    _lastDiscoveryTime = DateTime.Now;
                 }
-                // If no cached DCs, dcList remains empty - caller will handle
-            }
+                catch (Exception ex)
+                {
+                    LogManager.LogDebug($"[DC Discovery] Failed: {ex.Message} - using cached list");
 
-            return dcList;
+                    // Fall back to cached DCs from configuration
+                    var currentDomain = _domains.FirstOrDefault();
+                    if (currentDomain != null)
+                    {
+                        dcList = currentDomain.DomainControllers ?? new List<DCInfo>();
+
+                        // Update cache with fallback data
+                        if (dcList.Count > 0)
+                        {
+                            _lastDiscoveredDCs = dcList;
+                            _lastDiscoveryTime = DateTime.Now;
+                        }
+                    }
+                }
+
+                return dcList;
+            }
+            finally
+            {
+                // TAG: #DC_SYNC #RACE_CONDITION_FIX - Always release the lock
+                _discoveryLock.Release();
+            }
         }
 
         /// <summary>
@@ -1976,6 +1944,23 @@ namespace NecessaryAdminTool
         private static ConcurrentDictionary<string, (bool isAdmin, DateTime cachedAt)> _adminCheckCache = new ConcurrentDictionary<string, (bool, DateTime)>();
         private static readonly TimeSpan _adminCheckCacheDuration = TimeSpan.FromMinutes(15);
 
+        // TAG: #MMC_EMBEDDING #ADMIN_TOOLS
+        // MMC Console mapping (display name → snap-in file)
+        private Dictionary<string, string> _mmcConsoles = new Dictionary<string, string>
+        {
+            { "AD Users & Computers", "dsa.msc" },
+            { "Group Policy (GPMC)", "gpmc.msc" },
+            { "DNS Manager", "dnsmgmt.msc" },
+            { "DHCP", "dhcpmgmt.msc" },
+            { "Services (Local/Remote)", "services.msc" },
+            { "AD Sites and Services", "dssite.msc" },
+            { "AD Domains and Trusts", "domain.msc" },
+            { "Certification Authority", "certsrv.msc" },
+            { "Failover Cluster Manager", "cluadmin.msc" },
+            { "Event Viewer", "eventvwr.msc" },
+            { "Performance Monitor", "perfmon.msc" }
+        };
+
         // Debug Mode - Enable verbose error logging
         private static bool _debugMode = true; // Set to true for detailed error tracking
 
@@ -2210,8 +2195,8 @@ namespace NecessaryAdminTool
             // TAG: #VERSION_7.1 #SCRIPTS - Initialize PowerShell script library
             ScriptManager.Initialize();
 
-            // TAG: #VERSION_7.1 #ASSET_TAGGING - Initialize asset tag system
-            AssetTagManager.Initialize();
+            // TAG: #VERSION_7.1 #ASSET_TAGGING #ASYNC_OPTIMIZATION - Initialize asset tag system
+            _ = AssetTagManager.InitializeAsync(); // Fire-and-forget async to avoid blocking UI
 
             // TAG: #AUTO_UPDATE_UI_ENGINE #FILTER_SYSTEM - Initialize filter manager
             Managers.FilterManager.Initialize();
@@ -2252,7 +2237,7 @@ namespace NecessaryAdminTool
                     LogManager.LogWarning("32-bit mode detected");
                     UpdateLoadingStatus("System Check", "WARNING: 32-bit mode detected");
                     // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_WARNING
-                    Task.Delay(1500).ContinueWith(_ => Dispatcher.Invoke(() =>
+                    _ = Task.Delay(1500).ContinueWith(_ => Dispatcher.Invoke(() =>
                         Managers.UI.ToastManager.ShowWarning("Running in 32-bit mode - Some WMI features may not work correctly")
                     ));
                 }
@@ -2651,6 +2636,10 @@ namespace NecessaryAdminTool
         private const int SUPERADMIN_CLICK_THRESHOLD = 5; // Require 5 rapid clicks
         private const int SUPERADMIN_CLICK_WINDOW_MS = 2000; // Within 2 seconds
 
+        // TAG: #ELEVATION #RESTART_AS_ADMIN - Role badge double-click tracking
+        private DateTime _lastRoleBadgeClick = DateTime.MinValue;
+        private const int ROLE_BADGE_DOUBLE_CLICK_MS = 500; // Standard double-click window
+
         /// <summary>
         /// Invisible button click handler for SuperAdmin access
         /// Requires 5 rapid clicks within 2 seconds
@@ -2825,12 +2814,14 @@ namespace NecessaryAdminTool
 
                     if (passwordWindow.ShowDialog() == true)
                     {
-                        // SuperAdmin password
-                        // In production, use hashed password with salt
+                        // TAG: #SECURITY_CRITICAL - SuperAdmin password stored as SHA256 hash
                         string enteredPassword = passwordBox.Password;
-                        string correctPassword = "08282021";
+                        string enteredPasswordHash = ComputeSHA256Hash(enteredPassword);
 
-                        if (enteredPassword == correctPassword)
+                        // SHA256 hash of SuperAdmin password
+                        string correctPasswordHash = "f997b02bc08d0bde8b13013feb8703083288fbed072aa6b7c3c55c365ab7427d";
+
+                        if (enteredPasswordHash == correctPasswordHash)
                         {
                             // Open SuperAdmin window
                             var superAdminWindow = new SuperAdminWindow
@@ -2886,9 +2877,10 @@ namespace NecessaryAdminTool
         /// Checks if the authenticated user is a member of Domain Admins.
         /// Locks down dangerous tools if not.
         /// </summary>
-        private bool CheckDomainAdminMembership(string username)
+        // TAG: #ASYNC_OPTIMIZATION #PERFORMANCE - Made async to prevent UI lag during AD queries
+        private async Task<bool> CheckDomainAdminMembership(string username)
         {
-            // Check cache first (15-minute TTL)
+            // Check cache first (15-minute TTL) - synchronous dictionary lookup is fast
             if (_adminCheckCache.TryGetValue(username, out var cached))
             {
                 if ((DateTime.Now - cached.cachedAt) < _adminCheckCacheDuration)
@@ -2903,89 +2895,93 @@ namespace NecessaryAdminTool
                 }
             }
 
-            try
+            // TAG: #ASYNC_OPTIMIZATION - Run AD queries on background thread to prevent UI blocking
+            return await Task.Run(() =>
             {
-                string domain = "";
-                string cleanUser = username;
-
-                if (username.Contains("\\"))
-                {
-                    var parts = username.Split('\\');
-                    domain = parts[0];
-                    cleanUser = parts[1];
-                }
-
-                // Use authenticated credentials for AD query
-                DirectoryEntry root = null;
-                string password = null;
-
-                if (_authPass != null)
-                {
-                    SecureMemory.UseSecureString(_authPass, pwd => password = pwd);
-                }
-
                 try
                 {
-                    // Create DirectoryEntry with authenticated credentials
-                    if (!string.IsNullOrEmpty(password))
+                    string domain = "";
+                    string cleanUser = username;
+
+                    if (username.Contains("\\"))
                     {
-                        string ldapPath = string.IsNullOrEmpty(domain) ? "LDAP://" : $"LDAP://{domain}";
-                        root = new DirectoryEntry(ldapPath, username, password, AuthenticationTypes.Secure);
-                    }
-                    else
-                    {
-                        root = new DirectoryEntry();
+                        var parts = username.Split('\\');
+                        domain = parts[0];
+                        cleanUser = parts[1];
                     }
 
-                    using (root)
-                    using (var searcher = new DirectorySearcher(root))
+                    // Use authenticated credentials for AD query
+                    DirectoryEntry root = null;
+                    string password = null;
+
+                    if (_authPass != null)
                     {
-                        searcher.Filter = $"(&(objectCategory=user)(sAMAccountName={cleanUser}))";
-                        searcher.PropertiesToLoad.Add("memberOf");
-                        searcher.PropertiesToLoad.Add("distinguishedName");
-                        var result = searcher.FindOne();
-                        if (result == null)
+                        SecureMemory.UseSecureString(_authPass, pwd => password = pwd);
+                    }
+
+                    try
+                    {
+                        // Create DirectoryEntry with authenticated credentials
+                        if (!string.IsNullOrEmpty(password))
                         {
-                            LogManager.LogWarning($"User not found in AD: {cleanUser}");
-                            CacheAdminStatus(username, false);
-                            return false;
+                            string ldapPath = string.IsNullOrEmpty(domain) ? "LDAP://" : $"LDAP://{domain}";
+                            root = new DirectoryEntry(ldapPath, username, password, AuthenticationTypes.Secure);
+                        }
+                        else
+                        {
+                            root = new DirectoryEntry();
                         }
 
-                        // Check direct and nested group membership
-                        var checkedGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                        bool isAdmin = IsInDomainAdminsRecursive(result, root, checkedGroups);
+                        using (root)
+                        using (var searcher = new DirectorySearcher(root))
+                        {
+                            searcher.Filter = $"(&(objectCategory=user)(sAMAccountName={cleanUser}))";
+                            searcher.PropertiesToLoad.Add("memberOf");
+                            searcher.PropertiesToLoad.Add("distinguishedName");
+                            var result = searcher.FindOne();
+                            if (result == null)
+                            {
+                                LogManager.LogWarning($"User not found in AD: {cleanUser}");
+                                CacheAdminStatus(username, false);
+                                return false;
+                            }
+
+                            // Check direct and nested group membership
+                            var checkedGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                            bool isAdmin = IsInDomainAdminsRecursive(result, root, checkedGroups);
+                            CacheAdminStatus(username, isAdmin);
+                            return isAdmin;
+                        }
+                    }
+                    finally
+                    {
+                        // Wipe password from memory
+                        if (password != null)
+                        {
+                            password = null;
+                            GC.Collect();
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LogManager.LogWarning($"Domain Admin check failed: {ex.Message}");
+                    // Fallback: check current Windows identity
+                    try
+                    {
+                        var identity = WindowsIdentity.GetCurrent();
+                        var principal = new WindowsPrincipal(identity);
+                        bool isAdmin = principal.IsInRole(WindowsBuiltInRole.Administrator);
                         CacheAdminStatus(username, isAdmin);
                         return isAdmin;
                     }
-                }
-                finally
-                {
-                    // Wipe password from memory
-                    if (password != null)
+                    catch
                     {
-                        password = null;
-                        GC.Collect();
+                        CacheAdminStatus(username, false);
+                        return false;
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogWarning($"Domain Admin check failed: {ex.Message}");
-                // Fallback: check current Windows identity
-                try
-                {
-                    var identity = WindowsIdentity.GetCurrent();
-                    var principal = new WindowsPrincipal(identity);
-                    bool isAdmin = principal.IsInRole(WindowsBuiltInRole.Administrator);
-                    CacheAdminStatus(username, isAdmin);
-                    return isAdmin;
-                }
-                catch
-                {
-                    CacheAdminStatus(username, false);
-                    return false;
-                }
-            }
+            });
         }
 
         /// <summary>
@@ -3112,6 +3108,98 @@ namespace NecessaryAdminTool
                     BtnKillFirewall.Visibility = Visibility.Collapsed;
                 }
             });
+        }
+
+        /// <summary>
+        /// Role badge click handler - double-click to restart as Administrator
+        /// TAG: #ELEVATION #RESTART_AS_ADMIN #UX
+        /// </summary>
+        private void TxtRoleBadge_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            try
+            {
+                // Only allow restart if NOT elevated
+                if (_isElevated)
+                {
+                    Managers.UI.ToastManager.ShowInfo("Already running as Administrator");
+                    return;
+                }
+
+                DateTime now = DateTime.Now;
+                var timeSinceLastClick = now - _lastRoleBadgeClick;
+
+                // Check if this is a double-click (within 500ms)
+                if (timeSinceLastClick.TotalMilliseconds <= ROLE_BADGE_DOUBLE_CLICK_MS)
+                {
+                    // Double-click detected - restart as admin
+                    LogManager.LogInfo("[Elevation] User requested restart as Administrator via role badge double-click");
+
+                    var result = MessageBox.Show(
+                        "Restart NecessaryAdminTool as Administrator?\n\n" +
+                        "This will close the current session and relaunch with elevated privileges.\n\n" +
+                        "⚡ Elevated features include:\n" +
+                        "  • Deployment operations\n" +
+                        "  • Firewall management\n" +
+                        "  • System-level modifications\n" +
+                        "  • Advanced remote tools",
+                        "Restart as Administrator",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Question);
+
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        RestartAsAdministrator();
+                    }
+                }
+
+                _lastRoleBadgeClick = now;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("[Elevation] Failed to handle role badge click", ex);
+                Managers.UI.ToastManager.ShowError($"Restart failed: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Restart the application with Administrator privileges
+        /// TAG: #ELEVATION #RESTART_AS_ADMIN #PROCESS_MANAGEMENT
+        /// </summary>
+        private void RestartAsAdministrator()
+        {
+            try
+            {
+                // Get the current executable path
+                string exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+
+                // Use ProcessStartInfo with "runas" verb to request elevation
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = exePath,
+                    UseShellExecute = true,
+                    Verb = "runas" // Request elevation via UAC
+                };
+
+                LogManager.LogInfo($"[Elevation] Restarting application as Administrator: {exePath}");
+
+                // Start elevated process
+                Process.Start(startInfo);
+
+                // Close current instance
+                LogManager.LogInfo("[Elevation] Closing current non-elevated instance");
+                Application.Current.Shutdown();
+            }
+            catch (System.ComponentModel.Win32Exception)
+            {
+                // User cancelled UAC prompt
+                LogManager.LogWarning("[Elevation] User cancelled UAC prompt");
+                Managers.UI.ToastManager.ShowWarning("Elevation cancelled by user");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("[Elevation] Failed to restart as Administrator", ex);
+                Managers.UI.ToastManager.ShowError($"Failed to restart as Administrator: {ex.Message}");
+            }
         }
 
         // ── Terminal Toggle ──
@@ -7444,7 +7532,7 @@ if ($connection) {{
                 {
                     // No filter - show all
                     GridInventory.ItemsSource = _inventory;
-                    CardViewPanel.ItemsSource = _inventory;
+                    // CardViewPanel not implemented yet
                     UpdateFilterStatus("Showing all computers", _inventory.Count);
                     return;
                 }
@@ -7456,18 +7544,13 @@ if ($connection) {{
                     pc => pc.Hostname,
                     pc => pc.Status,
                     pc => pc.DisplayOS,
-                    pc => pc.DistinguishedName,
-                    pc =>
-                    {
-                        if (int.TryParse(pc.TotalRAM?.Replace("GB", "").Trim(), out int ram))
-                            return ram;
-                        return null;
-                    },
-                    pc => pc.LastScanDate
+                    pc => null, // DistinguishedName not available in PCInventory
+                    pc => null, // RAM not available in PCInventory
+                    pc => null  // LastScanDate not available in PCInventory
                 );
 
                 GridInventory.ItemsSource = filtered;
-                CardViewPanel.ItemsSource = filtered;
+                // CardViewPanel not implemented yet
 
                 string description = criteria.GetDescription();
                 UpdateFilterStatus($"Filter: {description}", filtered.Count);
@@ -7481,47 +7564,49 @@ if ($connection) {{
 
                 // Fallback: show all
                 GridInventory.ItemsSource = _inventory;
-                CardViewPanel.ItemsSource = _inventory;
+                // CardViewPanel not implemented yet
             }
         }
 
         /// <summary>
         /// Update filter status display
         /// TAG: #FILTER_SYSTEM #UI_FEEDBACK
+        /// TEMPORARILY DISABLED - Filter panel removed for debugging
         /// </summary>
         private void UpdateFilterStatus(string message, int count)
         {
-            TxtFilterStatus.Text = message;
-            TxtFilterCount.Text = $"{count} results";
-
-            // Update icon based on filter state
-            if (Managers.FilterManager.CurrentFilter.IsEmpty())
-            {
-                TxtFilterIcon.Text = "ℹ️";
-            }
-            else
-            {
-                TxtFilterIcon.Text = "🔍";
-            }
+            // TEMP DISABLED
+            //TxtFilterStatus.Text = message;
+            //TxtFilterCount.Text = $"{count} results";
+            //// Update icon based on filter state
+            //if (Managers.FilterManager.CurrentFilter.IsEmpty())
+            //{
+            //    TxtFilterIcon.Text = "ℹ️";
+            //}
+            //else
+            //{
+            //    TxtFilterIcon.Text = "🔍";
+            //}
         }
 
         /// <summary>
         /// Update filter button checked states
         /// TAG: #FILTER_SYSTEM #UI_FEEDBACK
+        /// TEMPORARILY DISABLED - Filter panel removed for debugging
         /// </summary>
         private void UpdateFilterButtons()
         {
-            var criteria = Managers.FilterManager.CurrentFilter;
-
-            // Reset all buttons
-            BtnFilterAll.IsChecked = criteria.IsEmpty();
-            BtnFilterOnline.IsChecked = criteria.StatusFilter == "Online";
-            BtnFilterOffline.IsChecked = criteria.StatusFilter == "Offline";
-            BtnFilterWin11.IsChecked = criteria.OSFilter == "Windows 11";
-            BtnFilterWin10.IsChecked = criteria.OSFilter == "Windows 10";
-            BtnFilterWin7.IsChecked = criteria.OSFilter == "Windows 7";
-            BtnFilterServers.IsChecked = criteria.OSFilter == "Server";
-            BtnFilterWorkstations.IsChecked = criteria.OSFilter == "Workstation";
+            // TEMP DISABLED
+            //var criteria = Managers.FilterManager.CurrentFilter;
+            //// Reset all buttons
+            //BtnFilterAll.IsChecked = criteria.IsEmpty();
+            //BtnFilterOnline.IsChecked = criteria.StatusFilter == "Online";
+            //BtnFilterOffline.IsChecked = criteria.StatusFilter == "Offline";
+            //BtnFilterWin11.IsChecked = criteria.OSFilter == "Windows 11";
+            //BtnFilterWin10.IsChecked = criteria.OSFilter == "Windows 10";
+            //BtnFilterWin7.IsChecked = criteria.StatusFilter == "Windows 7";
+            //BtnFilterServers.IsChecked = criteria.OSFilter == "Server";
+            //BtnFilterWorkstations.IsChecked = criteria.OSFilter == "Workstation";
         }
 
         // TAG: #VERSION_7.1 #PATCH_MANAGEMENT - Windows Update handlers
@@ -7885,13 +7970,19 @@ if ($rebootPending) {
             }
         }
 
-        // TAG: #SECURITY_CRITICAL #AUTHENTICATION #RATE_LIMITING
+        // TAG: #SECURITY_CRITICAL #AUTHENTICATION #RATE_LIMITING #UX_FEEDBACK
         private async Task<bool> PerformAuth(string user, SecureString pass)
         {
             bool authenticated = false; IntPtr token = IntPtr.Zero;
 
             // TAG: #SECURITY_CRITICAL #AUDIT_LOG
             LogManager.LogInfo($"[AUTH] Authentication attempt initiated for user: {user}");
+
+            // TAG: #UX_FEEDBACK - Step 1: Show contacting AD
+            Dispatcher.Invoke(() =>
+            {
+                Managers.UI.ToastManager.ShowInfo($"🔐 Contacting Active Directory...\n\nAuthenticating: {user}");
+            });
 
             await Task.Run(() =>
             {
@@ -7912,12 +8003,26 @@ if ($rebootPending) {
 
             if (authenticated)
             {
+                // TAG: #UX_FEEDBACK - Step 2: Credentials validated
+                Dispatcher.Invoke(() =>
+                {
+                    Managers.UI.ToastManager.ShowSuccess("✓ Credentials validated");
+                });
+
                 // TAG: #SECURITY_CRITICAL #RATE_LIMITING
                 // Reset rate limit on successful authentication
                 Security.SecurityValidator.ResetRateLimit(user);
 
                 _authUser = user; _authPass = pass; _isLoggedIn = true;
-                _isDomainAdmin = CheckDomainAdminMembership(user);
+
+                // TAG: #UX_FEEDBACK - Step 3: Checking admin membership
+                Dispatcher.Invoke(() =>
+                {
+                    Managers.UI.ToastManager.ShowInfo("🔍 Checking Domain Admin membership...");
+                });
+
+                // TAG: #ASYNC_OPTIMIZATION - Await async Domain Admin check to prevent UI lag
+                _isDomainAdmin = await CheckDomainAdminMembership(user);
                 TxtAuthStatus.Text = user.ToUpper(); TxtAuthStatus.Foreground = Brushes.LimeGreen;
                 BtnAuth.Content = "LOGOUT";
 
@@ -7927,19 +8032,35 @@ if ($rebootPending) {
                 // Apply restrictions based on domain admin status and elevation
                 ApplyRoleRestrictions();
 
-                // Inform user of their access level (only if not domain admin)
-                if (!_isDomainAdmin)
+                // TAG: #UX_FEEDBACK - Step 4: Show final access level
+                string accessLevel = _isDomainAdmin && _isElevated ? "Domain Admin with Elevation" :
+                                    _isDomainAdmin && !_isElevated ? "Domain Admin (No Elevation)" :
+                                    _isLoggedIn && _isElevated ? "Authenticated with Elevation" :
+                                    "Authenticated (Read-Only)";
+
+                Dispatcher.Invoke(() =>
                 {
-                    Dispatcher.Invoke(() =>
+                    if (_isDomainAdmin)
                     {
-                        Managers.UI.ToastManager.ShowInfo("You are authenticated but NOT a Domain Admin.\n\n" +"Some features (deployment, destructive tools) are disabled.\n\n" +"Contact your IT administrator for Domain Admin access.");
-                    });
-                }
+                        Managers.UI.ToastManager.ShowSuccess($"✓ Login successful!\n\nAccess Level: {accessLevel}");
+                    }
+                    else
+                    {
+                        // Inform user of their limited access level
+                        Managers.UI.ToastManager.ShowWarning($"⚠ Limited Access\n\nYou are authenticated but NOT a Domain Admin.\n\nSome features (deployment, destructive tools) are disabled.\n\nContact your IT administrator for Domain Admin access.");
+                    }
+                });
             }
             else
             {
                 // TAG: #SECURITY_CRITICAL #AUDIT_LOG #FAILED_AUTH
                 LogManager.LogWarning($"[AUTH] ✗ Authentication failed for user: {user}");
+
+                // TAG: #UX_FEEDBACK - Show authentication failure
+                Dispatcher.Invoke(() =>
+                {
+                    Managers.UI.ToastManager.ShowError("✗ Authentication failed\n\nInvalid credentials or insufficient permissions.");
+                });
             }
 
             return authenticated;
@@ -8137,6 +8258,15 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         // UTILITY
         // ═══════════════════════════════════════════════════════
 
+        /// <summary>
+        /// Initialize DC cluster view (Domain & Directory tab)
+        /// TAG: #DC_DISCOVERY #DOMAIN_CONTROLLERS #DC_SYNC
+        /// PART OF: DC Component Group (synced with RefreshDCHealthAsync)
+        /// UPDATES:
+        ///   - Domain Controller dropdown (ComboDC)
+        ///   - DC Health Topology grid (GridDCHealth)
+        ///   - Pings all DCs for latency
+        /// </summary>
         private async Task InitDCCluster()
         {
             ShowBottomProgress("Discovering domain controllers...");
@@ -8426,6 +8556,9 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             }
 
             if (!string.IsNullOrEmpty(_tempLastDC)) foreach (ComboBoxItem i in ComboDC.Items) if (i.Tag?.ToString() == _tempLastDC) { ComboDC.SelectedItem = i; break; }
+
+            // TAG: #MODULAR #DC_HEALTH - Update Dashboard widget to stay in sync with DC discovery
+            _ = RefreshDCHealthAsync(); // Fire-and-forget to update Dashboard DC Health widget
         }
 
         /// <summary>
@@ -8889,6 +9022,30 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         // ── Remaining Event Handlers ──
         private void ChkRememberDC_Click(object sender, RoutedEventArgs e) => SaveConfig();
 
+        /// <summary>
+        /// Centralized DC refresh method - Updates ALL DC-related UI components together
+        /// TAG: #DC_DISCOVERY #MODULAR #CENTRALIZED_UPDATE #DC_SYNC
+        /// COMPONENTS UPDATED:
+        ///   1. Dashboard DC Health widget (RefreshDCHealthAsync)
+        ///   2. Domain & Directory dropdown (InitDCCluster)
+        ///   3. DC Health Topology grid (InitDCCluster)
+        ///   4. DC History panel (LoadDCHistory)
+        /// </summary>
+        private async Task RefreshAllDCComponentsAsync()
+        {
+            LogManager.LogDebug("[DC Sync] Refreshing all DC components together");
+
+            // TAG: #DC_SYNC - Update Domain & Directory tab components
+            await InitDCCluster();  // Updates dropdown + DC Health Topology grid
+            LoadDCHistory();        // Updates history panel
+
+            // TAG: #DC_SYNC - Update Dashboard widget to stay in sync
+            _ = RefreshDCHealthAsync(); // Fire-and-forget to update Dashboard DC Health widget
+
+            LogManager.LogDebug("[DC Sync] All DC components refreshed successfully");
+        }
+
+        // TAG: #DC_DISCOVERY #MODULAR #CENTRALIZED_UPDATE
         private async void BtnRefreshDCs_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -8904,8 +9061,9 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 }
                 else
                 {
-                    await InitDCCluster();  // Refresh health topology
-                    LoadDCHistory();  // Update history panel
+                    // TAG: #DC_SYNC - Use centralized method to update ALL DC components together
+                    await RefreshAllDCComponentsAsync();
+
                     AppendTerminal($"[DC Discovery] Manual refresh complete ({dcList.Count} DCs found)");
                 }
             }
@@ -9238,9 +9396,10 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     Owner = this
                 };
 
+                // TAG: #REMOVED - Global Services Configuration moved to Options panel
                 // Load current global services configuration
-                string currentConfig = Properties.Settings.Default.GlobalServicesConfig ?? "";
-                aboutWindow.LoadGlobalServicesConfig(currentConfig);
+                // string currentConfig = Properties.Settings.Default.GlobalServicesConfig ?? "";
+                // aboutWindow.LoadGlobalServicesConfig(currentConfig); // Method removed, functionality in OptionsWindow
 
                 aboutWindow.ShowDialog();
                 LogManager.LogInfo("About dialog opened");
@@ -10288,6 +10447,9 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     TxtDashboardLastUpdate.Text = $"Last updated: {DateTime.Now:HH:mm:ss}";
                 }
 
+                // Refresh DC Health widget - TAG: #DC_HEALTH #DASHBOARD
+                _ = RefreshDCHealthAsync(); // Fire-and-forget
+
                 LogManager.LogInfo("[Dashboard] Statistics refreshed");
             }
             catch (Exception ex)
@@ -10394,6 +10556,147 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         }
 
         /// <summary>
+        /// Refresh DC Health widget on Dashboard
+        /// TAG: #DC_HEALTH #DASHBOARD #DOMAIN_CONTROLLERS #DC_SYNC
+        /// PART OF: DC Component Group (synced with InitDCCluster)
+        /// </summary>
+        private async void BtnRefreshDCHealth_Click(object sender, RoutedEventArgs e)
+        {
+            await RefreshDCHealthAsync();
+        }
+
+        /// <summary>
+        /// Update DC Health widget with current DC status
+        /// TAG: #DC_HEALTH #DASHBOARD #DOMAIN_CONTROLLERS #DC_SYNC
+        /// PART OF: DC Component Group (synced with InitDCCluster)
+        /// UPDATES: Dashboard DC Health widget with ping latency
+        /// </summary>
+        private async Task RefreshDCHealthAsync()
+        {
+            try
+            {
+                // TAG: #THREAD_SAFETY #NULL_CHECK - Check if Dashboard UI elements are loaded before accessing
+                if (BtnRefreshDCHealth == null || TxtDCCount == null || TxtDCLastScan == null ||
+                    ListDCHealth == null || TxtDCDomainSuffix == null)
+                {
+                    LogManager.LogDebug("[Dashboard] DC Health widget not loaded yet, skipping refresh");
+                    return; // Dashboard tab not loaded yet
+                }
+
+                BtnRefreshDCHealth.IsEnabled = false;
+                BtnRefreshDCHealth.Content = "⏳ Scanning...";
+
+                // Discover domain controllers
+                var dcList = await _dcManager.DiscoverDomainControllersAsync();
+
+                if (dcList != null && dcList.Count > 0)
+                {
+                    // Update DC count
+                    TxtDCCount.Text = $"{dcList.Count} Detected";
+                    TxtDCLastScan.Text = $"Last scanned: {DateTime.Now:HH:mm:ss}";
+
+                    // TAG: #DC_HEALTH #UI_IMPROVEMENT - Extract domain suffix from first DC
+                    string domainSuffix = "";
+                    if (dcList[0].Hostname.Contains("."))
+                    {
+                        var parts = dcList[0].Hostname.Split(new[] { '.' }, 2);
+                        if (parts.Length > 1)
+                        {
+                            domainSuffix = "." + parts[1];
+                            TxtDCDomainSuffix.Text = domainSuffix;
+                        }
+                    }
+
+                    // TAG: #DC_HEALTH #PING_INTEGRATION - Ping all DCs in parallel to get real latency
+                    var pingTasks = dcList.Select(async dc =>
+                    {
+                        long latency = 9999; // Default to high latency (offline)
+                        try
+                        {
+                            using (var p = new System.Net.NetworkInformation.Ping())
+                            {
+                                var reply = await p.SendPingAsync(dc.Hostname, 2000);
+                                if (reply.Status == System.Net.NetworkInformation.IPStatus.Success)
+                                {
+                                    latency = reply.RoundtripTime;
+                                    LogManager.LogDebug($"[Dashboard DC Health] {dc.Hostname}: {latency}ms");
+                                }
+                                else
+                                {
+                                    LogManager.LogDebug($"[Dashboard DC Health] {dc.Hostname}: {reply.Status}");
+                                }
+                            }
+                        }
+                        catch (Exception pingEx)
+                        {
+                            LogManager.LogDebug($"[Dashboard DC Health] Ping failed for {dc.Hostname}: {pingEx.Message}");
+                        }
+
+                        // Update DC object with real latency
+                        dc.AvgLatency = (int)latency;
+                        return dc;
+                    });
+
+                    // Wait for all pings to complete
+                    dcList = (await Task.WhenAll(pingTasks)).ToList();
+
+                    // TAG: #DC_HEALTH #UI_IMPROVEMENT - Create display items with short names and styled latency
+                    var dcHealthItems = dcList.Select(dc => new
+                    {
+                        // Strip domain suffix for cleaner display
+                        Hostname = dc.Hostname.Contains(".") ? dc.Hostname.Split('.')[0] : dc.Hostname,
+                        dc.AvgLatency,
+                        HealthIcon = dc.AvgLatency < 50 ? "✅" :
+                                    dc.AvgLatency < 100 ? "⚠️" :
+                                    dc.AvgLatency < 200 ? "🔶" : "❌",
+                        LatencyColor = dc.AvgLatency < 50 ? "#10B981" :  // Green
+                                      dc.AvgLatency < 100 ? "#F59E0B" :  // Amber
+                                      dc.AvgLatency < 200 ? "#FF8533" :  // Orange
+                                      "#EF4444",  // Red
+                        // Background pill color for latency badge
+                        LatencyBg = dc.AvgLatency < 50 ? "#1A10B981" :  // Light green with transparency
+                                   dc.AvgLatency < 100 ? "#1AF59E0B" :  // Light amber
+                                   dc.AvgLatency < 200 ? "#1AFF8533" :  // Light orange
+                                   "#1AEF4444"  // Light red
+                    }).ToList();
+
+                    ListDCHealth.ItemsSource = dcHealthItems;
+
+                    LogManager.LogInfo($"[Dashboard] DC Health refreshed: {dcList.Count} DCs, avg latency: {dcList.Average(d => d.AvgLatency):F0}ms");
+                    Managers.UI.ToastManager.ShowSuccess($"Found {dcList.Count} domain controllers");
+                }
+                else
+                {
+                    TxtDCCount.Text = "0 Detected";
+                    TxtDCLastScan.Text = "No DCs found";
+                    ListDCHealth.ItemsSource = null;
+                    Managers.UI.ToastManager.ShowWarning("No domain controllers detected");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("[Dashboard] Failed to refresh DC health", ex);
+
+                // TAG: #NULL_CHECK - Only update UI if elements exist
+                if (TxtDCCount != null && TxtDCLastScan != null)
+                {
+                    TxtDCCount.Text = "Error";
+                    TxtDCLastScan.Text = ex.Message;
+                }
+                Managers.UI.ToastManager.ShowError($"DC scan failed: {ex.Message}");
+            }
+            finally
+            {
+                // TAG: #NULL_CHECK - Only update button if it exists
+                if (BtnRefreshDCHealth != null)
+                {
+                    BtnRefreshDCHealth.IsEnabled = true;
+                    BtnRefreshDCHealth.Content = "🔄 REFRESH DCs";
+                }
+            }
+        }
+
+        /// <summary>
         /// Open Connection Profile management dialog
         /// TAG: #VERSION_7 #CONNECTION_PROFILES
         /// </summary>
@@ -10476,8 +10779,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         }
 
         /// <summary>
-        /// Handle tab selection changed to initialize AD Object Browser when Domain & Directory tab is selected
-        /// TAG: #VERSION_7 #AD_MANAGEMENT
+        /// Handle tab selection changed to initialize AD Object Browser and auto-load Dashboard
+        /// TAG: #VERSION_7 #AD_MANAGEMENT #DC_HEALTH #AUTO_LOAD
         /// </summary>
         private bool _adObjectBrowserInitialized = false;
         private async void MainTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -10487,8 +10790,17 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 if (!(sender is TabControl tabControl)) return;
                 if (!(tabControl.SelectedItem is TabItem selectedTab)) return;
 
-                // Check if Domain & Directory tab is selected
                 string tabHeader = selectedTab.Header?.ToString() ?? "";
+
+                // TAG: #DC_HEALTH #AUTO_LOAD #DC_SYNC - Auto-refresh ALL DC components when Dashboard opens
+                if (tabHeader.Contains("DASHBOARD"))
+                {
+                    // Only refresh Dashboard widget (not full cluster) to avoid redundant work
+                    _ = RefreshDCHealthAsync();
+                    LogManager.LogDebug("[Dashboard] Auto-loading DC Health widget on tab selection");
+                }
+
+                // Check if Domain & Directory tab is selected
                 if (tabHeader.Contains("DOMAIN") && tabHeader.Contains("DIRECTORY"))
                 {
                     // Only initialize once per session, or if credentials changed
@@ -10948,6 +11260,189 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             }
         }
 
+        // ############################################################################
+        // REGION: MMC CONSOLE EMBEDDING - DYNAMIC TAB SYSTEM
+        // TAG: #MMC_EMBEDDING #ADMIN_TOOLS #DYNAMIC_TABS #KERBEROS
+        // ############################################################################
+
+        /// <summary>
+        /// Opens selected MMC console in a new embedded tab with Kerberos credential passthrough
+        /// TAG: #MMC_EMBEDDING #ADMIN_TOOLS #EVENT_HANDLER
+        /// </summary>
+        private async void BtnOpenMMCConsole_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Get selected console from ComboBox
+                if (!(ComboAdminTools.SelectedItem is ComboBoxItem selectedItem))
+                {
+                    Managers.UI.ToastManager.ShowWarning("Please select a console to open");
+                    return;
+                }
+
+                string selectedConsole = selectedItem.Content.ToString();
+
+                if (string.IsNullOrEmpty(selectedConsole))
+                {
+                    Managers.UI.ToastManager.ShowWarning("Please select a console to open");
+                    return;
+                }
+
+                if (!_mmcConsoles.ContainsKey(selectedConsole))
+                {
+                    Managers.UI.ToastManager.ShowError($"Unknown console: {selectedConsole}");
+                    LogManager.LogError($"[MMC] Unknown console selected: {selectedConsole}", null);
+                    return;
+                }
+
+                string mmcFile = _mmcConsoles[selectedConsole];
+
+                // Create new tab for the MMC console
+                await CreateMMCTabAsync(selectedConsole, mmcFile);
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("[MMC] Error in BtnOpenMMCConsole_Click", ex);
+                Managers.UI.ToastManager.ShowError($"Failed to open console: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Creates a new tab with embedded MMC console
+        /// TAG: #MMC_EMBEDDING #DYNAMIC_TABS #ADMIN_TOOLS
+        /// </summary>
+        private async Task CreateMMCTabAsync(string consoleName, string mmcFile)
+        {
+            try
+            {
+                LogManager.LogInfo($"[MMC] Creating tab for {consoleName} ({mmcFile})");
+
+                // Check if tab already exists
+                foreach (TabItem existingTab in TabControlDomainDirectory.Items)
+                {
+                    if (existingTab.Header is Grid grid &&
+                        grid.Children.OfType<TextBlock>().Any(tb => tb.Text == consoleName))
+                    {
+                        TabControlDomainDirectory.SelectedItem = existingTab;
+                        Managers.UI.ToastManager.ShowInfo($"{consoleName} is already open");
+                        LogManager.LogInfo($"[MMC] Tab for {consoleName} already exists, switching to it");
+                        return;
+                    }
+                }
+
+                // Create the MMC host control
+                var mmcHost = new UI.Components.MMCHostControl();
+
+                // Create tab header with close button
+                var tabHeader = CreateMMCTabHeader(consoleName);
+
+                // Create the tab item
+                var newTab = new TabItem
+                {
+                    Header = tabHeader,
+                    Content = mmcHost,
+                    Tag = mmcFile // Store for reference
+                };
+
+                // Handle console closed event
+                mmcHost.ConsoleClosed += (s, e) =>
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        TabControlDomainDirectory.Items.Remove(newTab);
+                        LogManager.LogInfo($"[MMC] Removed tab for {consoleName} (console closed)");
+                    });
+                };
+
+                // Add tab and select it
+                TabControlDomainDirectory.Items.Add(newTab);
+                TabControlDomainDirectory.SelectedItem = newTab;
+
+                // Get cached domain credentials for Kerberos passthrough
+                string username = null;
+                string domain = null;
+
+                // Try to get current domain from the domain name property
+                if (!string.IsNullOrEmpty(CurrentDomainName))
+                {
+                    domain = CurrentDomainName;
+
+                    // Try to get username from Windows identity
+                    try
+                    {
+                        var identity = WindowsIdentity.GetCurrent();
+                        if (identity != null && !string.IsNullOrEmpty(identity.Name))
+                        {
+                            // Extract username from DOMAIN\username format
+                            string[] parts = identity.Name.Split('\\');
+                            if (parts.Length == 2)
+                            {
+                                username = parts[1];
+                                LogManager.LogInfo($"[MMC] Using current Windows identity: {domain}\\{username}");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        LogManager.LogWarning($"[MMC] Could not get Windows identity: {ex.Message}");
+                    }
+                }
+
+                // Load the MMC console with credential passthrough
+                await mmcHost.LoadConsoleAsync(consoleName, mmcFile, username, domain);
+
+                Managers.UI.ToastManager.ShowSuccess($"Opened {consoleName}");
+                AppendTerminal($"[MMC] Opened {consoleName} in new tab");
+                LogManager.LogInfo($"[MMC] Successfully created and loaded tab for {consoleName}");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"[MMC] Failed to create tab for {consoleName}", ex);
+                Managers.UI.ToastManager.ShowError($"Failed to open {consoleName}: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Creates tab header with console icon and name
+        /// TAG: #MMC_EMBEDDING #DYNAMIC_TABS #UI
+        /// </summary>
+        private Grid CreateMMCTabHeader(string consoleName)
+        {
+            var grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            // Console icon
+            var icon = new TextBlock
+            {
+                Text = "🖥️",
+                FontSize = 12,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Grid.SetColumn(icon, 0);
+
+            // Console name
+            var name = new TextBlock
+            {
+                Text = consoleName,
+                FontSize = 11,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = System.Windows.Media.Brushes.White,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Grid.SetColumn(name, 2);
+
+            grid.Children.Add(icon);
+            grid.Children.Add(name);
+
+            return grid;
+        }
+
+        // ############################################################################
+        // END REGION: MMC CONSOLE EMBEDDING
+        // ############################################################################
+
         /// <summary>Shows lockout events in a dedicated window</summary>
         private void ShowLockoutWindow(List<LockoutEvent> lockouts)
         {
@@ -11091,6 +11586,20 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             }
             catch { }
             return "N/A";
+        }
+
+        /// <summary>
+        /// Computes SHA256 hash of input string
+        /// TAG: #SECURITY_CRITICAL - Used for SuperAdmin password verification
+        /// </summary>
+        private static string ComputeSHA256Hash(string input)
+        {
+            using (var sha256 = System.Security.Cryptography.SHA256.Create())
+            {
+                byte[] bytes = System.Text.Encoding.UTF8.GetBytes(input);
+                byte[] hash = sha256.ComputeHash(bytes);
+                return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+            }
         }
 
         // ═══════════════════════════════════════════════════════
