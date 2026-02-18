@@ -11755,6 +11755,44 @@ if ($rebootPending) {
                 string mmcFile = _mmcConsoles[selectedConsole];
                 string toolKey = $"MMC_{selectedConsole}";
 
+                // Full paths — mmc.exe lives in System32; .msc snap-ins may be in System32 or AdminTools
+                string mmcExe = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "mmc.exe");
+                string[] mscSearchPaths = {
+                    Environment.GetFolderPath(Environment.SpecialFolder.System),                      // C:\Windows\System32
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32"),
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonAdminTools)), // C:\Windows\SysWOW64\..
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.AdminTools)),
+                };
+                string mscFullPath = mscSearchPaths
+                    .Select(d => Path.Combine(d, mmcFile))
+                    .FirstOrDefault(File.Exists);
+
+                // TAG: #MMC_EMBEDDING - Check mmc.exe exists (should always be there on Windows)
+                if (!File.Exists(mmcExe))
+                {
+                    Managers.UI.ToastManager.ShowError("mmc.exe not found — MMC is not available on this Windows installation.");
+                    LogManager.LogError($"[MMC] mmc.exe not found at: {mmcExe}", null);
+                    return;
+                }
+
+                // TAG: #MMC_EMBEDDING - Check .msc snap-in exists (RSAT tools may not be installed)
+                if (mscFullPath == null)
+                {
+                    LogManager.LogWarning($"[MMC] Snap-in not found: {mmcFile}");
+                    var rsatName = GetRsatFeatureForMsc(mmcFile);
+                    var dlg = MessageBox.Show(
+                        $"The snap-in '{mmcFile}' was not found.\n\n" +
+                        $"This tool requires RSAT (Remote Server Administration Tools) to be installed.\n\n" +
+                        (rsatName != null ? $"Feature needed: {rsatName}\n\n" : "") +
+                        "Would you like to open Windows Optional Features to install RSAT?",
+                        $"Missing Tool: {selectedConsole}",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Warning);
+                    if (dlg == MessageBoxResult.Yes)
+                        Process.Start(new ProcessStartInfo("ms-settings:optionalfeatures") { UseShellExecute = true });
+                    return;
+                }
+
                 // Check if already running
                 if (ExternalToolManager.IsToolRunning(toolKey))
                 {
@@ -11771,20 +11809,16 @@ if ($rebootPending) {
                 // Strip domain prefix from username if present
                 if (!string.IsNullOrEmpty(username) && username.Contains("\\"))
                 {
-                    string[] parts = username.Split('\\');
-                    if (parts.Length == 2)
-                    {
-                        username = parts[1];
-                        LogManager.LogInfo($"[MMC] Stripped domain prefix from username: {_authUser} -> {username}");
-                    }
+                    var parts = username.Split('\\');
+                    username = parts[parts.Length - 1];
+                    LogManager.LogInfo($"[MMC] Stripped domain prefix from username: {_authUser} -> {username}");
                 }
 
                 bool hasCredentials = !string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(domain) && password != null;
-
                 LogManager.LogInfo($"[MMC] Launching {selectedConsole} externally - Has credentials: {hasCredentials}");
 
-                // Build MMC command line
-                string mmcArguments = $"\"{mmcFile}\"";
+                // Build MMC command line using full .msc path
+                string mmcArguments = $"\"{mscFullPath}\"";
 
                 // Get selected DC for targeting (if available)
                 string targetDC = null;
@@ -11794,27 +11828,40 @@ if ($rebootPending) {
                     LogManager.LogInfo($"[MMC] Selected DC for targeting: {targetDC}");
                 }
 
-                // Launch using ExternalToolManager
-                bool success = await ExternalToolManager.LaunchToolAsync(
-                    toolKey: toolKey,
-                    toolName: selectedConsole,
-                    toolType: "MMC",
-                    executablePath: "mmc.exe",
-                    arguments: mmcArguments,
-                    targetComputer: targetDC,
-                    domain: domain,
-                    username: username,
-                    password: password
-                );
+                bool success = false;
+                try
+                {
+                    // Launch using ExternalToolManager (tries CreateProcessWithLogonW with credentials)
+                    success = await ExternalToolManager.LaunchToolAsync(
+                        toolKey: toolKey,
+                        toolName: selectedConsole,
+                        toolType: "MMC",
+                        executablePath: mmcExe,
+                        arguments: mmcArguments,
+                        targetComputer: targetDC,
+                        domain: domain,
+                        username: username,
+                        password: password
+                    );
+                }
+                catch (Exception ex)
+                {
+                    LogManager.LogWarning($"[MMC] Credential launch failed ({ex.GetType().Name}): {ex.Message} — offering manual credential fallback");
+                    success = false;
+                }
 
                 if (success)
                 {
                     Managers.UI.ToastManager.ShowSuccess($"{selectedConsole} launched successfully");
-                    UpdateMMCToolStatus(); // Update UI status
+                    UpdateMMCToolStatus();
                 }
                 else
                 {
-                    Managers.UI.ToastManager.ShowError($"Failed to launch {selectedConsole}");
+                    // Fallback: launch via runas /netonly so Windows prompts for credentials
+                    LogManager.LogInfo($"[MMC] Trying runas /netonly fallback for {selectedConsole}");
+                    bool fallbackOk = await LaunchMmcViaRunasAsync(mmcExe, mscFullPath, selectedConsole, username, domain);
+                    if (!fallbackOk)
+                        Managers.UI.ToastManager.ShowError($"Failed to launch {selectedConsole}");
                 }
             }
             catch (Exception ex)
@@ -12237,6 +12284,83 @@ if ($rebootPending) {
 
             LogManager.LogInfo("[EDR Credential Prompt] User cancelled or provided no username - falling back to plain launch");
             return null;
+        }
+
+        /// <summary>
+        /// Maps a .msc snap-in filename to the RSAT Optional Feature name for install prompting.
+        /// TAG: #MMC_EMBEDDING #RSAT
+        /// </summary>
+        private static string GetRsatFeatureForMsc(string mscFile)
+        {
+            switch (mscFile.ToLower())
+            {
+                case "dsa.msc":     return "RSAT: Active Directory Domain Services and Lightweight Directory Tools";
+                case "gpmc.msc":    return "RSAT: Group Policy Management Tools";
+                case "dnsmgmt.msc": return "RSAT: DNS Server Tools";
+                case "dhcpmgmt.msc":return "RSAT: DHCP Server Tools";
+                case "dssite.msc":  return "RSAT: Active Directory Sites and Services";
+                case "domain.msc":  return "RSAT: Active Directory Domains and Trusts";
+                case "certsrv.msc": return "RSAT: Active Directory Certificate Services Tools";
+                case "cluadmin.msc":return "RSAT: Failover Clustering Tools";
+                case "dfsmgmt.msc": return "RSAT: DFS Management Tools";
+                default: return null;
+            }
+        }
+
+        /// <summary>
+        /// Fallback MMC launch via runas /netonly — Windows will prompt the user for credentials.
+        /// Used when CreateProcessWithLogonW is blocked (EDR) or credential passing fails.
+        /// TAG: #MMC_EMBEDDING #CREDENTIALS #FALLBACK
+        /// </summary>
+        private async Task<bool> LaunchMmcViaRunasAsync(string mmcExe, string mscPath, string toolName, string username, string domain)
+        {
+            try
+            {
+                LogManager.LogInfo($"[MMC] LaunchMmcViaRunasAsync() - Tool: {toolName}");
+
+                // Build the runas command: runas /netonly /user:DOMAIN\username "mmc.exe snap.msc"
+                string userArg = (!string.IsNullOrEmpty(domain) && !string.IsNullOrEmpty(username))
+                    ? $"{domain}\\{username}"
+                    : username ?? Environment.UserName;
+
+                string runasExe = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "runas.exe");
+
+                // Show info toast before the credential prompt appears
+                Managers.UI.ToastManager.ShowInfo($"Windows will prompt for credentials to launch {toolName}");
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = runasExe,
+                    Arguments = $"/netonly /user:\"{userArg}\" \"{mmcExe}\" \"{mscPath}\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = false,   // runas needs a console window for the password prompt
+                    WorkingDirectory = Environment.GetFolderPath(Environment.SpecialFolder.System)
+                };
+
+                LogManager.LogInfo($"[MMC] runas /netonly /user:{userArg} \"{mmcExe}\" \"{mscPath}\"");
+                var proc = await Task.Run(() => Process.Start(psi));
+
+                if (proc != null)
+                {
+                    LogManager.LogInfo($"[MMC] runas launched successfully (PID {proc.Id}) for {toolName}");
+                    Managers.UI.ToastManager.ShowSuccess($"{toolName} launched via credential prompt");
+                    return true;
+                }
+
+                LogManager.LogWarning($"[MMC] runas returned null process for {toolName}");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"[MMC] LaunchMmcViaRunasAsync() FAILED for {toolName}", ex);
+                MessageBox.Show(
+                    $"Could not launch {toolName}.\n\nBoth automatic credential passing and the manual credential prompt failed.\n\nError: {ex.Message}\n\n" +
+                    $"You can try running the tool directly:\n  {mmcExe} \"{mscPath}\"",
+                    "Launch Failed",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return false;
+            }
         }
 
         /// <summary>
