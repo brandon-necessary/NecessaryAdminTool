@@ -81,6 +81,58 @@ namespace NecessaryAdminTool
             }
         }
 
+        // Copy port list to clipboard - TAG: #PORTS #NETWORK_REQUIREMENTS
+        private void BtnCopyPorts_Click(object sender, MouseButtonEventArgs e)
+        {
+            try
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine("NecessaryAdminTool — Network Ports & Requirements");
+                sb.AppendLine(new string('─', 60));
+                sb.AppendLine();
+                sb.AppendLine("ACTIVE DIRECTORY & AUTHENTICATION");
+                sb.AppendLine("  DNS                  TCP/UDP 53     Active Directory, hostname resolution");
+                sb.AppendLine("  Kerberos             TCP/UDP 88     Domain authentication (Kerberos tickets)");
+                sb.AppendLine("  LDAP                 TCP/UDP 389    User/computer queries (DirectorySearcher)");
+                sb.AppendLine("  LDAPS                TCP 636        Encrypted LDAP — Enable: 'Install LDAPS cert on DC'");
+                sb.AppendLine("  Global Catalog       TCP 3268       Cross-domain AD queries");
+                sb.AppendLine();
+                sb.AppendLine("WMI / SYSTEM SCANNING");
+                sb.AppendLine("  RPC Endpoint Mapper  TCP 135        WMI connection negotiation");
+                sb.AppendLine("  SMB                  TCP 445        Remote registry, file shares (C$, ADMIN$)");
+                sb.AppendLine("  Dynamic RPC          TCP 49152+     WMI data transfer — GPO: Firewall > Allow DCOM");
+                sb.AppendLine();
+                sb.AppendLine("REMOTE MANAGEMENT & DEPLOYMENT");
+                sb.AppendLine("  WinRM HTTP           TCP 5985       PowerShell remoting — Enable: Enable-PSRemoting -Force");
+                sb.AppendLine("  WinRM HTTPS          TCP 5986       Encrypted PS remoting — Enable: HTTPS WinRM listener");
+                sb.AppendLine("  RDP                  TCP 3389       Remote Desktop — Enable: sysdm.cpl > Remote");
+                sb.AppendLine();
+                sb.AppendLine("DISCOVERY & UTILITIES");
+                sb.AppendLine("  ICMP (Ping)          —              Network reachability — GPO: Allow ICMPv4/ICMPv6");
+                sb.AppendLine("  Wake on LAN          UDP 9, 7       Wake-on-LAN magic packet");
+                sb.AppendLine();
+                sb.AppendLine("Status key: [✓ Default] = open by default on domain  [⚠ GPO req.] = requires policy  [Configure] = manual step");
+
+                Clipboard.SetText(sb.ToString());
+
+                // Brief visual feedback
+                if (sender is System.Windows.Controls.Border btn)
+                {
+                    var orig = btn.Background;
+                    btn.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF1B4332")); // green flash
+                    var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
+                    timer.Tick += (s, _) => { btn.Background = orig; timer.Stop(); };
+                    timer.Start();
+                }
+
+                LogManager.LogInfo("[About] Port list copied to clipboard");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("[About] BtnCopyPorts_Click failed", ex);
+            }
+        }
+
         // Debug button hover effects
         // TAG: #REMOVED - Moved to OptionsWindow - Debugging & Admin Tools section removed from About window
         /* COMMENTED OUT - UI elements removed, functionality moved to Options panel

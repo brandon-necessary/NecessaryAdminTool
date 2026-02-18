@@ -243,6 +243,390 @@
                         <TextBlock Text="• Active Directory Services" Foreground="White" FontSize="11" Margin="0,2"/>
                     </StackPanel>
 
+                    <!-- Network Ports & Requirements (Expandable) -->
+                    <!-- TAG: #NETWORK_PORTS #FIREWALL_REQUIREMENTS -->
+                    <TextBlock Text="NETWORK PORTS &amp; REQUIREMENTS" Foreground="{StaticResource AccentOrangeBrush}"
+                               FontSize="11" FontWeight="Bold" Margin="0,8,0,8"/>
+
+                    <Expander Background="{StaticResource BgCardBrush}"
+                              BorderBrush="{StaticResource BorderDimBrush}"
+                              BorderThickness="1"
+                              Margin="0,0,0,12" Padding="0">
+                        <Expander.HeaderTemplate>
+                            <DataTemplate>
+                                <Grid Background="Transparent" Cursor="Hand">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="🌐" FontSize="14" Margin="0,0,8,0"
+                                              Foreground="#FFFF8533" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="Network Ports &amp; Firewall Requirements"
+                                              Foreground="White" FontSize="11" FontWeight="Bold"
+                                              VerticalAlignment="Center"/>
+                                </Grid>
+                            </DataTemplate>
+                        </Expander.HeaderTemplate>
+
+                        <Border Background="#FF0D0D0D" BorderBrush="#FF2A2A2A" BorderThickness="0,1,0,0"
+                                Padding="14,12,14,12" CornerRadius="0,0,6,6">
+                            <StackPanel>
+
+                                <!-- Copy button -->
+                                <Border Background="#FF1A1A1A" BorderBrush="#FF3C3C3C" BorderThickness="1"
+                                        CornerRadius="4" Padding="10,7" Margin="0,0,0,12" Cursor="Hand"
+                                        MouseLeftButtonDown="BtnCopyPorts_Click"
+                                        ToolTip="Copies a formatted port list to your clipboard - paste into a firewall change request or ticket">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="📋" FontSize="14" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="Copy Port List to Clipboard"
+                                                      Foreground="#FFFF8533" FontSize="11" FontWeight="Bold"/>
+                                            <TextBlock Text="Paste into a firewall change request or IT ticket"
+                                                      Foreground="#FF888888" FontSize="9" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="2" Text="→" FontSize="16" Foreground="#FFFF8533" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Table column headers -->
+                                <Grid Margin="0,0,0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="70"/>
+                                        <ColumnDefinition Width="48"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="76"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="PORT" Foreground="#FFFF8533" FontSize="9" FontWeight="Bold"/>
+                                    <TextBlock Grid.Column="1" Text="PROTO" Foreground="#FFFF8533" FontSize="9" FontWeight="Bold"/>
+                                    <TextBlock Grid.Column="2" Text="FEATURE / PURPOSE" Foreground="#FFFF8533" FontSize="9" FontWeight="Bold"/>
+                                    <TextBlock Grid.Column="3" Text="STATUS" Foreground="#FFFF8533" FontSize="9" FontWeight="Bold" HorizontalAlignment="Center"/>
+                                </Grid>
+                                <Border Background="#FF3C3C3C" Height="1" Margin="0,0,0,6"/>
+
+                                <!-- ── GROUP: Active Directory ── -->
+                                <TextBlock Text="ACTIVE DIRECTORY &amp; AUTHENTICATION" Foreground="#FF888888"
+                                           FontSize="9" FontWeight="Bold" Margin="0,4,0,4"/>
+
+                                <!-- DNS -->
+                                <Border Background="#FF181818" CornerRadius="3" Padding="6,5" Margin="0,1">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="48"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="76"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="53" Foreground="#FFFF8533" FontSize="11" FontWeight="Bold"/>
+                                        <TextBlock Grid.Column="1" Text="TCP/UDP" Foreground="#FFA1A1AA" FontSize="9"/>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="DNS — Hostname &amp; DC resolution" Foreground="White" FontSize="10"/>
+                                            <TextBlock Text="Enable: Open on DCs by default" Foreground="#FF666666" FontSize="9" FontStyle="Italic"/>
+                                        </StackPanel>
+                                        <Border Grid.Column="3" Background="#FF1A3A1A" CornerRadius="3" Padding="4,2" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Text="✓ Default" Foreground="#FF4CAF50" FontSize="9" FontWeight="Bold"/>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Kerberos -->
+                                <Border Background="#FF141414" CornerRadius="3" Padding="6,5" Margin="0,1">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="48"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="76"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="88" Foreground="#FFFF8533" FontSize="11" FontWeight="Bold"/>
+                                        <TextBlock Grid.Column="1" Text="TCP/UDP" Foreground="#FFA1A1AA" FontSize="9"/>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="Kerberos — Domain authentication" Foreground="White" FontSize="10"/>
+                                            <TextBlock Text="Enable: Open on DCs by default" Foreground="#FF666666" FontSize="9" FontStyle="Italic"/>
+                                        </StackPanel>
+                                        <Border Grid.Column="3" Background="#FF1A3A1A" CornerRadius="3" Padding="4,2" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Text="✓ Default" Foreground="#FF4CAF50" FontSize="9" FontWeight="Bold"/>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+
+                                <!-- LDAP -->
+                                <Border Background="#FF181818" CornerRadius="3" Padding="6,5" Margin="0,1">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="48"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="76"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="389" Foreground="#FFFF8533" FontSize="11" FontWeight="Bold"/>
+                                        <TextBlock Grid.Column="1" Text="TCP/UDP" Foreground="#FFA1A1AA" FontSize="9"/>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="LDAP — Active Directory queries" Foreground="White" FontSize="10"/>
+                                            <TextBlock Text="Enable: Open on DCs by default" Foreground="#FF666666" FontSize="9" FontStyle="Italic"/>
+                                        </StackPanel>
+                                        <Border Grid.Column="3" Background="#FF1A3A1A" CornerRadius="3" Padding="4,2" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Text="✓ Default" Foreground="#FF4CAF50" FontSize="9" FontWeight="Bold"/>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+
+                                <!-- LDAPS -->
+                                <Border Background="#FF141414" CornerRadius="3" Padding="6,5" Margin="0,1">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="48"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="76"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="636" Foreground="#FFFF8533" FontSize="11" FontWeight="Bold"/>
+                                        <TextBlock Grid.Column="1" Text="TCP" Foreground="#FFA1A1AA" FontSize="9"/>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="LDAPS — Encrypted AD queries" Foreground="White" FontSize="10"/>
+                                            <TextBlock Text="Enable: Requires DC certificate (AD CS or 3rd-party)" Foreground="#FF666666" FontSize="9" FontStyle="Italic"/>
+                                        </StackPanel>
+                                        <Border Grid.Column="3" Background="#FF1A2A3A" CornerRadius="3" Padding="4,2" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Text="Configure" Foreground="#FF2196F3" FontSize="9" FontWeight="Bold"/>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Global Catalog -->
+                                <Border Background="#FF181818" CornerRadius="3" Padding="6,5" Margin="0,1">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="48"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="76"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="3268" Foreground="#FFFF8533" FontSize="11" FontWeight="Bold"/>
+                                        <TextBlock Grid.Column="1" Text="TCP" Foreground="#FFA1A1AA" FontSize="9"/>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="Global Catalog — Forest-wide AD search" Foreground="White" FontSize="10"/>
+                                            <TextBlock Text="Enable: Open on GC DCs by default" Foreground="#FF666666" FontSize="9" FontStyle="Italic"/>
+                                        </StackPanel>
+                                        <Border Grid.Column="3" Background="#FF1A3A1A" CornerRadius="3" Padding="4,2" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Text="✓ Default" Foreground="#FF4CAF50" FontSize="9" FontWeight="Bold"/>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+
+                                <!-- ── GROUP: WMI / System Scanning ── -->
+                                <TextBlock Text="WMI / SYSTEM SCANNING" Foreground="#FF888888"
+                                           FontSize="9" FontWeight="Bold" Margin="0,10,0,4"/>
+
+                                <!-- RPC Endpoint Mapper -->
+                                <Border Background="#FF181818" CornerRadius="3" Padding="6,5" Margin="0,1">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="48"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="76"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="135" Foreground="#FFFF8533" FontSize="11" FontWeight="Bold"/>
+                                        <TextBlock Grid.Column="1" Text="TCP" Foreground="#FFA1A1AA" FontSize="9"/>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="RPC Endpoint Mapper — WMI &amp; CIM" Foreground="White" FontSize="10"/>
+                                            <TextBlock Text="Enable: GPO → Computer Config → Windows Firewall → WMI-In rules" Foreground="#FF666666" FontSize="9" FontStyle="Italic"/>
+                                        </StackPanel>
+                                        <Border Grid.Column="3" Background="#FF3A2A1A" CornerRadius="3" Padding="4,2" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Text="⚠ GPO req." Foreground="#FFFF8533" FontSize="9" FontWeight="Bold"/>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+
+                                <!-- SMB -->
+                                <Border Background="#FF141414" CornerRadius="3" Padding="6,5" Margin="0,1">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="48"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="76"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="445" Foreground="#FFFF8533" FontSize="11" FontWeight="Bold"/>
+                                        <TextBlock Grid.Column="1" Text="TCP" Foreground="#FFA1A1AA" FontSize="9"/>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="SMB — WMI transport &amp; file shares" Foreground="White" FontSize="10"/>
+                                            <TextBlock Text="Enable: Usually open on domain PCs by default" Foreground="#FF666666" FontSize="9" FontStyle="Italic"/>
+                                        </StackPanel>
+                                        <Border Grid.Column="3" Background="#FF1A3A1A" CornerRadius="3" Padding="4,2" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Text="✓ Default" Foreground="#FF4CAF50" FontSize="9" FontWeight="Bold"/>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Dynamic RPC -->
+                                <Border Background="#FF181818" CornerRadius="3" Padding="6,5" Margin="0,1">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="48"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="76"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="49152+" Foreground="#FFFF8533" FontSize="10" FontWeight="Bold"/>
+                                        <TextBlock Grid.Column="1" Text="TCP" Foreground="#FFA1A1AA" FontSize="9"/>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="Dynamic RPC — WMI data channel" Foreground="White" FontSize="10"/>
+                                            <TextBlock Text="Enable: GPO WMI-In rules or restrict via netsh" Foreground="#FF666666" FontSize="9" FontStyle="Italic"/>
+                                        </StackPanel>
+                                        <Border Grid.Column="3" Background="#FF3A2A1A" CornerRadius="3" Padding="4,2" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Text="⚠ GPO req." Foreground="#FFFF8533" FontSize="9" FontWeight="Bold"/>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+
+                                <!-- ── GROUP: Remote Management ── -->
+                                <TextBlock Text="REMOTE MANAGEMENT &amp; DEPLOYMENT" Foreground="#FF888888"
+                                           FontSize="9" FontWeight="Bold" Margin="0,10,0,4"/>
+
+                                <!-- WinRM HTTP -->
+                                <Border Background="#FF181818" CornerRadius="3" Padding="6,5" Margin="0,1">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="48"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="76"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="5985" Foreground="#FFFF8533" FontSize="11" FontWeight="Bold"/>
+                                        <TextBlock Grid.Column="1" Text="TCP" Foreground="#FFA1A1AA" FontSize="9"/>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="WinRM HTTP — PowerShell Remoting (primary)" Foreground="White" FontSize="10"/>
+                                            <TextBlock Text="Enable: Enable-PSRemoting -Force  |  or GPO" Foreground="#FF666666" FontSize="9" FontStyle="Italic"/>
+                                        </StackPanel>
+                                        <Border Grid.Column="3" Background="#FF3A2A1A" CornerRadius="3" Padding="4,2" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Text="⚠ Enable PS" Foreground="#FFFF8533" FontSize="9" FontWeight="Bold"/>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+
+                                <!-- WinRM HTTPS -->
+                                <Border Background="#FF141414" CornerRadius="3" Padding="6,5" Margin="0,1">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="48"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="76"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="5986" Foreground="#FFFF8533" FontSize="11" FontWeight="Bold"/>
+                                        <TextBlock Grid.Column="1" Text="TCP" Foreground="#FFA1A1AA" FontSize="9"/>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="WinRM HTTPS — Encrypted PS Remoting" Foreground="White" FontSize="10"/>
+                                            <TextBlock Text="Enable: Requires machine certificate + WinRM HTTPS listener" Foreground="#FF666666" FontSize="9" FontStyle="Italic"/>
+                                        </StackPanel>
+                                        <Border Grid.Column="3" Background="#FF1A2A3A" CornerRadius="3" Padding="4,2" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Text="Configure" Foreground="#FF2196F3" FontSize="9" FontWeight="Bold"/>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+
+                                <!-- RDP -->
+                                <Border Background="#FF181818" CornerRadius="3" Padding="6,5" Margin="0,1">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="48"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="76"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="3389" Foreground="#FFFF8533" FontSize="11" FontWeight="Bold"/>
+                                        <TextBlock Grid.Column="1" Text="TCP" Foreground="#FFA1A1AA" FontSize="9"/>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="RDP — Remote Desktop integration" Foreground="White" FontSize="10"/>
+                                            <TextBlock Text="Enable: System Properties → Remote → Allow RDP  |  or GPO" Foreground="#FF666666" FontSize="9" FontStyle="Italic"/>
+                                        </StackPanel>
+                                        <Border Grid.Column="3" Background="#FF3A2A1A" CornerRadius="3" Padding="4,2" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Text="⚠ Enable RDP" Foreground="#FFFF8533" FontSize="9" FontWeight="Bold"/>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+
+                                <!-- ── GROUP: Discovery ── -->
+                                <TextBlock Text="DISCOVERY &amp; UTILITIES" Foreground="#FF888888"
+                                           FontSize="9" FontWeight="Bold" Margin="0,10,0,4"/>
+
+                                <!-- ICMP -->
+                                <Border Background="#FF181818" CornerRadius="3" Padding="6,5" Margin="0,1">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="48"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="76"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="ICMP" Foreground="#FFFF8533" FontSize="11" FontWeight="Bold"/>
+                                        <TextBlock Grid.Column="1" Text="ICMP" Foreground="#FFA1A1AA" FontSize="9"/>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="Ping — Online/offline detection" Foreground="White" FontSize="10"/>
+                                            <TextBlock Text="Enable: GPO → Core Networking – Echo Request (ICMPv4-In)" Foreground="#FF666666" FontSize="9" FontStyle="Italic"/>
+                                        </StackPanel>
+                                        <Border Grid.Column="3" Background="#FF3A2A1A" CornerRadius="3" Padding="4,2" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Text="⚠ GPO req." Foreground="#FFFF8533" FontSize="9" FontWeight="Bold"/>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Wake on LAN -->
+                                <Border Background="#FF141414" CornerRadius="3" Padding="6,5" Margin="0,1">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="48"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="76"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="9 / 7" Foreground="#FFFF8533" FontSize="11" FontWeight="Bold"/>
+                                        <TextBlock Grid.Column="1" Text="UDP" Foreground="#FFA1A1AA" FontSize="9"/>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="Wake on LAN — Magic packet broadcast" Foreground="White" FontSize="10"/>
+                                            <TextBlock Text="Enable: BIOS/UEFI WoL + switch broadcast forwarding" Foreground="#FF666666" FontSize="9" FontStyle="Italic"/>
+                                        </StackPanel>
+                                        <Border Grid.Column="3" Background="#FF1A2A3A" CornerRadius="3" Padding="4,2" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Text="Configure" Foreground="#FF2196F3" FontSize="9" FontWeight="Bold"/>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Legend -->
+                                <Border Background="#FF1A1A1A" CornerRadius="3" Padding="10,8" Margin="0,10,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="STATUS LEGEND" Foreground="#FF888888" FontSize="9" FontWeight="Bold" Margin="0,0,0,4"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,2">
+                                            <Border Background="#FF1A3A1A" CornerRadius="2" Padding="4,1" Margin="0,0,8,0">
+                                                <TextBlock Text="✓ Default" Foreground="#FF4CAF50" FontSize="9" FontWeight="Bold"/>
+                                            </Border>
+                                            <TextBlock Text="Open by default on domain-joined machines" Foreground="#FF888888" FontSize="9" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,2">
+                                            <Border Background="#FF3A2A1A" CornerRadius="2" Padding="4,1" Margin="0,0,8,0">
+                                                <TextBlock Text="⚠ GPO req." Foreground="#FFFF8533" FontSize="9" FontWeight="Bold"/>
+                                            </Border>
+                                            <TextBlock Text="Requires a Group Policy or firewall rule to open" Foreground="#FF888888" FontSize="9" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,2">
+                                            <Border Background="#FF1A2A3A" CornerRadius="2" Padding="4,1" Margin="0,0,8,0">
+                                                <TextBlock Text="Configure" Foreground="#FF2196F3" FontSize="9" FontWeight="Bold"/>
+                                            </Border>
+                                            <TextBlock Text="Optional — requires manual certificate or config setup" Foreground="#FF888888" FontSize="9" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+
+                            </StackPanel>
+                        </Border>
+                    </Expander>
+
                     <!-- Legal Information (Expandable) -->
                     <Expander Header="Software License &amp; Legal Terms"
                               Background="{StaticResource BgCardBrush}"
