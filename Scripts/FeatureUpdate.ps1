@@ -83,12 +83,12 @@ function Show-NecessaryAdminToolLogo {
     param([string]$Msg, [string]$Color = "Cyan")
     Clear-Host
     Write-Host ""
-    Write-Host " ═══════════════════════════════════════════════════════════" -ForegroundColor DarkYellow
+    Write-Host " -----------------------------------------------------------" -ForegroundColor DarkYellow
     Write-Host "  " -NoNewline
     Write-Host "NECESSARYADMINTOOL" -ForegroundColor DarkYellow -NoNewline
     Write-Host " | " -ForegroundColor Gray -NoNewline
     Write-Host "Feature Update Suite v1.0" -ForegroundColor Gray
-    Write-Host " ═══════════════════════════════════════════════════════════" -ForegroundColor DarkYellow
+    Write-Host " -----------------------------------------------------------" -ForegroundColor DarkYellow
     Write-Host ""
     if ($Msg) {
         Write-Host "  STATUS: " -ForegroundColor Gray -NoNewline
@@ -180,7 +180,7 @@ function Run-CloudUpdate {
 # --- 6. MAIN EXECUTION LOGIC ---
 
 # Check if hostname matches pattern and ISO is available
-if ($Comp -like $HostnamePattern -and (Test-Path $ISOPath -ErrorAction SilentlyContinue)) {
+if ($Comp -like $HostnamePattern -and -not [string]::IsNullOrEmpty($ISOPath) -and (Test-Path $ISOPath -ErrorAction SilentlyContinue)) {
 
     # Verify ISO is valid size
     $ISOSize = (Get-Item $ISOPath -ErrorAction SilentlyContinue).Length / 1GB

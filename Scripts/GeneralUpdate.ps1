@@ -105,12 +105,12 @@ function Show-NecessaryAdminToolLogo {
     param([string]$Msg, [string]$Color = "Cyan")
     Clear-Host
     Write-Host ""
-    Write-Host " ═══════════════════════════════════════════════════════════" -ForegroundColor DarkYellow
+    Write-Host " -----------------------------------------------------------" -ForegroundColor DarkYellow
     Write-Host "  " -NoNewline
     Write-Host "NECESSARYADMINTOOL" -ForegroundColor DarkYellow -NoNewline
     Write-Host " | " -ForegroundColor Gray -NoNewline
     Write-Host "General Update Suite v1.0" -ForegroundColor Gray
-    Write-Host " ═══════════════════════════════════════════════════════════" -ForegroundColor DarkYellow
+    Write-Host " -----------------------------------------------------------" -ForegroundColor DarkYellow
     Write-Host ""
     if ($Msg) {
         Write-Host "  STATUS: " -ForegroundColor Gray -NoNewline
