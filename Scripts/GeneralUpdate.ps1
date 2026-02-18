@@ -153,16 +153,21 @@ if ($FreeGB -lt $MIN_DISK_SPACE_GB) {
     exit 1
 }
 
-# Verify PSWindowsUpdate module
+# Verify PSWindowsUpdate module — auto-install if missing (ManageEngine/RMM compatible)
 if (!(Get-Module -ListAvailable -Name PSWindowsUpdate)) {
-    Write-NecessaryAdminToolLog -Status "ERROR_MODULE_NOT_INSTALLED" -ToMaster $true
-    Show-NecessaryAdminToolLogo -Msg "PSWindowsUpdate module not installed" "Red"
-    Write-Host "`nInstall the module with:" -ForegroundColor Yellow
-    Write-Host "  Install-Module PSWindowsUpdate -Force" -ForegroundColor Cyan
-    Write-Host "`nOr run from elevated PowerShell:" -ForegroundColor Yellow
-    Write-Host "  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12" -ForegroundColor Cyan
-    Write-Host "  Install-Module PSWindowsUpdate -Force -SkipPublisherCheck" -ForegroundColor Cyan
-    exit 1
+    Show-NecessaryAdminToolLogo -Msg "PSWindowsUpdate not found — installing..." "Yellow"
+    Write-NecessaryAdminToolLog -Status "MODULE_NOT_FOUND_INSTALLING" -ToMaster $false
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        Install-Module PSWindowsUpdate -Force -Confirm:$false -SkipPublisherCheck -Scope AllUsers -ErrorAction Stop
+        Write-NecessaryAdminToolLog -Status "MODULE_INSTALLED_SUCCESSFULLY" -ToMaster $false
+        Show-NecessaryAdminToolLogo -Msg "PSWindowsUpdate installed successfully" "Green"
+    } catch {
+        Write-NecessaryAdminToolLog -Status "ERROR_MODULE_INSTALL_FAILED_$($_.Exception.Message)" -ToMaster $true
+        Show-NecessaryAdminToolLogo -Msg "Failed to install PSWindowsUpdate: $($_.Exception.Message)" "Red"
+        Write-Error "Module installation failed: $($_.Exception.Message)"
+        exit 1
+    }
 }
 
 # Import module with error handling
