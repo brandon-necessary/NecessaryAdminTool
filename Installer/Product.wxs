@@ -35,16 +35,20 @@
          ======================================== -->
 
     <!-- Require .NET Framework 4.8+ via registry (WiX 3.11 compatible) -->
+    <!-- Win64="yes" ensures we read the 64-bit registry hive on x64 Windows -->
+    <!-- Type="raw" on REG_DWORD returns value prefixed with # (e.g. "#533320") -->
+    <!-- Condition must compare against "#528040" (formatted integer) to match -->
     <Property Id="NETFXRELEASE">
       <RegistrySearch Id="NetFxSearch"
                       Root="HKLM"
                       Key="SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full"
                       Name="Release"
-                      Type="raw" />
+                      Type="raw"
+                      Win64="yes" />
     </Property>
-    <!-- Release 528040 = .NET 4.8 on Windows 10/Server 2019; 528449 = 4.8.1 -->
+    <!-- Release 528040 = .NET 4.8 on Windows 10/Server 2019; 528449 = 4.8.1; 533320 = 4.8.2 -->
     <Condition Message="This application requires .NET Framework 4.8 or higher. Please install it then run this installer again.">
-      <![CDATA[Installed OR (NETFXRELEASE >= 528040)]]>
+      <![CDATA[Installed OR (NETFXRELEASE >= "#528040")]]>
     </Condition>
 
     <!-- Require Windows 10/11 -->
