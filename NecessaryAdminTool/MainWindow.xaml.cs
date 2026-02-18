@@ -15450,7 +15450,10 @@ if ($rebootPending) {
                 Padding = new Thickness(10, 8, 35, 8),
                 FontSize = 13,
                 BorderBrush = new SolidColorBrush(Color.FromRgb(60, 60, 60)),
-                BorderThickness = new Thickness(1)
+                BorderThickness = new Thickness(1),
+                // Domain is shown in the badge above and added automatically.
+                // Only type the username portion here (e.g. john.smith or admin.bnecessary-a).
+                ToolTip = "Enter your username only (e.g. john.smith)\nThe domain shown above is added automatically.\nClick 'Change' to switch domains."
             };
             Grid.SetColumn(_txtUser, 0);
             Grid.SetColumnSpan(_txtUser, 2);
@@ -15918,19 +15921,9 @@ if ($rebootPending) {
             // Update login window's domain badge using modular method
             UpdateLoginDomainBadge(domainName);
 
-            // ⚡ Auto-populate username field with detected domain
-            if (!string.IsNullOrEmpty(domainName) && _txtUser != null)
-            {
-                string currentText = _txtUser.Text ?? "";
-                // Only update if field is empty or only has a backslash
-                if (string.IsNullOrEmpty(currentText) || currentText == "\\" ||
-                    (currentText.EndsWith("\\") && !currentText.Contains("@")))
-                {
-                    string domainPrefix = domainName.Split('.')[0].ToUpper();
-                    _txtUser.Text = $"{domainPrefix}\\";
-                    _txtUser.SelectionStart = _txtUser.Text.Length; // Cursor at end
-                }
-            }
+            // Domain is shown in the badge above the username field and stored in _activeDomain.
+            // The Username property getter combines _activeDomain + _txtUser.Text automatically.
+            // Do NOT write domain into the textbox - that would cause DOMAIN\DOMAIN\user double-prefix.
 
             if (domainName != null)
             {
