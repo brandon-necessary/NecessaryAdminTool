@@ -8051,6 +8051,16 @@ if ($rebootPending) {
             int attempt = 0; const int MAX = 3; bool ok = false;
             while (attempt < MAX && !ok)
             {
+                // Sanitize stored LastUser - strip any domain prefix left from old code
+                try {
+                    var stored = Properties.Settings.Default.LastUser ?? "";
+                    if (stored.Contains("\\")) {
+                        var p = stored.Split('\\');
+                        Properties.Settings.Default.LastUser = p[p.Length - 1];
+                        Properties.Settings.Default.Save();
+                    }
+                } catch { }
+
                 var lw = new LoginWindow();
                 var result = lw.ShowDialog();
 
@@ -8082,7 +8092,12 @@ if ($rebootPending) {
                     if (ok)
                     {
                         if (lw.RememberUser)
-                            try { Properties.Settings.Default.LastUser = lw.Username; Properties.Settings.Default.Save(); }
+                            try {
+                                // Save only plain username (no domain prefix) so the login box pre-fills cleanly
+                                var parts = lw.Username.Split('\\');
+                                Properties.Settings.Default.LastUser = parts[parts.Length - 1];
+                                Properties.Settings.Default.Save();
+                            }
                             catch { }
 
                         // Update domain badge after successful login
@@ -15366,12 +15381,13 @@ if ($rebootPending) {
             // TAG: #DOMAIN_DETECTION - Use shared helper so domain is consistent everywhere
             _activeDomain = MainWindow.GetNetBIOSDomain();
 
-            // Load cached username - strip domain prefix if present (domain is now separate)
+            // Load cached username - always strip any domain prefix (use last segment only)
             string cached = "";
             try
             {
                 string saved = Properties.Settings.Default.LastUser ?? "";
-                cached = saved.Contains("\\") ? saved.Split('\\')[1] : saved;
+                var parts = saved.Split('\\');
+                cached = parts[parts.Length - 1]; // Always use last part regardless of how many backslashes
             }
             catch { }
 
