@@ -8070,16 +8070,8 @@ if ($rebootPending) {
                     // Validate username format
                     if (!Security.SecurityValidator.ValidateUsername(lw.Username))
                     {
-                        Managers.UI.ToastManager.ShowWarning("Invalid username format. Use domain\\user or user@domain format.");
+                        Managers.UI.ToastManager.ShowWarning("Invalid username. Enter just your username (e.g. john.smith) — domain is added automatically.");
                         LogManager.LogWarning($"[AUTH] Invalid username format: {lw.Username}");
-                        attempt++;
-                        continue;
-                    }
-
-                    // Also check legacy validator for compatibility
-                    if (!SecurityValidator.IsValidDomainUser(lw.Username))
-                    {
-                        Managers.UI.ToastManager.ShowWarning("Invalid username. Use domain\\user format.");
                         attempt++;
                         continue;
                     }
@@ -15246,8 +15238,10 @@ if ($rebootPending) {
         private TextBlock _domainDisplayBlock;
         private StackPanel _domainOverridePanel;
         private TextBox _txtDomainOverride;
-        // Always returns DOMAIN\username so PerformAuth can split it
-        public string Username => $"{_activeDomain}\\{_txtUser.Text.Trim()}";
+        // Returns DOMAIN\username if domain is known, otherwise just the typed username
+        public string Username => string.IsNullOrEmpty(_activeDomain)
+            ? _txtUser.Text.Trim()
+            : $"{_activeDomain}\\{_txtUser.Text.Trim()}";
         public SecureString Password => _txtPass.SecurePassword;
         public bool RememberUser => _chkRemember.IsChecked == true;
 

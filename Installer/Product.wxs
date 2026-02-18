@@ -95,6 +95,9 @@
           <!-- Main application directory -->
           <Directory Id="BinFolder" Name="bin" />
 
+          <!-- SQLite native interop directory (must be x64\ subfolder) -->
+          <Directory Id="SQLiteX64Folder" Name="x64" />
+
           <!-- Dependencies directory -->
           <Directory Id="DependenciesFolder" Name="Dependencies" />
 
@@ -165,6 +168,20 @@
         <File Source="..\NecessaryAdminTool\App.config" Name="App.config.template" />
       </Component>
 
+      <!-- SQLite managed DLL - bundled, no separate install required -->
+      <Component Id="SQLiteManaged" Guid="CE5A4F2D-0437-40DE-B913-569B8B9684DD" Win64="yes">
+        <File Source="..\NecessaryAdminTool\bin\Release\System.Data.SQLite.dll" />
+      </Component>
+
+    </ComponentGroup>
+
+    <!-- SQLite x64 native interop - must install to x64\ subfolder relative to EXE -->
+    <ComponentGroup Id="SQLiteInteropComponents" Directory="SQLiteX64Folder">
+      <Component Id="SQLiteInterop" Guid="A6B7C8D9-E0F1-4A5B-2C3D-4E5F6A7B8C9D" Win64="yes">
+        <File Source="..\NecessaryAdminTool\bin\Release\x64\SQLite.Interop.dll"
+              Name="SQLite.Interop.dll"
+              Id="SQLiteInteropDll" />
+      </Component>
     </ComponentGroup>
 
     <!-- ========================================
@@ -222,6 +239,7 @@
              Display="expand">
 
       <ComponentGroupRef Id="ProductComponents" />
+      <ComponentGroupRef Id="SQLiteInteropComponents" />
       <ComponentRef Id="AppDataDirectory" />
 
       <!-- Start Menu shortcut (always install) -->
@@ -254,6 +272,9 @@
 
     <UIRef Id="WixUI_FeatureTree" />
     <UIRef Id="WixUI_ErrorProgressText" />
+
+    <!-- Custom license agreement (replaces WiX's Lorem Ipsum placeholder) -->
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
 
     <!-- Application icon -->
     <Icon Id="AppIcon.exe" SourceFile="..\NecessaryAdminTool\bin\Release\NecessaryAdminTool.exe" />

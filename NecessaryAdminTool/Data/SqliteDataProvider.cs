@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
 using System.Linq;
-// using System.Data.SQLite; // Requires: Install-Package System.Data.SQLite.Core
+using System.Data.SQLite; // Bundled in libs/System.Data.SQLite.dll
 // TAG: #DATABASE #SQLITE #VERSION_1_2
 
 namespace NecessaryAdminTool.Data
@@ -396,6 +396,28 @@ namespace NecessaryAdminTool.Data
             // Implementation requires file copy with decryption
             await Task.CompletedTask;
             return true;
+        }
+
+        /// <summary>Runs VACUUM to compact and defragment the SQLite database file.</summary>
+        public void Vacuum()
+        {
+            #if SQLITE_ENABLED
+            try
+            {
+                LogManager.LogInfo("SqliteDataProvider.Vacuum() - START");
+                using (var conn = new SQLiteConnection(_connectionString))
+                {
+                    conn.Open();
+                    using (var cmd = new SQLiteCommand("VACUUM;", conn))
+                        cmd.ExecuteNonQuery();
+                }
+                LogManager.LogInfo("SqliteDataProvider.Vacuum() - SUCCESS");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("SqliteDataProvider.Vacuum() - FAILED", ex);
+            }
+            #endif
         }
 
         public void Dispose()

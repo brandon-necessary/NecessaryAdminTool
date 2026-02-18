@@ -374,13 +374,14 @@ namespace NecessaryAdminTool.Security
         /// <summary>
         /// Validate domain name (DNS-compatible)
         /// </summary>
+        // TAG: #SECURITY_CRITICAL #DOMAIN_VALIDATION #ACTIVE_DIRECTORY
         private static bool IsValidDomainName(string domain)
         {
             if (string.IsNullOrWhiteSpace(domain)) return false;
             if (domain.Length > 255) return false;
 
-            // Allow letters, digits, dots, hyphens (DNS-safe)
-            return domain.All(c => char.IsLetterOrDigit(c) || c == '.' || c == '-');
+            // Allow letters, digits, dots, hyphens, underscores (DNS + NetBIOS-safe)
+            return domain.All(c => char.IsLetterOrDigit(c) || c == '.' || c == '-' || c == '_');
         }
 
         /// <summary>
