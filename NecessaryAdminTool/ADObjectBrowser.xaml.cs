@@ -69,10 +69,18 @@ namespace NecessaryAdminTool
             {
                 // TAG: #SECURITY_CRITICAL #LDAP_INJECTION_PREVENTION
                 // Validate domain controller hostname before use
+                if (string.IsNullOrWhiteSpace(domainController))
+                {
+                    LogManager.LogWarning("[AD Browser] Empty or null domain controller hostname");
+                    throw new ArgumentException("No domain controller selected. Please select a DC from the dropdown.");
+                }
                 if (!SecurityValidator.IsValidHostname(domainController))
                 {
-                    LogManager.LogWarning($"[AD Browser] Invalid domain controller hostname: {domainController}");
-                    throw new ArgumentException("Invalid domain controller hostname. Possible injection attempt.");
+                    LogManager.LogWarning($"[AD Browser] Invalid domain controller hostname: '{domainController}' (length={domainController.Length})");
+                    throw new ArgumentException(
+                        $"The domain controller name '{domainController}' contains invalid characters.\n\n" +
+                        "Valid hostnames contain only letters, numbers, hyphens, and dots.\n" +
+                        "Please select a DC from the dropdown rather than typing manually.");
                 }
 
                 string domainName = null;

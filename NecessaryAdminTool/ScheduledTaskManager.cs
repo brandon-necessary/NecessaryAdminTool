@@ -44,8 +44,11 @@ namespace NecessaryAdminTool
                     DeleteTask();
                 }
 
-                // Get current executable path
-                var exePath = Process.GetCurrentProcess().MainModule.FileName;
+                // Get current executable path (MainModule can be null in rare cases)
+                var mainModule = Process.GetCurrentProcess().MainModule;
+                if (mainModule == null)
+                    throw new InvalidOperationException("Could not determine the executable path (Process.MainModule is null).");
+                var exePath = mainModule.FileName;
                 var arguments = "/autoscan"; // Command-line argument for auto-scan mode
 
                 // Build schtasks command
@@ -347,17 +350,19 @@ namespace NecessaryAdminTool
 
         /// <summary>
         /// Check if current user has admin privileges
+        /// Uses Win32 TokenElevation API for accurate UAC elevation detection
+        /// TAG: #UAC_DETECTION #ELEVATION_CHECK
         /// </summary>
         public static bool IsAdministrator()
         {
             try
             {
-                var identity = WindowsIdentity.GetCurrent();
-                var principal = new WindowsPrincipal(identity);
-                return principal.IsInRole(WindowsBuiltInRole.Administrator);
+                // Use Win32 TokenElevation API for accurate detection (Session 9b fix)
+                return Helpers.Win32Helper.IsProcessElevated();
             }
-            catch
+            catch (Exception ex)
             {
+                LogManager.LogError("[ScheduledTaskManager] Error checking elevation status", ex);
                 return false;
             }
         }

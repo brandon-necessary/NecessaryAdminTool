@@ -136,10 +136,12 @@ namespace NecessaryAdminTool
             try
             {
                 LogManager.LogInfo($"Attempting to clear SoftwareDistribution cache on {hostname}");
-                var deleteCmd = new ManagementClass(scope, new ManagementPath("Win32_Process"), null);
-                var inParams = deleteCmd.GetMethodParameters("Create");
-                inParams["CommandLine"] = "cmd.exe /c rd /s /q C:\\Windows\\SoftwareDistribution\\Download";
-                deleteCmd.InvokeMethod("Create", inParams, null);
+                using (var deleteCmd = new ManagementClass(scope, new ManagementPath("Win32_Process"), null))
+                using (var inParams = deleteCmd.GetMethodParameters("Create"))
+                {
+                    inParams["CommandLine"] = "cmd.exe /c rd /s /q C:\\Windows\\SoftwareDistribution\\Download";
+                    using (var result = deleteCmd.InvokeMethod("Create", inParams, null)) { }
+                }
                 await Task.Delay(1000);
                 LogManager.LogInfo($"SoftwareDistribution cache clear command executed on {hostname}");
             }
@@ -166,12 +168,16 @@ namespace NecessaryAdminTool
 
             // Execute ipconfig /flushdns
             LogManager.LogInfo($"Executing ipconfig /flushdns on {hostname}");
-            var processClass = new ManagementClass(scope, new ManagementPath("Win32_Process"), null);
-            var inParams = processClass.GetMethodParameters("Create");
-            inParams["CommandLine"] = "ipconfig /flushdns";
-
-            var outParams = processClass.InvokeMethod("Create", inParams, null);
-            var returnCode = outParams["ReturnValue"].ToString();
+            string returnCode;
+            using (var processClass = new ManagementClass(scope, new ManagementPath("Win32_Process"), null))
+            using (var inParams = processClass.GetMethodParameters("Create"))
+            {
+                inParams["CommandLine"] = "ipconfig /flushdns";
+                using (var outParams = processClass.InvokeMethod("Create", inParams, null))
+                {
+                    returnCode = outParams["ReturnValue"].ToString();
+                }
+            }
 
             if (returnCode != "0")
             {
@@ -215,12 +221,16 @@ namespace NecessaryAdminTool
 
             // Execute winrm quickconfig -force
             LogManager.LogInfo($"Executing 'winrm quickconfig -force -quiet' on {hostname}");
-            var processClass = new ManagementClass(scope, new ManagementPath("Win32_Process"), null);
-            var inParams = processClass.GetMethodParameters("Create");
-            inParams["CommandLine"] = "winrm quickconfig -force -quiet";
-
-            var outParams = processClass.InvokeMethod("Create", inParams, null);
-            var returnCode = outParams["ReturnValue"].ToString();
+            string returnCode;
+            using (var processClass = new ManagementClass(scope, new ManagementPath("Win32_Process"), null))
+            using (var inParams = processClass.GetMethodParameters("Create"))
+            {
+                inParams["CommandLine"] = "winrm quickconfig -force -quiet";
+                using (var outParams = processClass.InvokeMethod("Create", inParams, null))
+                {
+                    returnCode = outParams["ReturnValue"].ToString();
+                }
+            }
 
             if (returnCode != "0")
             {
@@ -245,11 +255,12 @@ namespace NecessaryAdminTool
             await Task.Delay(1000);
 
             // Resync time
-            var processClass = new ManagementClass(scope, new ManagementPath("Win32_Process"), null);
-            var inParams = processClass.GetMethodParameters("Create");
-            inParams["CommandLine"] = "w32tm /resync /force";
-
-            processClass.InvokeMethod("Create", inParams, null);
+            using (var processClass = new ManagementClass(scope, new ManagementPath("Win32_Process"), null))
+            using (var inParams = processClass.GetMethodParameters("Create"))
+            {
+                inParams["CommandLine"] = "w32tm /resync /force";
+                using (processClass.InvokeMethod("Create", inParams, null)) { }
+            }
             await Task.Delay(1000);
 
             // Start Windows Time service

@@ -6,7 +6,11 @@
         WindowStartupLocation="CenterOwner"
         Background="#0D0D0D"
         FontFamily="Segoe UI"
-        Loaded="Window_Loaded">
+        Loaded="Window_Loaded"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType">
 
     <Window.Resources>
         <!-- Orange/Zinc Theme Buttons -->

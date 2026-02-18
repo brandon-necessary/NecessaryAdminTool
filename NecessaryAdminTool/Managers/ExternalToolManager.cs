@@ -86,6 +86,13 @@ namespace NecessaryAdminTool.Managers
                     return false;
                 }
 
+                // Validate executable exists before attempting launch
+                if (!System.IO.File.Exists(executablePath))
+                {
+                    LogManager.LogError($"[External Tool Manager] Executable not found: {executablePath}");
+                    throw new System.IO.FileNotFoundException($"Tool executable not found: {executablePath}", executablePath);
+                }
+
                 Process process = null;
 
                 // Launch with credentials if provided (uses CreateProcessWithLogonW)
@@ -233,12 +240,18 @@ namespace NecessaryAdminTool.Managers
 
                     LogManager.LogInfo($"[External Tool Manager] Process created successfully (PID: {pi.dwProcessId})");
 
-                    // Get Process object from PID
-                    Process process = Process.GetProcessById(pi.dwProcessId);
-
-                    // Close handles (we don't need them, Process object manages the process)
-                    CloseHandle(pi.hProcess);
-                    CloseHandle(pi.hThread);
+                    // Get Process object from PID - close handles in finally to prevent leaks
+                    Process process = null;
+                    try
+                    {
+                        process = Process.GetProcessById(pi.dwProcessId);
+                    }
+                    finally
+                    {
+                        // Always close handles regardless of whether GetProcessById succeeds
+                        if (pi.hProcess != IntPtr.Zero) CloseHandle(pi.hProcess);
+                        if (pi.hThread != IntPtr.Zero) CloseHandle(pi.hThread);
+                    }
 
                     return process;
                 }
@@ -892,14 +905,17 @@ namespace NecessaryAdminTool.Managers
             {
                 case 5:
                 case 740:
-                    return "1) Add a process exception for NecessaryAdminTool.exe in your EDR portal\n" +
-                           "   2) RESTART COMPUTER after adding exception (EDR caches policy in memory)\n" +
-                           "   3) Exception must cover these modules: Behavioral Threat Protection,\n" +
-                           "      Credential Theft Protection, Local Privilege Escalation\n" +
-                           "   4) Cortex XDR v8.3: Operational Agent Exceptions are GREYED OUT\n" +
-                           "      → Requires v8.7+ OR contact IT Security for a policy-level exception\n" +
-                           "   5) If still blocked after restart: contact IT Security to add a\n" +
-                           "      CreateProcessWithLogonW whitelist for this executable";
+                    return "1) Add a Disable Prevention Rule in Cortex XDR portal:\n" +
+                           "      Path: \\*NecessaryAdminTool.exe\n" +
+                           "      Modules: Credential Gathering Protection + Behavioral Threat Protection\n" +
+                           "   2) Assign the exception to a policy targeting this endpoint\n" +
+                           "   3) Force policy sync: Cortex console → right-click endpoint → Check In\n" +
+                           "      OR: Restart-Service CyServer (no full PC restart needed)\n" +
+                           "   4) Verify in Cortex console: endpoint Policy Status = Applied\n" +
+                           "   5) If policy shows Applied but still blocked: check for a higher-priority\n" +
+                           "      conflicting policy on this endpoint that overrides the exception\n" +
+                           "   6) Cortex XDR v8.3: Use Disable Prevention Rules (NOT Operational Agent\n" +
+                           "      Exceptions - those require v8.7+)";
                 case 1326:
                     return "1) Verify username format: type ONLY 'username' (no domain\\ prefix)\n" +
                            "   2) Verify password hasn't expired\n" +

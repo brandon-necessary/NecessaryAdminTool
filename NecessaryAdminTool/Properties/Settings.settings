@@ -131,5 +131,9 @@
     <Setting Name="PasswordExpiryWarningDays" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">30</Value>
     </Setting>
+    <!-- TAG: #CONFIGURABLE_OPTIONS #MMC_EMBEDDING #PROCESS_CLEANUP -->
+    <Setting Name="CloseMMCConsolesOnExit" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

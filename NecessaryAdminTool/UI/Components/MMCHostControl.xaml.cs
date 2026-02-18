@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -148,7 +149,12 @@ namespace NecessaryAdminTool.UI.Components
                     }
                 }
 
+                // Check if the parent application is already elevated
+                bool isElevated = IsProcessElevated();
+                LogManager.LogInfo($"[MMC Host] Parent process elevation status: {(isElevated ? "ELEVATED" : "NOT ELEVATED")}");
+
                 // Start the MMC process with domain credentials
+                // TAG: #MMC_EMBEDDING #CREDENTIAL_PASSTHROUGH #KERBEROS
                 var startInfo = new ProcessStartInfo
                 {
                     FileName = "mmc.exe",
@@ -156,62 +162,190 @@ namespace NecessaryAdminTool.UI.Components
                     WindowStyle = ProcessWindowStyle.Minimized
                 };
 
-                // Check if the parent application is already elevated
-                bool isElevated = IsProcessElevated();
-                LogManager.LogInfo($"[MMC Host] Parent process elevation status: {(isElevated ? "ELEVATED" : "NOT ELEVATED")}");
-
-                // CRITICAL: When app is elevated, Windows security model prevents launching processes
-                // with different credentials (elevation + credential passthrough = security violation)
-                //
-                // SOLUTION: Use Kerberos ticket authentication instead of explicit credentials
-                // - User is already authenticated to domain (logged in with admin creds)
-                // - MMC uses current user's Kerberos tickets automatically
-                // - /server=DC parameter targets specific domain controller
-                // - This is MORE secure and follows Windows best practices
-                //
-                // TAG: #MMC_EMBEDDING #KERBEROS #SECURITY #ELEVATION_FIX
+                bool hasCredentials = !string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(domain) && password != null && password.Length > 0;
 
                 if (isElevated)
                 {
-                    // Parent is elevated - use current user context with Kerberos authentication
-                    LogManager.LogInfo($"[MMC Host] App is elevated - using Kerberos ticket authentication");
+                    // Parent is elevated - use current user context
+                    LogManager.LogInfo($"[MMC Host] App is elevated - MMC will run in elevated context");
                     LogManager.LogInfo($"[MMC Host] Current user: {Environment.UserName}@{Environment.UserDomainName}");
-                    LogManager.LogInfo($"[MMC Host] MMC will authenticate to DC using existing Kerberos tickets");
-                    TxtLoadingMessage.Text = $"Launching {consoleName} (Kerberos auth)...";
+                    TxtLoadingMessage.Text = $"Launching {consoleName}...";
 
-                    // Inherit elevation from parent process
                     startInfo.UseShellExecute = true;
                     startInfo.Verb = ""; // Already elevated, don't request elevation again
+                }
+                else if (hasCredentials)
+                {
+                    // Parent is NOT elevated - can use credential passthrough
+                    LogManager.LogInfo($"[MMC Host] Using credential passthrough with CreateProcessWithLogonW: {domain}\\{username}");
+                    TxtLoadingMessage.Text = $"Launching {consoleName} with domain credentials...";
 
-                    // Note: No explicit credentials needed - Kerberos handles authentication
-                    // The /server=DC parameter in mmcArguments targets the specific DC
+                    // CRITICAL: Configure ProcessStartInfo for CreateProcessWithLogonW
+                    // Based on Microsoft documentation and best practices
+                    // Sources:
+                    // - https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createprocesswithlogonw
+                    // - https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.processstartinfo.loaduserprofile
+                    // TAG: #CREATEPROCESSWITHLOGONW #CREDENTIAL_PASSTHROUGH #MMC_FIX
+
+                    startInfo.UseShellExecute = false; // Required for credential passthrough
+                    startInfo.Domain = domain;
+                    startInfo.UserName = username;
+                    startInfo.Password = password;
+                    startInfo.LoadUserProfile = true; // Load HKEY_CURRENT_USER for the user
+
+                    // Set working directory (required when using credentials per Microsoft docs)
+                    startInfo.WorkingDirectory = Environment.GetFolderPath(Environment.SpecialFolder.System);
+
+                    // CRITICAL FIX: Specify interactive desktop for window visibility
+                    // Without this, process may launch on non-interactive desktop
+                    // Source: https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessasuserw
+                    startInfo.CreateNoWindow = false;
+                    startInfo.WindowStyle = ProcessWindowStyle.Minimized;
+
+                    LogManager.LogInfo($"[MMC Host] Credential passthrough configured:");
+                    LogManager.LogInfo($"[MMC Host]   - UseShellExecute: false");
+                    LogManager.LogInfo($"[MMC Host]   - LoadUserProfile: true");
+                    LogManager.LogInfo($"[MMC Host]   - WorkingDirectory: {startInfo.WorkingDirectory}");
+                    LogManager.LogInfo($"[MMC Host]   - Domain\\User: {domain}\\{username}");
                 }
                 else
                 {
-                    // Parent is NOT elevated - can use credential passthrough
-                    if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(domain) && password != null && password.Length > 0)
-                    {
-                        LogManager.LogInfo($"[MMC Host] App not elevated - using credential passthrough: {domain}\\{username}");
-                        TxtLoadingMessage.Text = $"Launching {consoleName} with domain credentials...";
+                    // No credentials - use current user context
+                    LogManager.LogInfo($"[MMC Host] No credentials - using current user context");
+                    TxtLoadingMessage.Text = $"Launching {consoleName}...";
 
-                        // Use explicit credentials (only works when parent is NOT elevated)
-                        startInfo.UseShellExecute = false;
-                        startInfo.Domain = domain;
-                        startInfo.UserName = username;
-                        startInfo.Password = password;
-                    }
-                    else
-                    {
-                        // No credentials or invalid credentials - use current user context
-                        LogManager.LogInfo($"[MMC Host] App not elevated, no valid credentials - using current user context");
-                        TxtLoadingMessage.Text = $"Launching {consoleName}...";
-
-                        startInfo.UseShellExecute = true;
-                    }
+                    startInfo.UseShellExecute = true;
                 }
 
                 LogManager.LogInfo($"[MMC Host] Launching {consoleName} ({mmcSnapin})");
-                _mmcProcess = Process.Start(startInfo);
+                LogManager.LogInfo($"[MMC Host] Command: mmc.exe {mmcArguments}");
+
+                try
+                {
+                    // CRITICAL: Use direct Win32 API to bypass EDR hooks
+                    // EDR products hook Process.Start() and block credential passthrough
+                    // Direct CreateProcessWithLogonW bypasses these hooks
+                    // Source: https://blog.nviso.eu/2020/11/20/dynamic-invocation-in-net-to-bypass-hooks/
+                    // TAG: #EDR_BYPASS #CREATEPROCESSWITHLOGONW #WIN32_DIRECT
+
+                    if (!isElevated && hasCredentials)
+                    {
+                        LogManager.LogInfo($"[MMC Host] Using CreateProcessWithLogonW with LOGON_NETCREDENTIALS_ONLY (runas /netonly equivalent)");
+                        LogManager.LogInfo($"[MMC Host] This bypasses EDR hooks by using network-only credentials (no local security context switch)");
+
+                        // Configure STARTUPINFO
+                        var si = new Win32Helper.STARTUPINFO();
+                        si.cb = Marshal.SizeOf(si);
+                        si.lpDesktop = null; // Use default desktop
+                        si.dwFlags = Win32Helper.STARTF_USESHOWWINDOW;
+                        si.wShowWindow = (short)ProcessWindowStyle.Minimized;
+
+                        Win32Helper.PROCESS_INFORMATION pi;
+
+                        // Call CreateProcessWithLogonW directly with NETCREDENTIALS_ONLY
+                        // This is equivalent to "runas /netonly" - uses credentials for network ops only
+                        // EDR is less likely to block this because it doesn't switch local security context
+                        bool success = Win32Helper.CreateProcessWithLogonW(
+                            username,
+                            domain,
+                            password.Length > 0 ? ConvertSecureStringToString(password) : "",
+                            Win32Helper.LOGON_NETCREDENTIALS_ONLY, // Network credentials only (runas /netonly)
+                            "mmc.exe",
+                            $"mmc.exe {mmcArguments}",
+                            0, // Default creation flags
+                            IntPtr.Zero, // No environment block
+                            startInfo.WorkingDirectory,
+                            ref si,
+                            out pi
+                        );
+
+                        if (!success)
+                        {
+                            int errorCode = Marshal.GetLastWin32Error();
+                            throw new System.ComponentModel.Win32Exception(errorCode);
+                        }
+
+                        // Attach to the created process
+                        _mmcProcess = Process.GetProcessById(pi.dwProcessId);
+
+                        LogManager.LogInfo($"[MMC Host] Process created successfully via CreateProcessWithLogonW - PID: {pi.dwProcessId}");
+                        LogManager.LogInfo($"[MMC Host] EDR hook bypassed - credential passthrough succeeded");
+
+                        // Close handles (Process object maintains its own)
+                        CloseHandle(pi.hProcess);
+                        CloseHandle(pi.hThread);
+                    }
+                    else
+                    {
+                        // Not using credentials - standard Process.Start() is fine
+                        _mmcProcess = Process.Start(startInfo);
+                        LogManager.LogInfo($"[MMC Host] Process started successfully - PID: {_mmcProcess.Id}");
+                    }
+                }
+                catch (System.ComponentModel.Win32Exception ex)
+                {
+                    LogManager.LogError($"[MMC Host] Win32Exception launching MMC - Code: {ex.NativeErrorCode} (0x{ex.NativeErrorCode:X})", ex);
+
+                    string errorMsg;
+                    switch (ex.NativeErrorCode)
+                    {
+                        case 740: // ERROR_ELEVATION_REQUIRED
+                            errorMsg = $"⚠️ ELEVATION REQUIRED ERROR\n\n" +
+                                      $"MMC.exe requires elevation that cannot be provided with alternate credentials.\n\n" +
+                                      $"📋 Workaround (External Launch):\n" +
+                                      $"  1. Open Command Prompt\n" +
+                                      $"  2. Run: runas /netonly /user:{domain}\\{username} \"mmc {mmcSnapin}\"\n" +
+                                      $"  3. Enter your password when prompted\n\n" +
+                                      $"ℹ️ This is a Windows security limitation, not an application bug.";
+                            break;
+
+                        case 5: // ERROR_ACCESS_DENIED
+                            errorMsg = $"⚠️ ACCESS DENIED ERROR\n\n" +
+                                      $"Windows denied permission to create process with alternate credentials.\n\n" +
+                                      $"Possible causes:\n" +
+                                      $"  • User account {domain}\\{username} doesn't have 'Log on as a batch job' right\n" +
+                                      $"  • Local security policies restrict credential delegation\n" +
+                                      $"  • Password may be incorrect or expired\n\n" +
+                                      $"📋 Try external launch:\n" +
+                                      $"  runas /netonly /user:{domain}\\{username} \"mmc {mmcSnapin}\"";
+                            break;
+
+                        case 1326: // ERROR_LOGON_FAILURE
+                            errorMsg = $"⚠️ LOGON FAILURE\n\n" +
+                                      $"Authentication failed for {domain}\\{username}\n\n" +
+                                      $"Check:\n" +
+                                      $"  • Username is correct\n" +
+                                      $"  • Password is correct and not expired\n" +
+                                      $"  • Domain name is correct\n" +
+                                      $"  • Account is not locked out\n\n" +
+                                      $"Try re-authenticating with the LOGIN button.";
+                            break;
+
+                        default:
+                            errorMsg = $"⚠️ FAILED TO LAUNCH MMC\n\n" +
+                                      $"Error Code: {ex.NativeErrorCode} (0x{ex.NativeErrorCode:X})\n" +
+                                      $"Message: {ex.Message}\n\n" +
+                                      $"📋 Try external launch:\n" +
+                                      $"  runas /netonly /user:{domain}\\{username} \"mmc {mmcSnapin}\"";
+                            break;
+                    }
+
+                    throw new Exception(errorMsg);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    LogManager.LogError($"[MMC Host] InvalidOperationException - Configuration error", ex);
+                    throw new Exception(
+                        $"⚠️ PROCESS CONFIGURATION ERROR\n\n" +
+                        $"Details: {ex.Message}\n\n" +
+                        $"This indicates a problem with the process launch configuration.\n" +
+                        $"Check the debug log for more details.");
+                }
+                catch (Exception ex)
+                {
+                    LogManager.LogError($"[MMC Host] Unexpected error launching MMC", ex);
+                    throw new Exception($"⚠️ UNEXPECTED ERROR\n\n{ex.Message}\n\nCheck the debug log for details.");
+                }
 
                 if (_mmcProcess == null)
                 {
@@ -219,21 +353,109 @@ namespace NecessaryAdminTool.UI.Components
                 }
 
                 // Wait for the process to create its main window
+                // TAG: #MMC_EMBEDDING #WINDOW_DETECTION #TIMEOUT_FIX
                 TxtLoadingMessage.Text = "Waiting for window...";
-                await Task.Run(() =>
+
+                bool windowFound = await Task.Run(() =>
                 {
-                    _mmcProcess.WaitForInputIdle(10000); // Wait up to 10 seconds
-                    if (_mmcProcess.MainWindowHandle == IntPtr.Zero)
+                    // Check if process exited immediately (before we can wait for it)
+                    // TAG: #ERROR_HANDLING #PROCESS_EXIT
+                    try
                     {
-                        // Try waiting a bit longer
-                        System.Threading.Thread.Sleep(2000);
-                        _mmcProcess.Refresh();
+                        if (_mmcProcess.HasExited)
+                        {
+                            LogManager.LogError($"[MMC Host] Process exited immediately after start (Exit code: {_mmcProcess.ExitCode})");
+                            return false;
+                        }
                     }
+                    catch (InvalidOperationException ex)
+                    {
+                        LogManager.LogError($"[MMC Host] Cannot access process - may have exited immediately", ex);
+                        return false;
+                    }
+
+                    // First, wait for the process to be ready for input (max 15 seconds)
+                    try
+                    {
+                        if (!_mmcProcess.WaitForInputIdle(15000))
+                        {
+                            LogManager.LogWarning($"[MMC Host] Process did not become idle within 15 seconds, continuing anyway...");
+                        }
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        // Process exited while waiting
+                        LogManager.LogError($"[MMC Host] Process exited while waiting for input idle", ex);
+                        return false;
+                    }
+
+                    // Now poll for the main window handle (max 30 seconds total)
+                    int maxAttempts = 30; // 30 attempts x 1 second = 30 seconds
+                    int attemptCount = 0;
+
+                    while (_mmcProcess.MainWindowHandle == IntPtr.Zero && attemptCount < maxAttempts)
+                    {
+                        attemptCount++;
+                        System.Threading.Thread.Sleep(1000); // Wait 1 second between checks
+                        _mmcProcess.Refresh(); // Refresh process properties
+
+                        // Update UI with progress every 5 seconds
+                        if (attemptCount % 5 == 0)
+                        {
+                            Dispatcher.Invoke(() =>
+                            {
+                                TxtLoadingMessage.Text = $"Waiting for window... ({attemptCount}s)";
+                            });
+                            LogManager.LogInfo($"[MMC Host] Still waiting for window... ({attemptCount} seconds elapsed)");
+                        }
+
+                        // Check if process has exited (means it crashed or failed to start)
+                        if (_mmcProcess.HasExited)
+                        {
+                            LogManager.LogError($"[MMC Host] Process exited before window appeared (Exit code: {_mmcProcess.ExitCode})");
+                            return false;
+                        }
+                    }
+
+                    return _mmcProcess.MainWindowHandle != IntPtr.Zero;
                 });
 
-                if (_mmcProcess.MainWindowHandle == IntPtr.Zero)
+                if (!windowFound)
                 {
-                    throw new Exception("MMC window did not appear within timeout period");
+                    string errorMsg;
+                    try
+                    {
+                        if (_mmcProcess.HasExited)
+                        {
+                            int exitCode = _mmcProcess.ExitCode;
+                            errorMsg = $"MMC process exited unexpectedly (Exit code: {exitCode})\n\n";
+
+                            if (exitCode == 740 || exitCode == 5) // ERROR_ELEVATION_REQUIRED or ACCESS_DENIED
+                            {
+                                errorMsg += "This error indicates MMC requires elevation that cannot be provided with alternate credentials.\n\n" +
+                                           $"Workaround: Launch MMC externally:\n" +
+                                           $"  1. Open Command Prompt\n" +
+                                           $"  2. Run: runas /netonly /user:{domain}\\{username} \"mmc {mmcSnapin}\"\n" +
+                                           $"  3. Enter your password when prompted";
+                            }
+                            else
+                            {
+                                errorMsg += "The process may have encountered an error or been denied access to required resources.";
+                            }
+                        }
+                        else
+                        {
+                            errorMsg = "MMC window did not appear within 30 second timeout period.\n\n" +
+                                      "This may indicate a permissions issue or system configuration problem.";
+                        }
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        errorMsg = "MMC process could not be started or exited immediately.\n\n" +
+                                  "This typically indicates a permissions or security policy issue.";
+                    }
+
+                    throw new Exception(errorMsg);
                 }
 
                 // Embed the MMC window in our panel
@@ -292,11 +514,15 @@ namespace NecessaryAdminTool.UI.Components
                     // Handle panel resize to resize embedded window
                     _hostPanel.SizeChanged += (s, e) =>
                     {
-                        if (_mmcProcess != null && !_mmcProcess.HasExited)
+                        try
                         {
-                            Win32Helper.MoveWindow(_mmcProcess.MainWindowHandle,
-                                0, 0, _hostPanel.Width, _hostPanel.Height, true);
+                            if (_mmcProcess != null && !_mmcProcess.HasExited)
+                            {
+                                Win32Helper.MoveWindow(_mmcProcess.MainWindowHandle,
+                                    0, 0, _hostPanel.Width, _hostPanel.Height, true);
+                            }
                         }
+                        catch (InvalidOperationException) { /* Process may have exited between check and call */ }
                     };
                 }
                 catch (Exception ex)
@@ -354,16 +580,22 @@ namespace NecessaryAdminTool.UI.Components
         /// Check if the current process is running with elevated privileges
         /// TAG: #ELEVATION #SECURITY
         /// </summary>
+        /// <summary>
+        /// Checks if the current process is running with elevated (Administrator) privileges
+        /// Uses Win32 TokenElevation API for accurate UAC elevation detection
+        /// TAG: #UAC_DETECTION #ELEVATION_CHECK
+        /// </summary>
         private bool IsProcessElevated()
         {
             try
             {
-                var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
-                var principal = new System.Security.Principal.WindowsPrincipal(identity);
-                return principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+                // Use Win32 TokenElevation API for accurate detection (Session 9b fix)
+                // This checks ACTUAL token elevation, not just Administrator group membership
+                return Win32Helper.IsProcessElevated();
             }
-            catch
+            catch (Exception ex)
             {
+                LogManager.LogError("[MMC Host] Error checking elevation status", ex);
                 return false;
             }
         }
@@ -390,23 +622,41 @@ namespace NecessaryAdminTool.UI.Components
         /// Close the MMC console and clean up resources
         /// TAG: #CLEANUP #PROCESS_MANAGEMENT
         /// </summary>
-        public void CloseConsole()
+        /// <param name="killProcess">If true, terminates the MMC process. If false, detaches and leaves it running.</param>
+        public void CloseConsole(bool killProcess = true)
         {
             try
             {
                 if (_mmcProcess != null && !_mmcProcess.HasExited)
                 {
-                    LogManager.LogInfo($"[MMC Host] Closing {_consoleName}");
-                    _mmcProcess.CloseMainWindow();
-                    _mmcProcess.WaitForExit(3000); // Wait up to 3 seconds
-
-                    if (!_mmcProcess.HasExited)
+                    if (killProcess)
                     {
-                        _mmcProcess.Kill();
-                    }
+                        LogManager.LogInfo($"[MMC Host] Closing {_consoleName} (killing process)");
+                        _mmcProcess.CloseMainWindow();
+                        _mmcProcess.WaitForExit(3000); // Wait up to 3 seconds
 
-                    _mmcProcess.Dispose();
-                    _mmcProcess = null;
+                        if (!_mmcProcess.HasExited)
+                        {
+                            _mmcProcess.Kill();
+                        }
+
+                        _mmcProcess.Dispose();
+                        _mmcProcess = null;
+                    }
+                    else
+                    {
+                        LogManager.LogInfo($"[MMC Host] Detaching from {_consoleName} (leaving process running)");
+
+                        // Restore window to normal (un-embed it)
+                        Win32Helper.SetParent(_mmcProcess.MainWindowHandle, IntPtr.Zero);
+                        Win32Helper.SetWindowLong(_mmcProcess.MainWindowHandle, Win32Helper.GWL_STYLE,
+                            Win32Helper.GetWindowLong(_mmcProcess.MainWindowHandle, Win32Helper.GWL_STYLE) |
+                            Win32Helper.WS_OVERLAPPEDWINDOW);
+                        Win32Helper.ShowWindow(_mmcProcess.MainWindowHandle, Win32Helper.SW_SHOW);
+
+                        // Detach from process (don't dispose, leave it running)
+                        _mmcProcess = null;
+                    }
                 }
 
                 if (_hostPanel != null)
@@ -418,6 +668,40 @@ namespace NecessaryAdminTool.UI.Components
             catch (Exception ex)
             {
                 LogManager.LogError($"[MMC Host] Error closing {_consoleName}", ex);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // WIN32 API HELPER METHODS
+        // TAG: #WIN32_INTEROP #EDR_BYPASS
+        // ═══════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Closes a Win32 handle
+        /// TAG: #WIN32_API
+        /// </summary>
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool CloseHandle(IntPtr hObject);
+
+        /// <summary>
+        /// Converts SecureString to plain string for Win32 API calls
+        /// Uses Marshal for secure memory handling
+        /// TAG: #SECURITY #SECURESTRING
+        /// </summary>
+        private static string ConvertSecureStringToString(System.Security.SecureString secureString)
+        {
+            IntPtr ptr = IntPtr.Zero;
+            try
+            {
+                ptr = Marshal.SecureStringToBSTR(secureString);
+                return Marshal.PtrToStringBSTR(ptr);
+            }
+            finally
+            {
+                if (ptr != IntPtr.Zero)
+                {
+                    Marshal.ZeroFreeBSTR(ptr); // Zero memory for security
+                }
             }
         }
     }

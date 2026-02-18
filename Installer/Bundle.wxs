@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- TAG: #AUTO_UPDATE_INSTALLER #WIX_BUNDLE #VERSION_1_0 -->
+<!-- FUTURE CLAUDES: Update BundleVersion variable and .NET download URL if newer version needed -->
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:bal="http://schemas.microsoft.com/wix/BalExtension"
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+
+  <!--
+    WiX Burn Bootstrapper Bundle
+    Chains: .NET 4.8.2 web installer (if needed) + NecessaryAdminTool MSI
+
+    Install flags:
+      /quiet   - fully silent (no UI)
+      /passive - progress bar only
+      /install - explicit install (default)
+      /uninstall - uninstall app (does NOT uninstall .NET)
+
+    .NET detection:
+      Release key 528049 = .NET 4.8.1 (minimum acceptable)
+      Release key 533320 = .NET 4.8.2 (latest)
+      If machine has < 4.8.1, the web installer downloads 4.8.2 from Microsoft.
+  -->
+
+  <Bundle Name="NecessaryAdminTool Setup"
+          Version="$(var.BundleVersion)"
+          Manufacturer="Brandon Necessary"
+          UpgradeCode="C2D3E4F5-A6B7-4C5D-8E9F-0A1B2C3D4E5F">
+
+    <!-- Minimal bootstrapper UI — supports /quiet and /passive command-line flags -->
+    <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.HyperlinkLicense">
+      <bal:WixStandardBootstrapperApplication
+        LicenseUrl=""
+        ShowVersion="yes"
+        SuppressOptionsUI="yes"
+        SuppressRepair="yes" />
+    </BootstrapperApplicationRef>
+
+    <!-- ========================================
+         VARIABLES - .NET Detection
+         ======================================== -->
+
+    <!-- Read .NET release number from registry -->
+    <util:RegistrySearch Id="NetFxRelease"
+                         Root="HKLM"
+                         Key="SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full"
+                         Value="Release"
+                         Variable="NetFxRelease"
+                         Result="value" />
+
+    <!-- ========================================
+         CHAIN - Installation order
+         ======================================== -->
+
+    <Chain>
+
+      <!-- Step 1: .NET Framework 4.8.2 Web Installer
+           Only downloads and installs if .NET 4.8.1+ (release 528049) is NOT present.
+           On Windows 10 22H2+ and Windows 11, .NET 4.8.1 is already included.
+           On older Windows 10 builds, this downloads ~1.4 MB web installer which
+           then downloads only the required .NET components from Microsoft.
+
+           DownloadUrl: Microsoft's official .NET 4.8.2 web installer permalink
+           Permanent="yes": Never uninstalled when app is removed (safe - system component)
+      -->
+      <ExePackage Id="NetFx48WebInstaller"
+                  Name="ndp48-web.exe"
+                  DisplayName="Microsoft .NET Framework 4.8"
+                  Description="Required runtime for NecessaryAdminTool"
+                  SourceFile="Dependencies\ndp48-web.exe"
+                  InstallCommand="/q /norestart /log [TempFolder]NetFx48Install.log"
+                  RepairCommand="/q /norestart"
+                  DetectCondition="NetFxRelease >= 528049"
+                  InstallCondition="NOT (NetFxRelease >= 528049)"
+                  Vital="yes"
+                  Permanent="yes" />
+
+      <!-- Step 2: NecessaryAdminTool MSI
+           Installed silently (/qn) when bundle runs with /quiet or /passive.
+           The MSI already handles prerequisites, registry, shortcuts, etc.
+      -->
+      <MsiPackage SourceFile="Output\NecessaryAdminTool-$(var.BundleVersion)-Setup.msi"
+                  DisplayName="NecessaryAdminTool $(var.BundleVersion)"
+                  Description="Enterprise IT Management Suite"
+                  Vital="yes"
+                  ForcePerMachine="yes" />
+
+    </Chain>
+
+  </Bundle>
+</Wix>

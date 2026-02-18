@@ -69,7 +69,7 @@ namespace NecessaryAdminTool.Data
             #if SQLITE_ENABLED
             // Ensure directory exists
             var directory = Path.GetDirectoryName(databasePath);
-            if (!Directory.Exists(directory))
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);
             }
@@ -106,7 +106,7 @@ namespace NecessaryAdminTool.Data
         {
             // Ensure directory exists
             var directory = Path.GetDirectoryName(databasePath);
-            if (!Directory.Exists(directory))
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);
             }

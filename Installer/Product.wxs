@@ -5,7 +5,7 @@
      xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
 
   <?define ProductName = "NecessaryAdminTool" ?>
-  <?define ProductVersion = "1.2602.0.0" ?>
+  <?define ProductVersion = "2.5.0" ?>
   <?define ProductManufacturer = "Brandon Necessary" ?>
   <?define ProductUpgradeCode = "A1B2C3D4-E5F6-4A5B-8C9D-0E1F2A3B4C5D" ?>
 
@@ -34,10 +34,17 @@
          PREREQUISITES CHECK
          ======================================== -->
 
-    <!-- Require .NET Framework 4.8.1 -->
-    <PropertyRef Id="NETFRAMEWORK481"/>
-    <Condition Message="This application requires .NET Framework 4.8.1 or higher. Please install it then run this installer again.">
-      <![CDATA[Installed OR NETFRAMEWORK481]]>
+    <!-- Require .NET Framework 4.8+ via registry (WiX 3.11 compatible) -->
+    <Property Id="NETFXRELEASE">
+      <RegistrySearch Id="NetFxSearch"
+                      Root="HKLM"
+                      Key="SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full"
+                      Name="Release"
+                      Type="raw" />
+    </Property>
+    <!-- Release 528040 = .NET 4.8 on Windows 10/Server 2019; 528449 = 4.8.1 -->
+    <Condition Message="This application requires .NET Framework 4.8 or higher. Please install it then run this installer again.">
+      <![CDATA[Installed OR (NETFXRELEASE >= 528040)]]>
     </Condition>
 
     <!-- Require Windows 10/11 -->
@@ -56,11 +63,6 @@
 
     <!-- Installation directory -->
     <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
-
-    <!-- App data directory -->
-    <SetProperty Id="APPDATAFOLDER"
-                 Value="[AppDataFolder]NecessaryAdminTool"
-                 Before="CostFinalize" />
 
     <!-- Auto-update control properties -->
     <Property Id="ENABLE_AUTO_UPDATES" Value="1" />
@@ -109,6 +111,11 @@
       <!-- Desktop (optional) -->
       <Directory Id="DesktopFolder" Name="Desktop" />
 
+      <!-- AppData directory for logs and config -->
+      <Directory Id="AppDataFolder">
+        <Directory Id="APPDATAFOLDER" Name="NecessaryAdminTool" />
+      </Directory>
+
     </Directory>
 
     <!-- ========================================
@@ -152,13 +159,6 @@
       <Component Id="ConfigFiles" Guid="C2D3E4F5-A6B7-4C5D-8E9F-0A1B2C3D4E5F" Win64="yes">
         <File Source="..\NecessaryAdminTool\bin\Release\NecessaryAdminTool.exe.config" />
         <File Source="..\NecessaryAdminTool\App.config" Name="App.config.template" />
-      </Component>
-
-      <!-- Core DLLs -->
-      <Component Id="CoreLibraries" Guid="D3E4F5A6-B7C8-4D5E-9F0A-1B2C3D4E5F6A" Win64="yes">
-        <!-- These will be added from your bin\Release folder -->
-        <File Source="..\NecessaryAdminTool\bin\Release\System.Data.SQLite.dll" />
-        <File Source="..\NecessaryAdminTool\bin\Release\Squirrel.dll" />
       </Component>
 
     </ComponentGroup>
@@ -237,30 +237,8 @@
          CUSTOM ACTIONS - Dependency Installation
          ======================================== -->
 
-    <!-- Check if ACE Database Engine is installed -->
-    <Property Id="ACE_INSTALLED">
-      <RegistrySearch Id="SearchACE"
-                      Root="HKLM"
-                      Key="SOFTWARE\Microsoft\Office\ClickToRun\REGISTRY\MACHINE\Software\Classes\CLSID\{3BE786A0-0366-4F5C-9434-25CF162E475E}"
-                      Type="raw" />
-    </Property>
-
-    <!-- Embed ACE installer -->
-    <Binary Id="ACEInstaller" SourceFile="Dependencies\AccessDatabaseEngine_X64.exe" />
-
-    <!-- Custom action to install ACE if not present -->
-    <CustomAction Id="InstallACE"
-                  BinaryKey="ACEInstaller"
-                  ExeCommand="/quiet /passive"
-                  Execute="deferred"
-                  Return="check"
-                  Impersonate="no" />
-
-    <!-- Only run ACE install if not already installed -->
+    <!-- Launch app after install -->
     <InstallExecuteSequence>
-      <Custom Action="InstallACE" After="InstallFiles">
-        <![CDATA[NOT ACE_INSTALLED AND NOT Installed]]>
-      </Custom>
       <Custom Action="LaunchApplication" After="InstallFinalize">
         <![CDATA[WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed]]>
       </Custom>
@@ -272,11 +250,6 @@
 
     <UIRef Id="WixUI_FeatureTree" />
     <UIRef Id="WixUI_ErrorProgressText" />
-
-    <!-- Custom dialog for update settings -->
-    <UI>
-      <Publish Dialog="CustomizeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" Order="3">1</Publish>
-    </UI>
 
     <!-- Application icon -->
     <Icon Id="AppIcon.exe" SourceFile="..\NecessaryAdminTool\bin\Release\NecessaryAdminTool.exe" />

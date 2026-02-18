@@ -8,7 +8,11 @@
         ResizeMode="CanResize"
         Icon="pack://application:,,,/Resources/icon.ico"
         Topmost="True"
-        FontFamily="{StaticResource FluentFont}">
+        FontFamily="{StaticResource FluentFont}"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType">
 
     <!-- TAG: #AUTO_UPDATE_UI_ENGINE #FLUENT_THEME -->
 

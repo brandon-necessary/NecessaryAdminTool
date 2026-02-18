@@ -10,7 +10,11 @@
         ResizeMode="NoResize"
         Background="#FF0D0D0D"
         WindowStyle="None"
-        AllowsTransparency="True">
+        AllowsTransparency="True"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType">
 
     <Window.Resources>
         <!-- Colors -->

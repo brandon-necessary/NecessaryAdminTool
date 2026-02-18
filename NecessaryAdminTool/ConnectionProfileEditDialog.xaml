@@ -3,7 +3,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Edit Connection Profile" Height="500" Width="550"
         WindowStartupLocation="CenterOwner"
-        Background="#FF0D0D0D" ResizeMode="NoResize">
+        Background="#FF0D0D0D" ResizeMode="NoResize"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType">
 
     <!-- TAG: #VERSION_7 #CONNECTION_PROFILES #UI -->
 

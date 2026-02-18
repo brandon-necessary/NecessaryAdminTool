@@ -4,7 +4,11 @@
         xmlns:local="clr-namespace:NecessaryAdminTool"
         Title="Automated Remediation" Height="600" Width="800"
         WindowStartupLocation="CenterOwner"
-        Background="#FF0D0D0D" ResizeMode="CanResize">
+        Background="#FF0D0D0D" ResizeMode="CanResize"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType">
 
     <!-- TAG: #VERSION_7.1 #REMEDIATION #UI -->
 

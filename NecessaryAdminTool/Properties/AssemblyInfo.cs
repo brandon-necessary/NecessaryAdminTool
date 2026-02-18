@@ -85,5 +85,5 @@ using System.Windows;
 // - Complete rebrand from ArtaznIT to NecessaryAdminTool
 // - All v7.x features (169 total) - see docs/archive for details
 //
-[assembly: AssemblyVersion("2.2602.3.0")]
-[assembly: AssemblyFileVersion("2.2602.3.0")]
+[assembly: AssemblyVersion("2.2602.5.0")]
+[assembly: AssemblyFileVersion("2.2602.5.0")]

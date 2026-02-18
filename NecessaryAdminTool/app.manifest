@@ -26,10 +26,15 @@
   </compatibility>
 
   <!-- DPI Awareness for Windows 10/11 -->
+  <!-- TAG: #DPI_FINAL_FIX - System DPI is most reliable for WPF apps with dialogs -->
+  <!-- PerMonitorV2 causes overlay/duplication bugs in child windows without extensive code changes -->
   <application xmlns="urn:schemas-microsoft-com:asm.v3">
     <windowsSettings>
-      <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true/pm</dpiAware>
-      <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2, PerMonitor</dpiAwareness>
+      <!-- System DPI awareness - scales once at startup, no dynamic rescaling -->
+      <!-- This prevents overlay/duplication bugs in dialogs and child windows -->
+      <!-- WPF's built-in rendering handles crisp text and UI at any scale -->
+      <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true</dpiAware>
+      <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">system</dpiAwareness>
     </windowsSettings>
   </application>
 

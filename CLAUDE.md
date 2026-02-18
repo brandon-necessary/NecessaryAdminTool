@@ -898,6 +898,120 @@ Both scripts support configuration via environment variables:
 
 ---
 
+## 🎨 High-DPI Support - MANDATORY FOR ALL WINDOWS
+<!-- TAG: #DPI_REQUIRED_PROPERTIES #HIGH_DPI #WINDOW_CREATION #MANDATORY -->
+
+**⚠️ CRITICAL: ALL Windows (XAML and C#-created) MUST have DPI properties applied**
+
+### **Why This Is Required:**
+- Users run at various DPI scales (100%, 125%, 150%, 175%, 200%)
+- Without proper DPI handling, UI appears **zoomed, duplicated, or blurry**
+- 175% DPI is particularly problematic without these fixes
+- Microsoft enterprise standard for LOB applications
+
+### **Universal DPI Fix Applied (Feb 16, 2026):**
+✅ **All 18 windows updated** with comprehensive high-DPI support
+- 14 XAML windows (MainWindow, OptionsWindow, AboutWindow, etc.)
+- 4 C#-created windows (LoginWindow, ToolWindow, DeviceMonitorWindow, etc.)
+
+### **MANDATORY Properties for ALL New Windows:**
+
+#### **For XAML Windows (add to Window tag):**
+```xml
+<Window x:Class="YourNamespace.YourWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Your Window"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType">
+```
+
+#### **For C#-Created Windows (add to constructor):**
+```csharp
+public YourWindow()
+{
+    // TAG: #DPI_REQUIRED_PROPERTIES - High-DPI rendering (required for all windows)
+    UseLayoutRounding = true;
+    SnapsToDevicePixels = true;
+    TextOptions.SetTextFormattingMode(this, TextFormattingMode.Display);
+    TextOptions.SetTextRenderingMode(this, TextRenderingMode.ClearType);
+
+    // ... rest of constructor
+}
+```
+
+### **Global DPI Configuration (App.xaml.cs):**
+```csharp
+// Disable hardware acceleration (prevents bitmap scaling artifacts)
+RenderOptions.ProcessRenderMode = RenderMode.SoftwareOnly;
+
+// Set global text formatting (crisp text at all DPI scales)
+TextOptions.TextFormattingModeProperty.OverrideMetadata(
+    typeof(Control),
+    new FrameworkPropertyMetadata(TextFormattingMode.Display));
+```
+
+### **Manifest Configuration (app.manifest):**
+```xml
+<dpiAware>true</dpiAware>
+<dpiAwareness>system</dpiAwareness>
+```
+
+**System DPI** is the correct choice for enterprise WPF apps with dialogs:
+- Scales once at startup (no dynamic rescaling)
+- No per-monitor DPI change handlers needed
+- Prevents dialog overlay/duplication bugs
+- Industry standard for Microsoft LOB apps
+
+### **Finding DPI Code:**
+Search for the tag when creating new windows:
+```bash
+# Find all windows with DPI properties
+Grep pattern="#DPI_REQUIRED_PROPERTIES" glob="*.{xaml,cs}"
+
+# Find all window class definitions
+Grep pattern="<Window x:Class=|public class.*: Window" glob="*.{xaml,cs}"
+```
+
+### **What Each Property Does:**
+| Property | Purpose | Effect |
+|----------|---------|--------|
+| `UseLayoutRounding` | Rounds layout to whole pixels | Crisp edges, no blurry borders |
+| `SnapsToDevicePixels` | Aligns to physical pixels | Prevents anti-aliasing blur |
+| `TextFormattingMode.Display` | GDI-compatible text | Better for fractional DPI (175%) |
+| `TextRenderingMode.ClearType` | Subpixel rendering | Smooth, readable text |
+
+### **Testing at Different DPI Scales:**
+```
+Windows Settings → Display → Scale and layout
+- 100% (96 DPI) - Baseline
+- 125% (120 DPI) - Common laptop
+- 150% (144 DPI) - Common high-DPI
+- 175% (168 DPI) - Problematic without fix ⚠️
+- 200% (192 DPI) - 4K displays
+```
+
+### **Common Mistakes to Avoid:**
+❌ Creating windows without DPI properties
+❌ Using PerMonitorV2 without DPI change handlers
+❌ Hardcoding pixel sizes (use DPI-relative units)
+❌ Forgetting to test at 175% DPI scale
+✅ Always apply the standard DPI properties template
+✅ Use software rendering (globally configured)
+✅ Test on high-DPI displays before release
+
+### **Debug Logging:**
+Check logs for DPI diagnostics:
+```
+[DPI] Hardware acceleration disabled - using software rendering
+[DPI] Text formatting mode set to Display for crisp high-DPI text
+[DPI] Initialized DPI context: 175% horizontal, 175% vertical
+```
+
+---
+
 ## 🛠️ Common Development Tasks
 
 ### **Task 1: Update Version Number**

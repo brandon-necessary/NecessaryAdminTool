@@ -673,7 +673,7 @@ namespace NecessaryAdminTool
                     return result.Properties[propertyName][0]?.ToString() ?? string.Empty;
                 }
             }
-            catch { }
+            catch (Exception ex) { LogManager.LogDebug($"[AD] GetProperty({propertyName}) failed: {ex.Message}"); }
             return string.Empty;
         }
 
@@ -690,7 +690,7 @@ namespace NecessaryAdminTool
                         return parsed;
                 }
             }
-            catch { }
+            catch (Exception ex) { LogManager.LogDebug($"[AD] GetIntProperty({propertyName}) failed: {ex.Message}"); }
             return 0;
         }
 
@@ -705,7 +705,7 @@ namespace NecessaryAdminTool
                         return dt;
                 }
             }
-            catch { }
+            catch (Exception ex) { LogManager.LogDebug($"[AD] GetDateProperty({propertyName}) failed: {ex.Message}"); }
             return null;
         }
 
@@ -719,7 +719,7 @@ namespace NecessaryAdminTool
                     return DateTime.FromFileTime(fileTime);
                 }
             }
-            catch { }
+            catch (Exception ex) { LogManager.LogDebug($"[AD] GetLastLogonTimestamp failed: {ex.Message}"); }
             return null;
         }
 
@@ -736,7 +736,7 @@ namespace NecessaryAdminTool
                     }
                 }
             }
-            catch { }
+            catch (Exception ex) { LogManager.LogDebug($"[AD] GetMultiValueProperty({propertyName}) failed: {ex.Message}"); }
             return values;
         }
 
@@ -767,7 +767,7 @@ namespace NecessaryAdminTool
 
                 return sb.Length > 0 ? sb.ToString() : string.Empty;
             }
-            catch { }
+            catch (Exception ex) { LogManager.LogDebug($"[AD] ExtractOUFromDN failed: {ex.Message}"); }
             return string.Empty;
         }
 

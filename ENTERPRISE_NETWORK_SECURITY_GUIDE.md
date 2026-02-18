@@ -1,7 +1,7 @@
 # Enterprise Network & Security Configuration Guide
 <!-- TAG: #ENTERPRISE_GUIDE #NETWORK_REQUIREMENTS #EDR_CONFIGURATION #FIREWALL #VERSION_2_4 -->
 
-**Version:** 2.4 (2.2602.4.0)
+**Version:** 2.5 (2.2602.5.0)
 **Last Updated:** February 17, 2026
 **Audience:** IT Security, Network Engineers, System Administrators
 

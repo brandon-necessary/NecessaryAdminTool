@@ -7,7 +7,11 @@
         WindowStartupLocation="CenterOwner"
         Background="#FF0D0D0D"
         ResizeMode="CanResize"
-        ShowInTaskbar="False">
+        ShowInTaskbar="False"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType">
 
     <Window.Resources>
         <!-- Match MainWindow color scheme -->

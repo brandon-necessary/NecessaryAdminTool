@@ -58,6 +58,21 @@ NecessaryAdminTool is a comprehensive Windows-based IT management application de
 - Real-time DC topology monitoring
 - Automatic DC selection and failover
 - Multi-DC ping health checks
+- Short-name cards with domain-suffix badge overlay
+- Uniform card widths auto-sized to widest hostname
+
+### ⏱️ **Background Auto-Scan Service**
+- Windows Task Scheduler integration — runs `NecessaryAdminTool.exe /autoscan` on a schedule
+- Fully headless (no GUI) — suitable for overnight or off-hours fleet inventory
+- **Works with all 4 database types:** SQLite, SQL Server, Microsoft Access, CSV
+- Discovers domain and DC automatically via Kerberos (no stored passwords needed)
+- Queries all AD computer accounts via paged LDAP (no size limit)
+- Pings each computer (truly async `SendPingAsync`, 2s timeout) for online/offline status
+- WMI-enriches online computers: OS, RAM, CPU, disk (C:), BIOS serial, last logged-on user
+- Up to 20 parallel scans with per-query 5s WMI timeout to prevent stalls
+- Saves all results via the configured `IDataProvider` (same DB the UI reads from)
+- Records scan history (start/end time, online count, offline count, duration)
+- Writes a plain-text summary report to the Deployment Log Directory
 
 ### 🖥️ **Remote Control Integration (Version 7.0)**
 - Unified RMM tool management from a single interface
@@ -189,6 +204,21 @@ See [OPTIMIZATIONS.md](OPTIMIZATIONS.md) for detailed technical information.
 3. Monitor real-time progress with online/offline counters
 4. Export results to CSV for reporting
 
+### Background Auto-Scan (Scheduled Task)
+1. Open **Options → Background Service**
+2. Click **ENABLE** to register the Windows Scheduled Task
+3. Set the scan interval (default: every 2 hours)
+4. Click **RUN NOW** to trigger an immediate headless scan
+5. Check **Options → Database** to view updated inventory after the scan runs
+6. Scan summary reports are saved to the configured **Deployment Log Directory**
+
+**How it works headlessly:**
+- The scheduled task calls `NecessaryAdminTool.exe /autoscan`
+- The process discovers the domain controller via Kerberos (no credentials needed)
+- All AD computers are queried, pinged, and WMI-scanned in up to 20 parallel threads
+- Results are written to the same database the main UI reads from
+- The process exits cleanly when the scan completes
+
 ### Viewing Modes
 - **Grid View** - Traditional table layout (default)
 - **Card View** - Visual cards with quick actions (toggle with **Ctrl+T**)
@@ -235,10 +265,18 @@ The following configuration files are stored in `%APPDATA%`:
 - ✅ **Performance Optimized** - Multicore parallel processing (3-4x faster scanning)
 - ✅ **Security First** - Windows Credential Manager, SecureString, encrypted storage
 
+**Background Auto-Scan (v2.x):**
+- ✅ Windows Task Scheduler integration (enable via Options → Background Service)
+- ✅ Headless fleet scan: AD query → ping → WMI → database, no UI required
+- ✅ All 4 database types supported (SQLite, SQL Server, Access, CSV)
+- ✅ Integrated Kerberos auth — no passwords stored for scan service
+- ✅ Per-query 5s WMI timeout, `ManagementScope` + `ManagementObject` properly disposed
+- ✅ Truly async `SendPingAsync` — no ThreadPool starvation on large fleets
+- ✅ Scan summary written to Deployment Log Directory after each run
+
 **Prepared for v1.1+ Enhancements:**
 - Auto-update system (Squirrel.Windows)
 - Encrypted database layer (SQLCipher with AES-256)
-- Windows Service for background scanning
 
 **Documentation:**
 - 📘 [Unified Theme System](THEME_SYSTEM.md) - Complete theme architecture and customization guide

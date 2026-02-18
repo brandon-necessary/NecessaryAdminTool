@@ -24,6 +24,7 @@
         <Color x:Key="BgDarkest">#FF0D0D0D</Color>
         <Color x:Key="BgDark">#FF1A1A1A</Color>
         <Color x:Key="BgMedium">#FF252526</Color>
+        <Color x:Key="BgLight">#FF2F2F2F</Color>
         <Color x:Key="BgCard">#FF1E1E1E</Color>
         <Color x:Key="BorderDim">#FF3C3C3C</Color>
         <Color x:Key="BorderBright">#FF555555</Color>
@@ -38,6 +39,7 @@
         <SolidColorBrush x:Key="BgDarkestBrush" Color="{StaticResource BgDarkest}"/>
         <SolidColorBrush x:Key="BgDarkBrush" Color="{StaticResource BgDark}"/>
         <SolidColorBrush x:Key="BgMediumBrush" Color="{StaticResource BgMedium}"/>
+        <SolidColorBrush x:Key="BgLightBrush" Color="{StaticResource BgLight}"/>
         <SolidColorBrush x:Key="BgCardBrush" Color="{StaticResource BgCard}"/>
         <SolidColorBrush x:Key="BorderDimBrush" Color="{StaticResource BorderDim}"/>
         <SolidColorBrush x:Key="BorderBrightBrush" Color="{StaticResource BorderBright}"/>

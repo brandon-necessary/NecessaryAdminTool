@@ -37,6 +37,7 @@ using System.Windows.Data;
 using System.Windows.Threading;
 using NecessaryAdminTool.Security;
 using NecessaryAdminTool.Helpers;
+using NecessaryAdminTool.Managers;
 
 namespace NecessaryAdminTool
 {
@@ -1330,6 +1331,12 @@ namespace NecessaryAdminTool
 
         public ToolWindow(string hostname, string toolName)
         {
+            // TAG: #DPI_REQUIRED_PROPERTIES - High-DPI rendering (required for all windows)
+            UseLayoutRounding = true;
+            SnapsToDevicePixels = true;
+            TextOptions.SetTextFormattingMode(this, TextFormattingMode.Display);
+            TextOptions.SetTextRenderingMode(this, TextRenderingMode.ClearType);
+
             Title = $"{toolName} - {hostname}";
             Width = 920; Height = 620;
             Background = new SolidColorBrush(Color.FromRgb(13, 13, 13)); // #0D0D0D - darker background
@@ -1949,6 +1956,11 @@ namespace NecessaryAdminTool
         // Recent targets tracking (last 10 machines)
         private List<string> _recentTargets = new List<string>();
         private const int MaxRecentTargets = 10;
+
+        // Full PowerShell path prevents PATH hijacking attacks
+        private static readonly string PowerShellExe = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.System),
+            @"WindowsPowerShell\v1.0\powershell.exe");
         private string _tempLastDC = "";
         private bool _terminalVisible = false;
 
@@ -2171,6 +2183,27 @@ namespace NecessaryAdminTool
                     });
                 }
 
+                // TAG: #EXTERNAL_TOOLS #PROCESS_TRACKING - Subscribe to tool status changes
+                ExternalToolManager.ToolStatusChanged += (sender, args) =>
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        // Update MMC status if the changed tool is an MMC console
+                        if (args.ToolName.StartsWith("MMC_"))
+                        {
+                            UpdateMMCToolStatus();
+                        }
+
+                        LogManager.LogInfo($"[External Tool Manager] Tool status changed: {args.ToolName} - Running: {args.IsRunning}");
+                    });
+                };
+
+                // TAG: #EDR_FALLBACK #CREDENTIALS - Show credential prompt when Cortex XDR blocks CreateProcessWithLogonW
+                ExternalToolManager.OnCredentialRequired = (toolName) =>
+                {
+                    return System.Threading.Tasks.Task.FromResult(ShowEdrCredentialPrompt(toolName));
+                };
+
                 // TAG: #VERSION_7 #AD_MANAGEMENT - Wire up tab selection changed for AD Object Browser initialization
                 if (MainTabs != null)
                 {
@@ -2217,7 +2250,11 @@ namespace NecessaryAdminTool
             Managers.FilterManager.Initialize();
 
             // TAG: #VERSION_7 #QUICK_WINS - Restore window state and apply settings
-            Loaded += (s, e) => {
+            // TAG: #DPI_FIX - Made async to allow DPI context to stabilize
+            Loaded += async (s, e) => {
+                // Wait for DPI context to stabilize (prevents intermittent scaling issues)
+                await Task.Delay(50);
+
                 // Restore window position and size
                 RestoreWindowPosition();
 
@@ -2357,6 +2394,24 @@ namespace NecessaryAdminTool
         {
             get => _currentDomainName;
             internal set => _currentDomainName = value;
+        }
+
+        /// <summary>
+        /// TAG: #DOMAIN_DETECTION - Single source of truth for the NetBIOS domain name.
+        /// Used by LoginWindow, PerformAuth, and domain badges so they all stay in sync.
+        /// Priority: CurrentDomainName (LDAP-detected) → Environment.UserDomainName → MachineName
+        /// </summary>
+        public static string GetNetBIOSDomain()
+        {
+            // Prefer the LDAP-detected domain (most accurate, already verified reachable)
+            if (!string.IsNullOrEmpty(_currentDomainName))
+                return _currentDomainName.Split('.')[0].ToUpper();
+            // Fall back to Windows session domain
+            string envDomain = Environment.UserDomainName;
+            if (!string.IsNullOrEmpty(envDomain) && envDomain != Environment.MachineName)
+                return envDomain.ToUpper();
+            // Last resort: local machine
+            return Environment.MachineName.ToUpper();
         }
 
         /// <summary>
@@ -2618,26 +2673,111 @@ namespace NecessaryAdminTool
         {
             try
             {
-                SaveConfig();
-                SecureConfig.SaveConfiguration();
+                LogManager.LogInfo("[App Shutdown] ══════ Application shutdown initiated ══════");
 
-                // TAG: #VERSION_7 #QUICK_WINS - Save window position and stop auto-save
-                SaveWindowPosition();
-                _autoSaveTimer?.Stop();
+                // ── 1. Save state ─────────────────────────────────────────────────
+                try { SaveConfig(); } catch (Exception ex) { LogManager.LogError("[App Shutdown] SaveConfig failed", ex); }
+                try { SecureConfig.SaveConfiguration(); } catch (Exception ex) { LogManager.LogError("[App Shutdown] SecureConfig save failed", ex); }
+                try { SaveWindowPosition(); } catch (Exception ex) { LogManager.LogError("[App Shutdown] SaveWindowPosition failed", ex); }
 
-                // SECURE WIPE: Zero credentials from memory
-                SecureMemory.WipeAndDispose(ref _authPass);
-                SecureMemory.ForceCleanup();
+                // ── 2. Stop ALL timers ────────────────────────────────────────────
+                // Prevent any timer callbacks from firing during shutdown
+                try
+                {
+                    _autoSaveTimer?.Stop();
+                    _searchDebounceTimer?.Stop();
+                    _refreshTimer?.Stop();
+                    _domainVerificationTimer?.Stop();
+                    _scanAnimationTimer?.Stop();
+                    LogManager.LogInfo("[App Shutdown] All timers stopped");
+                }
+                catch (Exception ex) { LogManager.LogError("[App Shutdown] Timer stop failed", ex); }
 
-                // Dispose managers and stop timers
-                _wmiManager?.Dispose();
-                _cimManager?.Dispose();
-                _searchDebounceTimer?.Stop();
-                _refreshTimer?.Stop();
+                // ── 3. Cancel any in-progress background scans ────────────────────
+                try
+                {
+                    if (_scanTokenSource != null && !_scanTokenSource.IsCancellationRequested)
+                    {
+                        _scanTokenSource.Cancel();
+                        LogManager.LogInfo("[App Shutdown] Cancelled active scan token");
+                    }
+                }
+                catch (Exception ex) { LogManager.LogError("[App Shutdown] Scan cancel failed", ex); }
 
-                LogManager.LogInfo("Application closing — credentials wiped from memory");
+                // ── 4. Secure credential wipe ─────────────────────────────────────
+                try
+                {
+                    SecureMemory.WipeAndDispose(ref _authPass);
+                    SecureMemory.ForceCleanup();
+                    LogManager.LogInfo("[App Shutdown] Credentials wiped from memory");
+                }
+                catch (Exception ex) { LogManager.LogError("[App Shutdown] Credential wipe failed", ex); }
+
+                // ── 5. Dispose WMI/CIM managers ───────────────────────────────────
+                try
+                {
+                    _wmiManager?.Dispose();
+                    _cimManager?.Dispose();
+                    LogManager.LogInfo("[App Shutdown] WMI/CIM managers disposed");
+                }
+                catch (Exception ex) { LogManager.LogError("[App Shutdown] Manager dispose failed", ex); }
+
+                // ── 6. Kill all tracked external tool processes ───────────────────
+                // (MMC consoles, RMM tools, diagnostic processes launched via ExternalToolManager)
+                // NOTE: The installed background service (Windows Scheduled Task) runs in its
+                //       own process and is NOT tracked here - it is intentionally left running.
+                try
+                {
+                    LogManager.LogInfo("[App Shutdown] Closing all external tool processes...");
+                    ExternalToolManager.ForceCloseAllTools();
+                    LogManager.LogInfo("[App Shutdown] All external tool processes closed");
+                }
+                catch (Exception ex) { LogManager.LogError("[App Shutdown] External tool close failed", ex); }
+
+                // ── 7. Close/detach embedded MMC console processes ────────────────
+                try
+                {
+                    bool killProcesses = Properties.Settings.Default.CloseMMCConsolesOnExit;
+                    int processedCount = 0;
+
+                    if (TabControlDomainDirectory != null)
+                    {
+                        var tabsToProcess = new List<TabItem>();
+                        foreach (TabItem tab in TabControlDomainDirectory.Items)
+                        {
+                            if (tab.Content is UI.Components.MMCHostControl)
+                                tabsToProcess.Add(tab);
+                        }
+                        foreach (var tab in tabsToProcess)
+                        {
+                            var mmcHost = tab.Content as UI.Components.MMCHostControl;
+                            mmcHost?.CloseConsole(killProcesses);
+                            processedCount++;
+                        }
+                    }
+
+                    LogManager.LogInfo(killProcesses
+                        ? $"[App Shutdown] Killed {processedCount} embedded MMC console(s)"
+                        : $"[App Shutdown] Detached {processedCount} embedded MMC console(s) as standalone windows");
+                }
+                catch (Exception ex) { LogManager.LogError("[App Shutdown] MMC console close failed", ex); }
+
+                // ── 8. Force application exit ─────────────────────────────────────
+                // Ensures no background threads or orphaned dispatcher work keeps the process alive.
+                // Application.Current.Shutdown() signals WPF to terminate gracefully;
+                // Environment.Exit(0) is the backstop if WPF's shutdown stalls.
+                LogManager.LogInfo("[App Shutdown] ══════ Shutdown complete — exiting process ══════");
+                // Brief wait to allow async log writes to flush before process exit
+                System.Threading.Thread.Sleep(150);
+
+                Application.Current.Shutdown(0);
             }
-            catch (Exception ex) { LogManager.LogError("Window_Closing failed", ex); }
+            catch (Exception ex)
+            {
+                LogManager.LogError("[App Shutdown] CRITICAL - Window_Closing failed", ex);
+                // Even on failure, make sure the process exits
+                Environment.Exit(0);
+            }
         }
 
         // ────────────────────────────────────────────────────────────────────────
@@ -2645,15 +2785,12 @@ namespace NecessaryAdminTool
         // TAG: #SUPERADMIN #HIDDEN_FEATURE #WHITELABEL_GUI
         // ────────────────────────────────────────────────────────────────────────
 
-        // SuperAdmin secret button click tracking
+        // SuperAdmin secret button click tracking (5 rapid clicks on version badge)
+        // TAG: #SUPERADMIN #DEVELOPER_ACCESS
         private int _superAdminClickCount = 0;
         private DateTime _lastSuperAdminClick = DateTime.MinValue;
         private const int SUPERADMIN_CLICK_THRESHOLD = 5; // Require 5 rapid clicks
         private const int SUPERADMIN_CLICK_WINDOW_MS = 2000; // Within 2 seconds
-
-        // TAG: #ELEVATION #RESTART_AS_ADMIN - Role badge double-click tracking
-        private DateTime _lastRoleBadgeClick = DateTime.MinValue;
-        private const int ROLE_BADGE_DOUBLE_CLICK_MS = 500; // Standard double-click window
 
         /// <summary>
         /// Invisible button click handler for SuperAdmin access
@@ -2869,19 +3006,19 @@ namespace NecessaryAdminTool
 
         /// <summary>
         /// Check if current user has administrator privileges
+        /// Uses Win32 TokenElevation API for accurate UAC elevation detection
+        /// TAG: #UAC_DETECTION #ELEVATION_CHECK
         /// </summary>
         private bool IsUserAdmin()
         {
             try
             {
-                using (WindowsIdentity identity = WindowsIdentity.GetCurrent())
-                {
-                    WindowsPrincipal principal = new WindowsPrincipal(identity);
-                    return principal.IsInRole(WindowsBuiltInRole.Administrator);
-                }
+                // Use Win32 TokenElevation API for accurate detection (Session 9b fix)
+                return Helpers.Win32Helper.IsProcessElevated();
             }
-            catch
+            catch (Exception ex)
             {
+                LogManager.LogError("[MainWindow] Error checking elevation status in IsUserAdmin()", ex);
                 return false;
             }
         }
@@ -2953,6 +3090,8 @@ namespace NecessaryAdminTool
                             searcher.Filter = $"(&(objectCategory=user)(sAMAccountName={cleanUser}))";
                             searcher.PropertiesToLoad.Add("memberOf");
                             searcher.PropertiesToLoad.Add("distinguishedName");
+                            searcher.ServerPageTimeLimit = TimeSpan.FromSeconds(10);
+                            searcher.ClientTimeout = TimeSpan.FromSeconds(10);
                             var result = searcher.FindOne();
                             if (result == null)
                             {
@@ -3046,6 +3185,8 @@ namespace NecessaryAdminTool
                             string groupCN = cnMatch.Groups[1].Value;
                             groupSearcher.Filter = $"(&(objectCategory=group)(cn={groupCN}))";
                             groupSearcher.PropertiesToLoad.Add("memberOf");
+                            groupSearcher.ServerPageTimeLimit = TimeSpan.FromSeconds(10);
+                            groupSearcher.ClientTimeout = TimeSpan.FromSeconds(10);
                             var groupResult = groupSearcher.FindOne();
 
                             if (groupResult != null && groupResult.Properties["memberOf"] != null)
@@ -3083,8 +3224,8 @@ namespace NecessaryAdminTool
                 }
                 else if (_isDomainAdmin && !_isElevated)
                 {
-                    // Domain Admin without elevation - Limited access
-                    TxtRoleBadge.Text = "DOMAIN ADMIN (NO ELEVATION)";
+                    // Domain Admin - Full access via credentials
+                    TxtRoleBadge.Text = "DOMAIN ADMIN";
                     TxtRoleBadge.Foreground = Brushes.Orange;
 
                     PanelDeployment.Visibility = Visibility.Visible;
@@ -3128,94 +3269,50 @@ namespace NecessaryAdminTool
         }
 
         /// <summary>
-        /// Role badge click handler - double-click to restart as Administrator
-        /// TAG: #ELEVATION #RESTART_AS_ADMIN #UX
+        /// Role badge click handler - shows current role information (no elevation/restart)
+        /// TAG: #ROLE_INFO #NO_ELEVATION #INFORMATIONAL
         /// </summary>
         private void TxtRoleBadge_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             try
             {
-                // Only allow restart if NOT elevated
-                if (_isElevated)
+                bool isAdmin = _isElevated;
+                bool hasCredentials = !string.IsNullOrEmpty(_authUser);
+
+                string message = "🔐 CURRENT ROLE INFORMATION\n\n";
+
+                if (isAdmin)
                 {
-                    Managers.UI.ToastManager.ShowInfo("Already running as Administrator");
-                    return;
+                    message += "⚠️ Running as: Local Administrator (ELEVATED)\n\n";
+                    message += "IMPORTANT: When running elevated, domain admin credentials\n";
+                    message += "cannot be used for MMC and some operations due to Windows security.\n\n";
+                    message += "💡 Recommendation: Close and restart app WITHOUT 'Run as Administrator'\n";
+                    message += "to use your domain admin credentials properly.\n\n";
+                    message += $"Windows User: {Environment.UserName}@{Environment.UserDomainName}";
+                }
+                else if (hasCredentials)
+                {
+                    message += "✅ Running as: Domain User (NOT elevated)\n";
+                    message += $"✅ Authenticated with: {CurrentDomainName}\\{_authUser}\n\n";
+                    message += "Domain admin credentials will be used for all operations.\n";
+                    message += "This is the RECOMMENDED configuration for this tool.\n\n";
+                    message += $"Windows User: {Environment.UserName}@{Environment.UserDomainName}";
+                }
+                else
+                {
+                    message += "❌ Running as: Local User (READ-ONLY)\n\n";
+                    message += "Some features are limited. Click the LOGIN button and authenticate\n";
+                    message += "with domain admin credentials to unlock full functionality.\n\n";
+                    message += $"Windows User: {Environment.UserName}@{Environment.UserDomainName}";
                 }
 
-                DateTime now = DateTime.Now;
-                var timeSinceLastClick = now - _lastRoleBadgeClick;
-
-                // Check if this is a double-click (within 500ms)
-                if (timeSinceLastClick.TotalMilliseconds <= ROLE_BADGE_DOUBLE_CLICK_MS)
-                {
-                    // Double-click detected - restart as admin
-                    LogManager.LogInfo("[Elevation] User requested restart as Administrator via role badge double-click");
-
-                    var result = MessageBox.Show(
-                        "Restart NecessaryAdminTool as Administrator?\n\n" +
-                        "This will close the current session and relaunch with elevated privileges.\n\n" +
-                        "⚡ Elevated features include:\n" +
-                        "  • Deployment operations\n" +
-                        "  • Firewall management\n" +
-                        "  • System-level modifications\n" +
-                        "  • Advanced remote tools",
-                        "Restart as Administrator",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Question);
-
-                    if (result == MessageBoxResult.Yes)
-                    {
-                        RestartAsAdministrator();
-                    }
-                }
-
-                _lastRoleBadgeClick = now;
+                MessageBox.Show(message, "Role Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                LogManager.LogInfo($"[Role Badge] Displayed role information dialog (elevated={isAdmin}, hasCredentials={hasCredentials})");
             }
             catch (Exception ex)
             {
-                LogManager.LogError("[Elevation] Failed to handle role badge click", ex);
-                Managers.UI.ToastManager.ShowError($"Restart failed: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Restart the application with Administrator privileges
-        /// TAG: #ELEVATION #RESTART_AS_ADMIN #PROCESS_MANAGEMENT
-        /// </summary>
-        private void RestartAsAdministrator()
-        {
-            try
-            {
-                // Get the current executable path
-                string exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
-
-                // Use ProcessStartInfo with "runas" verb to request elevation
-                var startInfo = new ProcessStartInfo
-                {
-                    FileName = exePath,
-                    UseShellExecute = true,
-                    Verb = "runas" // Request elevation via UAC
-                };
-
-                LogManager.LogInfo($"[Elevation] Restarting application as Administrator: {exePath}");
-
-                // Start elevated process
-                Process.Start(startInfo);
-
-                // Close current instance
-                LogManager.LogInfo("[Elevation] Closing current non-elevated instance");
-                Application.Current.Shutdown();
-            }
-            catch (System.ComponentModel.Win32Exception)
-            {
-                // User cancelled UAC prompt
-                LogManager.LogWarning("[Elevation] User cancelled UAC prompt");
-                Managers.UI.ToastManager.ShowWarning("Elevation cancelled by user");
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError("[Elevation] Failed to restart as Administrator", ex);
-                Managers.UI.ToastManager.ShowError($"Failed to restart as Administrator: {ex.Message}");
+                LogManager.LogError("[Role Badge] Failed to display role info", ex);
+                Managers.UI.ToastManager.ShowError($"Failed to show role info: {ex.Message}");
             }
         }
 
@@ -3633,7 +3730,7 @@ namespace NecessaryAdminTool
                     string b64 = Convert.ToBase64String(Encoding.Unicode.GetBytes(fullScript));
                     var psi = new ProcessStartInfo
                     {
-                        FileName = "powershell.exe",
+                        FileName = PowerShellExe,
                         Arguments = $"-NoProfile -ExecutionPolicy Bypass -EncodedCommand {b64}",
                         UseShellExecute = false,
                         RedirectStandardOutput = true,
@@ -3819,13 +3916,18 @@ namespace NecessaryAdminTool
 
                 Mouse.OverrideCursor = Cursors.Wait;
 
-                string targetDC = ComboDC.Text;
+                // Get target DC - extract clean hostname from display string
+                string targetDC = null;
                 if (ComboDC.SelectedItem is ComboBoxItem item && item.Tag != null)
                 {
-                    targetDC = item.Tag.ToString();
-                    if (targetDC == "Auto")
-                        targetDC = Environment.GetEnvironmentVariable("USERDNSDOMAIN");
+                    string rawTag = item.Tag is string st ? st : item.Tag.ToString();
+                    targetDC = ExtractHostnameFromDCString(rawTag);
                 }
+                // Fallback to USERDNSDOMAIN if "Auto" hasn't resolved to a DC yet
+                if (string.IsNullOrEmpty(targetDC))
+                    targetDC = Environment.GetEnvironmentVariable("USERDNSDOMAIN");
+                if (string.IsNullOrEmpty(targetDC) && !string.IsNullOrEmpty(ComboDC.Text))
+                    targetDC = ExtractHostnameFromDCString(ComboDC.Text);
 
                 if (string.IsNullOrEmpty(targetDC))
                 {
@@ -3993,7 +4095,7 @@ namespace NecessaryAdminTool
                                             }
                                             catch (Exception ex)
                                             {
-                                                LogManager.LogDebug($"OptimizedADScanner failed for {host}: {ex.Message}");
+                                                LogManager.LogDebug($"OptimizedADScanner failed for {host} ({ex.GetType().Name}): {ex.Message}");
                                                 spec = new HardwareSpec { Protocol = "FAILED" };
                                             }
 
@@ -4028,8 +4130,16 @@ namespace NecessaryAdminTool
                                     {
                                         pc.Status = "Cancelled";
                                     }
-                                    catch
+                                    catch (System.Net.NetworkInformation.PingException ex)
                                     {
+                                        // DNS resolution failure or network error (not just host-down)
+                                        LogManager.LogDebug($"[Fleet Scan] Ping failed for {host} (network error): {ex.Message}");
+                                        pc.Status = "Offline";
+                                        Interlocked.Increment(ref offlineCount);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        LogManager.LogDebug($"[Fleet Scan] Unexpected error for {host}: {ex.GetType().Name} - {ex.Message}");
                                         pc.Status = "Offline";
                                         Interlocked.Increment(ref offlineCount);
                                     }
@@ -4529,10 +4639,10 @@ namespace NecessaryAdminTool
                                         var n = r.Cast<ManagementObject>().FirstOrDefault();
                                         if (n != null)
                                         {
-                                            string[] ips = (string[])n["IPAddress"];
+                                            string[] ips = n["IPAddress"] as string[];
                                             spec.IP = ips?.FirstOrDefault(x => x.Contains("."));
                                             spec.MAC = n["MACAddress"]?.ToString();
-                                            string[] dns = (string[])n["DNSServerSearchOrder"];
+                                            string[] dns = n["DNSServerSearchOrder"] as string[];
                                             if (dns?.Length > 0) spec.DNS = string.Join(", ", dns);
                                             n.Dispose();
                                         }
@@ -4992,7 +5102,7 @@ namespace NecessaryAdminTool
 
                     var psi = new ProcessStartInfo
                     {
-                        FileName = "powershell.exe",
+                        FileName = PowerShellExe,
                         Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{psScript.Replace("\"", "`\"")}\"",
                         UseShellExecute = false,
                         RedirectStandardOutput = true,
@@ -5239,7 +5349,7 @@ namespace NecessaryAdminTool
 
                 // Launch RDP with admin mode
                 string sanitized = SecurityValidator.SanitizeHostname(_currentTarget);
-                using (Process.Start("mstsc.exe", $"/v:{sanitized} /admin")) { }
+                using (Process.Start(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "mstsc.exe"), $"/v:{sanitized} /admin")) { }
                 AppendTerminal($"RDP launched → {sanitized} (admin mode)");
                 AddLog(_currentTarget, "RDP", "Session launched", "OK");
             }
@@ -5345,7 +5455,7 @@ if ($connection) {{
 
                         var psi = new ProcessStartInfo
                         {
-                            FileName = "powershell.exe",
+                            FileName = PowerShellExe,
                             Arguments = $"-NoExit -Command \"$cred = New-Object System.Management.Automation.PSCredential('{safeUser}', (ConvertTo-SecureString '{safePassword}' -AsPlainText -Force)); Invoke-Command -ComputerName {safeTarget} -Credential $cred -ScriptBlock {{ {psScript} }}\"",
                             UseShellExecute = true
                         };
@@ -5407,7 +5517,7 @@ if ($connection) {{
 
                         var psi = new ProcessStartInfo
                         {
-                            FileName = "powershell.exe",
+                            FileName = PowerShellExe,
                             Arguments = $"-NoExit -Command \"$cred = New-Object System.Management.Automation.PSCredential('{safeUser}', (ConvertTo-SecureString '{safePassword}' -AsPlainText -Force)); Enter-PSSession -ComputerName {safeTarget} -Credential $cred\"",
                             UseShellExecute = true
                         };
@@ -5418,7 +5528,7 @@ if ($connection) {{
                 {
                     var psi = new ProcessStartInfo
                     {
-                        FileName = "powershell.exe",
+                        FileName = PowerShellExe,
                         Arguments = $"-NoExit -Command \"{psCommand}\"",
                         UseShellExecute = true
                     };
@@ -5944,7 +6054,7 @@ if ($connection) {{
                         // Check if RSAT is installed via PowerShell
                         var rsatCheck = new ProcessStartInfo
                         {
-                            FileName = "powershell.exe",
+                            FileName = PowerShellExe,
                             Arguments = "-Command \"Get-WindowsCapability -Online | Where-Object Name -like 'Rsat*' | Where-Object State -eq 'Installed' | Measure-Object | Select-Object -ExpandProperty Count\"",
                             UseShellExecute = false,
                             RedirectStandardOutput = true,
@@ -5968,7 +6078,7 @@ if ($connection) {{
                                     AppendTerminal("Installing RSAT via Windows Features...");
                                     var installPsi = new ProcessStartInfo
                                     {
-                                        FileName = "powershell.exe",
+                                        FileName = PowerShellExe,
                                         Arguments = "-Command \"Get-WindowsCapability -Online | Where-Object Name -like 'Rsat*' | Add-WindowsCapability -Online\"",
                                         UseShellExecute = true,
                                         Verb = "runas" // Run as admin
@@ -6119,7 +6229,7 @@ if ($connection) {{
 
                                 var rpcTestPsi = new ProcessStartInfo
                                 {
-                                    FileName = "powershell.exe",
+                                    FileName = PowerShellExe,
                                     Arguments = $"-Command \"Test-NetConnection -ComputerName '{targetDc}' -Port 135 | Select-Object -ExpandProperty TcpTestSucceeded\"",
                                     UseShellExecute = false,
                                     RedirectStandardOutput = true,
@@ -6867,7 +6977,7 @@ if ($connection) {{
 
                         var psi = new ProcessStartInfo
                         {
-                            FileName = "powershell.exe",
+                            FileName = PowerShellExe,
                             Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{psScript.Replace("\"", "`\"")}\"",
                             UseShellExecute = false,
                             RedirectStandardOutput = true,
@@ -6983,7 +7093,7 @@ if ($connection) {{
                 try
                 {
                     string sanitized = SecurityValidator.SanitizeHostname(pc.Hostname);
-                    Process.Start("mstsc.exe", $"/v:{sanitized}");
+                    Process.Start(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "mstsc.exe"), $"/v:{sanitized}");
                 }
                 catch (Exception ex) { Managers.UI.ToastManager.ShowError($"RDP failed: {ex.Message}"); }
             }
@@ -7944,31 +8054,6 @@ if ($rebootPending) {
                 var lw = new LoginWindow();
                 var result = lw.ShowDialog();
 
-                // Handle elevation restart request
-                if (lw.ShouldRestartElevated)
-                {
-                    try
-                    {
-                        var exePath = Process.GetCurrentProcess().MainModule.FileName;
-                        AppendTerminal($"[RESTART] Restarting with elevation: {exePath}");
-
-                        var psi = new ProcessStartInfo
-                        {
-                            FileName = exePath,
-                            UseShellExecute = true,
-                            Verb = "runas"
-                        };
-                        Process.Start(psi);
-                        Application.Current.Shutdown();
-                    }
-                    catch (Exception ex)
-                    {
-                        Managers.UI.ToastManager.ShowError("Failed to restart with elevation.\n\n" +"Please manually:\n" +"1. Close NecessaryAdminTool Suite\n" +"2. Right-click NecessaryAdminTool.exe\n" +"3. Select \'Run as Administrator\'");
-                        LogManager.LogError("Failed to restart with elevation from login", ex);
-                    }
-                    break;
-                }
-
                 if (result == true)
                 {
                     // TAG: #SECURITY_CRITICAL #RATE_LIMITING #BRUTE_FORCE_PREVENTION
@@ -8058,10 +8143,18 @@ if ($rebootPending) {
             {
                 try
                 {
-                    string domain = "PROCESS", cleanUser = user;
+                    // TAG: #DOMAIN_DETECTION - GetNetBIOSDomain() is the shared source of truth
+                    string domain = GetNetBIOSDomain(), cleanUser = user;
                     if (user.Contains("\\")) { var p = user.Split('\\'); domain = p[0]; cleanUser = p[1]; }
+                    LogManager.LogInfo($"[AUTH] Resolved: Domain='{domain}' User='{cleanUser}'");
                     // SecureString → plaintext unavoidable for LogonUser P/Invoke
                     authenticated = LogonUser(cleanUser, domain, new NetworkCredential("", pass).Password, 2, 0, out token);
+                    if (!authenticated)
+                    {
+                        int errorCode = System.Runtime.InteropServices.Marshal.GetLastWin32Error();
+                        string errorMsg = new System.ComponentModel.Win32Exception(errorCode).Message;
+                        LogManager.LogWarning($"[AUTH] LogonUser failed - Win32 Error {errorCode}: {errorMsg} | Domain: '{domain}' | User: '{cleanUser}'");
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -8103,9 +8196,9 @@ if ($rebootPending) {
                 ApplyRoleRestrictions();
 
                 // TAG: #UX_FEEDBACK - Step 4: Show final access level
-                string accessLevel = _isDomainAdmin && _isElevated ? "Domain Admin with Elevation" :
-                                    _isDomainAdmin && !_isElevated ? "Domain Admin (No Elevation)" :
-                                    _isLoggedIn && _isElevated ? "Authenticated with Elevation" :
+                string accessLevel = _isDomainAdmin && _isElevated ? "Domain Admin (Elevated)" :
+                                    _isDomainAdmin && !_isElevated ? "Domain Admin" :
+                                    _isLoggedIn && _isElevated ? "Authenticated (Elevated)" :
                                     "Authenticated (Read-Only)";
 
                 Dispatcher.Invoke(() =>
@@ -8138,88 +8231,20 @@ if ($rebootPending) {
 
         /// <summary>
         /// Checks if the current process is running with Administrator privileges
+        /// Uses Win32 TokenElevation API for accurate UAC elevation detection
+        /// TAG: #UAC_DETECTION #ELEVATION_CHECK
         /// </summary>
         private bool IsRunningAsAdministrator()
         {
             try
             {
-                var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
-                var principal = new System.Security.Principal.WindowsPrincipal(identity);
-                return principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+                // Use Win32 TokenElevation API for accurate detection (Session 9b fix)
+                return Helpers.Win32Helper.IsProcessElevated();
             }
             catch (Exception ex)
             {
-                LogManager.LogError("Failed to check elevation status", ex);
+                LogManager.LogError("[MainWindow] Failed to check elevation status in IsRunningAsAdministrator()", ex);
                 return false;
-            }
-        }
-
-        /// <summary>
-        /// Creates a desktop shortcut and batch file launcher for running as admin
-        /// </summary>
-        private void CreateAdminLauncher()
-        {
-            try
-            {
-                // Prompt for admin username
-                string adminUsername = Microsoft.VisualBasic.Interaction.InputBox(
-                    "Enter your domain admin username:\n\n" +
-                    "Format: domain\\username\n" +
-                    "Example: process\\admin.bnecessary-a",
-                    "Admin Username",
-                    $"{Environment.UserDomainName}\\admin.{Environment.UserName}",
-                    -1, -1);
-
-                if (string.IsNullOrWhiteSpace(adminUsername))
-                {
-                    throw new Exception("Username is required");
-                }
-
-                string exePath = Process.GetCurrentProcess().MainModule.FileName;
-                string exeDir = Path.GetDirectoryName(exePath);
-                string batPath = Path.Combine(exeDir, "Launch_AsAdmin.bat");
-
-                // Create batch file with runas /savecred
-                string batContent = $@"@echo off
-echo ========================================
-echo  NecessaryAdminTool Suite - Admin Launcher
-echo ========================================
-echo.
-echo Launching as: {adminUsername}
-echo.
-echo NOTE: First time will ask for password.
-echo       Password will be saved securely by Windows.
-echo.
-runas /user:{adminUsername} /savecred ""{exePath}""
-";
-
-                File.WriteAllText(batPath, batContent);
-                AppendTerminal($"Created launcher batch file: {batPath}", false);
-
-                // Create desktop shortcut using IWshRuntimeLibrary
-                string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                string shortcutPath = Path.Combine(desktopPath, "NecessaryAdminTool Suite (Admin).lnk");
-
-                Type shellType = Type.GetTypeFromProgID("WScript.Shell");
-                dynamic shell = Activator.CreateInstance(shellType);
-                var shortcut = shell.CreateShortcut(shortcutPath);
-                shortcut.TargetPath = batPath;
-                shortcut.WorkingDirectory = exeDir;
-                shortcut.Description = $"Launch NecessaryAdminTool Suite as {adminUsername}";
-                shortcut.IconLocation = exePath + ",0";
-                shortcut.Save();
-
-                Marshal.ReleaseComObject(shortcut);
-                Marshal.ReleaseComObject(shell);
-
-                AppendTerminal($"Created desktop shortcut: {shortcutPath}", false);
-                LogManager.LogInfo($"Admin launcher created for user: {adminUsername}");
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError("Failed to create admin launcher", ex);
-                Managers.UI.ToastManager.ShowError($"Failed to create admin launcher:\n\n{ex.Message}");
-                throw;
             }
         }
 
@@ -8418,35 +8443,73 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             // TAG: #VERSION_7 #BUG_FIX - Create Fleet items at same time as main items for proper update tracking
             var fleetItems = new Dictionary<string, ComboBoxItem>();
 
+            // TAG: #UI_IMPROVEMENT - Pre-calculate uniform card width from widest hostname
+            // Measures every short hostname using FormattedText (same font as card title),
+            // then adds card padding so all cards are exactly the same width.
+            double uniformCardWidth = 120; // minimum
+            {
+                var typeface = new Typeface(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
+                double pixelsPerDip = 1.0;
+                var ps = PresentationSource.FromVisual(this);
+                if (ps?.CompositionTarget != null)
+                    pixelsPerDip = ps.CompositionTarget.TransformToDevice.M11;
+
+                foreach (var dcName in dcList)
+                {
+                    string sn = dcName.Contains(".") ? dcName.Substring(0, dcName.IndexOf('.')) : dcName;
+                    var ft = new FormattedText(sn,
+                        System.Globalization.CultureInfo.CurrentUICulture,
+                        FlowDirection.LeftToRight,
+                        typeface, 14, Brushes.White, pixelsPerDip);
+                    // card Padding=10 each side + 16px extra breathing room for domain badge
+                    double needed = ft.Width + 20 + 16;
+                    if (needed > uniformCardWidth) uniformCardWidth = needed;
+                }
+            }
+
             foreach (var dc in dcList)
             {
-                var cbi = new ComboBoxItem { Content = $"{dc} (probing...)", Tag = dc, Foreground = Brushes.LightGray, Background = bg };
+                // Split hostname into short name + domain suffix for cleaner display
+                // e.g. "JDXTNDC01.process.local" → shortName="JDXTNDC01", domainSuffix=".process.local"
+                int dotIdx = dc.IndexOf('.');
+                string shortName = dotIdx > 0 ? dc.Substring(0, dotIdx) : dc;
+                string domainSuffix = dotIdx > 0 ? dc.Substring(dotIdx) : "";
+
+                var cbi = new ComboBoxItem { Content = $"{shortName} (probing...)", Tag = dc, Foreground = Brushes.LightGray, Background = bg, ToolTip = dc };
                 ComboDC.Items.Add(cbi);
 
                 // Create corresponding Fleet item - TAG: #AD_FLEET_INVENTORY #BUG_FIX
                 var fleetItem = new ComboBoxItem
                 {
-                    Content = $"{dc} (probing...)",
+                    Content = $"{shortName} (probing...)",
                     Tag = dc,
                     Foreground = Brushes.LightGray,
-                    Background = bg
+                    Background = bg,
+                    ToolTip = dc
                 };
                 fleetItems[dc] = fleetItem;
 
-                // TAG: #VERSION_7 #UI_IMPROVEMENT - MUCH bigger cards for easier reading
+                // TAG: #VERSION_7 #UI_IMPROVEMENT - Card layout: short hostname + domain badge in corner
+                // Width is uniform across all cards (set to widest hostname above)
                 var card = new Border
                 {
                     Background = Brushes.Gray,
                     Margin = new Thickness(6),
                     CornerRadius = new CornerRadius(6),
                     ToolTip = $"Pinging {dc}...",
+                    Width = uniformCardWidth,
                     MinHeight = 80,
-                    Padding = new Thickness(12)
+                    Padding = new Thickness(10)
                 };
-                var sp = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+
+                // Grid allows centered content + corner badge overlay
+                var cardGrid = new Grid();
+
+                // Main content: short hostname + IP/latency, centered
+                var sp = new StackPanel { VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
                 var tn = new TextBlock
                 {
-                    Text = dc,
+                    Text = shortName,
                     Foreground = Brushes.White,
                     FontSize = 14,
                     FontWeight = FontWeights.Bold,
@@ -8462,7 +8525,28 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     HorizontalAlignment = HorizontalAlignment.Center,
                     FontWeight = FontWeights.SemiBold
                 };
-                sp.Children.Add(tn); sp.Children.Add(ti); card.Child = sp; GridDCHealth.Children.Add(card);
+                sp.Children.Add(tn);
+                sp.Children.Add(ti);
+                cardGrid.Children.Add(sp);
+
+                // Domain suffix badge in bottom-right corner (like login screen domain badge)
+                if (!string.IsNullOrEmpty(domainSuffix))
+                {
+                    var domainBadge = new TextBlock
+                    {
+                        Text = domainSuffix,
+                        FontSize = 8,
+                        Foreground = new SolidColorBrush(Color.FromArgb(160, 255, 255, 255)),
+                        HorizontalAlignment = HorizontalAlignment.Right,
+                        VerticalAlignment = VerticalAlignment.Bottom,
+                        Margin = new Thickness(0, 0, 2, 2),
+                        FontStyle = FontStyles.Italic
+                    };
+                    cardGrid.Children.Add(domainBadge);
+                }
+
+                card.Child = cardGrid;
+                GridDCHealth.Children.Add(card);
 
                 dcHealthTasks.Add(Task.Run(async () =>
                 {
@@ -8517,7 +8601,11 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                         Brush statusColor = Brushes.Red; // Default offline color
                         _ = Application.Current.Dispatcher.InvokeAsync(() =>
                         {
-                            ti.Text = ip; card.ToolTip = $"{dc}\nIP: {ip}\n{ms}ms"; cbi.Content = $"{dc} ({ms}ms)";
+                            // Update card: IP in subtitle, full FQDN in tooltip
+                            ti.Text = ip;
+                            card.ToolTip = $"{dc}\nIP: {ip}\nLatency: {ms}ms";
+                            // Dropdown shows short name (Tag stays as full FQDN for resolution)
+                            cbi.Content = $"{shortName} ({ms}ms)";
                             if (!on) { card.Background = Brushes.DarkRed; statusColor = Brushes.Red; }
                             else if (ms < 60) { card.Background = Brushes.DarkGreen; statusColor = Brushes.Lime; }
                             else if (ms < 150) { card.Background = Brushes.DarkGoldenrod; statusColor = Brushes.Yellow; }
@@ -8529,7 +8617,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                             // BUG FIX: Also update Fleet tab dropdown item - TAG: #AD_FLEET_INVENTORY #VERSION_7
                             if (fleetItems.TryGetValue(dc, out var fleetCbi))
                             {
-                                fleetCbi.Content = $"{dc} ({ms}ms)";
+                                fleetCbi.Content = $"{shortName} ({ms}ms)";
                                 fleetCbi.Foreground = statusColor;
                             }
 
@@ -8539,9 +8627,11 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                                 {
                                     bestPing = ms;
                                     bestDC = dc;
-                                    autoItem.Content = $"Auto ({bestDC} - {bestPing}ms)";
-                                    autoItem.Tag = bestDC;
-                                    autoItem.Foreground = statusColor; // Set Auto color to match best DC
+                                    // Auto item shows best short name + latency; Tag stays as full FQDN
+                                    string bestShort = bestDC.Contains(".") ? bestDC.Substring(0, bestDC.IndexOf('.')) : bestDC;
+                                    autoItem.Content = $"Auto ({bestShort} - {bestPing}ms)";
+                                    autoItem.Tag = bestDC; // Full FQDN for resolution
+                                    autoItem.Foreground = statusColor;
                                 }
                             }
                         });
@@ -8552,7 +8642,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                         // Ensure UI is updated even on total failure
                         _ = Application.Current.Dispatcher.InvokeAsync(() =>
                         {
-                            cbi.Content = $"{dc} (error)";
+                            cbi.Content = $"{shortName} (error)";
                             cbi.Foreground = Brushes.DarkGray;
                             card.Background = Brushes.DarkRed;
                             ti.Text = "ERR";
@@ -8560,7 +8650,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                             // Also update Fleet item
                             if (fleetItems.TryGetValue(dc, out var fleetCbi))
                             {
-                                fleetCbi.Content = $"{dc} (error)";
+                                fleetCbi.Content = $"{shortName} (error)";
                                 fleetCbi.Foreground = Brushes.DarkGray;
                             }
                         });
@@ -8582,14 +8672,16 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     {
                         if (item.Content.ToString().Contains("probing..."))
                         {
-                            item.Content = $"{item.Tag} (timeout)";
+                            // Use short name (first segment) for display, Tag holds full FQDN
+                            string fullFqdn = item.Tag?.ToString() ?? "";
+                            string shortN = fullFqdn.Contains(".") ? fullFqdn.Substring(0, fullFqdn.IndexOf('.')) : fullFqdn;
+                            item.Content = $"{shortN} (timeout)";
                             item.Foreground = Brushes.DarkGray;
 
                             // Also update Fleet item - TAG: #AD_FLEET_INVENTORY #BUG_FIX
-                            string dcName = item.Tag?.ToString();
-                            if (dcName != null && fleetItems.TryGetValue(dcName, out var fleetItem))
+                            if (!string.IsNullOrEmpty(fullFqdn) && fleetItems.TryGetValue(fullFqdn, out var fleetItem))
                             {
-                                fleetItem.Content = $"{dcName} (timeout)";
+                                fleetItem.Content = $"{shortN} (timeout)";
                                 fleetItem.Foreground = Brushes.DarkGray;
                             }
                         }
@@ -9180,10 +9272,13 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
                     foreach (var dc in dcList)
                     {
+                        // Always use dc.Hostname (string) not dc (DCInfo object) for Tag
+                        // to ensure Tag is always a clean, validatable hostname string
+                        string hostname = dc.Hostname;
                         var item = new ComboBoxItem
                         {
-                            Content = dc,
-                            Tag = dc,
+                            Content = hostname,
+                            Tag = hostname,
                             Foreground = Brushes.White,
                             Background = bg
                         };
@@ -9210,9 +9305,63 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         {
             if (ComboDCFleet.SelectedItem is ComboBoxItem item && item.Tag != null)
             {
-                string selectedDC = item.Tag.ToString();
+                string selectedDC = ExtractHostnameFromDCString(item.Tag.ToString());
                 AppendTerminal($"[AD Fleet] Selected DC: {selectedDC}");
             }
+        }
+
+        /// <summary>
+        /// Extracts a clean, validated hostname from a DC display string.
+        /// Handles all ComboBox display formats:
+        ///   "JDXTNDC01.process.local"                    → "JDXTNDC01.process.local"
+        ///   "Auto (JDXTNDC01.process.local - 1ms)"       → "JDXTNDC01.process.local"
+        ///   "JDXTNDC01.process.local (1ms)"              → "JDXTNDC01.process.local"
+        ///   "JDXTNDC01.process.local (probing...)"       → "JDXTNDC01.process.local"
+        ///   "JDXTNDC01.process.local (error)"            → "JDXTNDC01.process.local"
+        ///   "Auto" or null                               → null
+        /// TAG: #AD_FLEET_INVENTORY #DC_DISCOVERY #SECURITY
+        /// </summary>
+        private static string ExtractHostnameFromDCString(string rawDCString)
+        {
+            if (string.IsNullOrWhiteSpace(rawDCString) || rawDCString == "Auto")
+                return null;
+
+            // Already a valid clean hostname (no spaces or parens)
+            if (Security.SecurityValidator.IsValidHostname(rawDCString))
+                return rawDCString;
+
+            // Format: "Auto (JDXTNDC01.process.local - 1ms)" → extract between "(" and " -" or ")"
+            var autoMatch = System.Text.RegularExpressions.Regex.Match(
+                rawDCString, @"Auto\s*\(([^)\s]+?)(?:\s+-\s+\d+ms)?\)");
+            if (autoMatch.Success)
+            {
+                string candidate = autoMatch.Groups[1].Value.Trim();
+                if (Security.SecurityValidator.IsValidHostname(candidate))
+                    return candidate;
+            }
+
+            // Format: "HOSTNAME (probing...)" / "HOSTNAME (1ms)" / "HOSTNAME (error)" / "HOSTNAME (timeout)"
+            var suffixMatch = System.Text.RegularExpressions.Regex.Match(
+                rawDCString, @"^([a-zA-Z0-9][a-zA-Z0-9\-\.]+)\s+\(");
+            if (suffixMatch.Success)
+            {
+                string candidate = suffixMatch.Groups[1].Value.Trim();
+                if (Security.SecurityValidator.IsValidHostname(candidate))
+                    return candidate;
+            }
+
+            // Last resort: extract the first valid hostname-like token (alphanumeric + dots + hyphens)
+            var hostnameMatch = System.Text.RegularExpressions.Regex.Match(
+                rawDCString, @"\b([a-zA-Z0-9][a-zA-Z0-9\-]{0,61}(?:\.[a-zA-Z0-9][a-zA-Z0-9\-]{0,61})+)\b");
+            if (hostnameMatch.Success)
+            {
+                string candidate = hostnameMatch.Groups[1].Value;
+                if (Security.SecurityValidator.IsValidHostname(candidate))
+                    return candidate;
+            }
+
+            LogManager.LogWarning($"[DC Helper] Could not extract valid hostname from: '{rawDCString}'");
+            return null;
         }
 
         /// <summary>
@@ -9236,16 +9385,18 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         {
             try
             {
-                // Get selected DC
+                // Get selected DC - extract clean hostname from whatever display format is in the Tag
                 string selectedDC = null;
                 if (ComboDCFleet.SelectedItem is ComboBoxItem item && item.Tag != null)
                 {
-                    selectedDC = item.Tag.ToString();
+                    string rawTag = item.Tag is string s ? s : item.Tag.ToString();
+                    selectedDC = ExtractHostnameFromDCString(rawTag);
+                    LogManager.LogDebug($"[AD Browser] Raw DC tag: '{rawTag}' → extracted hostname: '{selectedDC}'");
                 }
 
                 if (string.IsNullOrEmpty(selectedDC))
                 {
-                    Managers.UI.ToastManager.ShowWarning("Please select a Domain Controller first.");
+                    Managers.UI.ToastManager.ShowWarning("Please select a Domain Controller first.\n\nIf the list is empty, click 'Refresh DCs' to discover domain controllers.");
                     return;
                 }
 
@@ -9918,11 +10069,28 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             }
         }
 
-        /// <summary>Restore window position and size from settings</summary>
+        /// <summary>
+        /// Restore window position and size from settings
+        /// TAG: #DPI_FIX - Ensures DPI context is stable before restoring position
+        /// </summary>
         private void RestoreWindowPosition()
         {
             try
             {
+                // TAG: #DPI_FIX - Wait for DPI context to stabilize
+                // This prevents intermittent scaling issues when restoring window position
+                try
+                {
+                    var dpiInfo = VisualTreeHelper.GetDpi(this);
+                    LogManager.LogInfo($"[Window] Restoring position with DPI: {dpiInfo.DpiScaleX * 100}% x {dpiInfo.DpiScaleY * 100}%");
+                }
+                catch
+                {
+                    // DPI not ready yet, skip restoration this time
+                    LogManager.LogWarning("[Window] DPI context not ready, skipping window position restoration");
+                    return;
+                }
+
                 string json = Properties.Settings.Default.WindowPosition;
                 if (!string.IsNullOrWhiteSpace(json))
                 {
@@ -9938,12 +10106,18 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                         var width = pos["Width"];
                         var height = pos["Height"];
 
-                        if (left >= 0 && top >= 0 && width > 0 && height > 0)
+                        // TAG: #DPI_FIX - Ensure window fits on current screen configuration
+                        // This handles multi-monitor setups where DPI might differ
+                        var screenWidth = SystemParameters.VirtualScreenWidth;
+                        var screenHeight = SystemParameters.VirtualScreenHeight;
+
+                        if (left >= 0 && top >= 0 && width > 0 && height > 0 &&
+                            left < screenWidth && top < screenHeight)
                         {
                             Left = left;
                             Top = top;
-                            Width = width;
-                            Height = height;
+                            Width = Math.Min(width, screenWidth - left);
+                            Height = Math.Min(height, screenHeight - top);
 
                             if (pos.ContainsKey("WindowState"))
                             {
@@ -9951,6 +10125,12 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                                 if (state == 2) // Maximized
                                     WindowState = WindowState.Maximized;
                             }
+
+                            LogManager.LogInfo($"[Window] Restored position: Left={left}, Top={top}, Width={width}, Height={height}");
+                        }
+                        else
+                        {
+                            LogManager.LogWarning($"[Window] Saved position invalid for current screen: Left={left}, Top={top}");
                         }
                     }
                 }
@@ -10184,13 +10364,17 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         {
             try
             {
-                // Get selected domain controller
-                string dc = ComboDC.Text;
+                // Get selected domain controller - extract clean hostname from display string
+                string dc = null;
                 if (ComboDC.SelectedItem is ComboBoxItem di && di.Tag != null)
                 {
-                    string t = di.Tag.ToString();
-                    if (t != "Auto") dc = t;
+                    string rawTag = di.Tag is string s ? s : di.Tag.ToString();
+                    dc = ExtractHostnameFromDCString(rawTag);
                 }
+                // Fallback: parse the displayed text if Tag didn't yield a valid hostname
+                if (string.IsNullOrEmpty(dc) && !string.IsNullOrEmpty(ComboDC.Text))
+                    dc = ExtractHostnameFromDCString(ComboDC.Text);
+                LogManager.LogDebug($"[AD Management] Refresh using DC: '{dc}'");
 
                 if (string.IsNullOrEmpty(dc) || dc.Contains("Scanning") || dc.Contains("probing"))
                 {
@@ -10228,13 +10412,15 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         {
             try
             {
-                // Get selected domain controller
-                string dc = ComboDC.Text;
+                // Get selected domain controller - extract clean hostname from display string
+                string dc = null;
                 if (ComboDC.SelectedItem is ComboBoxItem di && di.Tag != null)
                 {
-                    string t = di.Tag.ToString();
-                    if (t != "Auto") dc = t;
+                    string rawTag = di.Tag is string s ? s : di.Tag.ToString();
+                    dc = ExtractHostnameFromDCString(rawTag);
                 }
+                if (string.IsNullOrEmpty(dc) && !string.IsNullOrEmpty(ComboDC.Text))
+                    dc = ExtractHostnameFromDCString(ComboDC.Text);
 
                 if (string.IsNullOrEmpty(dc) || dc.Contains("Scanning") || dc.Contains("probing"))
                 {
@@ -10284,13 +10470,15 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         {
             try
             {
-                // Get selected domain controller
-                string dc = ComboDC.Text;
+                // Get selected domain controller - extract clean hostname from display string
+                string dc = null;
                 if (ComboDC.SelectedItem is ComboBoxItem di && di.Tag != null)
                 {
-                    string t = di.Tag.ToString();
-                    if (t != "Auto") dc = t;
+                    string rawTag = di.Tag is string s ? s : di.Tag.ToString();
+                    dc = ExtractHostnameFromDCString(rawTag);
                 }
+                if (string.IsNullOrEmpty(dc) && !string.IsNullOrEmpty(ComboDC.Text))
+                    dc = ExtractHostnameFromDCString(ComboDC.Text);
 
                 if (string.IsNullOrEmpty(dc) || dc.Contains("Scanning") || dc.Contains("probing"))
                 {
@@ -10340,13 +10528,15 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         {
             try
             {
-                // Get selected domain controller
-                string dc = ComboDC.Text;
+                // Get selected domain controller - extract clean hostname from display string
+                string dc = null;
                 if (ComboDC.SelectedItem is ComboBoxItem di && di.Tag != null)
                 {
-                    string t = di.Tag.ToString();
-                    if (t != "Auto") dc = t;
+                    string rawTag = di.Tag is string s ? s : di.Tag.ToString();
+                    dc = ExtractHostnameFromDCString(rawTag);
                 }
+                if (string.IsNullOrEmpty(dc) && !string.IsNullOrEmpty(ComboDC.Text))
+                    dc = ExtractHostnameFromDCString(ComboDC.Text);
 
                 if (string.IsNullOrEmpty(dc) || dc.Contains("Scanning") || dc.Contains("probing"))
                 {
@@ -11056,13 +11246,15 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     // Only initialize once per session, or if credentials changed
                     if (!_adObjectBrowserInitialized || !_isLoggedIn)
                     {
-                        // Get selected domain controller
-                        string dc = ComboDC.Text;
+                        // Get selected domain controller - extract clean hostname
+                        string dc = null;
                         if (ComboDC.SelectedItem is ComboBoxItem di && di.Tag != null)
                         {
-                            string t = di.Tag.ToString();
-                            if (t != "Auto") dc = t;
+                            string rawTag = di.Tag is string sdi ? sdi : di.Tag.ToString();
+                            dc = ExtractHostnameFromDCString(rawTag);
                         }
+                        if (string.IsNullOrEmpty(dc) && !string.IsNullOrEmpty(ComboDC.Text))
+                            dc = ExtractHostnameFromDCString(ComboDC.Text);
 
                         if (!string.IsNullOrEmpty(dc) && !dc.Contains("Scanning") && !dc.Contains("probing"))
                         {
@@ -11102,8 +11294,14 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         {
             if (!(ComboAdminTools.SelectedItem is ComboBoxItem sel)) return;
             string tool = sel.Content.ToString();
-            string dc = ComboDC.Text;
-            if (ComboDC.SelectedItem is ComboBoxItem di && di.Tag != null) { string t = di.Tag.ToString(); if (t != "Auto") dc = t; }
+            string dc = null;
+            if (ComboDC.SelectedItem is ComboBoxItem di && di.Tag != null)
+            {
+                string rawTag = di.Tag is string sdi ? sdi : di.Tag.ToString();
+                dc = ExtractHostnameFromDCString(rawTag);
+            }
+            if (string.IsNullOrEmpty(dc) && !string.IsNullOrEmpty(ComboDC.Text))
+                dc = ExtractHostnameFromDCString(ComboDC.Text);
             if (string.IsNullOrEmpty(dc) || dc.Contains("Scanning")) { Managers.UI.ToastManager.ShowWarning("Wait for DC scan"); return; }
 
             string mmc = "", args = "";
@@ -11130,12 +11328,14 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         /// <summary>Checks account lockout events on the selected Domain Controller</summary>
         private async void BtnCheckLockouts_Click(object sender, RoutedEventArgs e)
         {
-            string dc = ComboDC.Text;
+            string dc = null;
             if (ComboDC.SelectedItem is ComboBoxItem di && di.Tag != null)
             {
-                string t = di.Tag.ToString();
-                if (t != "Auto") dc = t;
+                string rawTag = di.Tag is string sdi ? sdi : di.Tag.ToString();
+                dc = ExtractHostnameFromDCString(rawTag);
             }
+            if (string.IsNullOrEmpty(dc) && !string.IsNullOrEmpty(ComboDC.Text))
+                dc = ExtractHostnameFromDCString(ComboDC.Text);
 
             if (string.IsNullOrEmpty(dc) || dc.Contains("Scanning"))
             {
@@ -11516,8 +11716,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         // ############################################################################
 
         /// <summary>
-        /// Opens selected MMC console in a new embedded tab with Kerberos credential passthrough
-        /// TAG: #MMC_EMBEDDING #ADMIN_TOOLS #EVENT_HANDLER
+        /// Opens selected MMC console in external window with Kerberos credential passthrough
+        /// TAG: #EXTERNAL_TOOLS #MMC_LAUNCH #ADMIN_TOOLS #EVENT_HANDLER
         /// </summary>
         private async void BtnOpenMMCConsole_Click(object sender, RoutedEventArgs e)
         {
@@ -11546,9 +11746,69 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 }
 
                 string mmcFile = _mmcConsoles[selectedConsole];
+                string toolKey = $"MMC_{selectedConsole}";
 
-                // Create new tab for the MMC console
-                await CreateMMCTabAsync(selectedConsole, mmcFile);
+                // Check if already running
+                if (ExternalToolManager.IsToolRunning(toolKey))
+                {
+                    Managers.UI.ToastManager.ShowInfo($"{selectedConsole} is already running");
+                    LogManager.LogInfo($"[MMC] Tool already running: {selectedConsole}");
+                    return;
+                }
+
+                // Get cached credentials
+                string username = _authUser;
+                string domain = CurrentDomainName;
+                System.Security.SecureString password = _authPass;
+
+                // Strip domain prefix from username if present
+                if (!string.IsNullOrEmpty(username) && username.Contains("\\"))
+                {
+                    string[] parts = username.Split('\\');
+                    if (parts.Length == 2)
+                    {
+                        username = parts[1];
+                        LogManager.LogInfo($"[MMC] Stripped domain prefix from username: {_authUser} -> {username}");
+                    }
+                }
+
+                bool hasCredentials = !string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(domain) && password != null;
+
+                LogManager.LogInfo($"[MMC] Launching {selectedConsole} externally - Has credentials: {hasCredentials}");
+
+                // Build MMC command line
+                string mmcArguments = $"\"{mmcFile}\"";
+
+                // Get selected DC for targeting (if available)
+                string targetDC = null;
+                if (ComboDC != null && ComboDC.SelectedItem is ComboBoxItem dcItem && dcItem.Tag != null)
+                {
+                    targetDC = dcItem.Tag.ToString();
+                    LogManager.LogInfo($"[MMC] Selected DC for targeting: {targetDC}");
+                }
+
+                // Launch using ExternalToolManager
+                bool success = await ExternalToolManager.LaunchToolAsync(
+                    toolKey: toolKey,
+                    toolName: selectedConsole,
+                    toolType: "MMC",
+                    executablePath: "mmc.exe",
+                    arguments: mmcArguments,
+                    targetComputer: targetDC,
+                    domain: domain,
+                    username: username,
+                    password: password
+                );
+
+                if (success)
+                {
+                    Managers.UI.ToastManager.ShowSuccess($"{selectedConsole} launched successfully");
+                    UpdateMMCToolStatus(); // Update UI status
+                }
+                else
+                {
+                    Managers.UI.ToastManager.ShowError($"Failed to launch {selectedConsole}");
+                }
             }
             catch (Exception ex)
             {
@@ -11583,16 +11843,16 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 // Create the MMC host control
                 var mmcHost = new UI.Components.MMCHostControl();
 
-                // Create tab header with close button
-                var tabHeader = CreateMMCTabHeader(consoleName);
-
-                // Create the tab item
+                // Create the tab item first (needed for header reference)
                 var newTab = new TabItem
                 {
-                    Header = tabHeader,
                     Content = mmcHost,
                     Tag = mmcFile // Store for reference
                 };
+
+                // Create tab header with close button (pass parent tab for close handler)
+                var tabHeader = CreateMMCTabHeader(consoleName, newTab);
+                newTab.Header = tabHeader;
 
                 // Handle console closed event
                 mmcHost.ConsoleClosed += (s, e) =>
@@ -11618,7 +11878,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 TabControlDomainDirectory.Items.Add(newTab);
 
                 // Get cached domain credentials for Kerberos passthrough
-                // TAG: #KERBEROS #CREDENTIAL_PASSTHROUGH #MMC_EMBEDDING
+                // TAG: #KERBEROS #CREDENTIAL_PASSTHROUGH #MMC_EMBEDDING #ELEVATION_WARNING
                 string username = _authUser;
                 string domain = CurrentDomainName;
                 System.Security.SecureString password = _authPass;
@@ -11641,7 +11901,55 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 LogManager.LogInfo($"[MMC]   - CurrentDomainName: {(string.IsNullOrEmpty(CurrentDomainName) ? "NULL/EMPTY" : CurrentDomainName)}");
                 LogManager.LogInfo($"[MMC]   - _authPass: {(_authPass == null ? "NULL" : $"LENGTH={_authPass.Length}")}");
 
-                if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(domain) && password != null)
+                // Check if app is elevated (Administrator)
+                LogManager.LogInfo($"[MMC] Checking process elevation status using Win32 TokenElevation API...");
+                bool isElevated = IsProcessElevated();
+                bool hasCredentials = !string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(domain) && password != null;
+
+                LogManager.LogInfo($"[MMC] Elevation check complete:");
+                LogManager.LogInfo($"[MMC]   - IsElevated: {isElevated}");
+                LogManager.LogInfo($"[MMC]   - HasCredentials: {hasCredentials}");
+                LogManager.LogInfo($"[MMC]   - Environment.UserName: {Environment.UserName}");
+                LogManager.LogInfo($"[MMC]   - Environment.UserDomainName: {Environment.UserDomainName}");
+
+                // CRITICAL: Windows security prevents elevated processes from using explicit credentials
+                // TAG: #ELEVATION_WARNING #SECURITY_LIMITATION
+                if (isElevated && hasCredentials)
+                {
+                    LogManager.LogWarning($"[MMC] App is ELEVATED - domain admin credentials will NOT be used due to Windows security");
+                    LogManager.LogWarning($"[MMC] MMC will run with current Windows user ({Environment.UserName}), not {domain}\\{username}");
+
+                    // Show warning dialog with options
+                    var result = MessageBox.Show(
+                        $"⚠️ CREDENTIAL LIMITATION DETECTED\n\n" +
+                        $"NecessaryAdminTool is running as Administrator (elevated).\n\n" +
+                        $"Windows security prevents elevated apps from using your domain admin credentials ({domain}\\{username}) to launch MMC.\n\n" +
+                        $"MMC will run with your Windows login credentials ({Environment.UserName}@{Environment.UserDomainName}), which may have limited permissions.\n\n" +
+                        $"⚠️ You may get 'Access Denied' errors when:\n" +
+                        $"   • Deleting computers\n" +
+                        $"   • Modifying group policies\n" +
+                        $"   • Changing AD objects\n\n" +
+                        $"Options:\n" +
+                        $"   • Click YES to launch MMC anyway (embedded, limited permissions)\n" +
+                        $"   • Click NO to cancel\n" +
+                        $"   • To use domain admin credentials: Restart NecessaryAdminTool as a normal user (not Administrator)\n\n" +
+                        $"Continue with limited permissions?",
+                        "MMC Credential Warning",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Warning
+                    );
+
+                    if (result == MessageBoxResult.No)
+                    {
+                        LogManager.LogInfo($"[MMC] User cancelled MMC launch due to elevation/credential conflict");
+                        Managers.UI.ToastManager.ShowInfo("MMC launch cancelled");
+                        return;
+                    }
+
+                    LogManager.LogInfo($"[MMC] User chose to continue with limited permissions despite elevation");
+                }
+
+                if (hasCredentials)
                 {
                     LogManager.LogInfo($"[MMC] Using cached admin credentials: {domain}\\{username} (password length: {password.Length})");
                 }
@@ -11687,12 +11995,16 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         /// Creates tab header with console icon and name
         /// TAG: #MMC_EMBEDDING #DYNAMIC_TABS #UI
         /// </summary>
-        private Grid CreateMMCTabHeader(string consoleName)
+        private Grid CreateMMCTabHeader(string consoleName, TabItem parentTab = null)
         {
             var grid = new Grid();
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // Icon
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(6) }); // Spacing
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // Status indicator
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(6) }); // Spacing
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // Name
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) }); // Spacing
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // Close button
 
             // Console icon
             var icon = new TextBlock
@@ -11703,6 +12015,17 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             };
             Grid.SetColumn(icon, 0);
 
+            // Status indicator (shows if process is running)
+            var statusIndicator = new TextBlock
+            {
+                Name = "TxtTabStatus",
+                Text = "🟢", // Green dot = running
+                FontSize = 10,
+                VerticalAlignment = VerticalAlignment.Center,
+                ToolTip = "MMC process is running"
+            };
+            Grid.SetColumn(statusIndicator, 2);
+
             // Console name
             var name = new TextBlock
             {
@@ -11712,12 +12035,305 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 Foreground = System.Windows.Media.Brushes.White,
                 VerticalAlignment = VerticalAlignment.Center
             };
-            Grid.SetColumn(name, 2);
+            Grid.SetColumn(name, 4);
+
+            // Force close button
+            var closeButton = new Button
+            {
+                Content = "✖",
+                FontSize = 10,
+                Padding = new Thickness(4, 2, 4, 2),
+                Margin = new Thickness(0),
+                Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0x00, 0x00, 0x00, 0x00)), // Transparent
+                Foreground = System.Windows.Media.Brushes.Gray,
+                BorderThickness = new Thickness(0),
+                Cursor = System.Windows.Input.Cursors.Hand,
+                ToolTip = "Force close this MMC console and remove tab",
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Grid.SetColumn(closeButton, 6);
+
+            // Handle close button click
+            closeButton.Click += (s, e) =>
+            {
+                if (parentTab != null && parentTab.Content is UI.Components.MMCHostControl mmcHost)
+                {
+                    LogManager.LogInfo($"[MMC UI] Force closing {consoleName} via tab close button");
+                    mmcHost.CloseConsole(killProcess: true);
+                    TabControlDomainDirectory.Items.Remove(parentTab);
+                    Managers.UI.ToastManager.ShowInfo($"Closed {consoleName}");
+                }
+            };
+
+            // Hover effect for close button
+            closeButton.MouseEnter += (s, e) => closeButton.Foreground = System.Windows.Media.Brushes.Red;
+            closeButton.MouseLeave += (s, e) => closeButton.Foreground = System.Windows.Media.Brushes.Gray;
 
             grid.Children.Add(icon);
+            grid.Children.Add(statusIndicator);
             grid.Children.Add(name);
+            grid.Children.Add(closeButton);
 
             return grid;
+        }
+
+        /// <summary>
+        /// Shows a credential prompt when Cortex XDR / EDR blocks CreateProcessWithLogonW.
+        /// Called on the UI thread via ExternalToolManager.OnCredentialRequired.
+        /// TAG: #EDR_FALLBACK #CREDENTIALS #EXTERNAL_TOOLS
+        /// </summary>
+        private (string domain, string username, string password)? ShowEdrCredentialPrompt(string toolName)
+        {
+            LogManager.LogInfo($"[EDR Credential Prompt] Showing credential prompt for: {toolName}");
+
+            // Build credential dialog inline
+            var dlg = new System.Windows.Window
+            {
+                Title = $"Credentials Required – {toolName}",
+                Width = 430,
+                SizeToContent = System.Windows.SizeToContent.Height,
+                WindowStartupLocation = System.Windows.WindowStartupLocation.CenterOwner,
+                Owner = this,
+                ResizeMode = System.Windows.ResizeMode.NoResize,
+                Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x1A, 0x1A, 0x1A)),
+                UseLayoutRounding = true,
+                SnapsToDevicePixels = true
+            };
+            System.Windows.Media.TextOptions.SetTextFormattingMode(dlg, System.Windows.Media.TextFormattingMode.Display);
+            System.Windows.Media.TextOptions.SetTextRenderingMode(dlg, System.Windows.Media.TextRenderingMode.ClearType);
+
+            var orange = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0x85, 0x33));
+            var white = System.Windows.Media.Brushes.White;
+            var gray = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xA1, 0xA1, 0xAA));
+            var inputBg = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x2C, 0x2C, 0x2C));
+
+            var root = new System.Windows.Controls.StackPanel { Margin = new System.Windows.Thickness(20) };
+
+            // Warning message
+            var msgBlock = new System.Windows.Controls.TextBlock
+            {
+                Text = "⚠️ Cortex XDR / EDR blocked credential injection (CreateProcessWithLogonW).\n\nEnter credentials below to try an alternate launch method:",
+                Foreground = white,
+                FontSize = 12,
+                TextWrapping = System.Windows.TextWrapping.Wrap,
+                Margin = new System.Windows.Thickness(0, 0, 0, 16)
+            };
+            root.Children.Add(msgBlock);
+
+            // Domain row
+            root.Children.Add(new System.Windows.Controls.TextBlock { Text = "Domain", Foreground = gray, FontSize = 11, Margin = new System.Windows.Thickness(0, 0, 0, 3) });
+            var domainBox = new System.Windows.Controls.TextBox
+            {
+                Text = GetNetBIOSDomain(),
+                Background = inputBg,
+                Foreground = white,
+                BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x40, 0x40, 0x40)),
+                Padding = new System.Windows.Thickness(8, 6, 8, 6),
+                FontSize = 13,
+                Margin = new System.Windows.Thickness(0, 0, 0, 10)
+            };
+            root.Children.Add(domainBox);
+
+            // Username row
+            root.Children.Add(new System.Windows.Controls.TextBlock { Text = "Username", Foreground = gray, FontSize = 11, Margin = new System.Windows.Thickness(0, 0, 0, 3) });
+            var userBox = new System.Windows.Controls.TextBox
+            {
+                Background = inputBg,
+                Foreground = white,
+                BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x40, 0x40, 0x40)),
+                Padding = new System.Windows.Thickness(8, 6, 8, 6),
+                FontSize = 13,
+                Margin = new System.Windows.Thickness(0, 0, 0, 10)
+            };
+            // Pre-fill username from cached creds if available
+            try
+            {
+                string cached = Properties.Settings.Default.LastUser ?? "";
+                userBox.Text = cached.Contains("\\") ? cached.Split('\\')[1] : cached;
+            }
+            catch { }
+            root.Children.Add(userBox);
+
+            // Password row
+            root.Children.Add(new System.Windows.Controls.TextBlock { Text = "Password", Foreground = gray, FontSize = 11, Margin = new System.Windows.Thickness(0, 0, 0, 3) });
+            var passBox = new System.Windows.Controls.PasswordBox
+            {
+                Background = inputBg,
+                Foreground = white,
+                BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x40, 0x40, 0x40)),
+                Padding = new System.Windows.Thickness(8, 6, 8, 6),
+                FontSize = 13,
+                Margin = new System.Windows.Thickness(0, 0, 0, 16)
+            };
+            root.Children.Add(passBox);
+
+            // Buttons
+            var btnRow = new System.Windows.Controls.StackPanel
+            {
+                Orientation = System.Windows.Controls.Orientation.Horizontal,
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Right
+            };
+
+            var cancelBtn = new System.Windows.Controls.Button
+            {
+                Content = "Open Without Credentials",
+                Padding = new System.Windows.Thickness(14, 8, 14, 8),
+                Margin = new System.Windows.Thickness(0, 0, 8, 0),
+                Background = inputBg,
+                Foreground = gray,
+                BorderThickness = new System.Windows.Thickness(1),
+                BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x40, 0x40, 0x40)),
+                Cursor = System.Windows.Input.Cursors.Hand
+            };
+            cancelBtn.Click += (s, ev) => { dlg.DialogResult = false; };
+
+            var launchBtn = new System.Windows.Controls.Button
+            {
+                Content = "Launch with Credentials",
+                Padding = new System.Windows.Thickness(14, 8, 14, 8),
+                Background = orange,
+                Foreground = white,
+                BorderThickness = new System.Windows.Thickness(0),
+                Cursor = System.Windows.Input.Cursors.Hand,
+                FontWeight = System.Windows.FontWeights.SemiBold
+            };
+            launchBtn.Click += (s, ev) =>
+            {
+                if (string.IsNullOrWhiteSpace(userBox.Text)) { userBox.Focus(); return; }
+                dlg.DialogResult = true;
+            };
+
+            // Enter key submits
+            passBox.KeyDown += (s, ev) => { if (ev.Key == System.Windows.Input.Key.Enter) launchBtn.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); };
+            userBox.KeyDown += (s, ev) => { if (ev.Key == System.Windows.Input.Key.Enter) passBox.Focus(); };
+
+            btnRow.Children.Add(cancelBtn);
+            btnRow.Children.Add(launchBtn);
+            root.Children.Add(btnRow);
+
+            dlg.Content = root;
+
+            // Focus username or password on open
+            dlg.Loaded += (s, ev) =>
+            {
+                if (!string.IsNullOrEmpty(userBox.Text)) passBox.Focus();
+                else userBox.Focus();
+            };
+
+            bool? result = dlg.ShowDialog();
+
+            if (result == true && !string.IsNullOrWhiteSpace(userBox.Text))
+            {
+                LogManager.LogInfo($"[EDR Credential Prompt] User provided credentials: {domainBox.Text.Trim()}\\{userBox.Text.Trim()}");
+                return (domainBox.Text.Trim(), userBox.Text.Trim(), passBox.Password);
+            }
+
+            LogManager.LogInfo("[EDR Credential Prompt] User cancelled or provided no username - falling back to plain launch");
+            return null;
+        }
+
+        /// <summary>
+        /// Updates MMC tool status indicator based on whether the selected tool is running
+        /// TAG: #EXTERNAL_TOOLS #STATUS_INDICATOR
+        /// </summary>
+        private void UpdateMMCToolStatus()
+        {
+            try
+            {
+                // Guard: Check if controls are initialized (prevents NullReferenceException during window initialization)
+                if (ComboAdminTools == null || TxtMMCStatus == null || BtnForceCloseMMC == null)
+                {
+                    LogManager.LogDebug("[MMC UI] UpdateMMCToolStatus() called before controls initialized - skipping");
+                    return;
+                }
+
+                if (!(ComboAdminTools.SelectedItem is ComboBoxItem selectedItem))
+                    return;
+
+                string selectedConsole = selectedItem.Content.ToString();
+                string toolKey = $"MMC_{selectedConsole}";
+
+                bool isRunning = ExternalToolManager.IsToolRunning(toolKey);
+
+                // Update status indicator
+                TxtMMCStatus.Text = isRunning ? "🟢" : "🔴";
+                TxtMMCStatus.ToolTip = isRunning ? "Tool is running" : "Tool is not running";
+
+                // Show/hide Force Close button
+                BtnForceCloseMMC.Visibility = isRunning ? Visibility.Visible : Visibility.Collapsed;
+
+                LogManager.LogDebug($"[MMC UI] Status updated - {selectedConsole}: {(isRunning ? "Running" : "Not running")}");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("[MMC UI] Error updating tool status", ex);
+            }
+        }
+
+        /// <summary>
+        /// Force closes the selected MMC console
+        /// TAG: #EXTERNAL_TOOLS #FORCE_CLOSE #EVENT_HANDLER
+        /// </summary>
+        private void BtnForceCloseMMC_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (!(ComboAdminTools.SelectedItem is ComboBoxItem selectedItem))
+                    return;
+
+                string selectedConsole = selectedItem.Content.ToString();
+                string toolKey = $"MMC_{selectedConsole}";
+
+                LogManager.LogInfo($"[MMC UI] Force closing: {selectedConsole}");
+
+                bool success = ExternalToolManager.ForceCloseTool(toolKey);
+
+                if (success)
+                {
+                    Managers.UI.ToastManager.ShowSuccess($"{selectedConsole} closed successfully");
+                    UpdateMMCToolStatus();
+                }
+                else
+                {
+                    Managers.UI.ToastManager.ShowWarning($"{selectedConsole} is not running");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("[MMC UI] Error force closing tool", ex);
+                Managers.UI.ToastManager.ShowError("Failed to close tool");
+            }
+        }
+
+        /// <summary>
+        /// Updates status when MMC console selection changes
+        /// TAG: #EXTERNAL_TOOLS #STATUS_INDICATOR #EVENT_HANDLER
+        /// </summary>
+        private void ComboAdminTools_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdateMMCToolStatus();
+        }
+
+        /// <summary>
+        /// Check if the current process is running with ACTUAL UAC elevation (not just group membership)
+        /// TAG: #ELEVATION #SECURITY #MMC_EMBEDDING #UAC_CHECK
+        ///
+        /// IMPORTANT: This checks the TOKEN elevation status, not Administrator group membership.
+        /// A user can be in the Administrators group but the process may not be elevated (UAC).
+        /// </summary>
+        private bool IsProcessElevated()
+        {
+            try
+            {
+                // Use Win32 TokenElevation API for accurate detection
+                // TAG: #UAC_DETECTION #ELEVATION_CHECK
+                return Helpers.Win32Helper.IsProcessElevated();
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("[MainWindow] Error checking elevation status", ex);
+                return false;
+            }
         }
 
         // ############################################################################
@@ -12730,6 +13346,12 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         public DeviceMonitorWindow(List<PinnedDevice> devices, PinnedDevice selectedDevice,
             WmiConnectionManager wmiManager, CimSessionManager cimManager, string authUser, SecureString authPass)
         {
+            // TAG: #DPI_REQUIRED_PROPERTIES - High-DPI rendering (required for all windows)
+            UseLayoutRounding = true;
+            SnapsToDevicePixels = true;
+            TextOptions.SetTextFormattingMode(this, TextFormattingMode.Display);
+            TextOptions.SetTextRenderingMode(this, TextRenderingMode.ClearType);
+
             _devices = devices;
             _currentDevice = selectedDevice ?? devices.FirstOrDefault();
             _wmiManager = wmiManager;
@@ -14176,8 +14798,11 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
         protected override void OnClosed(EventArgs e)
         {
-            _refreshTimer?.Stop();
+            // Primary cleanup is in Window_Closing (called before this).
+            // This is a final backstop: if the process is still alive after WPF closes the
+            // window (e.g. a non-background thread is holding it open), force-exit immediately.
             base.OnClosed(e);
+            Environment.Exit(0);
         }
     }
 
@@ -14472,6 +15097,12 @@ runas /user:{adminUsername} /savecred ""{exePath}""
     {
         public ElevationDialog()
         {
+            // TAG: #DPI_REQUIRED_PROPERTIES - High-DPI rendering (required for all windows)
+            UseLayoutRounding = true;
+            SnapsToDevicePixels = true;
+            TextOptions.SetTextFormattingMode(this, TextFormattingMode.Display);
+            TextOptions.SetTextRenderingMode(this, TextRenderingMode.ClearType);
+
             Title = "Administrator Elevation Required";
             Width = 500; Height = 280;
             Background = new SolidColorBrush(Color.FromRgb(13, 13, 13)); // #FF0D0D0D
@@ -14611,13 +15242,23 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         private TextBlock _domainTextBlock;
         private Border _domainBadge;
         private System.Windows.Threading.DispatcherTimer _domainCheckTimer;
-        public string Username => _txtUser.Text;
+        private string _activeDomain;
+        private TextBlock _domainDisplayBlock;
+        private StackPanel _domainOverridePanel;
+        private TextBox _txtDomainOverride;
+        // Always returns DOMAIN\username so PerformAuth can split it
+        public string Username => $"{_activeDomain}\\{_txtUser.Text.Trim()}";
         public SecureString Password => _txtPass.SecurePassword;
         public bool RememberUser => _chkRemember.IsChecked == true;
-        public bool ShouldRestartElevated { get; private set; }
 
         public LoginWindow()
         {
+            // TAG: #DPI_COMPREHENSIVE_FIX - High-DPI rendering properties
+            UseLayoutRounding = true;
+            SnapsToDevicePixels = true;
+            TextOptions.SetTextFormattingMode(this, TextFormattingMode.Display);
+            TextOptions.SetTextRenderingMode(this, TextRenderingMode.ClearType);
+
             Title = "Identity Verification";
             Width = 420;
             Height = 500;  // Increased height for logo
@@ -14728,53 +15369,26 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             // Content Panel
             var panel = new StackPanel { Margin = new Thickness(30, 25, 30, 20) };
 
+            // TAG: #DOMAIN_DETECTION - Use shared helper so domain is consistent everywhere
+            _activeDomain = MainWindow.GetNetBIOSDomain();
+
+            // Load cached username - strip domain prefix if present (domain is now separate)
             string cached = "";
-            try { cached = Properties.Settings.Default.LastUser; }
+            try
+            {
+                string saved = Properties.Settings.Default.LastUser ?? "";
+                cached = saved.Contains("\\") ? saved.Split('\\')[1] : saved;
+            }
             catch { }
 
-            // Auto-populate with detected domain if available
-            if (string.IsNullOrEmpty(cached))
+            // Username label
+            panel.Children.Add(new TextBlock
             {
-                if (!string.IsNullOrEmpty(MainWindow.CurrentDomainName))
-                {
-                    // Extract domain name (e.g., "PROCESS" from "PROCESS.LOCAL")
-                    string domainPrefix = MainWindow.CurrentDomainName.Split('.')[0].ToUpper();
-                    cached = $"{domainPrefix}\\";
-                }
-                else
-                {
-                    // No domain detected - leave empty with helpful info
-                    cached = "";
-                }
-            }
-
-            // Username header with helpful text
-            var usernameHeaderStack = new StackPanel();
-            var usernameHeader = new TextBlock
-            {
-                Text = "Domain\\Username:",
+                Text = "Username:",
                 Foreground = new SolidColorBrush(Color.FromRgb(161, 161, 170)),
-                FontSize = 11
-            };
-            usernameHeaderStack.Children.Add(usernameHeader);
-
-            // If no domain detected, show helpful info
-            if (string.IsNullOrEmpty(MainWindow.CurrentDomainName) && string.IsNullOrEmpty(cached))
-            {
-                var helpText = new TextBlock
-                {
-                    Text = "ℹ️ No domain detected. Enter manually: DOMAIN\\username",
-                    Foreground = new SolidColorBrush(Color.FromRgb(255, 133, 51)), // Orange
-                    FontSize = 10,
-                    FontStyle = FontStyles.Italic,
-                    Margin = new Thickness(0, 3, 0, 0),
-                    TextWrapping = TextWrapping.Wrap
-                };
-                usernameHeaderStack.Children.Add(helpText);
-            }
-
-            usernameHeaderStack.Margin = new Thickness(0, 0, 0, 5);
-            panel.Children.Add(usernameHeaderStack);
+                FontSize = 11,
+                Margin = new Thickness(0, 0, 0, 5)
+            });
 
             // Username field container with clear button
             var usernameGrid = new Grid();
@@ -14784,9 +15398,9 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             _txtUser = new TextBox
             {
                 Text = cached,
-                Background = new SolidColorBrush(Color.FromRgb(26, 26, 26)), // #FF1A1A1A
+                Background = new SolidColorBrush(Color.FromRgb(26, 26, 26)),
                 Foreground = Brushes.White,
-                Padding = new Thickness(10, 8, 35, 8), // Extra padding for clear button
+                Padding = new Thickness(10, 8, 35, 8),
                 FontSize = 13,
                 BorderBrush = new SolidColorBrush(Color.FromRgb(60, 60, 60)),
                 BorderThickness = new Thickness(1)
@@ -14795,8 +15409,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             Grid.SetColumnSpan(_txtUser, 2);
             usernameGrid.Children.Add(_txtUser);
 
-            // Clear button (appears on the right side of the textbox)
-            // TAG: #TAB_ORDER - Excluded from tab navigation to maintain username→password flow
+            // Clear button - TAG: #TAB_ORDER - excluded from tab navigation
             var clearBtn = new Button
             {
                 Content = "✕",
@@ -14812,35 +15425,143 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 VerticalAlignment = VerticalAlignment.Center,
                 Cursor = Cursors.Hand,
                 ToolTip = "Clear cached username",
-                IsTabStop = false  // Exclude from tab navigation
+                IsTabStop = false
             };
             clearBtn.Click += (s, ev) =>
             {
-                // Clear cached username
                 Properties.Settings.Default.LastUser = "";
                 Properties.Settings.Default.Save();
-
-                // Reset to domain prefix if detected, otherwise empty
-                if (!string.IsNullOrEmpty(MainWindow.CurrentDomainName))
-                {
-                    string domainPrefix = MainWindow.CurrentDomainName.Split('.')[0].ToUpper();
-                    _txtUser.Text = $"{domainPrefix}\\";
-                }
-                else
-                {
-                    // No domain - clear completely so user can type manually
-                    _txtUser.Text = "";
-                }
+                _txtUser.Text = "";
                 _txtUser.Focus();
-                _txtUser.SelectionStart = _txtUser.Text.Length;
             };
             clearBtn.MouseEnter += (s, ev) => clearBtn.Foreground = new SolidColorBrush(Color.FromRgb(255, 133, 51));
             clearBtn.MouseLeave += (s, ev) => clearBtn.Foreground = new SolidColorBrush(Color.FromRgb(161, 161, 170));
-
             Grid.SetColumn(clearBtn, 1);
             usernameGrid.Children.Add(clearBtn);
-
             panel.Children.Add(usernameGrid);
+
+            // Domain row: shows active domain with inline Change option
+            // TAG: #DOMAIN_DETECTION - Uses same _activeDomain as PerformAuth
+            var domainRow = new Grid { Margin = new Thickness(0, 6, 0, 0) };
+            domainRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            domainRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            domainRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            domainRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            var domainPrefixLabel = new TextBlock
+            {
+                Text = "Domain: ",
+                Foreground = new SolidColorBrush(Color.FromRgb(100, 100, 100)),
+                FontSize = 10,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Grid.SetColumn(domainPrefixLabel, 0);
+            domainRow.Children.Add(domainPrefixLabel);
+
+            _domainDisplayBlock = new TextBlock
+            {
+                Text = _activeDomain,
+                Foreground = new SolidColorBrush(Color.FromRgb(255, 133, 51)),
+                FontSize = 10,
+                FontWeight = FontWeights.SemiBold,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Grid.SetColumn(_domainDisplayBlock, 1);
+            domainRow.Children.Add(_domainDisplayBlock);
+
+            var changeDomainBtn = new Button
+            {
+                Content = "Change",
+                FontSize = 9,
+                Padding = new Thickness(6, 2, 6, 2),
+                Background = Brushes.Transparent,
+                Foreground = new SolidColorBrush(Color.FromRgb(100, 100, 100)),
+                BorderBrush = new SolidColorBrush(Color.FromRgb(60, 60, 60)),
+                BorderThickness = new Thickness(1),
+                Cursor = Cursors.Hand,
+                VerticalAlignment = VerticalAlignment.Center,
+                IsTabStop = false,
+                ToolTip = "Specify a different domain or use local account"
+            };
+            Grid.SetColumn(changeDomainBtn, 3);
+            domainRow.Children.Add(changeDomainBtn);
+            panel.Children.Add(domainRow);
+
+            // Domain override panel (hidden until Change is clicked)
+            _domainOverridePanel = new StackPanel { Margin = new Thickness(0, 6, 0, 0), Visibility = Visibility.Collapsed };
+            var overrideGrid = new Grid();
+            overrideGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            overrideGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            overrideGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            _txtDomainOverride = new TextBox
+            {
+                Text = _activeDomain,
+                Background = new SolidColorBrush(Color.FromRgb(26, 26, 26)),
+                Foreground = Brushes.White,
+                Padding = new Thickness(8, 5, 8, 5),
+                FontSize = 12,
+                BorderBrush = new SolidColorBrush(Color.FromRgb(255, 133, 51)),
+                BorderThickness = new Thickness(1),
+                ToolTip = "Enter domain NetBIOS name (e.g. MYDOMAIN) or machine name for local"
+            };
+            Grid.SetColumn(_txtDomainOverride, 0);
+            overrideGrid.Children.Add(_txtDomainOverride);
+
+            var localBtn = new Button
+            {
+                Content = "Local",
+                FontSize = 9,
+                Padding = new Thickness(8, 5, 8, 5),
+                Margin = new Thickness(4, 0, 0, 0),
+                Background = new SolidColorBrush(Color.FromRgb(40, 40, 40)),
+                Foreground = new SolidColorBrush(Color.FromRgb(161, 161, 170)),
+                BorderBrush = new SolidColorBrush(Color.FromRgb(60, 60, 60)),
+                BorderThickness = new Thickness(1),
+                Cursor = Cursors.Hand,
+                ToolTip = "Use local machine account (no domain)"
+            };
+            localBtn.Click += (s, ev) => _txtDomainOverride.Text = Environment.MachineName;
+            Grid.SetColumn(localBtn, 1);
+            overrideGrid.Children.Add(localBtn);
+
+            var applyDomainBtn = new Button
+            {
+                Content = "✓",
+                FontSize = 12,
+                Padding = new Thickness(8, 5, 8, 5),
+                Margin = new Thickness(4, 0, 0, 0),
+                Background = new SolidColorBrush(Color.FromRgb(255, 133, 51)),
+                Foreground = Brushes.White,
+                BorderThickness = new Thickness(0),
+                Cursor = Cursors.Hand,
+                ToolTip = "Apply domain"
+            };
+            applyDomainBtn.Click += (s, ev) =>
+            {
+                string d = _txtDomainOverride.Text.Trim().ToUpper();
+                if (!string.IsNullOrEmpty(d))
+                {
+                    _activeDomain = d;
+                    _domainDisplayBlock.Text = d;
+                }
+                _domainOverridePanel.Visibility = Visibility.Collapsed;
+                _txtUser.Focus();
+            };
+            Grid.SetColumn(applyDomainBtn, 2);
+            overrideGrid.Children.Add(applyDomainBtn);
+
+            _domainOverridePanel.Children.Add(overrideGrid);
+            panel.Children.Add(_domainOverridePanel);
+
+            // Wire Change button to toggle override panel
+            changeDomainBtn.Click += (s, ev) =>
+            {
+                _txtDomainOverride.Text = _activeDomain;
+                bool show = _domainOverridePanel.Visibility != Visibility.Visible;
+                _domainOverridePanel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+                if (show) { _txtDomainOverride.Focus(); _txtDomainOverride.SelectAll(); }
+            };
 
             // Password
             panel.Children.Add(new TextBlock
@@ -14867,68 +15588,10 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 Content = "Remember username",
                 Foreground = new SolidColorBrush(Color.FromRgb(128, 128, 128)),
                 FontSize = 11,
-                IsChecked = cached != "process\\",
+                IsChecked = !string.IsNullOrEmpty(cached),
                 Margin = new Thickness(0, 12, 0, 0)
             };
             panel.Children.Add(_chkRemember);
-
-            // Separator
-            panel.Children.Add(new Border
-            {
-                Height = 1,
-                Background = new SolidColorBrush(Color.FromRgb(60, 60, 60)),
-                Margin = new Thickness(0, 20, 0, 15)
-            });
-
-            // Stylized Elevation button with gradient
-            var elevateBtn = new Button
-            {
-                Height = 45,
-                BorderThickness = new Thickness(0),
-                FontWeight = FontWeights.Bold,
-                FontSize = 11,
-                Margin = new Thickness(0, 0, 0, 0),
-                Cursor = Cursors.Hand
-            };
-
-            var elevateBtnBrush = new LinearGradientBrush
-            {
-                StartPoint = new Point(0, 0),
-                EndPoint = new Point(1, 0)
-            };
-            elevateBtnBrush.GradientStops.Add(new GradientStop(Color.FromRgb(255, 133, 51), 0));
-            elevateBtnBrush.GradientStops.Add(new GradientStop(Color.FromRgb(161, 161, 170), 1));
-            elevateBtn.Background = elevateBtnBrush;
-            elevateBtn.Foreground = Brushes.White;
-
-            var elevatePanel = new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                HorizontalAlignment = HorizontalAlignment.Center
-            };
-            elevatePanel.Children.Add(new TextBlock
-            {
-                Text = "🛡",
-                FontSize = 16,
-                Margin = new Thickness(0, 0, 8, 0),
-                VerticalAlignment = VerticalAlignment.Center
-            });
-            elevatePanel.Children.Add(new TextBlock
-            {
-                Text = "RESTART WITH ELEVATED PERMISSIONS",
-                VerticalAlignment = VerticalAlignment.Center
-            });
-            elevateBtn.Content = elevatePanel;
-
-            elevateBtn.MouseEnter += (s, e) => elevateBtn.Opacity = 0.9;
-            elevateBtn.MouseLeave += (s, e) => elevateBtn.Opacity = 1.0;
-            elevateBtn.Click += (s, e) =>
-            {
-                ShouldRestartElevated = true;
-                DialogResult = false;
-                Close();
-            };
-            panel.Children.Add(elevateBtn);
 
             Grid.SetRow(panel, 2);  // Updated from 1 to 2 (logo row added)
             mainPanel.Children.Add(panel);
@@ -15034,7 +15697,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             Loaded += async (s, e) =>
             {
                 Activate();
-                if (_txtUser.Text.Length > 8) _txtPass.Focus();
+                if (!string.IsNullOrEmpty(_txtUser.Text)) _txtPass.Focus();
                 else _txtUser.Focus();
 
                 // ⚡ INSTANT STARTUP: Check domain immediately with 2-second timeout
@@ -15112,11 +15775,13 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         /// </summary>
         private void UpdateLoginDomainBadge(string domainName)
         {
+            // TAG: #DOMAIN_DETECTION - Keep all domain displays in sync via GetNetBIOSDomain()
             if (_domainTextBlock == null || _domainBadge == null)
                 return;
 
             if (!string.IsNullOrEmpty(domainName))
             {
+                // Header badge shows FQDN (e.g. PROCESS.LOCAL)
                 _domainTextBlock.Text = domainName.ToUpper();
                 var textGradient = new LinearGradientBrush
                 {
@@ -15133,6 +15798,16 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 _domainTextBlock.Text = "NO DOMAIN";
                 _domainTextBlock.Foreground = new SolidColorBrush(Color.FromRgb(128, 128, 128));
                 _domainBadge.Opacity = 0.7;
+            }
+
+            // Sync username-row domain display (NetBIOS) and _activeDomain if user hasn't manually changed it
+            // Only auto-update if the override panel is not open (i.e., user hasn't manually chosen a domain)
+            if (_domainOverridePanel?.Visibility != Visibility.Visible)
+            {
+                string netbios = MainWindow.GetNetBIOSDomain();
+                _activeDomain = netbios;
+                if (_domainDisplayBlock != null)
+                    _domainDisplayBlock.Text = netbios;
             }
         }
 
@@ -15253,6 +15928,12 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
         public DCAvailabilityDialog()
         {
+            // TAG: #DPI_REQUIRED_PROPERTIES - High-DPI rendering (required for all windows)
+            UseLayoutRounding = true;
+            SnapsToDevicePixels = true;
+            TextOptions.SetTextFormattingMode(this, TextFormattingMode.Display);
+            TextOptions.SetTextRenderingMode(this, TextRenderingMode.ClearType);
+
             Title = "Domain Controllers Unavailable";
             Width = 500;
             Height = 450;

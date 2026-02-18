@@ -18,7 +18,12 @@ namespace NecessaryAdminTool.Data
 
         public SqlServerDataProvider(string connectionString)
         {
-            _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
+            if (connectionString == null) throw new ArgumentNullException(nameof(connectionString));
+            // Ensure a connection timeout is set (default 15s) to avoid indefinite hangs
+            var builder = new SqlConnectionStringBuilder(connectionString);
+            if (builder.ConnectTimeout == 0)
+                builder.ConnectTimeout = 15;
+            _connectionString = builder.ConnectionString;
             LogManager.LogInfo($"SQL Server provider initialized: {GetServerName(connectionString)}");
         }
 

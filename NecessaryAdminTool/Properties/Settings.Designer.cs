@@ -447,5 +447,18 @@ namespace NecessaryAdminTool.Properties {
                 this["PasswordExpiryWarningDays"] = value;
             }
         }
+
+        // TAG: #CONFIGURABLE_OPTIONS #MMC_EMBEDDING #PROCESS_CLEANUP
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool CloseMMCConsolesOnExit {
+            get {
+                return ((bool)(this["CloseMMCConsolesOnExit"]));
+            }
+            set {
+                this["CloseMMCConsolesOnExit"] = value;
+            }
+        }
     }
 }

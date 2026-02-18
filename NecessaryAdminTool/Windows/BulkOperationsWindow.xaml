@@ -6,7 +6,11 @@
         MinHeight="600" MinWidth="900"
         WindowStartupLocation="CenterScreen"
         Background="#FF0D0D0D"
-        Loaded="Window_Loaded">
+        Loaded="Window_Loaded"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType">
 
     <!-- TAG: #FEATURE_BULK_OPERATIONS #FLUENT_DESIGN #WINDOW_UI -->
 

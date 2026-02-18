@@ -380,6 +380,9 @@
     <Compile Include="Managers\BulkOperationExecutor.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Managers\ExternalToolManager.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Managers\WmiConnectionPool.cs">
       <SubType>Code</SubType>
     </Compile>

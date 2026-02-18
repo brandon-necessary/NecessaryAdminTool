@@ -1,6 +1,7 @@
 using System;
 using System.Net;
 using System.Threading.Tasks;
+using NecessaryAdminTool;
 // TAG: #PERFORMANCE #DNS_CACHING #PHASE_3_OPTIMIZATION #VERSION_2_1
 
 namespace NecessaryAdminTool.Helpers
@@ -31,10 +32,10 @@ namespace NecessaryAdminTool.Helpers
                     {
                         return Dns.GetHostEntry(hostNameOrAddress);
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        // Don't cache failures
-                        return null;
+                        LogManager.LogDebug($"[DNS] GetHostEntry({hostNameOrAddress}) failed: {ex.Message}");
+                        return null; // Don't cache failures
                     }
                 }, ttlMinutes: 10);
             });
@@ -60,10 +61,10 @@ namespace NecessaryAdminTool.Helpers
                     {
                         return Dns.GetHostAddresses(hostNameOrAddress);
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        // Don't cache failures
-                        return null;
+                        LogManager.LogDebug($"[DNS] GetHostAddresses({hostNameOrAddress}) failed: {ex.Message}");
+                        return null; // Don't cache failures
                     }
                 }, ttlMinutes: 10);
             });
