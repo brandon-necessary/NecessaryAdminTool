@@ -3211,10 +3211,11 @@ namespace NecessaryAdminTool
         {
             Dispatcher.Invoke(() =>
             {
-                if (_isDomainAdmin && _isElevated)
+                if (_isDomainAdmin && _isLoggedIn)
                 {
-                    // Domain Admin with elevation - Full access
-                    TxtRoleBadge.Text = "DOMAIN ADMIN ⚡";
+                    // Domain Admin with cached credentials - Full access
+                    // Elevation NOT required: credentials are passed to remote targets directly
+                    TxtRoleBadge.Text = "DOMAIN ADMIN";
                     TxtRoleBadge.Foreground = Brushes.LimeGreen;
 
                     PanelDeployment.Visibility = Visibility.Visible;
@@ -3222,31 +3223,9 @@ namespace NecessaryAdminTool
                     BtnKillFirewall.IsEnabled = true;
                     BtnKillFirewall.Visibility = Visibility.Visible;
                 }
-                else if (_isDomainAdmin && !_isElevated)
+                else if (_isLoggedIn)
                 {
-                    // Domain Admin - Full access via credentials
-                    TxtRoleBadge.Text = "DOMAIN ADMIN";
-                    TxtRoleBadge.Foreground = Brushes.Orange;
-
-                    PanelDeployment.Visibility = Visibility.Visible;
-                    PanelDeployment.IsEnabled = false; // Can see but not use deployment features
-                    BtnKillFirewall.IsEnabled = false;
-                    BtnKillFirewall.Visibility = Visibility.Collapsed;
-                }
-                else if (_isLoggedIn && _isElevated)
-                {
-                    // Authenticated with elevation but not Domain Admin
-                    TxtRoleBadge.Text = "AUTHENTICATED ⚡ (Limited)";
-                    TxtRoleBadge.Foreground = Brushes.Yellow;
-
-                    PanelDeployment.Visibility = Visibility.Visible;
-                    PanelDeployment.IsEnabled = false; // Can see but not use
-                    BtnKillFirewall.IsEnabled = false;
-                    BtnKillFirewall.Visibility = Visibility.Collapsed;
-                }
-                else if (_isLoggedIn && !_isElevated)
-                {
-                    // Authenticated without elevation - Read-only mode
+                    // Authenticated but not Domain Admin - read-only access
                     TxtRoleBadge.Text = "AUTHENTICATED (READ-ONLY)";
                     TxtRoleBadge.Foreground = Brushes.Gray;
 
@@ -3710,67 +3689,66 @@ namespace NecessaryAdminTool
                 return;
             }
 
+            // TAG: #REMOTE_EXECUTION #WINRM #POWERSHELL_DEPLOYMENT
+            // Execution order:
+            //   1. WinRM via System.Management.Automation API (no child process, Kerberos, real output)
+            //   2. WMI Win32_Process.Create (no WinRM, no output capture - fire-and-forget)
+            // PsExec removed: uploads binary to ADMIN$, plaintext credentials in process args,
+            // flagged by all enterprise EDR products (Cortex XDR, CrowdStrike, Defender for Endpoint).
             AppendTerminal($"\n>>> EXEC: {actionName} → {targetHost}...");
-            _ = Task.Run(() =>
+            _ = Task.Run(async () =>
             {
                 bool success = false;
 
                 // ═══════════════════════════════════════════════════════════════
-                // METHOD 1: PowerShell Remoting (Invoke-Command) - Fastest
+                // METHOD 1: RemoteScriptManager (WinRM direct API → subprocess fallback)
                 // ═══════════════════════════════════════════════════════════════
                 try
                 {
-                    AppendTerminal($"[Method 1] Attempting PowerShell Remoting...");
+                    var result = await Managers.RemoteScriptManager.ExecuteAsync(
+                        targetHost,
+                        psCommand,
+                        _authUser,
+                        _authPass,
+                        progressCallback: line => AppendTerminal(line),
+                        timeoutMs: SecureConfig.WmiTimeoutMs * 2);
 
-                    // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
-                    // Sanitize target host for PowerShell command
-                    string safeTargetHost = NecessaryAdminTool.Security.SecurityValidator.SanitizePowerShellInput(targetHost);
-
-                    string fullScript = $"$ProgressPreference='SilentlyContinue'; Invoke-Command -ComputerName '{safeTargetHost}' -ScriptBlock {{ {psCommand} }} | Out-String";
-                    string b64 = Convert.ToBase64String(Encoding.Unicode.GetBytes(fullScript));
-                    var psi = new ProcessStartInfo
+                    if (result.Success)
                     {
-                        FileName = PowerShellExe,
-                        Arguments = $"-NoProfile -ExecutionPolicy Bypass -EncodedCommand {b64}",
-                        UseShellExecute = false,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        CreateNoWindow = true
-                    };
-                    if (_isLoggedIn && _authPass != null)
-                    {
-                        string[] parts = _authUser.Split('\\');
-                        if (parts.Length == 2) { psi.Domain = parts[0]; psi.UserName = parts[1]; }
-                        else psi.UserName = _authUser;
-                        psi.Password = _authPass; psi.LoadUserProfile = true;
+                        success = true;
+                        AppendTerminal(Managers.RemoteScriptManager.FormatResult(result, actionName, targetHost));
+                        AddLog(targetHost, actionName, $"OK ({result.MethodUsed})", "OK");
                     }
-                    using (var p = Process.Start(psi))
+                    else if (result.Output.Length > 0)
                     {
-                        p.OutputDataReceived += (s, ev) => { if (!string.IsNullOrEmpty(ev.Data)) AppendTerminal(ev.Data); };
-                        p.ErrorDataReceived += (s, ev) => { if (!string.IsNullOrEmpty(ev.Data)) AppendTerminal(ev.Data, true); };
-                        p.BeginOutputReadLine(); p.BeginErrorReadLine();
-                        if (!p.WaitForExit(SecureConfig.WmiTimeoutMs * 2))
-                        { p.Kill(); AppendTerminal("Method 1 timed out", true); }
-                        else if (p.ExitCode == 0)
-                        {
-                            success = true;
-                            AppendTerminal($"[Method 1] ✓ PowerShell Remoting succeeded");
-                        }
+                        // Script ran but reported errors (e.g. no updates found is not a failure)
+                        success = true;
+                        AppendTerminal(Managers.RemoteScriptManager.FormatResult(result, actionName, targetHost));
+                        AddLog(targetHost, actionName, $"OK with warnings ({result.MethodUsed})", "OK");
+                    }
+                    else
+                    {
+                        AppendTerminal($"[Method 1] ✗ RemoteScriptManager: {string.Join("; ", result.Errors)}", true);
+                        LogManager.LogWarning($"[RunHybridExecutor] RemoteScriptManager failed for {actionName} on {targetHost}");
                     }
                 }
                 catch (Exception ex1)
                 {
-                    AppendTerminal($"[Method 1] ✗ Failed: {ex1.Message}");
-                    LogManager.LogWarning($"Method 1 (PS Remoting) failed for {actionName}: {ex1.Message}");
+                    AppendTerminal($"[Method 1] ✗ Unexpected error: {ex1.Message}", true);
+                    LogManager.LogWarning($"[RunHybridExecutor] Method 1 exception for {actionName}: {ex1.Message}");
+                }
 
-                    // ═══════════════════════════════════════════════════════════════
-                    // METHOD 2: WMI Process Creation - No WinRM required
-                    // ═══════════════════════════════════════════════════════════════
+                // ═══════════════════════════════════════════════════════════════
+                // METHOD 2: WMI Win32_Process.Create (fire-and-forget, no output)
+                // Used when both WinRM and subprocess fail (e.g. firewall blocks 5985
+                // AND CreateProcessWithLogonW is blocked by EDR).
+                // Note: only launches the process; cannot capture output.
+                // ═══════════════════════════════════════════════════════════════
+                if (!success)
+                {
                     try
                     {
-                        AppendTerminal($"[Method 2] Attempting WMI Process Creation...");
-
-                        // Convert PowerShell command to WMI-compatible format
+                        AppendTerminal($"[Method 2] WinRM exhausted - attempting WMI Win32_Process.Create (no output capture)...");
                         string wmiCommand = ConvertToWmiCommand(psCommand);
 
                         var scope = _wmiManager.GetConnection(targetHost, _authUser, _authPass);
@@ -3784,9 +3762,9 @@ namespace NecessaryAdminTool
                             if (code == 0)
                             {
                                 success = true;
-                                AppendTerminal($"[Method 2] ✓ WMI Process Creation succeeded");
-                                AppendTerminal($"{actionName}: Command executed successfully via WMI");
-                                AddLog(targetHost, actionName, "OK (WMI)", "OK");
+                                AppendTerminal($"[Method 2] ✓ WMI Win32_Process.Create launched (PID returned - no output capture)");
+                                AppendTerminal($"ℹ️ Enable WinRM on {targetHost} to get full output: Enable-PSRemoting -Force");
+                                AddLog(targetHost, actionName, "OK (WMI, no output)", "OK");
                             }
                             else
                             {
@@ -3796,88 +3774,15 @@ namespace NecessaryAdminTool
                     }
                     catch (Exception ex2)
                     {
-                        AppendTerminal($"[Method 2] ✗ Failed: {ex2.Message}");
-                        LogManager.LogWarning($"Method 2 (WMI) failed for {actionName}: {ex2.Message}");
-
-                        // ═══════════════════════════════════════════════════════════════
-                        // METHOD 3: PsExec - Ultimate fallback
-                        // ═══════════════════════════════════════════════════════════════
-                        try
-                        {
-                            AppendTerminal($"[Method 3] Attempting PsExec...");
-
-                            string psexecPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "psexec.exe");
-
-                            if (!File.Exists(psexecPath))
-                            {
-                                AppendTerminal($"[Method 3] ✗ PsExec not found at {psexecPath}", true);
-                                AppendTerminal($"All methods failed for {actionName}", true);
-                                return;
-                            }
-
-                            // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
-                            // Sanitize all parameters for PsExec execution
-                            string safeTargetHost = NecessaryAdminTool.Security.SecurityValidator.SanitizePowerShellInput(targetHost);
-                            string safeAuthUser = NecessaryAdminTool.Security.SecurityValidator.SanitizePowerShellInput(_authUser);
-
-                            string capturedPassword = null;
-                            if (_authPass != null)
-                            {
-                                SecureMemory.UseSecureString(_authPass, pwd => capturedPassword = pwd);
-                            }
-
-                            // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
-                            string safePassword = NecessaryAdminTool.Security.SecurityValidator.SanitizePowerShellInput(capturedPassword);
-
-                            string psexecCommand = ConvertToWmiCommand(psCommand);
-
-                            var psexecPsi = new ProcessStartInfo
-                            {
-                                FileName = psexecPath,
-                                Arguments = $"\\\\{safeTargetHost} -u {safeAuthUser} -p \"{safePassword}\" -accepteula {psexecCommand}",
-                                UseShellExecute = false,
-                                RedirectStandardOutput = true,
-                                RedirectStandardError = true,
-                                CreateNoWindow = true
-                            };
-
-                            using (var proc = Process.Start(psexecPsi))
-                            {
-                                string output = proc.StandardOutput.ReadToEnd();
-                                string errors = proc.StandardError.ReadToEnd();
-                                proc.WaitForExit();
-
-                                // TAG: #PHASE_2_OPTIMIZATIONS #GC_REMOVAL
-                                // Removed GC.Collect() - password is already cleared by nulling
-                                // Manual GC causes 50-500ms STW pause and is unnecessary
-                                capturedPassword = null;
-
-                                if (proc.ExitCode == 0 || !string.IsNullOrWhiteSpace(output))
-                                {
-                                    success = true;
-                                    AppendTerminal($"[Method 3] ✓ PsExec succeeded");
-                                    if (!string.IsNullOrWhiteSpace(output))
-                                        AppendTerminal(output);
-                                    AddLog(targetHost, actionName, "OK (PsExec)", "OK");
-                                }
-                                else
-                                {
-                                    AppendTerminal($"[Method 3] ✗ Failed: {errors}", true);
-                                }
-                            }
-                        }
-                        catch (Exception ex3)
-                        {
-                            AppendTerminal($"[Method 3] ✗ Failed: {ex3.Message}", true);
-                            LogManager.LogError($"All methods failed for {actionName}", ex3);
-                            AppendTerminal($"All methods exhausted for {actionName}", true);
-                        }
+                        AppendTerminal($"[Method 2] ✗ WMI failed: {ex2.Message}", true);
+                        LogManager.LogWarning($"[RunHybridExecutor] Method 2 (WMI) failed for {actionName}: {ex2.Message}");
                     }
                 }
 
                 if (!success)
                 {
                     AppendTerminal($"❌ {actionName} FAILED on {targetHost}", true);
+                    AppendTerminal($"ℹ️ To enable WinRM on target: Enable-PSRemoting -Force", false);
                     AddLog(targetHost, actionName, "All methods failed", "FAIL");
                 }
             });

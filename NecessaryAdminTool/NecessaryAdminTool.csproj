@@ -70,6 +70,13 @@
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
+    <!-- System.Management.Automation - from GAC (PowerShell 5.1, built into Windows 10/11) -->
+    <!-- Private=False: do NOT copy to output - the GAC copy is used at runtime -->
+    <Reference Include="System.Management.Automation, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
+      <HintPath>$(WINDIR)\Microsoft.NET\assembly\GAC_MSIL\System.Management.Automation\v4.0_3.0.0.0__31bf3856ad364e35\System.Management.Automation.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+
     <!-- SQLite support - bundled in libs/ folder, no install required -->
     <Reference Include="System.Data.SQLite">
       <HintPath>libs\System.Data.SQLite.dll</HintPath>
@@ -391,6 +398,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Managers\BulkOperationExecutor.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Managers\RemoteScriptManager.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Managers\ExternalToolManager.cs">
