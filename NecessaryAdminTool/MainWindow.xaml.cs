@@ -3660,7 +3660,13 @@ namespace NecessaryAdminTool
             });
         }
 
-        private void RunHybridExecutor(string psCommand, string wmiQuery, string actionName, string specificTarget = "")
+        /// <param name="trustedScript">
+        /// Set to true for embedded application script constants (Script_General, Script_Feature).
+        /// These are not user input so injection prevention must NOT be applied - PowerShell scripts
+        /// legitimately contain ; | $ () {} [] &lt; &gt; \n \r which ContainsDangerousPatterns blocks.
+        /// Only set false (default) for user-typed terminal commands where injection prevention matters.
+        /// </param>
+        private void RunHybridExecutor(string psCommand, string wmiQuery, string actionName, string specificTarget = "", bool trustedScript = false)
         {
             // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
             string targetHost = string.IsNullOrEmpty(specificTarget) ? _currentTarget : specificTarget;
@@ -3681,8 +3687,10 @@ namespace NecessaryAdminTool
                 return;
             }
 
-            // Validate command doesn't contain dangerous patterns
-            if (SecurityValidator.ContainsDangerousPatterns(psCommand))
+            // Only validate injection patterns for user-supplied commands.
+            // Embedded script constants (Script_General, Script_Feature) are trusted application
+            // code and legitimately contain characters that ContainsDangerousPatterns would block.
+            if (!trustedScript && SecurityValidator.ContainsDangerousPatterns(psCommand))
             {
                 AppendTerminal("ERROR: Blocked dangerous command", true);
                 LogManager.LogWarning($"[WMIExecute] Blocked dangerous command: {actionName}");
@@ -7079,8 +7087,8 @@ if ($connection) {{
             }
         }
 
-        private void Ctx_PushGeneral_Click(object sender, RoutedEventArgs e) { if (GridInventory.SelectedItem is PCInventory pc && pc.Status == "ONLINE") RunHybridExecutor(Script_General, "", "PUSH_GENERAL", pc.Hostname); }
-        private void Ctx_PushFeature_Click(object sender, RoutedEventArgs e) { if (GridInventory.SelectedItem is PCInventory pc && pc.Status == "ONLINE") RunHybridExecutor(Script_Feature, "", "PUSH_FEATURE", pc.Hostname); }
+        private void Ctx_PushGeneral_Click(object sender, RoutedEventArgs e) { if (GridInventory.SelectedItem is PCInventory pc && pc.Status == "ONLINE") RunHybridExecutor(Script_General, "", "PUSH_GENERAL", pc.Hostname, trustedScript: true); }
+        private void Ctx_PushFeature_Click(object sender, RoutedEventArgs e) { if (GridInventory.SelectedItem is PCInventory pc && pc.Status == "ONLINE") RunHybridExecutor(Script_Feature, "", "PUSH_FEATURE", pc.Hostname, trustedScript: true); }
         private async void Ctx_RefreshNode_Click(object sender, RoutedEventArgs e) { try { if (GridInventory.SelectedItem is PCInventory pc) { await Task.Run(async () => { try { using (var p = new Ping()) { var r = await p.SendPingAsync(pc.Hostname, SecureConfig.PingTimeoutMs); Application.Current.Dispatcher.Invoke(() => pc.Status = r.Status == IPStatus.Success ? "ONLINE" : "Offline"); } } catch { Application.Current.Dispatcher.Invoke(() => pc.Status = "Error"); } }); } } catch { } }
 
         /// <summary>Pin selected device from inventory to pinned devices monitor</summary>
@@ -9695,8 +9703,8 @@ if ($rebootPending) {
             // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
 
             if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target selected"); return; }
-            if (ComboScripts.SelectedIndex == 0) RunHybridExecutor(Script_General, "", "DEPLOY_GENERAL");
-            else RunHybridExecutor(Script_Feature, "", "DEPLOY_FEATURE");
+            if (ComboScripts.SelectedIndex == 0) RunHybridExecutor(Script_General, "", "DEPLOY_GENERAL", trustedScript: true);
+            else RunHybridExecutor(Script_Feature, "", "DEPLOY_FEATURE", trustedScript: true);
         }
         private void BtnConsole_Click(object sender, RoutedEventArgs e)
         {
