@@ -895,13 +895,21 @@ Write-Host ""
 Write-Host "  --- Upgrade Method Selection ---" -ForegroundColor DarkYellow
 Write-NecessaryAdminToolLog -Status "UPGRADE_METHOD_SELECTION_STARTED_Hostname=${Comp}_Pattern=${HostnamePattern}" -ToMaster $false
 
-# VPN check - if on VPN the ISO network share is likely unreachable, use cloud directly
-$VpnActive = Test-VpnConnected
-Write-Host "  VPN active: $VpnActive" -ForegroundColor Cyan
-if ($VpnActive) {
-    Write-NecessaryAdminToolLog -Status "VPN_DETECTED_SKIPPING_ISO_USING_CLOUD" -ToMaster $false
-    Show-NecessaryAdminToolLogo -Msg "VPN detected - using Windows Update cloud path" "Yellow"
+# VPN check — only skip ISO if the ISO path is a UNC network share (\\server\share).
+# Local ISO paths (C:\, D:\, etc.) are not affected by VPN and should proceed normally.
+$VpnActive    = Test-VpnConnected
+$IsNetworkISO = (-not [string]::IsNullOrEmpty($ISOPath)) -and $ISOPath.TrimStart().StartsWith("\\")
+Write-Host "  VPN active: $VpnActive | Network ISO: $IsNetworkISO" -ForegroundColor Cyan
+
+if ($VpnActive -and $IsNetworkISO) {
+    # UNC share is likely unreachable over VPN — go straight to Windows Update
+    Write-NecessaryAdminToolLog -Status "VPN_DETECTED_NETWORK_ISO_UNREACHABLE_USING_CLOUD" -ToMaster $false
+    Show-NecessaryAdminToolLogo -Msg "VPN detected (UNC share unreachable) — using Windows Update" "Yellow"
     Run-CloudUpdate -Method "Cloud-VPN"
+} elseif ($VpnActive) {
+    # VPN active but ISO is a local path — VPN does not affect local access, proceed normally
+    Write-NecessaryAdminToolLog -Status "VPN_DETECTED_LOCAL_ISO_PROCEEDING_NORMALLY" -ToMaster $false
+    Write-Host "  VPN active but ISO is a local path — evaluating ISO/WU normally." -ForegroundColor Cyan
 } else {
     Write-NecessaryAdminToolLog -Status "VPN_NOT_DETECTED_EVALUATING_ISO_PATH" -ToMaster $false
 }
@@ -1006,9 +1014,12 @@ if ($HostnameMatch -and $ISOExists) {
             Show-NecessaryAdminToolLogo -Msg "ISO upgrade completed successfully" "Green"
             exit 0
         } else {
-            Write-MasterSummary -Status "FAILED" -Method "ISO" -Details $ExitDesc
-            Show-NecessaryAdminToolLogo -Msg "ISO setup failed: $ExitDesc" "Red"
-            exit 1
+            # setup.exe exited with an error — attempt Windows Update as fallback before giving up.
+            # Note: hardware/driver/app compat failures (0xC190xxxx) will likely fail WU too,
+            # but we try anyway because some errors (e.g. ISO-specific format issues) may not apply.
+            Write-Host "  ISO setup failed ($ExitDesc) — trying Windows Update fallback..." -ForegroundColor Yellow
+            Write-NecessaryAdminToolLog -Status "ISO_FAILED_CODE_${ExitCode}_TRYING_WU_FALLBACK" -ToMaster $false
+            Run-CloudUpdate -Method "Cloud-ISOFailed"
         }
     }
     catch {
