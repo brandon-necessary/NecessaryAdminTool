@@ -56,11 +56,12 @@ $OSVersion   = $OSInfo.Caption
 $UptimeDays  = [math]::Round(((Get-Date) - $OSInfo.LastBootUpTime).TotalDays, 2)
 $FreeGB      = 0   # initialized early so Write-MasterSummary is safe on pre-section-4 exits
 
-# Collect machine context for the start banner
+# Collect machine context for the start banner (single Win32_ComputerSystem query reused below)
 $PSVersion   = "$($PSVersionTable.PSVersion.Major).$($PSVersionTable.PSVersion.Minor)"
 $RunningAs   = [Security.Principal.WindowsIdentity]::GetCurrent().Name
-$DomainName  = try { (Get-CimInstance Win32_ComputerSystem).Domain } catch { "Unknown" }
-$TotalRAMGB  = [math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB, 2)
+$SysInfo     = Get-CimInstance Win32_ComputerSystem -ErrorAction SilentlyContinue
+$DomainName  = if ($SysInfo) { $SysInfo.Domain } else { "Unknown" }
+$TotalRAMGB  = if ($SysInfo) { [math]::Round($SysInfo.TotalPhysicalMemory / 1GB, 2) } else { 0 }
 
 # --- 2. LOGGING (Thread-Safe with File Locking) ---
 function Write-NecessaryAdminToolLog {
@@ -75,6 +76,10 @@ function Write-NecessaryAdminToolLog {
 
     if ($ToMaster) {
         $LockFile = "$MasterLog.lock"
+        # Remove stale lock left by a crashed process (older than 30 seconds)
+        if ((Test-Path $LockFile) -and ((Get-Date) - (Get-Item $LockFile -ErrorAction SilentlyContinue).LastWriteTime).TotalSeconds -gt 30) {
+            Remove-Item $LockFile -Force -ErrorAction SilentlyContinue
+        }
         $TimeOut = 0
         while ((Test-Path $LockFile) -and ($TimeOut -lt $MAX_LOG_LOCK_TIMEOUT)) {
             Start-Sleep -Milliseconds 200
@@ -106,6 +111,10 @@ function Write-MasterSummary {
     $Row      = "`"$Comp`",`"Feature`",`"$Stamp`",`"$OSVersion`",`"$UptimeDays`",`"$FreeGB`",`"$Status`",`"$Method`",`"$Details`",`"$Duration`""
 
     $LockFile = "$MasterLog.lock"
+    # Remove stale lock left by a crashed process (older than 30 seconds)
+    if ((Test-Path $LockFile) -and ((Get-Date) - (Get-Item $LockFile -ErrorAction SilentlyContinue).LastWriteTime).TotalSeconds -gt 30) {
+        Remove-Item $LockFile -Force -ErrorAction SilentlyContinue
+    }
     $TimeOut  = 0
     while ((Test-Path $LockFile) -and ($TimeOut -lt $MAX_LOG_LOCK_TIMEOUT)) {
         Start-Sleep -Milliseconds 200
@@ -121,8 +130,7 @@ function Write-MasterSummary {
         Remove-Item $LockFile -ErrorAction SilentlyContinue
     }
 
-    # Write duration footer to individual PC log
-    $Duration = [math]::Round(((Get-Date) - $ScriptStart).TotalSeconds, 0)
+    # Write duration footer to individual PC log (reuse $Duration already computed above)
     $DurMin   = [math]::Round($Duration / 60, 1)
     $Footer   = "================ SCRIPT END: Status=$Status | Method=$Method | Duration=${DurMin}min | $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') ================"
     try { $Footer | Out-File $PCLog -Append -Encoding UTF8 -ErrorAction SilentlyContinue } catch {}
@@ -205,7 +213,7 @@ VALUES
 # --- 3. UI LOGO (Theme Engine: Orange #FF8533 + Zinc #A1A1AA) ---
 function Show-NecessaryAdminToolLogo {
     param([string]$Msg, [string]$Color = "Cyan")
-    Clear-Host
+    # Note: Clear-Host intentionally omitted — clearing console removes ME execution log history
     Write-Host ""
     Write-Host " -----------------------------------------------------------" -ForegroundColor DarkYellow
     Write-Host "  " -NoNewline
@@ -416,9 +424,9 @@ $SecureBoot = try {
 }
 Write-Host "  Secure Boot: $SecureBoot" -ForegroundColor Cyan
 
-# Check RAM — Win11 requires 4 GB minimum
+# Check RAM — Win11 requires 4 GB minimum (reuse $TotalRAMGB captured at startup)
 $MIN_RAM_GB = 4
-$RAMGB      = [math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB, 2)
+$RAMGB      = $TotalRAMGB   # Win32_ComputerSystem already queried at startup — no extra WMI call
 $RAMOk      = $RAMGB -ge $MIN_RAM_GB
 Write-Host "  RAM: $RAMGB GB (minimum $MIN_RAM_GB GB)" -ForegroundColor Cyan
 
@@ -456,7 +464,7 @@ Write-NecessaryAdminToolLog -Status "HW_COMPAT_CHECK_PASSED_TPM2_SECUREBOOT_RAM_
 # Detect current Windows build and determine if an upgrade is actually needed.
 # Windows 11 build numbers: 21H2=22000, 22H2=22621, 23H2=22631, 24H2=26100, 25H2=26200
 # Update $WIN11_TARGET_BUILD when targeting a newer Windows release.
-$CurrentBuild        = [int](Get-CimInstance Win32_OperatingSystem).BuildNumber
+$CurrentBuild        = [int]$OSInfo.BuildNumber   # reuse $OSInfo captured at startup — no extra WMI call
 $WIN11_TARGET_BUILD  = 26200   # Windows 11 25H2 (released Sept 2025) — update when new version ships
 $WIN11_TARGET_NAME   = "25H2"
 
@@ -608,7 +616,8 @@ function Test-VpnConnected {
     $VpnByType = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object {
         $_.Status -eq 'Up' -and $_.InterfaceType -eq 23
     }
-    return ($null -ne $VpnByName -or $null -ne $VpnByType)
+    # Use Count — Get-NetAdapter returns an empty array (not $null) when nothing matches
+    return (@($VpnByName).Count -gt 0 -or @($VpnByType).Count -gt 0)
 }
 
 # --- 6. USER WARNING (timed dialog — auto-proceeds, up to 2 postpones, boot-persistent) ---
@@ -927,7 +936,7 @@ if ($HostnameMatch -and $ISOExists) {
     if ($ISOSize -lt $MIN_ISO_SIZE_GB) {
         Write-NecessaryAdminToolLog -Status "ERROR_ISO_TOO_SMALL_${ISOSize}GB_EXPECTED_${MIN_ISO_SIZE_GB}GB" -ToMaster $false
         Run-CloudUpdate -Method "Cloud-ISOTooSmall"
-        exit
+        exit 1   # Run-CloudUpdate exits internally; this is a safety backstop
     }
 
     Write-Host "  Selected method: ISO ($ISOPath)" -ForegroundColor Green
@@ -1024,7 +1033,7 @@ if ($HostnameMatch -and $ISOExists) {
                 try {
                     Get-DiskImage -ImagePath $ISOPath | Dismount-DiskImage -ErrorAction SilentlyContinue
                 } catch {
-                    # Log but don't fail
+                    Write-NecessaryAdminToolLog -Status "WARNING_ISO_FORCE_DISMOUNT_FAILED_$($_.Exception.Message)" -ToMaster $false
                 }
             }
         }
