@@ -51,8 +51,16 @@ if (!(Test-Path $PCLogDir)) {
 
 # Capture baseline info early so it's available at all exit points
 $ScriptStart = Get-Date
-$OSVersion   = (Get-CimInstance Win32_OperatingSystem).Caption
-$UptimeDays  = [math]::Round(((Get-Date) - (Get-CimInstance Win32_OperatingSystem).LastBootUpTime).TotalDays, 2)
+$OSInfo      = Get-CimInstance Win32_OperatingSystem
+$OSVersion   = $OSInfo.Caption
+$UptimeDays  = [math]::Round(((Get-Date) - $OSInfo.LastBootUpTime).TotalDays, 2)
+$FreeGB      = 0   # initialized early so Write-MasterSummary is safe on pre-section-4 exits
+
+# Collect machine context for the start banner
+$PSVersion   = "$($PSVersionTable.PSVersion.Major).$($PSVersionTable.PSVersion.Minor)"
+$RunningAs   = [Security.Principal.WindowsIdentity]::GetCurrent().Name
+$DomainName  = try { (Get-CimInstance Win32_ComputerSystem).Domain } catch { "Unknown" }
+$TotalRAMGB  = [math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB, 2)
 
 # --- 2. LOGGING (Thread-Safe with File Locking) ---
 function Write-NecessaryAdminToolLog {
@@ -112,6 +120,12 @@ function Write-MasterSummary {
     } finally {
         Remove-Item $LockFile -ErrorAction SilentlyContinue
     }
+
+    # Write duration footer to individual PC log
+    $Duration = [math]::Round(((Get-Date) - $ScriptStart).TotalSeconds, 0)
+    $DurMin   = [math]::Round($Duration / 60, 1)
+    $Footer   = "================ SCRIPT END: Status=$Status | Method=$Method | Duration=${DurMin}min | $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') ================"
+    try { $Footer | Out-File $PCLog -Append -Encoding UTF8 -ErrorAction SilentlyContinue } catch {}
 
     # Write to SQL Server if configured
     Write-ToDatabase -Status $Status -Method $Method -Details $Details
@@ -322,7 +336,30 @@ function Invoke-PreUpgradeDiskCleanup {
     return $NewFreeGB
 }
 
-# --- 3c. POWER CHECK ---
+# --- 3c. SCRIPT START BANNER ---
+# Written as the very first log entry so every run has full context at the top of the file.
+$StartBanner = @"
+================================================================================
+  FEATURE UPDATE SUITE - SCRIPT START
+  Host      : $Comp
+  Domain    : $DomainName
+  OS        : $OSVersion
+  Uptime    : $UptimeDays days
+  RAM       : $TotalRAMGB GB
+  RunningAs : $RunningAs
+  PS Ver    : $PSVersion
+  LogDir    : $PCLog
+  ISOPath   : $(if ($ISOPath) { $ISOPath } else { '(not set - cloud path will be used)' })
+  LogDirSrc : $(if ($LogDir -eq "$env:TEMP\NecessaryAdminTool_Logs") { 'LOCAL FALLBACK' } else { 'Configured share' })
+  Started   : $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
+================================================================================
+"@
+Write-NecessaryAdminToolLog -Status "SCRIPT_START_Host=${Comp}_OS=${OSVersion}_Uptime=${UptimeDays}days_RAM=${TotalRAMGB}GB_RunAs=${RunningAs}_PS=${PSVersion}" -ToMaster $false
+# Write the banner block directly to the PC log for human readability
+try { $StartBanner | Out-File $PCLog -Append -Encoding UTF8 -ErrorAction SilentlyContinue } catch {}
+Write-Host $StartBanner -ForegroundColor DarkYellow
+
+# --- 3e. POWER CHECK ---
 Show-NecessaryAdminToolLogo -Msg "Power & Reboot Pre-flight Check..."
 
 if (!(Test-PowerOK)) {
@@ -338,7 +375,7 @@ if (!(Test-PowerOK)) {
 Write-Host "  Power check: OK (AC or sufficient battery)" -ForegroundColor Green
 Write-NecessaryAdminToolLog -Status "POWER_CHECK_PASSED" -ToMaster $false
 
-# --- 3d. PENDING REBOOT CHECK ---
+# --- 3f. PENDING REBOOT CHECK ---
 if (Test-PendingReboot) {
     $Reason = "Pending reboot detected. Reboot this machine first, then re-push the upgrade task."
     Write-Host "  FAILED: $Reason" -ForegroundColor Yellow
@@ -855,26 +892,46 @@ if (Test-Path $PendingFlag) {
 }
 
 # --- 7. MAIN EXECUTION LOGIC ---
+Write-Host ""
+Write-Host "  --- Upgrade Method Selection ---" -ForegroundColor DarkYellow
+Write-NecessaryAdminToolLog -Status "UPGRADE_METHOD_SELECTION_STARTED_Hostname=${Comp}_Pattern=${HostnamePattern}" -ToMaster $false
 
 # VPN check - if on VPN the ISO network share is likely unreachable, use cloud directly
-if (Test-VpnConnected) {
-    Write-NecessaryAdminToolLog -Status "VPN_DETECTED_SKIPPING_ISO" -ToMaster $false
+$VpnActive = Test-VpnConnected
+Write-Host "  VPN active: $VpnActive" -ForegroundColor Cyan
+if ($VpnActive) {
+    Write-NecessaryAdminToolLog -Status "VPN_DETECTED_SKIPPING_ISO_USING_CLOUD" -ToMaster $false
     Show-NecessaryAdminToolLogo -Msg "VPN detected - using Installation Assistant" "Yellow"
     Run-CloudUpdate -Method "Cloud-VPN"
+} else {
+    Write-NecessaryAdminToolLog -Status "VPN_NOT_DETECTED_EVALUATING_ISO_PATH" -ToMaster $false
 }
 
 # Check if hostname matches pattern and ISO is available
-if ($Comp -like $HostnamePattern -and -not [string]::IsNullOrEmpty($ISOPath) -and (Test-Path $ISOPath -ErrorAction SilentlyContinue)) {
+$HostnameMatch = $Comp -like $HostnamePattern
+$ISOConfigured = -not [string]::IsNullOrEmpty($ISOPath)
+$ISOExists     = $ISOConfigured -and (Test-Path $ISOPath -ErrorAction SilentlyContinue)
+Write-Host "  Hostname match ($HostnamePattern): $HostnameMatch" -ForegroundColor Cyan
+Write-Host "  ISO path configured: $ISOConfigured$(if ($ISOConfigured) { " ($ISOPath)" })" -ForegroundColor Cyan
+Write-Host "  ISO file accessible: $ISOExists" -ForegroundColor Cyan
+Write-NecessaryAdminToolLog -Status "ISO_EVAL_HostMatch=${HostnameMatch}_ISOConfigured=${ISOConfigured}_ISOExists=${ISOExists}" -ToMaster $false
+
+if ($HostnameMatch -and $ISOExists) {
 
     # Verify ISO is valid size
-    $ISOSize = (Get-Item $ISOPath -ErrorAction SilentlyContinue).Length / 1GB
+    $ISOSizeBytes = (Get-Item $ISOPath -ErrorAction SilentlyContinue).Length
+    $ISOSize      = [math]::Round($ISOSizeBytes / 1GB, 2)
+    Write-Host "  ISO size: $ISOSize GB" -ForegroundColor Cyan
+    Write-NecessaryAdminToolLog -Status "ISO_SIZE_CHECK_${ISOSize}GB_Path=${ISOPath}" -ToMaster $false
+
     if ($ISOSize -lt $MIN_ISO_SIZE_GB) {
-        Write-NecessaryAdminToolLog -Status "ERROR_ISO_TOO_SMALL_${ISOSize}GB" -ToMaster $false
+        Write-NecessaryAdminToolLog -Status "ERROR_ISO_TOO_SMALL_${ISOSize}GB_EXPECTED_${MIN_ISO_SIZE_GB}GB" -ToMaster $false
         Run-CloudUpdate -Method "Cloud-ISOTooSmall"
         exit
     }
 
-    Write-NecessaryAdminToolLog -Status "METHOD_ISO_START_PATTERN_${HostnamePattern}" -ToMaster $false
+    Write-Host "  Selected method: ISO ($ISOPath)" -ForegroundColor Green
+    Write-NecessaryAdminToolLog -Status "METHOD_ISO_START_Host=${Comp}_Pattern=${HostnamePattern}_ISO=${ISOPath}_Size=${ISOSize}GB" -ToMaster $false
 
     $MountedISO = $null
     try {
@@ -893,21 +950,45 @@ if ($Comp -like $HostnamePattern -and -not [string]::IsNullOrEmpty($ISOPath) -an
             throw "setup.exe not found on mounted ISO"
         }
 
-        # Run setup with timeout protection
-        Write-NecessaryAdminToolLog -Status "ISO_RUNNING" -ToMaster $true
-        Show-NecessaryAdminToolLogo -Msg "Upgrading... (Do not turn off - may take up to 2 hours)" "Yellow"
+        # Run setup with timeout protection and per-minute progress reporting
+        Write-NecessaryAdminToolLog -Status "ISO_RUNNING_Args=/auto upgrade /quiet /showoobe none /eula accept /dynamicupdate disable" -ToMaster $true
+        Show-NecessaryAdminToolLogo -Msg "Upgrading via ISO... (Do not turn off - may take up to 2 hours)" "Yellow"
+        Write-Host "  Progress will be reported every 60 seconds in this log." -ForegroundColor Gray
 
         $Proc = Start-Process $SetupPath -ArgumentList "/auto upgrade /quiet /showoobe none /eula accept /dynamicupdate disable" -PassThru -ErrorAction Stop
 
-        # Wait with timeout (2 hours)
-        $Proc | Wait-Process -Timeout $SETUP_TIMEOUT_SECONDS -ErrorAction SilentlyContinue
+        # Poll every 60s — keeps ME execution log alive during the 2-hour install
+        $ISOCheckInterval = 60
+        $ISOElapsed       = 0
+        $PantherLog       = "C:\`$WINDOWS.~BT\Sources\Panther\setupact.log"
 
-        if (!$Proc.HasExited) {
-            Write-NecessaryAdminToolLog -Status "TIMEOUT_SETUP_KILLED" -ToMaster $false
-            Write-MasterSummary -Status "FAILED" -Method "ISO" -Details "Timed out after $($SETUP_TIMEOUT_SECONDS / 3600) hours"
-            $Proc.Kill()
-            Show-NecessaryAdminToolLogo -Msg "Setup timed out after $($SETUP_TIMEOUT_SECONDS / 3600) hours" "Red"
-            exit 1
+        while (!$Proc.HasExited) {
+            if ($ISOElapsed -ge $SETUP_TIMEOUT_SECONDS) {
+                Write-NecessaryAdminToolLog -Status "TIMEOUT_ISO_SETUP_KILLED_AFTER_$($SETUP_TIMEOUT_SECONDS / 3600)h" -ToMaster $false
+                Write-MasterSummary -Status "FAILED" -Method "ISO" -Details "Timed out after $($SETUP_TIMEOUT_SECONDS / 3600) hours"
+                $Proc.Kill()
+                Show-NecessaryAdminToolLogo -Msg "ISO setup timed out after $($SETUP_TIMEOUT_SECONDS / 3600) hours" "Red"
+                exit 1
+            }
+
+            Start-Sleep -Seconds $ISOCheckInterval
+            $ISOElapsed    += $ISOCheckInterval
+            $ISOElapsedMin  = [math]::Round($ISOElapsed / 60, 0)
+
+            # Detect phase from Windows Setup Panther log (same as cloud branch)
+            $ISOPhase = "Upgrading..."
+            if (Test-Path $PantherLog -ErrorAction SilentlyContinue) {
+                $Recent  = Get-Content $PantherLog -Tail 50 -ErrorAction SilentlyContinue
+                $PctLine = $Recent | Select-String 'Percentage complete: (\d+)' | Select-Object -Last 1
+                if ($PctLine) {
+                    $ISOPhase = "Upgrading ($($PctLine.Matches.Groups[1].Value)% complete)"
+                }
+            } elseif (Test-Path "C:\`$WINDOWS.~BT" -ErrorAction SilentlyContinue) {
+                $ISOPhase = "Downloading / Preparing..."
+            }
+
+            Write-NecessaryAdminToolLog -Status "ISO_PROGRESS_${ISOElapsedMin}min_$ISOPhase" -ToMaster $false
+            Write-Host "  [${ISOElapsedMin}m elapsed] $ISOPhase" -ForegroundColor Cyan
         }
 
         # Check exit code
@@ -950,12 +1031,18 @@ if ($Comp -like $HostnamePattern -and -not [string]::IsNullOrEmpty($ISOPath) -an
     }
 }
 else {
-    # Hostname doesn't match pattern or ISO not available - use cloud update
-    if ($Comp -notlike $HostnamePattern) {
-        Write-NecessaryAdminToolLog -Status "HOSTNAME_PATTERN_MISMATCH_USING_CLOUD" -ToMaster $false
+    # ISO path not used — determine specific reason and log it
+    if (!$HostnameMatch) {
+        Write-Host "  Selected method: Cloud (hostname '$Comp' does not match pattern '$HostnamePattern')" -ForegroundColor Cyan
+        Write-NecessaryAdminToolLog -Status "HOSTNAME_PATTERN_MISMATCH_Host=${Comp}_Pattern=${HostnamePattern}_USING_CLOUD" -ToMaster $false
         Run-CloudUpdate -Method "Cloud-NoPatternMatch"
-    } else {
-        Write-NecessaryAdminToolLog -Status "ISO_NOT_FOUND_USING_CLOUD" -ToMaster $false
+    } elseif (!$ISOConfigured) {
+        Write-Host "  Selected method: Cloud (no ISO path configured)" -ForegroundColor Cyan
+        Write-NecessaryAdminToolLog -Status "ISO_PATH_NOT_CONFIGURED_USING_CLOUD" -ToMaster $false
         Run-CloudUpdate -Method "Cloud-NoISO"
+    } else {
+        Write-Host "  Selected method: Cloud (ISO path configured but file not accessible: $ISOPath)" -ForegroundColor Yellow
+        Write-NecessaryAdminToolLog -Status "ISO_NOT_ACCESSIBLE_Path=${ISOPath}_USING_CLOUD" -ToMaster $false
+        Run-CloudUpdate -Method "Cloud-ISONotFound"
     }
 }
