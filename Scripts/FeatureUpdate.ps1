@@ -384,15 +384,45 @@ Write-Host "  Power check: OK (AC or sufficient battery)" -ForegroundColor Green
 Write-NecessaryAdminToolLog -Status "POWER_CHECK_PASSED" -ToMaster $false
 
 # --- 3f. PENDING REBOOT CHECK ---
-if (Test-PendingReboot) {
-    $Reason = "Pending reboot detected. Reboot this machine first, then re-push the upgrade task."
-    Write-Host "  FAILED: $Reason" -ForegroundColor Yellow
-    Write-NecessaryAdminToolLog -Status "FAILED_PENDING_REBOOT" -ToMaster $false
-    Write-MasterSummary -Status "FAILED" -Method "None" -Details $Reason
-    Show-NecessaryAdminToolLogo -Msg "Pending reboot - complete it first, then re-push task" "Yellow"
-    exit 1
+# Pre-declare here so the auto-reboot path can use them (also defined in section 6, same values).
+$PendingFlag  = "C:\Windows\Temp\NecessaryAdminTool_Feature_Pending.txt"
+$BootTaskName = "NecessaryAdminTool_FeatureUpgrade_Pending"
+
+# Skip this check when resuming after our own forced reboot - the reboot already cleared it.
+if ((Test-PendingReboot) -and !(Test-Path $PendingFlag)) {
+    Write-Host "  Pending reboot detected - will auto-restart to clear it then resume upgrade." -ForegroundColor Yellow
+    Write-NecessaryAdminToolLog -Status "PENDING_REBOOT_DETECTED_SCHEDULING_AUTO_RESTART" -ToMaster $false
+
+    # Write pending flag + register startup task so upgrade auto-resumes after the forced reboot
+    "PendingReboot" | Out-File $PendingFlag -Encoding ASCII -Force
+    $ScriptPath = $MyInvocation.MyCommand.Path
+    if (-not [string]::IsNullOrEmpty($ScriptPath) -and (Test-Path $ScriptPath -ErrorAction SilentlyContinue)) {
+        try {
+            $Action   = New-ScheduledTaskAction -Execute "powershell.exe" `
+                            -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$ScriptPath`""
+            $Trigger  = New-ScheduledTaskTrigger -AtStartup
+            $Settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Hours 4) `
+                            -MultipleInstances IgnoreNew -StartWhenAvailable $true
+            Register-ScheduledTask -TaskName $BootTaskName -Action $Action -Trigger $Trigger `
+                -Settings $Settings -RunLevel Highest -User "SYSTEM" -Force -ErrorAction Stop | Out-Null
+            Write-Host "  [BOOT TASK] '$BootTaskName' registered - upgrade resumes after reboot." -ForegroundColor Green
+            Write-NecessaryAdminToolLog -Status "BOOT_TASK_REGISTERED_FOR_PENDING_REBOOT_RESTART" -ToMaster $false
+        } catch {
+            Write-Host "  [BOOT TASK] WARNING: Could not register startup task: $($_.Exception.Message)" -ForegroundColor Yellow
+            Write-NecessaryAdminToolLog -Status "BOOT_TASK_REGISTER_FAILED_$($_.Exception.Message)" -ToMaster $false
+        }
+    } else {
+        Write-Host "  [BOOT TASK] Script path unavailable - boot persistence skipped." -ForegroundColor Gray
+        Write-NecessaryAdminToolLog -Status "BOOT_TASK_SKIPPED_SCRIPT_PATH_UNAVAILABLE" -ToMaster $false
+    }
+
+    Show-NecessaryAdminToolLogo -Msg "Restarting to clear pending reboot - upgrade resumes automatically..." "Yellow"
+    Write-MasterSummary -Status "REBOOTING" -Method "None" -Details "Pending reboot detected; auto-restarting to clear it. Upgrade resumes on next boot via scheduled task."
+    Write-Host "  Restarting in 30 seconds. Upgrade resumes automatically on next boot." -ForegroundColor Cyan
+    shutdown.exe /r /t 30 /c "NecessaryAdminTool: Clearing pending reboot before Windows 11 upgrade. Upgrade resumes automatically after restart."
+    exit 0
 }
-Write-Host "  Pending reboot: None detected" -ForegroundColor Green
+Write-Host "  Pending reboot: None detected (or resuming after auto-reboot)" -ForegroundColor Green
 Write-NecessaryAdminToolLog -Status "PENDING_REBOOT_CHECK_PASSED" -ToMaster $false
 
 # --- 4. HARDWARE COMPATIBILITY CHECK ---
