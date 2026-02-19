@@ -507,117 +507,91 @@ Write-Host "  RESULT: Upgrade required — $UpgradePath" -ForegroundColor Yellow
 Write-NecessaryAdminToolLog -Status "UPGRADE_REQUIRED_$UpgradePath" -ToMaster $false
 
 # --- 5. CLOUD UPDATE FALLBACK FUNCTION ---
-# NOTE: The Installation Assistant (Windows11InstallationAssistant.exe) is a consumer tool.
-# Its /quietinstall and /skipeula flags are UNDOCUMENTED by Microsoft and unreliable under SYSTEM.
-# It may hang silently in headless/SYSTEM context (waiting for EULA input it can never receive).
-# The ISO path (section 7) using setup.exe is strongly preferred for RMM deployment.
-# This cloud path is provided as a best-effort fallback only — configure an ISO path when possible.
+# Uses PSWindowsUpdate to trigger the feature upgrade through Windows Update channels.
+# This is the same module used by GeneralUpdate.ps1 and works reliably under SYSTEM context.
+#
+# IMPORTANT: This path only works if the Windows 11 upgrade is currently OFFERED to this machine
+# via Windows Update. If your organisation uses WUfB or WSUS to control feature update targeting,
+# the upgrade must be approved there before this path will find anything to install.
+#
+# For maximum reliability in RMM deployments: configure an ISO path in NecessaryAdminTool Options.
+# The ISO path (section 7) uses setup.exe with documented enterprise flags and is always preferred.
 function Run-CloudUpdate {
     param([string]$Method = "Cloud")
-    Show-NecessaryAdminToolLogo -Msg "Downloading Windows 11 Installation Assistant (cloud fallback)..." "Yellow"
-    Write-NecessaryAdminToolLog -Status "METHOD_CLOUD_START_NOTE_ISO_PATH_PREFERRED" -ToMaster $false
+    Show-NecessaryAdminToolLogo -Msg "Initiating Windows 11 upgrade via Windows Update channels..." "Yellow"
+    Write-NecessaryAdminToolLog -Status "METHOD_CLOUD_START" -ToMaster $false
 
-    $AssistantPath = "$env:TEMP\NecessaryAdminTool_Win11Assistant.exe"
-
-    # Download Installation Assistant with retry (3 attempts, 30-second backoff on failure)
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    $MaxDownloadAttempts   = 3
-    $DownloadRetryDelaySec = 30
-    $Downloaded            = $false
-
-    for ($Attempt = 1; $Attempt -le $MaxDownloadAttempts; $Attempt++) {
-        $Client = $null
+    # Ensure PSWindowsUpdate module is available — installs the same way as GeneralUpdate.ps1
+    if (!(Get-Module -ListAvailable -Name PSWindowsUpdate)) {
+        Write-Host "  Installing PSWindowsUpdate module..." -ForegroundColor Cyan
+        Write-NecessaryAdminToolLog -Status "CLOUD_MODULE_INSTALL_STARTED" -ToMaster $false
         try {
-            Write-Host "`n  Downloading from Microsoft (attempt $Attempt of $MaxDownloadAttempts)..." -ForegroundColor Cyan
-            Write-NecessaryAdminToolLog -Status "CLOUD_DOWNLOAD_ATTEMPT_${Attempt}_OF_${MaxDownloadAttempts}" -ToMaster $false
-            $Client = New-Object System.Net.WebClient
-            $Client.DownloadFile("https://go.microsoft.com/fwlink/?linkid=2171764", $AssistantPath)
-            Write-NecessaryAdminToolLog -Status "ASSISTANT_DOWNLOADED_ATTEMPT_${Attempt}" -ToMaster $false
-            $Downloaded = $true
-            break
+            if (!(Get-PackageProvider -Name NuGet -ErrorAction SilentlyContinue)) {
+                Install-PackageProvider -Name NuGet -Force -Scope AllUsers -ErrorAction Stop | Out-Null
+            }
+            Install-Module PSWindowsUpdate -Force -Scope AllUsers -ErrorAction Stop | Out-Null
+            Write-NecessaryAdminToolLog -Status "CLOUD_MODULE_INSTALLED_SUCCESSFULLY" -ToMaster $false
         } catch {
-            Write-Host "  Attempt $Attempt failed: $($_.Exception.Message)" -ForegroundColor Yellow
-            Write-NecessaryAdminToolLog -Status "CLOUD_DOWNLOAD_FAILED_ATTEMPT_${Attempt}_$($_.Exception.Message)" -ToMaster $false
-            if ($Attempt -lt $MaxDownloadAttempts) {
-                Write-Host "  Retrying in $DownloadRetryDelaySec seconds..." -ForegroundColor Gray
-                Write-NecessaryAdminToolLog -Status "CLOUD_DOWNLOAD_RETRY_IN_${DownloadRetryDelaySec}SEC" -ToMaster $false
-                Start-Sleep -Seconds $DownloadRetryDelaySec
-            }
-        } finally {
-            if ($Client) { $Client.Dispose() }
-        }
-    }
-
-    if (!$Downloaded) {
-        Write-NecessaryAdminToolLog -Status "CLOUD_DOWNLOAD_FAILED_ALL_${MaxDownloadAttempts}_ATTEMPTS" -ToMaster $true
-        Write-MasterSummary -Status "FAILED" -Method $Method -Details "Download failed after $MaxDownloadAttempts attempts — check internet connectivity from SYSTEM context"
-        Show-NecessaryAdminToolLogo -Msg "Download failed after $MaxDownloadAttempts attempts. Check internet connectivity." "Red"
-        exit 1
-    }
-
-    # Run Installation Assistant silently
-    try {
-        Write-NecessaryAdminToolLog -Status "ASSISTANT_RUNNING" -ToMaster $false
-        Show-NecessaryAdminToolLogo -Msg "Upgrading... (Do not turn off - may take up to 2 hours)" "Yellow"
-
-        $Proc = Start-Process $AssistantPath -ArgumentList "/quietinstall /skipeula" -PassThru -ErrorAction Stop
-
-        # Poll every 60s so ME sees live progress in its execution log
-        $CheckInterval = 60
-        $Elapsed = 0
-        $BtLog = "C:\`$WINDOWS.~BT\Sources\Panther\setupact.log"
-
-        while (!$Proc.HasExited) {
-            if ($Elapsed -ge $SETUP_TIMEOUT_SECONDS) {
-                Write-NecessaryAdminToolLog -Status "TIMEOUT_ASSISTANT_KILLED" -ToMaster $false
-                Write-MasterSummary -Status "FAILED" -Method $Method -Details "Timed out after $($SETUP_TIMEOUT_SECONDS / 3600) hours"
-                $Proc.Kill()
-                Show-NecessaryAdminToolLogo -Msg "Upgrade timed out after $($SETUP_TIMEOUT_SECONDS / 3600) hours" "Red"
-                exit 1
-            }
-
-            Start-Sleep -Seconds $CheckInterval
-            $Elapsed += $CheckInterval
-            $ElapsedMin = [math]::Round($Elapsed / 60, 0)
-
-            # Detect phase from Windows Setup filesystem markers
-            $Phase = "Initializing..."
-            if (Test-Path $BtLog -ErrorAction SilentlyContinue) {
-                $Phase = "Upgrading"
-                $Recent = Get-Content $BtLog -Tail 50 -ErrorAction SilentlyContinue
-                $PctLine = $Recent | Select-String 'Percentage complete: (\d+)' | Select-Object -Last 1
-                if ($PctLine) {
-                    $Phase = "Upgrading ($($PctLine.Matches.Groups[1].Value)% complete)"
-                }
-            } elseif (Test-Path "C:\`$WINDOWS.~BT" -ErrorAction SilentlyContinue) {
-                $Phase = "Downloading / Preparing..."
-            }
-
-            Write-NecessaryAdminToolLog -Status "PROGRESS_${ElapsedMin}min - $Phase" -ToMaster $false
-            Write-Host "  [${ElapsedMin}m elapsed] $Phase" -ForegroundColor Cyan
-        }
-
-        $ExitCode = $Proc.ExitCode
-        $ExitDesc = Get-InstallExitDescription -ExitCode $ExitCode
-        Write-Host "  Installation Assistant exit: $ExitDesc" -ForegroundColor Cyan
-        Write-NecessaryAdminToolLog -Status "CLOUD_COMPLETE_CODE_${ExitCode}_$ExitDesc" -ToMaster $false
-
-        if ($ExitCode -eq 0 -or $ExitCode -eq 3010) {
-            Write-MasterSummary -Status "SUCCESS" -Method $Method -Details $ExitDesc
-            Show-NecessaryAdminToolLogo -Msg "Upgrade completed - reboot pending" "Green"
-            exit 0
-        } else {
-            Write-MasterSummary -Status "FAILED" -Method $Method -Details $ExitDesc
-            Show-NecessaryAdminToolLogo -Msg "Upgrade failed: $ExitDesc" "Red"
+            Write-NecessaryAdminToolLog -Status "CLOUD_MODULE_INSTALL_FAILED_$($_.Exception.Message)" -ToMaster $false
+            Write-MasterSummary -Status "FAILED" -Method $Method -Details "PSWindowsUpdate install failed — configure ISO path for reliable deployment: $($_.Exception.Message)"
+            Show-NecessaryAdminToolLogo -Msg "Module install failed. Configure an ISO path in NecessaryAdminTool Options." "Red"
             exit 1
         }
+    }
+
+    try {
+        Import-Module PSWindowsUpdate -ErrorAction Stop
+
+        # Scan Windows Update for feature upgrades (Category "Upgrades" = feature updates / OS upgrades)
+        Write-Host "  Scanning Windows Update for feature upgrades..." -ForegroundColor Cyan
+        Write-NecessaryAdminToolLog -Status "CLOUD_WU_SCAN_STARTED" -ToMaster $false
+
+        $FeatureUpdates = @(Get-WindowsUpdate -MicrosoftUpdate -Category "Upgrades" -AcceptAll -ErrorAction Stop)
+
+        if ($FeatureUpdates.Count -eq 0) {
+            # Feature update not offered to this machine via Windows Update.
+            # Common causes: WUfB/WSUS deferral policy, machine not yet in rollout ring,
+            # or the organisation has not approved Win11 targeting in their WU policy.
+            $Advice = "No feature upgrade currently offered via Windows Update for this machine. " +
+                      "To fix: (1) configure an ISO path in NecessaryAdminTool Options, " +
+                      "(2) approve Win11 targeting in WUfB/WSUS policy, or " +
+                      "(3) temporarily remove WU deferral registry keys."
+            Write-Host "  $Advice" -ForegroundColor Yellow
+            Write-NecessaryAdminToolLog -Status "CLOUD_WU_NO_UPGRADE_OFFERED" -ToMaster $false
+            Write-MasterSummary -Status "FAILED" -Method $Method -Details $Advice
+            Show-NecessaryAdminToolLogo -Msg "No feature upgrade offered via Windows Update — see log for options" "Yellow"
+            exit 1
+        }
+
+        $UpdateTitle = $FeatureUpdates[0].Title
+        Write-Host "  Feature upgrade available: $UpdateTitle" -ForegroundColor Green
+        Write-NecessaryAdminToolLog -Status "CLOUD_WU_UPGRADE_FOUND_$UpdateTitle" -ToMaster $false
+        Write-NecessaryAdminToolLog -Status "CLOUD_WU_INSTALL_STARTED" -ToMaster $true
+        Show-NecessaryAdminToolLogo -Msg "Installing via Windows Update... (Do not turn off - may take 1-2 hours)" "Yellow"
+        Write-Host "  PSWindowsUpdate will report download and install progress below." -ForegroundColor Gray
+        Write-Host "  The machine will reboot automatically when installation is complete." -ForegroundColor Gray
+
+        # Install synchronously — PSWindowsUpdate outputs progress natively so ME log stays alive.
+        # -IgnoreReboot defers the physical reboot so the script can exit cleanly and log results;
+        # Windows will reboot on its own schedule (or ME can trigger it after task completion).
+        $Results = Install-WindowsUpdate -MicrosoftUpdate -Category "Upgrades" -AcceptAll -IgnoreReboot -ErrorAction Stop
+
+        $Failed = @($Results | Where-Object { $_.Result -eq 'Failed' })
+        if ($Failed.Count -gt 0) {
+            $FailDetail = ($Failed | ForEach-Object { "$($_.Title): $($_.Result)" }) -join "; "
+            throw "Install reported failures: $FailDetail"
+        }
+
+        Write-NecessaryAdminToolLog -Status "CLOUD_WU_COMPLETE_REBOOT_PENDING" -ToMaster $false
+        Write-MasterSummary -Status "SUCCESS" -Method $Method -Details "Windows Update feature upgrade complete — reboot pending to finish installation"
+        Show-NecessaryAdminToolLogo -Msg "Windows Update upgrade complete — machine will reboot to finish installation" "Green"
+        exit 0
+
     } catch {
-        Write-NecessaryAdminToolLog -Status "CLOUD_FAILED_$($_.Exception.Message)" -ToMaster $false
+        Write-NecessaryAdminToolLog -Status "CLOUD_WU_FAILED_$($_.Exception.Message)" -ToMaster $false
         Write-MasterSummary -Status "FAILED" -Method $Method -Details $_.Exception.Message
-        Show-NecessaryAdminToolLogo -Msg "Cloud update failed: $($_.Exception.Message)" "Red"
+        Show-NecessaryAdminToolLogo -Msg "Cloud upgrade failed: $($_.Exception.Message)" "Red"
         exit 1
-    } finally {
-        Remove-Item $AssistantPath -Force -ErrorAction SilentlyContinue
     }
 }
 
@@ -926,7 +900,7 @@ $VpnActive = Test-VpnConnected
 Write-Host "  VPN active: $VpnActive" -ForegroundColor Cyan
 if ($VpnActive) {
     Write-NecessaryAdminToolLog -Status "VPN_DETECTED_SKIPPING_ISO_USING_CLOUD" -ToMaster $false
-    Show-NecessaryAdminToolLogo -Msg "VPN detected - using Installation Assistant" "Yellow"
+    Show-NecessaryAdminToolLogo -Msg "VPN detected - using Windows Update cloud path" "Yellow"
     Run-CloudUpdate -Method "Cloud-VPN"
 } else {
     Write-NecessaryAdminToolLog -Status "VPN_NOT_DETECTED_EVALUATING_ISO_PATH" -ToMaster $false

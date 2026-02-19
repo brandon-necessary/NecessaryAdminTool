@@ -9470,10 +9470,64 @@ if ($rebootPending) {
                             using (StreamReader reader = new StreamReader(stream))
                             {
                                 string content = reader.ReadToEnd();
+
+                                // Inject configured settings from Options → Deployment Configuration.
+                                // Only replaces a placeholder when the setting has an actual value —
+                                // leaving it blank preserves the env-var default so the script still
+                                // works without hardcoded paths (useful for resetting to defaults).
+                                string dbPath   = NecessaryAdminTool.Properties.Settings.Default.DatabasePath ?? @"C:\ProgramData\NecessaryAdminTool";
+                                string logDir   = NecessaryAdminTool.Properties.Settings.Default.DeploymentLogDirectory;
+                                string isoPath  = NecessaryAdminTool.Properties.Settings.Default.WindowsUpdateISOPath ?? "";
+                                string pattern  = NecessaryAdminTool.Properties.Settings.Default.LocalISOHostnamePattern ?? "";
+                                int injectedCount = 0;
+
+                                // LogDir — use configured value, or default path if blank
+                                string effectiveLogDir = !string.IsNullOrEmpty(logDir)
+                                    ? logDir
+                                    : Path.Combine(dbPath, "DeploymentLogs");
+                                // Both scripts now align vars with 14 spaces
+                                content = content.Replace(
+                                    "$LogDir              = $env:NECESSARYADMINTOOL_LOG_DIR",
+                                    $"$LogDir              = \"{effectiveLogDir}\"  # Set in NecessaryAdminTool: Options → Deployment Configuration");
+                                injectedCount++;
+
+                                // ISOPath — only inject if configured, otherwise leave env-var placeholder
+                                if (!string.IsNullOrEmpty(isoPath))
+                                {
+                                    content = content.Replace(
+                                        "$ISOPath             = $env:NECESSARYADMINTOOL_ISO_PATH",
+                                        $"$ISOPath             = \"{isoPath}\"  # Set in NecessaryAdminTool: Options → Deployment Configuration");
+                                    injectedCount++;
+                                }
+
+                                // HostnamePattern — only inject if configured
+                                if (!string.IsNullOrEmpty(pattern))
+                                {
+                                    content = content.Replace(
+                                        "$HostnamePattern     = if ($env:NECESSARYADMINTOOL_HOSTNAME_PATTERN) { $env:NECESSARYADMINTOOL_HOSTNAME_PATTERN } else { \"*\" }",
+                                        $"$HostnamePattern     = \"{pattern}\"  # Set in NecessaryAdminTool: Options → Deployment Configuration");
+                                    injectedCount++;
+                                }
+
+                                // SQL Server database — inject type + connection string when configured
+                                string dbType = NecessaryAdminTool.Properties.Settings.Default.DatabaseType ?? "";
+                                string connStr = NecessaryAdminTool.Properties.Settings.Default.DatabasePath ?? "";
+                                if (dbType.Equals("SqlServer", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(connStr))
+                                {
+                                    // PowerShell doesn't use \ as escape so no escaping needed
+                                    content = content.Replace(
+                                        "$DatabaseType        = \"\"  # NAT_INJECT_DB_TYPE",
+                                        "$DatabaseType        = \"SqlServer\"  # Set in NecessaryAdminTool: Options \u2192 Database");
+                                    content = content.Replace(
+                                        "$SqlConnectionString = \"\"  # NAT_INJECT_SQL_CONN",
+                                        "$SqlConnectionString = \"" + connStr + "\"  # Set in NecessaryAdminTool: Options \u2192 Database");
+                                    injectedCount += 2;
+                                }
+
                                 string targetPath = Path.Combine(targetFolder, script.FileName);
                                 File.WriteAllText(targetPath, content);
                                 filesWritten++;
-                                AppendTerminal($"✓ Saved: {script.FileName}", false);
+                                AppendTerminal($"✓ Saved: {script.FileName} ({injectedCount} setting(s) injected)", false);
                             }
                         }
                         else
