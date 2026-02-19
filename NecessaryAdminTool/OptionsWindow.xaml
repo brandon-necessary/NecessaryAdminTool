@@ -17,6 +17,7 @@
         <!-- Match MainWindow color scheme -->
         <SolidColorBrush x:Key="BgDarkest" Color="#FF0D0D0D"/>
         <SolidColorBrush x:Key="BgDark" Color="#FF1A1A1A"/>
+        <SolidColorBrush x:Key="BgLight" Color="#FF2F2F2F"/>
         <SolidColorBrush x:Key="BgCard" Color="#FF1E1E1E"/>
         <SolidColorBrush x:Key="BorderDim" Color="#FF3C3C3C"/>
         <SolidColorBrush x:Key="AccentOrange" Color="#FFFF8533"/>
