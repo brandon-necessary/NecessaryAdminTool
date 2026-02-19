@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 #Requires -RunAsAdministrator
 # ==============================================================================
 # NECESSARYADMINTOOL IT - FEATURE UPDATE SUITE (v1.0 - Bulletproof Edition)
@@ -40,7 +40,7 @@ if (!(Test-Path $PCLogDir)) {
     New-Item -ItemType Directory -Path $PCLogDir -Force | Out-Null
 }
 
-# Start transcript — captures ALL console output automatically (belt-and-suspenders alongside custom logging)
+# Start transcript - captures ALL console output automatically (belt-and-suspenders alongside custom logging)
 # Must specify explicit path: under SYSTEM, $HOME resolves to C:\Windows\System32\config\systemprofile
 $TranscriptPath = "$PCLogDir\$($env:COMPUTERNAME)_Feature_Transcript.txt"
 Start-Transcript -Path $TranscriptPath -Append -NoClobber -ErrorAction SilentlyContinue
@@ -71,13 +71,13 @@ function Write-NecessaryAdminToolLog {
     }
 
     if ($ToMaster) {
-        # Named system mutex — OS auto-releases on process crash; no stale lock risk
+        # Named system mutex - OS auto-releases on process crash; no stale lock risk
         $Mtx = $null; $Acquired = $false
         try {
             $Mtx = [System.Threading.Mutex]::new($false, "Global\NecessaryAdminTool_MasterLog")
             $Acquired = $Mtx.WaitOne(10000)   # wait up to 10s
         } catch [System.Threading.AbandonedMutexException] {
-            $Acquired = $true   # previous process died holding it — we now own it
+            $Acquired = $true   # previous process died holding it - we now own it
         } catch {}
         try {
             "$Comp,$Status,$Stamp" | Add-Content $MasterLog -Force -ErrorAction Stop
@@ -102,7 +102,7 @@ function Write-MasterSummary {
     $Header   = "Hostname,Script,Timestamp,OSVersion,UptimeDays,DiskFreeGB,Status,Method,Details,DurationSeconds"
     $Row      = "`"$Comp`",`"Feature`",`"$Stamp`",`"$OSVersion`",`"$UptimeDays`",`"$FreeGB`",`"$Status`",`"$Method`",`"$Details`",`"$Duration`""
 
-    # Named system mutex — OS auto-releases on process crash; no stale lock risk
+    # Named system mutex - OS auto-releases on process crash; no stale lock risk
     $Mtx = $null; $Acquired = $false
     try {
         $Mtx = [System.Threading.Mutex]::new($false, "Global\NecessaryAdminTool_MasterLog")
@@ -170,7 +170,7 @@ CREATE TABLE UpdateHistory (
 "@
         $CreateCmd.ExecuteNonQuery() | Out-Null
 
-        # Parameterized INSERT — no SQL injection risk
+        # Parameterized INSERT - no SQL injection risk
         $InsertCmd = $Conn.CreateCommand()
         $InsertCmd.CommandText = @"
 INSERT INTO UpdateHistory
@@ -203,7 +203,7 @@ VALUES
 # --- 3. UI LOGO (Theme Engine: Orange #FF8533 + Zinc #A1A1AA) ---
 function Show-NecessaryAdminToolLogo {
     param([string]$Msg, [string]$Color = "Cyan")
-    # Note: Clear-Host intentionally omitted — clearing console removes ME execution log history
+    # Note: Clear-Host intentionally omitted - clearing console removes ME execution log history
     Write-Host ""
     Write-Host " -----------------------------------------------------------" -ForegroundColor DarkYellow
     Write-Host "  " -NoNewline
@@ -221,12 +221,12 @@ function Show-NecessaryAdminToolLogo {
 
 # --- 3b. ENTERPRISE HELPER FUNCTIONS ---
 
-# Power/AC check — prevents upgrade on low-battery laptops not plugged in
+# Power/AC check - prevents upgrade on low-battery laptops not plugged in
 function Test-PowerOK {
     $Battery = Get-CimInstance -ClassName Win32_Battery -ErrorAction SilentlyContinue
-    if ($null -eq $Battery) { return $true }   # No battery = desktop/docked — always OK
+    if ($null -eq $Battery) { return $true }   # No battery = desktop/docked - always OK
     # BatteryStatus: 1=Discharging, 2=OnAC, 3=FullyCharged, 4=Low, 5=Critical, 6-9=Charging variants
-    # Check NOT discharging rather than exact equality to 2 — catches all "on AC" states
+    # Check NOT discharging rather than exact equality to 2 - catches all "on AC" states
     $OnAC         = $Battery.BatteryStatus -notin @(1, 4, 5)
     $PctRemaining = $Battery.EstimatedChargeRemaining
     Write-Host "  Battery: $PctRemaining% | AC Power: $OnAC" -ForegroundColor Cyan
@@ -234,7 +234,7 @@ function Test-PowerOK {
     return ($OnAC -or $PctRemaining -ge 40)
 }
 
-# Pending reboot check — upgrading over a pending reboot causes setup failures
+# Pending reboot check - upgrading over a pending reboot causes setup failures
 function Test-PendingReboot {
     if (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired" -ErrorAction SilentlyContinue) { return $true }
     if (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending"  -ErrorAction SilentlyContinue) { return $true }
@@ -243,14 +243,14 @@ function Test-PendingReboot {
     return ($null -ne $PFR -and @($PFR).Count -gt 0)
 }
 
-# Interactive user detection — skip dialog/countdown if machine is unattended
+# Interactive user detection - skip dialog/countdown if machine is unattended
 function Test-UserLoggedIn {
     $UserSessions = Get-Process -Name explorer -ErrorAction SilentlyContinue |
         Where-Object { $_.SessionId -ne 0 }
     return ($null -ne $UserSessions -and @($UserSessions).Count -gt 0)
 }
 
-# Open application detection — finds visible user apps to list in the warning dialog
+# Open application detection - finds visible user apps to list in the warning dialog
 function Get-OpenApplications {
     $AppPatterns = @(
         'WINWORD','EXCEL','POWERPNT','OUTLOOK','ONENOTE','ACCESS','MSPUB',  # Microsoft Office
@@ -273,29 +273,29 @@ function Get-OpenApplications {
     return ($Running | Select-Object -Unique | Select-Object -First 8)
 }
 
-# Exit code decoder — translates installer HRESULTs to readable descriptions for ME log
+# Exit code decoder - translates installer HRESULTs to readable descriptions for ME log
 function Get-InstallExitDescription {
     param([int]$ExitCode)
     $Known = @{
-        0            = "Success — reboot pending"
-        3010         = "Success — reboot required (same outcome as 0)"
-        -1056931699  = "0xC1900101 — Driver compatibility error (DRIVER_UNLOAD_WITHOUT_CANCEL)"
-        -1056931700  = "0xC1900200 — General hardware compatibility failure"
-        -1056931702  = "0xC1900202 — Minimum hardware requirements not met"
-        -1056931703  = "0xC1900203 — BIOS/UEFI firmware compatibility error"
-        -1056931593  = "0xC1900107 — Cleanup pending — reboot machine then retry"
-        -1056931120  = "0xC1900208 — Incompatible app is blocking the upgrade"
-        -1056931578  = "0xC190020E — Insufficient free space after gathering upgrade files"
-        -2146233088  = "0x80070070 — Insufficient disk space"
-        -2145107904  = "0x80240020 — Upgrade not offered via Windows Update for this device"
+        0            = "Success - reboot pending"
+        3010         = "Success - reboot required (same outcome as 0)"
+        -1056931699  = "0xC1900101 - Driver compatibility error (DRIVER_UNLOAD_WITHOUT_CANCEL)"
+        -1056931700  = "0xC1900200 - General hardware compatibility failure"
+        -1056931702  = "0xC1900202 - Minimum hardware requirements not met"
+        -1056931703  = "0xC1900203 - BIOS/UEFI firmware compatibility error"
+        -1056931593  = "0xC1900107 - Cleanup pending - reboot machine then retry"
+        -1056931120  = "0xC1900208 - Incompatible app is blocking the upgrade"
+        -1056931578  = "0xC190020E - Insufficient free space after gathering upgrade files"
+        -2146233088  = "0x80070070 - Insufficient disk space"
+        -2145107904  = "0x80240020 - Upgrade not offered via Windows Update for this device"
         -1            = "Process did not exit cleanly (killed or crashed)"
     }
     $Hex = "0x{0:X8}" -f [uint32]$ExitCode
-    if ($Known.ContainsKey($ExitCode)) { return "$Hex — $($Known[$ExitCode])" }
-    return "$Hex — Unknown exit code (check %TEMP%\`$WINDOWS.~BT\Sources\Panther\setupact.log or run SetupDiag)"
+    if ($Known.ContainsKey($ExitCode)) { return "$Hex - $($Known[$ExitCode])" }
+    return "$Hex - Unknown exit code (check %TEMP%\`$WINDOWS.~BT\Sources\Panther\setupact.log or run SetupDiag)"
 }
 
-# Pre-upgrade disk cleanup — frees WU cache + temp files and runs DISM component cleanup
+# Pre-upgrade disk cleanup - frees WU cache + temp files and runs DISM component cleanup
 function Invoke-PreUpgradeDiskCleanup {
     Write-Host "  Attempting pre-upgrade disk cleanup..." -ForegroundColor Cyan
     Write-NecessaryAdminToolLog -Status "DISK_CLEANUP_STARTED" -ToMaster $false
@@ -318,7 +318,7 @@ function Invoke-PreUpgradeDiskCleanup {
         Write-NecessaryAdminToolLog -Status "DISK_CLEANUP_TEMP_WARN_$($_.Exception.Message)" -ToMaster $false
     }
 
-    # Clear Delivery Optimization cache — often 2-8 GB of temporary download data, safe to remove
+    # Clear Delivery Optimization cache - often 2-8 GB of temporary download data, safe to remove
     try {
         Delete-DeliveryOptimizationCache -Force -ErrorAction Stop
         Write-NecessaryAdminToolLog -Status "DISK_CLEANUP_DO_CACHE_CLEARED" -ToMaster $false
@@ -326,7 +326,7 @@ function Invoke-PreUpgradeDiskCleanup {
         Write-NecessaryAdminToolLog -Status "DISK_CLEANUP_DO_CACHE_WARN_$($_.Exception.Message)" -ToMaster $false
     }
 
-    # DISM component cleanup (5-minute cap — does not block indefinitely)
+    # DISM component cleanup (5-minute cap - does not block indefinitely)
     try {
         $DismProc = Start-Process dism.exe `
             -ArgumentList "/Online /Cleanup-Image /StartComponentCleanup /ResetBase" `
@@ -377,7 +377,7 @@ if (!(Test-PowerOK)) {
     Write-Host "  FAILED: $Reason" -ForegroundColor Red
     Write-NecessaryAdminToolLog -Status "FAILED_POWER_CHECK_$Reason" -ToMaster $false
     Write-MasterSummary -Status "FAILED" -Method "None" -Details $Reason
-    Show-NecessaryAdminToolLogo -Msg "Power check failed — not safe to upgrade on battery" "Red"
+    Show-NecessaryAdminToolLogo -Msg "Power check failed - not safe to upgrade on battery" "Red"
     exit 1
 }
 Write-Host "  Power check: OK (AC or sufficient battery)" -ForegroundColor Green
@@ -389,7 +389,7 @@ if (Test-PendingReboot) {
     Write-Host "  FAILED: $Reason" -ForegroundColor Yellow
     Write-NecessaryAdminToolLog -Status "FAILED_PENDING_REBOOT" -ToMaster $false
     Write-MasterSummary -Status "FAILED" -Method "None" -Details $Reason
-    Show-NecessaryAdminToolLogo -Msg "Pending reboot — complete it first, then re-push task" "Yellow"
+    Show-NecessaryAdminToolLogo -Msg "Pending reboot - complete it first, then re-push task" "Yellow"
     exit 1
 }
 Write-Host "  Pending reboot: None detected" -ForegroundColor Green
@@ -398,7 +398,7 @@ Write-NecessaryAdminToolLog -Status "PENDING_REBOOT_CHECK_PASSED" -ToMaster $fal
 # --- 4. HARDWARE COMPATIBILITY CHECK ---
 Show-NecessaryAdminToolLogo -Msg "Hardware Compatibility Check..."
 
-# Check TPM 2.0 — Win11 requires TPM 2.0 (presence alone is not sufficient)
+# Check TPM 2.0 - Win11 requires TPM 2.0 (presence alone is not sufficient)
 $TPM       = $false
 $TPMVersion = "None"
 try {
@@ -424,20 +424,20 @@ $SecureBoot = try {
 }
 Write-Host "  Secure Boot: $SecureBoot" -ForegroundColor Cyan
 
-# Check OS architecture — Windows 11 is 64-bit only; 32-bit systems can never be upgraded
+# Check OS architecture - Windows 11 is 64-bit only; 32-bit systems can never be upgraded
 $OSArch  = $OSInfo.OSArchitecture   # reuse $OSInfo from startup
 $Is64Bit = $OSArch -like "*64*"
 Write-Host "  Architecture: $OSArch" -ForegroundColor Cyan
 if (!$Is64Bit) {
     Write-NecessaryAdminToolLog -Status "FAILED_HW_COMPATIBILITY_32-bit OS cannot be upgraded to Windows 11" -ToMaster $false
     Write-MasterSummary -Status "HW_INCOMPATIBLE" -Method "None" -Details "32-bit OS ($OSArch) cannot be upgraded to Windows 11"
-    Show-NecessaryAdminToolLogo -Msg "INCOMPATIBLE: 32-bit OS — Windows 11 is 64-bit only" "Red"
+    Show-NecessaryAdminToolLogo -Msg "INCOMPATIBLE: 32-bit OS - Windows 11 is 64-bit only" "Red"
     exit 1
 }
 
-# Check RAM — Win11 requires 4 GB minimum (reuse $TotalRAMGB captured at startup)
+# Check RAM - Win11 requires 4 GB minimum (reuse $TotalRAMGB captured at startup)
 $MIN_RAM_GB = 4
-$RAMGB      = $TotalRAMGB   # Win32_ComputerSystem already queried at startup — no extra WMI call
+$RAMGB      = $TotalRAMGB   # Win32_ComputerSystem already queried at startup - no extra WMI call
 $RAMOk      = $RAMGB -ge $MIN_RAM_GB
 Write-Host "  RAM: $RAMGB GB (minimum $MIN_RAM_GB GB)" -ForegroundColor Cyan
 
@@ -447,7 +447,7 @@ Write-Host "  Disk free: $FreeGB GB (minimum $MIN_DISK_SPACE_GB GB)" -Foreground
 
 # If disk is low but not critical (between 10 GB and threshold), attempt cleanup first
 if ($FreeGB -lt $MIN_DISK_SPACE_GB -and $FreeGB -ge 10) {
-    Write-Host "  Disk space low — attempting pre-upgrade cleanup to free space..." -ForegroundColor Yellow
+    Write-Host "  Disk space low - attempting pre-upgrade cleanup to free space..." -ForegroundColor Yellow
     Write-NecessaryAdminToolLog -Status "DISK_LOW_${FreeGB}GB_ATTEMPTING_CLEANUP" -ToMaster $false
     $FreeGB = Invoke-PreUpgradeDiskCleanup
 }
@@ -475,8 +475,8 @@ Write-NecessaryAdminToolLog -Status "HW_COMPAT_CHECK_PASSED_TPM2_SECUREBOOT_RAM_
 # Detect current Windows build and determine if an upgrade is actually needed.
 # Windows 11 build numbers: 21H2=22000, 22H2=22621, 23H2=22631, 24H2=26100, 25H2=26200
 # Update $WIN11_TARGET_BUILD when targeting a newer Windows release.
-$CurrentBuild        = [int]$OSInfo.BuildNumber   # reuse $OSInfo captured at startup — no extra WMI call
-$WIN11_TARGET_BUILD  = 26200   # Windows 11 25H2 (released Sept 2025) — update when new version ships
+$CurrentBuild        = [int]$OSInfo.BuildNumber   # reuse $OSInfo captured at startup - no extra WMI call
+$WIN11_TARGET_BUILD  = 26200   # Windows 11 25H2 (released Sept 2025) - update when new version ships
 $WIN11_TARGET_NAME   = "25H2"
 
 Write-Host ""
@@ -503,7 +503,7 @@ if ($OSVersion -match "Windows 11") {
 } else {
     $UpgradePath = "Windows 10 -> Windows 11 $WIN11_TARGET_NAME upgrade (current Build $CurrentBuild)"
 }
-Write-Host "  RESULT: Upgrade required — $UpgradePath" -ForegroundColor Yellow
+Write-Host "  RESULT: Upgrade required - $UpgradePath" -ForegroundColor Yellow
 Write-NecessaryAdminToolLog -Status "UPGRADE_REQUIRED_$UpgradePath" -ToMaster $false
 
 # --- 5. CLOUD UPDATE FALLBACK FUNCTION ---
@@ -521,7 +521,7 @@ function Run-CloudUpdate {
     Show-NecessaryAdminToolLogo -Msg "Initiating Windows 11 upgrade via Windows Update channels..." "Yellow"
     Write-NecessaryAdminToolLog -Status "METHOD_CLOUD_START" -ToMaster $false
 
-    # Ensure PSWindowsUpdate module is available — installs the same way as GeneralUpdate.ps1
+    # Ensure PSWindowsUpdate module is available - installs the same way as GeneralUpdate.ps1
     if (!(Get-Module -ListAvailable -Name PSWindowsUpdate)) {
         Write-Host "  Installing PSWindowsUpdate module..." -ForegroundColor Cyan
         Write-NecessaryAdminToolLog -Status "CLOUD_MODULE_INSTALL_STARTED" -ToMaster $false
@@ -533,7 +533,7 @@ function Run-CloudUpdate {
             Write-NecessaryAdminToolLog -Status "CLOUD_MODULE_INSTALLED_SUCCESSFULLY" -ToMaster $false
         } catch {
             Write-NecessaryAdminToolLog -Status "CLOUD_MODULE_INSTALL_FAILED_$($_.Exception.Message)" -ToMaster $false
-            Write-MasterSummary -Status "FAILED" -Method $Method -Details "PSWindowsUpdate install failed — configure ISO path for reliable deployment: $($_.Exception.Message)"
+            Write-MasterSummary -Status "FAILED" -Method $Method -Details "PSWindowsUpdate install failed - configure ISO path for reliable deployment: $($_.Exception.Message)"
             Show-NecessaryAdminToolLogo -Msg "Module install failed. Configure an ISO path in NecessaryAdminTool Options." "Red"
             exit 1
         }
@@ -559,7 +559,7 @@ function Run-CloudUpdate {
             Write-Host "  $Advice" -ForegroundColor Yellow
             Write-NecessaryAdminToolLog -Status "CLOUD_WU_NO_UPGRADE_OFFERED" -ToMaster $false
             Write-MasterSummary -Status "FAILED" -Method $Method -Details $Advice
-            Show-NecessaryAdminToolLogo -Msg "No feature upgrade offered via Windows Update — see log for options" "Yellow"
+            Show-NecessaryAdminToolLogo -Msg "No feature upgrade offered via Windows Update - see log for options" "Yellow"
             exit 1
         }
 
@@ -571,7 +571,7 @@ function Run-CloudUpdate {
         Write-Host "  PSWindowsUpdate will report download and install progress below." -ForegroundColor Gray
         Write-Host "  The machine will reboot automatically when installation is complete." -ForegroundColor Gray
 
-        # Install synchronously — PSWindowsUpdate outputs progress natively so ME log stays alive.
+        # Install synchronously - PSWindowsUpdate outputs progress natively so ME log stays alive.
         # -IgnoreReboot defers the physical reboot so the script can exit cleanly and log results;
         # Windows will reboot on its own schedule (or ME can trigger it after task completion).
         $Results = Install-WindowsUpdate -MicrosoftUpdate -Category "Upgrades" -AcceptAll -IgnoreReboot -ErrorAction Stop
@@ -583,8 +583,8 @@ function Run-CloudUpdate {
         }
 
         Write-NecessaryAdminToolLog -Status "CLOUD_WU_COMPLETE_REBOOT_PENDING" -ToMaster $false
-        Write-MasterSummary -Status "SUCCESS" -Method $Method -Details "Windows Update feature upgrade complete — reboot pending to finish installation"
-        Show-NecessaryAdminToolLogo -Msg "Windows Update upgrade complete — machine will reboot to finish installation" "Green"
+        Write-MasterSummary -Status "SUCCESS" -Method $Method -Details "Windows Update feature upgrade complete - reboot pending to finish installation"
+        Show-NecessaryAdminToolLogo -Msg "Windows Update upgrade complete - machine will reboot to finish installation" "Green"
         exit 0
 
     } catch {
@@ -606,16 +606,16 @@ function Test-VpnConnected {
     $VpnByType = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object {
         $_.Status -eq 'Up' -and $_.InterfaceType -eq 23
     }
-    # Use Count — Get-NetAdapter returns an empty array (not $null) when nothing matches
+    # Use Count - Get-NetAdapter returns an empty array (not $null) when nothing matches
     return (@($VpnByName).Count -gt 0 -or @($VpnByType).Count -gt 0)
 }
 
-# --- 6. USER WARNING (timed dialog — auto-proceeds, up to 2 postpones, boot-persistent) ---
+# --- 6. USER WARNING (timed dialog - auto-proceeds, up to 2 postpones, boot-persistent) ---
 #
 # Flow:
-#   First run  → timed dialog: auto-proceeds after 20 min if no one clicks anything
-#   Postpone   → increment count, exit 0 (re-push ME task to retry)
-#   PC restart  → startup task re-runs this script; pending flag skips dialog, upgrades immediately
+#   First run  -> timed dialog: auto-proceeds after 20 min if no one clicks anything
+#   Postpone   -> increment count, exit 0 (re-push ME task to retry)
+#   PC restart  -> startup task re-runs this script; pending flag skips dialog, upgrades immediately
 #
 
 $PostponeFlag = "C:\Windows\Temp\NecessaryAdminTool_Feature_Postpone.txt"
@@ -630,7 +630,7 @@ Add-Type -AssemblyName System.Drawing
 # --- Timed warning dialog (replaces blocking MessageBox) ---
 # Auto-proceeds when the countdown hits 0 so ME never hangs waiting for a click.
 # If running as SYSTEM in Session 0 (typical for ME), the form may not be visible to
-# the user — in that case ShowDialog() returns immediately and the script proceeds,
+# the user - in that case ShowDialog() returns immediately and the script proceeds,
 # which is the correct behaviour for overnight / unattended deployments.
 function Show-UpgradeWarning {
     param(
@@ -653,7 +653,7 @@ function Show-UpgradeWarning {
     $Form.FormBorderStyle  = [System.Windows.Forms.FormBorderStyle]::FixedDialog
     $Form.MaximizeBox      = $false
     $Form.MinimizeBox      = $false
-    $Form.ControlBox       = $false   # no X — must use a button
+    $Form.ControlBox       = $false   # no X - must use a button
 
     # Body text
     $LblBody               = New-Object System.Windows.Forms.Label
@@ -674,7 +674,7 @@ function Show-UpgradeWarning {
     $LblCountdown.ForeColor = [System.Drawing.Color]::DarkOrange
     $Form.Controls.Add($LblCountdown)
 
-    # "Start Now" button — proceed immediately
+    # "Start Now" button - proceed immediately
     $BtnNow                = New-Object System.Windows.Forms.Button
     $BtnNow.Text           = "Start Now"
     $BtnNow.Location       = New-Object System.Drawing.Point(20, 282)
@@ -683,7 +683,7 @@ function Show-UpgradeWarning {
     $BtnNow.Add_Click({ $script:UpgradeChoice = "Proceed"; $Form.Close() })
     $Form.Controls.Add($BtnNow)
 
-    # "Postpone" button — only shown when postpones are available
+    # "Postpone" button - only shown when postpones are available
     if ($AllowPostpone) {
         $BtnPostpone           = New-Object System.Windows.Forms.Button
         $BtnPostpone.Text      = "Postpone  ($PostponesLeft left)"
@@ -694,7 +694,7 @@ function Show-UpgradeWarning {
         $Form.Controls.Add($BtnPostpone)
     }
 
-    # Timer fires every second — updates countdown label, closes form at zero
+    # Timer fires every second - updates countdown label, closes form at zero
     $Timer                 = New-Object System.Windows.Forms.Timer
     $Timer.Interval        = 1000
     $Timer.Add_Tick({
@@ -711,7 +711,7 @@ function Show-UpgradeWarning {
     $Timer.Start()
 
     try   { [void]$Form.ShowDialog() }
-    catch { <# Session 0 / no desktop — form invisible, default "Proceed" applies #> }
+    catch { <# Session 0 / no desktop - form invisible, default "Proceed" applies #> }
     finally { $Timer.Stop(); $Timer.Dispose(); $Form.Dispose() }
 
     return $script:UpgradeChoice
@@ -723,8 +723,8 @@ Write-Host "  Checking for existing postpone / pending-restart state..." -Foregr
 Write-NecessaryAdminToolLog -Status "USER_WARNING_CHECK_STARTED" -ToMaster $false
 
 if (Test-Path $PendingFlag) {
-    # Machine restarted during the 20-min countdown — skip dialog, go straight to upgrade
-    Write-Host "  [BOOT RESUME] Pending flag found — machine restarted during countdown." -ForegroundColor Yellow
+    # Machine restarted during the 20-min countdown - skip dialog, go straight to upgrade
+    Write-Host "  [BOOT RESUME] Pending flag found - machine restarted during countdown." -ForegroundColor Yellow
     Write-Host "  User previously acknowledged the upgrade. Skipping dialog, starting upgrade now." -ForegroundColor Yellow
     Write-NecessaryAdminToolLog -Status "PENDING_FLAG_FOUND_RESUMING_AFTER_RESTART" -ToMaster $false
     Show-NecessaryAdminToolLogo -Msg "Resuming upgrade after restart (user previously acknowledged)..." "Yellow"
@@ -753,13 +753,13 @@ if (Test-Path $PendingFlag) {
     Write-NecessaryAdminToolLog -Status "USER_SESSION_PRESENT_${UserPresent}" -ToMaster $false
 
     if (!$UserPresent) {
-        # Unattended machine — proceed immediately without dialog or countdown
-        Write-Host "  No interactive user detected — running in unattended mode (no dialog, no countdown)." -ForegroundColor Yellow
+        # Unattended machine - proceed immediately without dialog or countdown
+        Write-Host "  No interactive user detected - running in unattended mode (no dialog, no countdown)." -ForegroundColor Yellow
         Write-NecessaryAdminToolLog -Status "UNATTENDED_MODE_SKIPPING_DIALOG_AND_COUNTDOWN" -ToMaster $false
-        Show-NecessaryAdminToolLogo -Msg "Unattended mode — no user present, upgrading immediately..." "Yellow"
+        Show-NecessaryAdminToolLogo -Msg "Unattended mode - no user present, upgrading immediately..." "Yellow"
 
     } else {
-        # === USER IS PRESENT — SHOW WARNING DIALOG ===
+        # === USER IS PRESENT - SHOW WARNING DIALOG ===
 
         # Detect open applications to include in dialog body
         $OpenApps    = Get-OpenApplications
@@ -811,7 +811,7 @@ if (Test-Path $PendingFlag) {
             Write-NecessaryAdminToolLog -Status "MSG_EXE_SENT_TO_ALL_SESSIONS" -ToMaster $false
         } catch {
             Write-NecessaryAdminToolLog -Status "MSG_EXE_FAILED_$($_.Exception.Message)" -ToMaster $false
-            # Non-fatal — WinForms dialog is the primary notification path
+            # Non-fatal - WinForms dialog is the primary notification path
         }
 
         $Choice = Show-UpgradeWarning `
@@ -840,7 +840,7 @@ if (Test-Path $PendingFlag) {
         # Write pending flag + register boot task before the countdown sleep,
         # so if the PC restarts during countdown the upgrade auto-resumes on next boot
         "Acknowledged" | Out-File $PendingFlag -Encoding ASCII -Force
-        Write-Host "  Pending flag written — upgrade auto-resumes if PC restarts." -ForegroundColor Cyan
+        Write-Host "  Pending flag written - upgrade auto-resumes if PC restarts." -ForegroundColor Cyan
 
         $ScriptPath = $MyInvocation.MyCommand.Path
         if (-not [string]::IsNullOrEmpty($ScriptPath) -and (Test-Path $ScriptPath -ErrorAction SilentlyContinue)) {
@@ -852,19 +852,19 @@ if (Test-Path $PendingFlag) {
                                 -MultipleInstances IgnoreNew -StartWhenAvailable $true
                 Register-ScheduledTask -TaskName $BootTaskName -Action $Action -Trigger $Trigger `
                     -Settings $Settings -RunLevel Highest -User "SYSTEM" -Force -ErrorAction Stop | Out-Null
-                Write-Host "  [BOOT TASK] '$BootTaskName' registered — upgrade survives a reboot." -ForegroundColor Green
+                Write-Host "  [BOOT TASK] '$BootTaskName' registered - upgrade survives a reboot." -ForegroundColor Green
                 Write-NecessaryAdminToolLog -Status "BOOT_TASK_REGISTERED_UPGRADE_RESUMES_ON_RESTART" -ToMaster $false
             } catch {
                 Write-Host "  [BOOT TASK] WARNING: Could not register startup task: $($_.Exception.Message)" -ForegroundColor Yellow
-                Write-Host "  Upgrade still proceeds after countdown — boot persistence unavailable." -ForegroundColor Yellow
+                Write-Host "  Upgrade still proceeds after countdown - boot persistence unavailable." -ForegroundColor Yellow
                 Write-NecessaryAdminToolLog -Status "BOOT_TASK_REGISTER_FAILED_$($_.Exception.Message)" -ToMaster $false
             }
         } else {
-            Write-Host "  [BOOT TASK] Script path unavailable — boot persistence skipped." -ForegroundColor Gray
+            Write-Host "  [BOOT TASK] Script path unavailable - boot persistence skipped." -ForegroundColor Gray
             Write-NecessaryAdminToolLog -Status "BOOT_TASK_SKIPPED_NO_SCRIPT_PATH" -ToMaster $false
         }
 
-        # 20-minute work-save countdown — fully visible in ME execution log
+        # 20-minute work-save countdown - fully visible in ME execution log
         Write-Host ""
         Write-Host "  --- $WarningMinutes-Minute Work-Save Countdown ---" -ForegroundColor DarkYellow
         Write-NecessaryAdminToolLog -Status "UPGRADE_COUNTDOWN_STARTED_${WarningMinutes}MIN" -ToMaster $false
@@ -877,7 +877,7 @@ if (Test-Path $PendingFlag) {
             Start-Sleep -Seconds 60
         }
 
-        # Countdown complete — remove boot persistence, proceed to upgrade
+        # Countdown complete - remove boot persistence, proceed to upgrade
         Write-Host ""
         Write-Host "  [COUNTDOWN COMPLETE] $WarningMinutes minutes elapsed. Proceeding to upgrade now." -ForegroundColor Green
         Write-NecessaryAdminToolLog -Status "UPGRADE_COUNTDOWN_COMPLETE_PROCEEDING" -ToMaster $false
@@ -895,21 +895,21 @@ Write-Host ""
 Write-Host "  --- Upgrade Method Selection ---" -ForegroundColor DarkYellow
 Write-NecessaryAdminToolLog -Status "UPGRADE_METHOD_SELECTION_STARTED_Hostname=${Comp}_Pattern=${HostnamePattern}" -ToMaster $false
 
-# VPN check — only skip ISO if the ISO path is a UNC network share (\\server\share).
+# VPN check - only skip ISO if the ISO path is a UNC network share (\\server\share).
 # Local ISO paths (C:\, D:\, etc.) are not affected by VPN and should proceed normally.
 $VpnActive    = Test-VpnConnected
 $IsNetworkISO = (-not [string]::IsNullOrEmpty($ISOPath)) -and $ISOPath.TrimStart().StartsWith("\\")
 Write-Host "  VPN active: $VpnActive | Network ISO: $IsNetworkISO" -ForegroundColor Cyan
 
 if ($VpnActive -and $IsNetworkISO) {
-    # UNC share is likely unreachable over VPN — go straight to Windows Update
+    # UNC share is likely unreachable over VPN - go straight to Windows Update
     Write-NecessaryAdminToolLog -Status "VPN_DETECTED_NETWORK_ISO_UNREACHABLE_USING_CLOUD" -ToMaster $false
-    Show-NecessaryAdminToolLogo -Msg "VPN detected (UNC share unreachable) — using Windows Update" "Yellow"
+    Show-NecessaryAdminToolLogo -Msg "VPN detected (UNC share unreachable) - using Windows Update" "Yellow"
     Run-CloudUpdate -Method "Cloud-VPN"
 } elseif ($VpnActive) {
-    # VPN active but ISO is a local path — VPN does not affect local access, proceed normally
+    # VPN active but ISO is a local path - VPN does not affect local access, proceed normally
     Write-NecessaryAdminToolLog -Status "VPN_DETECTED_LOCAL_ISO_PROCEEDING_NORMALLY" -ToMaster $false
-    Write-Host "  VPN active but ISO is a local path — evaluating ISO/WU normally." -ForegroundColor Cyan
+    Write-Host "  VPN active but ISO is a local path - evaluating ISO/WU normally." -ForegroundColor Cyan
 } else {
     Write-NecessaryAdminToolLog -Status "VPN_NOT_DETECTED_EVALUATING_ISO_PATH" -ToMaster $false
 }
@@ -958,10 +958,10 @@ if ($HostnameMatch -and $ISOExists) {
         }
 
         # Run setup with timeout protection and per-minute progress reporting
-        # /compat ignorewarning — CRITICAL: without this, dismissible compat warnings silently block the upgrade in /quiet mode
-        # /copylogs — copies Panther logs to our log directory for post-failure diagnostics
-        # /migratedrivers all — explicit driver migration (default is non-deterministic)
-        # /telemetry disable — suppress setup telemetry per enterprise policy
+        # /compat ignorewarning - CRITICAL: without this, dismissible compat warnings silently block the upgrade in /quiet mode
+        # /copylogs - copies Panther logs to our log directory for post-failure diagnostics
+        # /migratedrivers all - explicit driver migration (default is non-deterministic)
+        # /telemetry disable - suppress setup telemetry per enterprise policy
         $SetupArgs = "/auto upgrade /quiet /eula accept /showoobe none /dynamicupdate disable /compat ignorewarning /migratedrivers all /telemetry disable /copylogs `"$PCLogDir`""
         Write-NecessaryAdminToolLog -Status "ISO_RUNNING_Args=$SetupArgs" -ToMaster $true
         Show-NecessaryAdminToolLogo -Msg "Upgrading via ISO... (Do not turn off - may take up to 2 hours)" "Yellow"
@@ -969,7 +969,7 @@ if ($HostnameMatch -and $ISOExists) {
 
         $Proc = Start-Process $SetupPath -ArgumentList $SetupArgs -PassThru -ErrorAction Stop
 
-        # Poll every 60s — keeps ME execution log alive during the 2-hour install
+        # Poll every 60s - keeps ME execution log alive during the 2-hour install
         $ISOCheckInterval = 60
         $ISOElapsed       = 0
         $PantherLog       = "C:\`$WINDOWS.~BT\Sources\Panther\setupact.log"
@@ -1014,10 +1014,10 @@ if ($HostnameMatch -and $ISOExists) {
             Show-NecessaryAdminToolLogo -Msg "ISO upgrade completed successfully" "Green"
             exit 0
         } else {
-            # setup.exe exited with an error — attempt Windows Update as fallback before giving up.
+            # setup.exe exited with an error - attempt Windows Update as fallback before giving up.
             # Note: hardware/driver/app compat failures (0xC190xxxx) will likely fail WU too,
             # but we try anyway because some errors (e.g. ISO-specific format issues) may not apply.
-            Write-Host "  ISO setup failed ($ExitDesc) — trying Windows Update fallback..." -ForegroundColor Yellow
+            Write-Host "  ISO setup failed ($ExitDesc) - trying Windows Update fallback..." -ForegroundColor Yellow
             Write-NecessaryAdminToolLog -Status "ISO_FAILED_CODE_${ExitCode}_TRYING_WU_FALLBACK" -ToMaster $false
             Run-CloudUpdate -Method "Cloud-ISOFailed"
         }
@@ -1046,7 +1046,7 @@ if ($HostnameMatch -and $ISOExists) {
     }
 }
 else {
-    # ISO path not used — determine specific reason and log it
+    # ISO path not used - determine specific reason and log it
     if (!$HostnameMatch) {
         Write-Host "  Selected method: Cloud (hostname '$Comp' does not match pattern '$HostnamePattern')" -ForegroundColor Cyan
         Write-NecessaryAdminToolLog -Status "HOSTNAME_PATTERN_MISMATCH_Host=${Comp}_Pattern=${HostnamePattern}_USING_CLOUD" -ToMaster $false

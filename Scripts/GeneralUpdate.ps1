@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 #Requires -RunAsAdministrator
 # ==============================================================================
 # NECESSARYADMINTOOL IT - GENERAL UPDATE SUITE (v1.0 - Bulletproof Edition)
@@ -44,7 +44,7 @@ if (!(Test-Path $PCArchive)) {
     New-Item -ItemType Directory -Path $PCArchive -Force | Out-Null
 }
 
-# Start transcript — captures ALL console output automatically (belt-and-suspenders alongside custom logging)
+# Start transcript - captures ALL console output automatically (belt-and-suspenders alongside custom logging)
 # Must specify explicit path: under SYSTEM, $HOME resolves to C:\Windows\System32\config\systemprofile
 $TranscriptPath = "$PCLogDir\$($env:COMPUTERNAME)_General_Transcript.txt"
 Start-Transcript -Path $TranscriptPath -Append -NoClobber -ErrorAction SilentlyContinue
@@ -75,7 +75,7 @@ function Write-NecessaryAdminToolLog {
     }
 
     if ($ToMaster) {
-        # Named system mutex — OS auto-releases on process crash; no stale lock risk
+        # Named system mutex - OS auto-releases on process crash; no stale lock risk
         $Mtx = $null; $Acquired = $false
         try {
             $Mtx = [System.Threading.Mutex]::new($false, "Global\NecessaryAdminTool_MasterLog")
@@ -106,7 +106,7 @@ function Write-MasterSummary {
     $Header   = "Hostname,Script,Timestamp,OSVersion,UptimeDays,DiskFreeGB,Status,UpdatesFound,Details,DurationSeconds"
     $Row      = "`"$Comp`",`"General`",`"$Stamp`",`"$OSVersion`",`"$UptimeDays`",`"$FreeGB`",`"$Status`",`"$UpdatesFound`",`"$Details`",`"$Duration`""
 
-    # Named system mutex — OS auto-releases on process crash; no stale lock risk
+    # Named system mutex - OS auto-releases on process crash; no stale lock risk
     $Mtx = $null; $Acquired = $false
     try {
         $Mtx = [System.Threading.Mutex]::new($false, "Global\NecessaryAdminTool_MasterLog")
@@ -169,7 +169,7 @@ CREATE TABLE UpdateHistory (
 "@
         $CreateCmd.ExecuteNonQuery() | Out-Null
 
-        # Parameterized INSERT — no SQL injection risk
+        # Parameterized INSERT - no SQL injection risk
         $InsertCmd = $Conn.CreateCommand()
         $InsertCmd.CommandText = @"
 INSERT INTO UpdateHistory
@@ -202,7 +202,7 @@ VALUES
 # --- 2. UI & LOGO (Theme Engine: Orange #FF8533 + Zinc #A1A1AA) ---
 function Show-NecessaryAdminToolLogo {
     param([string]$Msg, [string]$Color = "Cyan")
-    # Note: Clear-Host intentionally omitted — clearing console removes ME execution log history
+    # Note: Clear-Host intentionally omitted - clearing console removes ME execution log history
     Write-Host ""
     Write-Host " -----------------------------------------------------------" -ForegroundColor DarkYellow
     Write-Host "  " -NoNewline
@@ -220,7 +220,7 @@ function Show-NecessaryAdminToolLogo {
 
 function Check-Power {
     $Battery = Get-CimInstance -ClassName Win32_Battery -ErrorAction SilentlyContinue
-    if ($null -eq $Battery) { return $true }   # No battery = desktop/docked — always OK
+    if ($null -eq $Battery) { return $true }   # No battery = desktop/docked - always OK
     $Battery = @($Battery)[0]   # Guard against multiple battery objects (docking stations)
     # Try root/wmi BatteryStatus.PowerOnline first (most reliable); fall back to Win32_Battery.BatteryStatus
     $BattStatus = Get-CimInstance -Namespace root/wmi -ClassName BatteryStatus -ErrorAction SilentlyContinue
@@ -265,9 +265,9 @@ Write-NecessaryAdminToolLog -Status "OS_VERSION_$OSVersion" -ToMaster $false
 Write-NecessaryAdminToolLog -Status "UPTIME_${UptimeDays}_DAYS" -ToMaster $false
 Write-NecessaryAdminToolLog -Status "DISK_FREE_${FreeGB}GB" -ToMaster $false
 
-# Verify PSWindowsUpdate module — auto-install if missing (ManageEngine/RMM compatible)
+# Verify PSWindowsUpdate module - auto-install if missing (ManageEngine/RMM compatible)
 if (!(Get-Module -ListAvailable -Name PSWindowsUpdate)) {
-    Show-NecessaryAdminToolLogo -Msg "PSWindowsUpdate not found — installing..." "Yellow"
+    Show-NecessaryAdminToolLogo -Msg "PSWindowsUpdate not found - installing..." "Yellow"
     Write-NecessaryAdminToolLog -Status "MODULE_NOT_FOUND_INSTALLING" -ToMaster $false
     try {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
