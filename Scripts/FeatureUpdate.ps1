@@ -1,18 +1,10 @@
+#Requires -Version 5.1
+#Requires -RunAsAdministrator
 # ==============================================================================
 # NECESSARYADMINTOOL IT - FEATURE UPDATE SUITE (v1.0 - Bulletproof Edition)
 # Includes: Windows Major OS Updates, HW Guard, ISO/Cloud Logic, ManageEngine Compatible
 # Security Hardened: Admin checks, configurable patterns, resource cleanup, timeouts
 # ==============================================================================
-
-# --- PRE-FLIGHT GUARD: Admin Privileges ---
-$CurrentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
-$IsAdmin = (New-Object Security.Principal.WindowsPrincipal $CurrentUser).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
-
-if (!$IsAdmin) {
-    Write-Error "ERROR: This script requires administrator privileges"
-    Write-Error "Right-click PowerShell and select 'Run as Administrator'"
-    exit 1
-}
 
 # --- 1. CONFIGURABLE PATHS (Environment Variable Based) ---
 # ALL paths are configured via environment variables or app settings
@@ -41,13 +33,17 @@ $Comp       = $env:COMPUTERNAME
 # Constants
 $MIN_DISK_SPACE_GB = 20
 $SETUP_TIMEOUT_SECONDS = 7200  # 2 hours
-$MAX_LOG_LOCK_TIMEOUT = 50
 $MIN_ISO_SIZE_GB = 1
 
 # Create log directories if missing
 if (!(Test-Path $PCLogDir)) {
     New-Item -ItemType Directory -Path $PCLogDir -Force | Out-Null
 }
+
+# Start transcript — captures ALL console output automatically (belt-and-suspenders alongside custom logging)
+# Must specify explicit path: under SYSTEM, $HOME resolves to C:\Windows\System32\config\systemprofile
+$TranscriptPath = "$PCLogDir\$($env:COMPUTERNAME)_Feature_Transcript.txt"
+Start-Transcript -Path $TranscriptPath -Append -NoClobber -ErrorAction SilentlyContinue
 
 # Capture baseline info early so it's available at all exit points
 $ScriptStart = Get-Date
@@ -75,25 +71,21 @@ function Write-NecessaryAdminToolLog {
     }
 
     if ($ToMaster) {
-        $LockFile = "$MasterLog.lock"
-        # Remove stale lock left by a crashed process (older than 30 seconds)
-        if ((Test-Path $LockFile) -and ((Get-Date) - (Get-Item $LockFile -ErrorAction SilentlyContinue).LastWriteTime).TotalSeconds -gt 30) {
-            Remove-Item $LockFile -Force -ErrorAction SilentlyContinue
-        }
-        $TimeOut = 0
-        while ((Test-Path $LockFile) -and ($TimeOut -lt $MAX_LOG_LOCK_TIMEOUT)) {
-            Start-Sleep -Milliseconds 200
-            $TimeOut++
-        }
+        # Named system mutex — OS auto-releases on process crash; no stale lock risk
+        $Mtx = $null; $Acquired = $false
         try {
-            New-Item -ItemType File -Path $LockFile -Force -ErrorAction SilentlyContinue | Out-Null
+            $Mtx = [System.Threading.Mutex]::new($false, "Global\NecessaryAdminTool_MasterLog")
+            $Acquired = $Mtx.WaitOne(10000)   # wait up to 10s
+        } catch [System.Threading.AbandonedMutexException] {
+            $Acquired = $true   # previous process died holding it — we now own it
+        } catch {}
+        try {
             "$Comp,$Status,$Stamp" | Add-Content $MasterLog -Force -ErrorAction Stop
-        }
-        catch {
+        } catch {
             "[$Stamp] ERROR: Master Log Write Failed - $($_.Exception.Message)" | Out-File $PCLog -Append -ErrorAction SilentlyContinue
-        }
-        finally {
-            Remove-Item $LockFile -ErrorAction SilentlyContinue
+        } finally {
+            if ($Acquired -and $Mtx) { try { $Mtx.ReleaseMutex() } catch {} }
+            if ($Mtx) { $Mtx.Dispose() }
         }
     }
 }
@@ -110,24 +102,22 @@ function Write-MasterSummary {
     $Header   = "Hostname,Script,Timestamp,OSVersion,UptimeDays,DiskFreeGB,Status,Method,Details,DurationSeconds"
     $Row      = "`"$Comp`",`"Feature`",`"$Stamp`",`"$OSVersion`",`"$UptimeDays`",`"$FreeGB`",`"$Status`",`"$Method`",`"$Details`",`"$Duration`""
 
-    $LockFile = "$MasterLog.lock"
-    # Remove stale lock left by a crashed process (older than 30 seconds)
-    if ((Test-Path $LockFile) -and ((Get-Date) - (Get-Item $LockFile -ErrorAction SilentlyContinue).LastWriteTime).TotalSeconds -gt 30) {
-        Remove-Item $LockFile -Force -ErrorAction SilentlyContinue
-    }
-    $TimeOut  = 0
-    while ((Test-Path $LockFile) -and ($TimeOut -lt $MAX_LOG_LOCK_TIMEOUT)) {
-        Start-Sleep -Milliseconds 200
-        $TimeOut++
-    }
+    # Named system mutex — OS auto-releases on process crash; no stale lock risk
+    $Mtx = $null; $Acquired = $false
     try {
-        New-Item -ItemType File -Path $LockFile -Force -ErrorAction SilentlyContinue | Out-Null
+        $Mtx = [System.Threading.Mutex]::new($false, "Global\NecessaryAdminTool_MasterLog")
+        $Acquired = $Mtx.WaitOne(10000)
+    } catch [System.Threading.AbandonedMutexException] {
+        $Acquired = $true
+    } catch {}
+    try {
         if (!(Test-Path $MasterLog)) { $Header | Out-File $MasterLog -Encoding UTF8 -ErrorAction SilentlyContinue }
         $Row | Add-Content $MasterLog -Force -ErrorAction Stop
     } catch {
         "[$Stamp] ERROR: Master Summary Write Failed - $($_.Exception.Message)" | Out-File $PCLog -Append -ErrorAction SilentlyContinue
     } finally {
-        Remove-Item $LockFile -ErrorAction SilentlyContinue
+        if ($Acquired -and $Mtx) { try { $Mtx.ReleaseMutex() } catch {} }
+        if ($Mtx) { $Mtx.Dispose() }
     }
 
     # Write duration footer to individual PC log (reuse $Duration already computed above)
@@ -235,7 +225,9 @@ function Show-NecessaryAdminToolLogo {
 function Test-PowerOK {
     $Battery = Get-CimInstance -ClassName Win32_Battery -ErrorAction SilentlyContinue
     if ($null -eq $Battery) { return $true }   # No battery = desktop/docked — always OK
-    $OnAC         = $Battery.BatteryStatus -eq 2   # BatteryStatus 2 = Connected to AC
+    # BatteryStatus: 1=Discharging, 2=OnAC, 3=FullyCharged, 4=Low, 5=Critical, 6-9=Charging variants
+    # Check NOT discharging rather than exact equality to 2 — catches all "on AC" states
+    $OnAC         = $Battery.BatteryStatus -notin @(1, 4, 5)
     $PctRemaining = $Battery.EstimatedChargeRemaining
     Write-Host "  Battery: $PctRemaining% | AC Power: $OnAC" -ForegroundColor Cyan
     Write-NecessaryAdminToolLog -Status "POWER_Battery_${PctRemaining}pct_AC_${OnAC}" -ToMaster $false
@@ -262,7 +254,7 @@ function Test-UserLoggedIn {
 function Get-OpenApplications {
     $AppPatterns = @(
         'WINWORD','EXCEL','POWERPNT','OUTLOOK','ONENOTE','ACCESS','MSPUB',  # Microsoft Office
-        'Teams','msteams','slack','zoom','webexmta',                         # Collaboration
+        'Teams','msteams','ms-teams','slack','zoom','webexmta',               # Collaboration (ms-teams = Teams 2.0)
         'chrome','msedge','firefox','iexplore','brave',                      # Browsers
         'notepad\+\+','Code','devenv',                                       # Dev tools
         'acrobat','acrord32',                                                # PDF
@@ -324,6 +316,14 @@ function Invoke-PreUpgradeDiskCleanup {
         Write-NecessaryAdminToolLog -Status "DISK_CLEANUP_TEMP_CLEARED" -ToMaster $false
     } catch {
         Write-NecessaryAdminToolLog -Status "DISK_CLEANUP_TEMP_WARN_$($_.Exception.Message)" -ToMaster $false
+    }
+
+    # Clear Delivery Optimization cache — often 2-8 GB of temporary download data, safe to remove
+    try {
+        Delete-DeliveryOptimizationCache -Force -ErrorAction Stop
+        Write-NecessaryAdminToolLog -Status "DISK_CLEANUP_DO_CACHE_CLEARED" -ToMaster $false
+    } catch {
+        Write-NecessaryAdminToolLog -Status "DISK_CLEANUP_DO_CACHE_WARN_$($_.Exception.Message)" -ToMaster $false
     }
 
     # DISM component cleanup (5-minute cap — does not block indefinitely)
@@ -424,6 +424,17 @@ $SecureBoot = try {
 }
 Write-Host "  Secure Boot: $SecureBoot" -ForegroundColor Cyan
 
+# Check OS architecture — Windows 11 is 64-bit only; 32-bit systems can never be upgraded
+$OSArch  = $OSInfo.OSArchitecture   # reuse $OSInfo from startup
+$Is64Bit = $OSArch -like "*64*"
+Write-Host "  Architecture: $OSArch" -ForegroundColor Cyan
+if (!$Is64Bit) {
+    Write-NecessaryAdminToolLog -Status "FAILED_HW_COMPATIBILITY_32-bit OS cannot be upgraded to Windows 11" -ToMaster $false
+    Write-MasterSummary -Status "HW_INCOMPATIBLE" -Method "None" -Details "32-bit OS ($OSArch) cannot be upgraded to Windows 11"
+    Show-NecessaryAdminToolLogo -Msg "INCOMPATIBLE: 32-bit OS — Windows 11 is 64-bit only" "Red"
+    exit 1
+}
+
 # Check RAM — Win11 requires 4 GB minimum (reuse $TotalRAMGB captured at startup)
 $MIN_RAM_GB = 4
 $RAMGB      = $TotalRAMGB   # Win32_ComputerSystem already queried at startup — no extra WMI call
@@ -496,10 +507,15 @@ Write-Host "  RESULT: Upgrade required — $UpgradePath" -ForegroundColor Yellow
 Write-NecessaryAdminToolLog -Status "UPGRADE_REQUIRED_$UpgradePath" -ToMaster $false
 
 # --- 5. CLOUD UPDATE FALLBACK FUNCTION ---
+# NOTE: The Installation Assistant (Windows11InstallationAssistant.exe) is a consumer tool.
+# Its /quietinstall and /skipeula flags are UNDOCUMENTED by Microsoft and unreliable under SYSTEM.
+# It may hang silently in headless/SYSTEM context (waiting for EULA input it can never receive).
+# The ISO path (section 7) using setup.exe is strongly preferred for RMM deployment.
+# This cloud path is provided as a best-effort fallback only — configure an ISO path when possible.
 function Run-CloudUpdate {
     param([string]$Method = "Cloud")
-    Show-NecessaryAdminToolLogo -Msg "Downloading Windows 11 Installation Assistant..." "Yellow"
-    Write-NecessaryAdminToolLog -Status "METHOD_CLOUD_START" -ToMaster $false
+    Show-NecessaryAdminToolLogo -Msg "Downloading Windows 11 Installation Assistant (cloud fallback)..." "Yellow"
+    Write-NecessaryAdminToolLog -Status "METHOD_CLOUD_START_NOTE_ISO_PATH_PREFERRED" -ToMaster $false
 
     $AssistantPath = "$env:TEMP\NecessaryAdminTool_Win11Assistant.exe"
 
@@ -960,11 +976,16 @@ if ($HostnameMatch -and $ISOExists) {
         }
 
         # Run setup with timeout protection and per-minute progress reporting
-        Write-NecessaryAdminToolLog -Status "ISO_RUNNING_Args=/auto upgrade /quiet /showoobe none /eula accept /dynamicupdate disable" -ToMaster $true
+        # /compat ignorewarning — CRITICAL: without this, dismissible compat warnings silently block the upgrade in /quiet mode
+        # /copylogs — copies Panther logs to our log directory for post-failure diagnostics
+        # /migratedrivers all — explicit driver migration (default is non-deterministic)
+        # /telemetry disable — suppress setup telemetry per enterprise policy
+        $SetupArgs = "/auto upgrade /quiet /eula accept /showoobe none /dynamicupdate disable /compat ignorewarning /migratedrivers all /telemetry disable /copylogs `"$PCLogDir`""
+        Write-NecessaryAdminToolLog -Status "ISO_RUNNING_Args=$SetupArgs" -ToMaster $true
         Show-NecessaryAdminToolLogo -Msg "Upgrading via ISO... (Do not turn off - may take up to 2 hours)" "Yellow"
         Write-Host "  Progress will be reported every 60 seconds in this log." -ForegroundColor Gray
 
-        $Proc = Start-Process $SetupPath -ArgumentList "/auto upgrade /quiet /showoobe none /eula accept /dynamicupdate disable" -PassThru -ErrorAction Stop
+        $Proc = Start-Process $SetupPath -ArgumentList $SetupArgs -PassThru -ErrorAction Stop
 
         # Poll every 60s — keeps ME execution log alive during the 2-hour install
         $ISOCheckInterval = 60

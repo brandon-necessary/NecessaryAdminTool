@@ -1,27 +1,10 @@
+#Requires -Version 5.1
+#Requires -RunAsAdministrator
 # ==============================================================================
 # NECESSARYADMINTOOL IT - GENERAL UPDATE SUITE (v1.0 - Bulletproof Edition)
 # Includes: Windows Updates, Firmware, Uptime Guard, Power Check, ManageEngine Compatible
 # Security Hardened: Admin checks, module validation, safe cleanup, disk space checks
 # ==============================================================================
-
-# --- PRE-FLIGHT GUARD: PowerShell Version ---
-if ($PSVersionTable.PSVersion.Major -lt 5) {
-    $MasterLog = "\\Jzppdm\sys\PUBLIC\BNIT\01_Software\04_Update Logs\Master_Update_Log.csv"
-    $Line = "$($env:COMPUTERNAME),FAILED_VERSION_CHECK,$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
-    Add-Content $MasterLog $Line -ErrorAction SilentlyContinue
-    Write-Error "CRITICAL: PowerShell 5.1 or higher is required."
-    exit 1
-}
-
-# --- PRE-FLIGHT GUARD: Admin Privileges ---
-$CurrentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
-$IsAdmin = (New-Object Security.Principal.WindowsPrincipal $CurrentUser).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
-
-if (!$IsAdmin) {
-    Write-Error "ERROR: This script requires administrator privileges"
-    Write-Error "Right-click PowerShell and select 'Run as Administrator'"
-    exit 1
-}
 
 # --- 0. CONFIGURABLE PATHS (Environment Variable Based) ---
 # ALL paths are configured via environment variables or app settings
@@ -52,7 +35,6 @@ $Comp        = $env:COMPUTERNAME
 $LOG_RETENTION_DAYS = 30
 $MIN_DISK_SPACE_GB = 10
 $UPTIME_LIMIT_DAYS = 30
-$MAX_LOG_LOCK_TIMEOUT = 50
 
 # Create log directories if missing
 if (!(Test-Path $PCLogDir)) {
@@ -61,6 +43,11 @@ if (!(Test-Path $PCLogDir)) {
 if (!(Test-Path $PCArchive)) {
     New-Item -ItemType Directory -Path $PCArchive -Force | Out-Null
 }
+
+# Start transcript — captures ALL console output automatically (belt-and-suspenders alongside custom logging)
+# Must specify explicit path: under SYSTEM, $HOME resolves to C:\Windows\System32\config\systemprofile
+$TranscriptPath = "$PCLogDir\$($env:COMPUTERNAME)_General_Transcript.txt"
+Start-Transcript -Path $TranscriptPath -Append -NoClobber -ErrorAction SilentlyContinue
 
 # Safe maintenance: Only clean NecessaryAdminTool temp files
 Remove-Item "C:\Windows\Temp\NecessaryAdminTool*" -Recurse -Force -ErrorAction SilentlyContinue
@@ -88,25 +75,21 @@ function Write-NecessaryAdminToolLog {
     }
 
     if ($ToMaster) {
-        $LockFile = "$MasterLog.lock"
-        # Remove stale lock left by a crashed process (older than 30 seconds)
-        if ((Test-Path $LockFile) -and ((Get-Date) - (Get-Item $LockFile -ErrorAction SilentlyContinue).LastWriteTime).TotalSeconds -gt 30) {
-            Remove-Item $LockFile -Force -ErrorAction SilentlyContinue
-        }
-        $TimeOut  = 0
-        while ((Test-Path $LockFile) -and ($TimeOut -lt $MAX_LOG_LOCK_TIMEOUT)) {
-            Start-Sleep -Milliseconds 200
-            $TimeOut++
-        }
+        # Named system mutex — OS auto-releases on process crash; no stale lock risk
+        $Mtx = $null; $Acquired = $false
         try {
-            New-Item -ItemType File -Path $LockFile -Force -ErrorAction SilentlyContinue | Out-Null
+            $Mtx = [System.Threading.Mutex]::new($false, "Global\NecessaryAdminTool_MasterLog")
+            $Acquired = $Mtx.WaitOne(10000)
+        } catch [System.Threading.AbandonedMutexException] {
+            $Acquired = $true
+        } catch {}
+        try {
             "$Comp,$Status,$Stamp" | Add-Content $MasterLog -Force -ErrorAction Stop
-        }
-        catch {
+        } catch {
             "[$Stamp] ERROR: Master Log Write Failed - $($_.Exception.Message)" | Out-File $PCLog -Append -ErrorAction SilentlyContinue
-        }
-        finally {
-            Remove-Item $LockFile -ErrorAction SilentlyContinue
+        } finally {
+            if ($Acquired -and $Mtx) { try { $Mtx.ReleaseMutex() } catch {} }
+            if ($Mtx) { $Mtx.Dispose() }
         }
     }
 }
@@ -123,24 +106,22 @@ function Write-MasterSummary {
     $Header   = "Hostname,Script,Timestamp,OSVersion,UptimeDays,DiskFreeGB,Status,UpdatesFound,Details,DurationSeconds"
     $Row      = "`"$Comp`",`"General`",`"$Stamp`",`"$OSVersion`",`"$UptimeDays`",`"$FreeGB`",`"$Status`",`"$UpdatesFound`",`"$Details`",`"$Duration`""
 
-    $LockFile = "$MasterLog.lock"
-    # Remove stale lock left by a crashed process (older than 30 seconds)
-    if ((Test-Path $LockFile) -and ((Get-Date) - (Get-Item $LockFile -ErrorAction SilentlyContinue).LastWriteTime).TotalSeconds -gt 30) {
-        Remove-Item $LockFile -Force -ErrorAction SilentlyContinue
-    }
-    $TimeOut  = 0
-    while ((Test-Path $LockFile) -and ($TimeOut -lt $MAX_LOG_LOCK_TIMEOUT)) {
-        Start-Sleep -Milliseconds 200
-        $TimeOut++
-    }
+    # Named system mutex — OS auto-releases on process crash; no stale lock risk
+    $Mtx = $null; $Acquired = $false
     try {
-        New-Item -ItemType File -Path $LockFile -Force -ErrorAction SilentlyContinue | Out-Null
+        $Mtx = [System.Threading.Mutex]::new($false, "Global\NecessaryAdminTool_MasterLog")
+        $Acquired = $Mtx.WaitOne(10000)
+    } catch [System.Threading.AbandonedMutexException] {
+        $Acquired = $true
+    } catch {}
+    try {
         if (!(Test-Path $MasterLog)) { $Header | Out-File $MasterLog -Encoding UTF8 -ErrorAction SilentlyContinue }
         $Row | Add-Content $MasterLog -Force -ErrorAction Stop
     } catch {
         "[$Stamp] ERROR: Master Summary Write Failed - $($_.Exception.Message)" | Out-File $PCLog -Append -ErrorAction SilentlyContinue
     } finally {
-        Remove-Item $LockFile -ErrorAction SilentlyContinue
+        if ($Acquired -and $Mtx) { try { $Mtx.ReleaseMutex() } catch {} }
+        if ($Mtx) { $Mtx.Dispose() }
     }
 
     # Write to SQL Server if configured
@@ -239,9 +220,17 @@ function Show-NecessaryAdminToolLogo {
 
 function Check-Power {
     $Battery = Get-CimInstance -ClassName Win32_Battery -ErrorAction SilentlyContinue
-    if ($null -eq $Battery) { return $true }
-    $AC = (Get-CimInstance -Namespace root/wmi -ClassName BatteryStatus).PowerOnline
-    return ($AC -or $Battery.EstimatedChargeRemaining -ge 20)
+    if ($null -eq $Battery) { return $true }   # No battery = desktop/docked — always OK
+    $Battery = @($Battery)[0]   # Guard against multiple battery objects (docking stations)
+    # Try root/wmi BatteryStatus.PowerOnline first (most reliable); fall back to Win32_Battery.BatteryStatus
+    $BattStatus = Get-CimInstance -Namespace root/wmi -ClassName BatteryStatus -ErrorAction SilentlyContinue
+    $OnAC = if ($BattStatus) {
+        @($BattStatus)[0].PowerOnline
+    } else {
+        # BatteryStatus: 1=Discharging, 2=OnAC, 3=FullyCharged, 4=Low, 5=Critical, 6-9=Charging variants
+        $Battery.BatteryStatus -notin @(1, 4, 5)
+    }
+    return ($OnAC -or $Battery.EstimatedChargeRemaining -ge 20)
 }
 
 # --- 3. UPTIME CHECK ---
@@ -255,7 +244,7 @@ if ($UptimeDays -gt 30) {
         exit 0
     } else {
         $Choice = [System.Windows.Forms.MessageBox]::Show("Uptime: $UptimeDays days. Reboot now or postpone?", "NecessaryAdminTool IT", "YesNo", "Warning", "Button1", "ServiceNotification")
-        if ($Choice -eq "No") { "Postponed" | Out-File $FlagFile; Write-NecessaryAdminToolLog -Status "REBOOT_POSTPONED" -ToMaster $true; exit }
+        if ($Choice -eq "No") { "Postponed" | Out-File $FlagFile; Write-NecessaryAdminToolLog -Status "REBOOT_POSTPONED" -ToMaster $true; exit 0 }
     }
 }
 
