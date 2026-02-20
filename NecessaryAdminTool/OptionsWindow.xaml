@@ -114,7 +114,7 @@
         <!-- CONTENT (Scrollable)             -->
         <!-- ════════════════════════════════ -->
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel Margin="30,20">
+            <StackPanel Margin="30,20" MaxWidth="1000" HorizontalAlignment="Stretch">
 
                 <!-- Status Message (Hidden by default) -->
                 <Border x:Name="StatusMessage" Background="{StaticResource BgCard}"
@@ -169,9 +169,9 @@
                 </Expander>
 
                 <!-- ══════════════════════════════ -->
-                <!-- SECTION 2: GENERAL SETTINGS   -->
+                <!-- SECTION 2a: GENERAL PREFS     -->
                 <!-- ══════════════════════════════ -->
-                <Expander x:Name="ExpanderGeneral" Header="⚙️ GENERAL SETTINGS"
+                <Expander x:Name="ExpanderGeneral" Header="⚙️ GENERAL PREFERENCES"
                           IsExpanded="True" Margin="0,0,0,10">
                     <Expander.HeaderTemplate>
                         <DataTemplate>
@@ -203,11 +203,45 @@
                             <CheckBox x:Name="ChkRememberDC" Content="Remember Domain Controller selection"
                                       Foreground="White" FontSize="11" Margin="0,0,0,12"/>
 
-                            <!-- TAG: #SECURITY #AUTHENTICATION #CREDENTIAL_STORAGE -->
-                            <!-- Security &amp; Credential Settings -->
-                            <TextBlock Text="Security &amp; Authentication:" Foreground="{StaticResource AccentOrange}"
-                                       FontSize="10" FontWeight="Bold" Margin="0,8,0,8"/>
+                            <!-- AD Query Method - TAG: #VERSION_7 #AD_QUERY_BACKEND_SELECTION #PERFORMANCE_AUDIT -->
+                            <TextBlock Text="AD Query Method:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <ComboBox x:Name="ComboADQueryMethod" Margin="0,0,0,12"
+                                      Background="{StaticResource BgDark}" Foreground="White"
+                                      BorderBrush="{StaticResource BorderDim}" Padding="8,6" FontSize="11"
+                                      SelectedValuePath="Tag">
+                                <ComboBoxItem Content="DirectorySearcher (Fast)" Tag="DirectorySearcher" IsSelected="True"/>
+                                <ComboBoxItem Content="ActiveDirectoryManager (Detailed)" Tag="ActiveDirectoryManager"/>
+                            </ComboBox>
+                            <TextBlock Text="💡 DirectorySearcher is faster for large environments. ActiveDirectoryManager provides richer AD object properties."
+                                       Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="14"/>
 
+                            <!-- Target History -->
+                            <TextBlock Text="Recent Targets:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,6"/>
+                            <ListBox x:Name="ListTargetHistory" Height="120" Background="{StaticResource BgDark}"
+                                     BorderBrush="{StaticResource BorderDim}" Foreground="White" FontSize="11" Margin="0,0,0,8"/>
+                            <!-- TAG: #TOOLTIPS #ACTIONS -->
+                            <Button Content="CLEAR HISTORY" Style="{StaticResource BtnDanger}"
+                                    Click="BtnClearHistory_Click" Padding="12,6" FontSize="10"
+                                    ToolTip="Clears all recent target computer names from history. This list is used for quick access to frequently scanned computers. Does not affect database records or bookmarks. History will rebuild as you scan new computers."/>
+                        </StackPanel>
+                    </Border>
+                </Expander>
+
+                <!-- ══════════════════════════════ -->
+                <!-- SECTION 2b: SECURITY & AUTH    -->
+                <!-- ══════════════════════════════ -->
+                <Expander x:Name="ExpanderSecurity" Header="🔐 SECURITY &amp; AUTHENTICATION"
+                          IsExpanded="False" Margin="0,0,0,10">
+                    <Expander.HeaderTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" FontSize="13" FontWeight="Bold"
+                                       Foreground="{StaticResource AccentOrange}"/>
+                        </DataTemplate>
+                    </Expander.HeaderTemplate>
+                    <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
+                            BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
+                        <StackPanel>
+                            <!-- TAG: #SECURITY #AUTHENTICATION #CREDENTIAL_STORAGE -->
                             <!-- Remember Credentials -->
                             <CheckBox x:Name="ChkRememberCredentials"
                                       Content="Remember admin credentials between sessions"
@@ -276,29 +310,7 @@
                             <!-- Clear DC Preferences -->
                             <Button Content="RESET DC PREFERENCES" Style="{StaticResource BtnDanger}"
                                     Click="BtnResetDCPreferences_Click" Padding="12,6" FontSize="10"
-                                    Margin="0,0,0,16"
                                     ToolTip="Resets all domain controller preferences including favorites, display order, and expansion state. The DC Health widget will return to default settings."/>
-
-                            <!-- AD Query Method - TAG: #VERSION_7 #AD_QUERY_BACKEND_SELECTION #PERFORMANCE_AUDIT -->
-                            <TextBlock Text="AD Query Method:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
-                            <ComboBox x:Name="ComboADQueryMethod" Margin="0,0,0,12"
-                                      Background="{StaticResource BgDark}" Foreground="White"
-                                      BorderBrush="{StaticResource BorderDim}" Padding="8,6" FontSize="11"
-                                      SelectedValuePath="Tag">
-                                <ComboBoxItem Content="DirectorySearcher (Fast)" Tag="DirectorySearcher" IsSelected="True"/>
-                                <ComboBoxItem Content="ActiveDirectoryManager (Detailed)" Tag="ActiveDirectoryManager"/>
-                            </ComboBox>
-                            <TextBlock Text="💡 DirectorySearcher is faster for large environments. ActiveDirectoryManager provides richer AD object properties."
-                                       Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="14"/>
-
-                            <!-- Target History -->
-                            <TextBlock Text="Recent Targets:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,6"/>
-                            <ListBox x:Name="ListTargetHistory" Height="120" Background="{StaticResource BgDark}"
-                                     BorderBrush="{StaticResource BorderDim}" Foreground="White" FontSize="11" Margin="0,0,0,8"/>
-                            <!-- TAG: #TOOLTIPS #ACTIONS -->
-                            <Button Content="CLEAR HISTORY" Style="{StaticResource BtnDanger}"
-                                    Click="BtnClearHistory_Click" Padding="12,6" FontSize="10"
-                                    ToolTip="Clears all recent target computer names from history. This list is used for quick access to frequently scanned computers. Does not affect database records or bookmarks. History will rebuild as you scan new computers."/>
                         </StackPanel>
                     </Border>
                 </Expander>
@@ -1473,10 +1485,28 @@
                                 </Grid>
                             </Border>
 
+                        </StackPanel>
+                    </Border>
+                </Expander>
+
+                <!-- ══════════════════════════════════ -->
+                <!-- SECTION: DEPLOYMENT & AUTOMATION   -->
+                <!-- ══════════════════════════════════ -->
+                <Expander x:Name="ExpanderDeployment" Header="🚀 DEPLOYMENT &amp; AUTOMATION"
+                          IsExpanded="False" Margin="0,0,0,10">
+                    <Expander.HeaderTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" FontSize="13" FontWeight="Bold"
+                                       Foreground="{StaticResource AccentOrange}"/>
+                        </DataTemplate>
+                    </Expander.HeaderTemplate>
+                    <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
+                            BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
+                        <StackPanel>
                             <!-- TAG: #CONFIGURABLE_OPTIONS #DEPLOYMENT #POWERSHELL_SCRIPTS -->
                             <!-- Deployment Configuration -->
                             <TextBlock Text="DEPLOYMENT CONFIGURATION" Foreground="{StaticResource AccentOrange}"
-                                       FontSize="10" FontWeight="Bold" Margin="0,20,0,8"/>
+                                       FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
 
                             <!-- Deployment Log Directory -->
                             <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"

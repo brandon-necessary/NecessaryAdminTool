@@ -7,7 +7,8 @@
         Title="About NecessaryAdminTool Suite"
         Height="650" Width="520"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize"
+        ResizeMode="CanResize"
+        MinHeight="500" MinWidth="420"
         Background="#FF0D0D0D"
         WindowStyle="None"
         AllowsTransparency="True"
@@ -675,7 +676,7 @@
                                 </Border>
 
                                 <!-- Scrollable Legal Text -->
-                                <ScrollViewer MaxHeight="350" VerticalScrollBarVisibility="Auto">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
                                     <TextBlock TextWrapping="Wrap" Foreground="#FFCCCCCC" FontSize="10" LineHeight="16">
                                     <Run FontWeight="Bold" Foreground="#FFFF8533" FontSize="11">END-USER LICENSE AGREEMENT (EULA)</Run>
                                     <LineBreak/><LineBreak/>

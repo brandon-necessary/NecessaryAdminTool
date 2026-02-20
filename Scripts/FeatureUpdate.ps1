@@ -1,23 +1,25 @@
 ﻿#Requires -Version 5.1
 #Requires -RunAsAdministrator
+# TAG: #DEPLOYMENT_SCRIPT #FEATURE_UPDATE #OS_UPGRADE #MANAGEENGINE_COMPATIBLE #VERSION_1_0
+# FUTURE CLAUDES: Ensure Write-MasterSummary 24-column schema matches all other scripts exactly.
 # ==============================================================================
 # NECESSARYADMINTOOL IT - FEATURE UPDATE SUITE (v1.0 - Bulletproof Edition)
 # Includes: Windows Major OS Updates, HW Guard, ISO/Cloud Logic, ManageEngine Compatible
 # Security Hardened: Admin checks, configurable patterns, resource cleanup, timeouts
 # ------------------------------------------------------------------------------
 # EXIT CODE LEGEND (visible in ManageEngine task result at a glance):
-#   0  = Already compliant (Win11 up to date) OR user postponed — no OS change made this run
+#   0  = Already compliant (Win11 up to date) OR user postponed -- no OS change made this run
 #   10 = Windows 10 22H2 installed via fallback (machine is Win11-incompatible) + reboot issued
 #   11 = Windows 11 upgrade installed successfully (via Windows Update or ISO) + reboot issued
-#   20 = Power check failed — device is on battery and below 20%, plug in charger
-#   21 = Pending reboot detected — run PreflightReboot.ps1 first, then re-push task
-#   22 = 32-bit OS — incompatible with Windows 11 (64-bit only)
-#   23 = Hardware incompatible — TPM 2.0 / Secure Boot / RAM / Disk requirements not met
+#   20 = Power check failed -- device is on battery and below 20%, plug in charger
+#   21 = Pending reboot detected -- run PreflightReboot.ps1 first, then re-push task
+#   22 = 32-bit OS -- incompatible with Windows 11 (64-bit only)
+#   23 = Hardware incompatible -- TPM 2.0 / Secure Boot / RAM / Disk requirements not met
 #   24 = PSWindowsUpdate module could not be installed (no internet / policy blocked)
 #   25 = No feature upgrade offered via Windows Update (WUfB policy / not yet targeted)
 #   26 = Cloud (Windows Update) upgrade install failed
-#   27 = ISO file too small — re-download or check UNC path
-#   28 = ISO setup timed out — setup.exe did not complete within the allowed window
+#   27 = ISO file too small -- re-download or check UNC path
+#   28 = ISO setup timed out -- setup.exe did not complete within the allowed window
 #   29 = Win10 fallback update failed (machine is also Win11-incompatible; see log for details)
 # ==============================================================================
 
@@ -450,7 +452,7 @@ if (!(Test-PowerOK)) {
     Write-NecessaryAdminToolLog -Status "FAILED_POWER_CHECK_$Reason" -ToMaster $false
     Write-MasterSummary -Status "FAILED" -Method "None" -Details $Reason
     Show-NecessaryAdminToolLogo -Msg "Power check failed - not safe to upgrade on battery" "Red"
-    exit 20  # Power check failed — device on battery
+    exit 20  # Power check failed -- device on battery
 }
 Write-Host "  Power check: OK (AC or sufficient battery)" -ForegroundColor Green
 Write-NecessaryAdminToolLog -Status "POWER_CHECK_PASSED" -ToMaster $false
@@ -464,7 +466,7 @@ if (Test-PendingReboot) {
     Write-NecessaryAdminToolLog -Status "FAILED_PENDING_REBOOT" -ToMaster $false
     Write-MasterSummary -Status "FAILED" -Method "None" -Details $Reason
     Show-NecessaryAdminToolLogo -Msg "Pending reboot - run Preflight script first, then re-push task" "Yellow"
-    exit 21  # Pending reboot detected — run PreflightReboot.ps1 first
+    exit 21  # Pending reboot detected -- run PreflightReboot.ps1 first
 }
 Write-Host "  Pending reboot: None detected - OK to proceed with upgrade." -ForegroundColor Green
 Write-Host "  [PREFLIGHT PASS] No pending reboot (WU/CBS/PFR keys all clear)." -ForegroundColor Green
@@ -509,7 +511,7 @@ if (!$Is64Bit) {
     Write-NecessaryAdminToolLog -Status "FAILED_HW_COMPATIBILITY_32-bit OS cannot be upgraded to Windows 11" -ToMaster $false
     Write-MasterSummary -Status "HW_INCOMPATIBLE" -Method "None" -Details "32-bit OS ($OSArch) cannot be upgraded to Windows 11"
     Show-NecessaryAdminToolLogo -Msg "INCOMPATIBLE: 32-bit OS - Windows 11 is 64-bit only" "Red"
-    exit 22  # 32-bit OS — incompatible with Windows 11
+    exit 22  # 32-bit OS -- incompatible with Windows 11
 }
 
 # Check RAM - Win11 requires 4 GB minimum (reuse $TotalRAMGB captured at startup)
@@ -522,7 +524,7 @@ Write-Host "  RAM: $RAMGB GB (minimum $MIN_RAM_GB GB)" -ForegroundColor Cyan
 $FreeGB = [math]::Round(((Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='C:'").FreeSpace / 1GB), 2)
 Write-Host "  Disk free: $FreeGB GB (minimum $MIN_DISK_SPACE_GB GB)" -ForegroundColor Cyan
 
-# If disk is below threshold attempt cleanup first (regardless of how low — every GB helps)
+# If disk is below threshold attempt cleanup first (regardless of how low -- every GB helps)
 if ($FreeGB -lt $MIN_DISK_SPACE_GB) {
     Write-Host "  Disk space low (${FreeGB}GB) - attempting pre-upgrade cleanup to free space..." -ForegroundColor Yellow
     Write-NecessaryAdminToolLog -Status "DISK_LOW_${FreeGB}GB_ATTEMPTING_CLEANUP" -ToMaster $false
@@ -539,31 +541,31 @@ if (!$TPM -or !$SecureBoot -or !$RAMOk -or $FreeGB -lt $MIN_DISK_SPACE_GB) {
 
     $ReasonText = $Reasons -join "|"
     Write-NecessaryAdminToolLog -Status "WIN11_HW_INCOMPATIBLE_$ReasonText" -ToMaster $false
-    Show-NecessaryAdminToolLogo -Msg "Win11 incompatible ($ReasonText) — checking Windows 10 status..." "Yellow"
+    Show-NecessaryAdminToolLogo -Msg "Win11 incompatible ($ReasonText) -- checking Windows 10 status..." "Yellow"
 
-    # --- WIN10 FALLBACK: Machine cannot run Win11 — ensure it is at least on Win10 22H2 (Build 19045) ---
-    # $CurrentBuild is set at line 96 from $OSInfo.BuildNumber — available here before the Section 4b re-assignment.
+    # --- WIN10 FALLBACK: Machine cannot run Win11 -- ensure it is at least on Win10 22H2 (Build 19045) ---
+    # $CurrentBuild is set at line 96 from $OSInfo.BuildNumber -- available here before the Section 4b re-assignment.
     # Windows 10 22H2 (Build 19045) is the final Windows 10 feature update; nothing newer to offer.
     $WIN10_LATEST_BUILD = 19045
 
     if ($CurrentBuild -ge $WIN10_LATEST_BUILD) {
-        Write-Host "  Machine is already on Windows 10 22H2 or later (Build $CurrentBuild) — latest Win10." -ForegroundColor Green
+        Write-Host "  Machine is already on Windows 10 22H2 or later (Build $CurrentBuild) -- latest Win10." -ForegroundColor Green
         Write-Host "  Cannot upgrade to Windows 11 until hardware requirements are met." -ForegroundColor Yellow
         Write-NecessaryAdminToolLog -Status "WIN10_ALREADY_LATEST_BUILD_${CurrentBuild}_NO_FURTHER_UPDATES" -ToMaster $false
         Write-MasterSummary -Status "HW_INCOMPATIBLE" -Method "None" -Details "Already on Win10 22H2 (Build $CurrentBuild); Win11 blocked: $ReasonText"
-        Show-UserNotification -Title "NecessaryAdminTool — Windows 11 Upgrade Blocked" `
+        Show-UserNotification -Title "NecessaryAdminTool -- Windows 11 Upgrade Blocked" `
             -Message "This PC cannot be upgraded to Windows 11 due to hardware requirements:`n$($Reasons -join "`n")`n`nYour IT team has been notified. No further Windows updates are available until hardware is addressed." `
             -Icon "Warning"
         Start-Sleep -Seconds 5
-        exit 23  # Hardware incompatible — TPM/SecureBoot/RAM/Disk (already on latest Win10)
+        exit 23  # Hardware incompatible -- TPM/SecureBoot/RAM/Disk (already on latest Win10)
     }
 
-    # Machine is on an older Win10 build — attempt to update it to 22H2 via Windows Update
+    # Machine is on an older Win10 build -- attempt to update it to 22H2 via Windows Update
     Write-Host "  Machine is on Windows 10 Build $CurrentBuild (below 22H2/Build $WIN10_LATEST_BUILD)." -ForegroundColor Yellow
     Write-Host "  Attempting to update to Windows 10 22H2 via Windows Update..." -ForegroundColor Cyan
     Write-NecessaryAdminToolLog -Status "WIN10_FALLBACK_BUILD_${CurrentBuild}_ATTEMPTING_22H2" -ToMaster $false
 
-    # Ensure PSWindowsUpdate module is available — same install path as Run-CloudUpdate
+    # Ensure PSWindowsUpdate module is available -- same install path as Run-CloudUpdate
     if (!(Get-Module -ListAvailable -Name PSWindowsUpdate)) {
         Write-Host "  Installing PSWindowsUpdate module..." -ForegroundColor Cyan
         try {
@@ -583,26 +585,28 @@ if (!$TPM -or !$SecureBoot -or !$RAMOk -or $FreeGB -lt $MIN_DISK_SPACE_GB) {
     try {
         Import-Module PSWindowsUpdate -ErrorAction Stop
 
-        # Scan for Win10 feature updates only — -NotTitle "Windows 11" prevents accidental Win11 offer
+        # Scan for Win10 feature updates only -- -NotTitle "Windows 11" prevents accidental Win11 offer
         Write-Host "  Scanning Windows Update for Win10 feature updates (Win11 excluded)..." -ForegroundColor Cyan
         Write-NecessaryAdminToolLog -Status "WIN10_FALLBACK_WU_SCAN_STARTED" -ToMaster $false
-        $Win10Updates = @(Get-WindowsUpdate -MicrosoftUpdate -Category "Upgrades" -NotTitle "Windows 11" -AcceptAll -ErrorAction Stop)
+        [array]$Win10Updates = Get-WindowsUpdate -MicrosoftUpdate -Category "Upgrades" -NotTitle "Windows 11" -AcceptAll -ErrorAction Stop |
+            Write-Output
 
         if ($Win10Updates.Count -eq 0) {
             Write-Host "  No Windows 10 feature updates offered via Windows Update for this machine." -ForegroundColor Yellow
             Write-NecessaryAdminToolLog -Status "WIN10_FALLBACK_NO_UPDATES_OFFERED" -ToMaster $false
             Write-MasterSummary -Status "HW_INCOMPATIBLE" -Method "Win10WU" -Details "Win11 blocked ($ReasonText); no Win10 feature updates offered via WU"
             Show-NecessaryAdminToolLogo -Msg "Win11 blocked (HW); no Win10 updates offered via Windows Update" "Yellow"
-            exit 23  # Hardware incompatible — no applicable Win10 updates available either
+            exit 23  # Hardware incompatible -- no applicable Win10 updates available either
         }
 
         $UpdateTitle = $Win10Updates[0].Title
         Write-Host "  Win10 update available: $UpdateTitle" -ForegroundColor Green
         Write-NecessaryAdminToolLog -Status "WIN10_FALLBACK_UPDATE_FOUND_$UpdateTitle" -ToMaster $false
-        Show-NecessaryAdminToolLogo -Msg "Installing Win10 update: $UpdateTitle — Do not turn off this PC" "Yellow"
+        Show-NecessaryAdminToolLogo -Msg "Installing Win10 update: $UpdateTitle -- Do not turn off this PC" "Yellow"
 
         # Install synchronously; -IgnoreReboot lets the script exit cleanly and issue shutdown itself
-        $Win10Results = @(Install-WindowsUpdate -MicrosoftUpdate -Category "Upgrades" -NotTitle "Windows 11" -AcceptAll -IgnoreReboot -ErrorAction Stop)
+        [array]$Win10Results = Install-WindowsUpdate -MicrosoftUpdate -Category "Upgrades" -NotTitle "Windows 11" -AcceptAll -IgnoreReboot -ErrorAction Stop |
+            Write-Output
 
         if ($Win10Results.Count -eq 0) {
             throw "No results returned from Install-WindowsUpdate"
@@ -615,10 +619,10 @@ if (!$TPM -or !$SecureBoot -or !$RAMOk -or $FreeGB -lt $MIN_DISK_SPACE_GB) {
         }
 
         Write-NecessaryAdminToolLog -Status "WIN10_FALLBACK_INSTALL_COMPLETE_ISSUING_REBOOT" -ToMaster $false
-        Write-MasterSummary -Status "SUCCESS" -Method "Win10WU" -UpdateCount "1" -Details "Win10 update installed ($UpdateTitle) — Win11 still blocked: $ReasonText"
-        Show-NecessaryAdminToolLogo -Msg "Win10 update installed — restarting to finish..." "Green"
-        Show-UserNotification -Title "NecessaryAdminTool — Windows 10 Updated" `
-            -Message "Windows 10 has been updated ($UpdateTitle).`nYour PC will restart in 5 minutes — please save your work now.`n`nNote: Windows 11 upgrade is not yet available for this device ($($Reasons -join '; '))." `
+        Write-MasterSummary -Status "SUCCESS" -Method "Win10WU" -UpdateCount "1" -Details "Win10 update installed ($UpdateTitle) -- Win11 still blocked: $ReasonText"
+        Show-NecessaryAdminToolLogo -Msg "Win10 update installed -- restarting to finish..." "Green"
+        Show-UserNotification -Title "NecessaryAdminTool -- Windows 10 Updated" `
+            -Message "Windows 10 has been updated ($UpdateTitle).`nYour PC will restart in 5 minutes -- please save your work now.`n`nNote: Windows 11 upgrade is not yet available for this device ($($Reasons -join '; '))." `
             -Icon "Warning"
 
         $RebootDelay = if (Test-UserLoggedIn) { 300 } else { 60 }
@@ -714,7 +718,8 @@ function Run-CloudUpdate {
         Write-Host "  Scanning Windows Update for feature upgrades..." -ForegroundColor Cyan
         Write-NecessaryAdminToolLog -Status "CLOUD_WU_SCAN_STARTED" -ToMaster $false
 
-        $FeatureUpdates = @(Get-WindowsUpdate -MicrosoftUpdate -Category "Upgrades" -AcceptAll -ErrorAction Stop)
+        [array]$FeatureUpdates = Get-WindowsUpdate -MicrosoftUpdate -Category "Upgrades" -AcceptAll -ErrorAction Stop |
+            Write-Output
 
         if ($FeatureUpdates.Count -eq 0) {
             # Feature update not offered to this machine via Windows Update.
@@ -742,8 +747,9 @@ function Run-CloudUpdate {
         # Install synchronously - PSWindowsUpdate outputs progress natively so ME log stays alive.
         # -IgnoreReboot defers the physical reboot so the script can exit cleanly and log results;
         # Windows will reboot on its own schedule (or ME can trigger it after task completion).
-        # @() cast — $Results may be $null if WU returns nothing
-        $Results = @(Install-WindowsUpdate -MicrosoftUpdate -Category "Upgrades" -AcceptAll -IgnoreReboot -ErrorAction Stop)
+        # [array] cast + Write-Output pipeline flattening -- prevents nested Object[] from PSWindowsUpdate
+        [array]$Results = Install-WindowsUpdate -MicrosoftUpdate -Category "Upgrades" -AcceptAll -IgnoreReboot -ErrorAction Stop |
+            Write-Output
 
         if ($Results.Count -eq 0) {
             throw "No results returned from PSWindowsUpdate - upgrade may not have been offered to this device"
@@ -1125,7 +1131,7 @@ if ($HostnameMatch -and $ISOExists) {
     if ($ISOSize -lt $MIN_ISO_SIZE_GB) {
         Write-NecessaryAdminToolLog -Status "ERROR_ISO_TOO_SMALL_${ISOSize}GB_EXPECTED_${MIN_ISO_SIZE_GB}GB" -ToMaster $false
         Run-CloudUpdate -Method "Cloud-ISOTooSmall"
-        exit 27  # ISO too small — Run-CloudUpdate exits internally; this is a safety backstop
+        exit 27  # ISO too small -- Run-CloudUpdate exits internally; this is a safety backstop
     }
 
     Write-Host "  Selected method: ISO ($ISOPath)" -ForegroundColor Green
@@ -1181,7 +1187,7 @@ if ($HostnameMatch -and $ISOExists) {
             # Detect phase from Windows Setup Panther log (same as cloud branch)
             $ISOPhase = "Upgrading..."
             if (Test-Path $PantherLog -ErrorAction SilentlyContinue) {
-                # Specify UTF8 — Panther log is ASCII-compatible but may vary; avoids garbage on UTF-16 systems
+                # Specify UTF8 -- Panther log is ASCII-compatible but may vary; avoids garbage on UTF-16 systems
                 $Recent  = Get-Content $PantherLog -Tail 50 -Encoding UTF8 -ErrorAction SilentlyContinue
                 $PctLine = $Recent | Select-String 'Percentage complete: (\d+)' | Select-Object -Last 1
                 if ($PctLine -and $PctLine.Matches.Count -gt 0) {

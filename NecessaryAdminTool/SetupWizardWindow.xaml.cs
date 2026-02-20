@@ -28,6 +28,7 @@ namespace NecessaryAdminTool
         public SetupWizardWindow()
         {
             InitializeComponent();
+            Title = $"{LogoConfig.PRODUCT_NAME} - Initial Setup";
             LogManager.LogInfo("Setup Wizard opened");
 
             // TAG: #VERSION_DISPLAY #VERSION_ENGINE - Version info pulled from LogoConfig (assembly-based)

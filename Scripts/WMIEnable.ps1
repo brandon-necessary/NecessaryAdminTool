@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 #Requires -RunAsAdministrator
 # TAG: #NAT_AGENT #DEPLOYMENT_SCRIPT #WMI_ENABLE #VERSION_1_0 #MANAGEENGINE_COMPATIBLE
-# FUTURE CLAUDES: ManageEngine deployment script — update version header when NecessaryAdminAgent version changes.
+# FUTURE CLAUDES: ManageEngine deployment script -- update version header when NecessaryAdminAgent version changes.
 #                 Ensure Write-MasterSummary column schema matches GeneralUpdate.ps1 exactly (20 columns).
 # ==============================================================================
 # NECESSARYADMINTOOL IT - WMI ENABLE SCRIPT (v1.0)
@@ -68,7 +68,7 @@ function Write-Log {
     try { "[$Stamp] $Status" | Out-File $PCLog -Append -Encoding UTF8 -ErrorAction Stop } catch { Write-Host "[$Stamp] $Status" -ForegroundColor Yellow }
 }
 
-# 20-column master CSV — matches GeneralUpdate.ps1 + FeatureUpdate.ps1 schema exactly.
+# 20-column master CSV -- matches GeneralUpdate.ps1 + FeatureUpdate.ps1 schema exactly.
 # Header: Hostname,Script,Timestamp,OSVersion,BuildNumber,UptimeDays,TotalRAMGB,DiskFreeGB,
 #         SerialNumber,Manufacturer,Model,IPAddress,LoggedInUser,TPMPresent,SecureBoot,
 #         Status,Method,UpdateCount,Details,DurationSeconds
@@ -110,7 +110,7 @@ Write-Log "STEP: Enabling WMI firewall rule group"
 
 try {
     $result = netsh advfirewall firewall set rule group="Windows Management Instrumentation (WMI-In)" new enable=yes 2>&1
-    # Native commands don't throw — check $LASTEXITCODE explicitly
+    # Native commands don't throw -- check $LASTEXITCODE explicitly
     if ($LASTEXITCODE -ne 0) {
         Write-Log "WARNING: netsh firewall command exited $LASTEXITCODE - output: $result"
         Write-Host "  [WARN] WMI firewall group rule may not exist by that name (exit $LASTEXITCODE) - individual rules attempted below" -ForegroundColor Yellow

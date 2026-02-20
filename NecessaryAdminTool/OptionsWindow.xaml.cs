@@ -27,6 +27,7 @@ namespace NecessaryAdminTool
         public OptionsWindow()
         {
             InitializeComponent();
+            Title = $"{LogoConfig.PRODUCT_NAME} Options";
             LoadAllSettings();
         }
 
@@ -656,7 +657,7 @@ namespace NecessaryAdminTool
                     // Create backup
                     string backupPath = Path.Combine(
                         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                        "NecessaryAdminTool",
+                        LogoConfig.PRODUCT_NAME,
                         $"Backup_{DateTime.Now:yyyyMMdd_HHmmss}.json"
                     );
 
@@ -856,7 +857,7 @@ namespace NecessaryAdminTool
                 // Create batch file with runas /savecred
                 string batContent = $@"@echo off
 echo ========================================
-echo  NecessaryAdminTool Suite - Admin Launcher
+echo  {LogoConfig.PRODUCT_FULL_NAME} - Admin Launcher
 echo ========================================
 echo.
 echo Launching as: {adminUsername}
@@ -871,14 +872,14 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
                 // Create desktop shortcut using IWshRuntimeLibrary
                 string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                string shortcutPath = Path.Combine(desktopPath, "NecessaryAdminTool Suite (Admin).lnk");
+                string shortcutPath = Path.Combine(desktopPath, $"{LogoConfig.PRODUCT_FULL_NAME} (Admin).lnk");
 
                 Type shellType = Type.GetTypeFromProgID("WScript.Shell");
                 dynamic shell = Activator.CreateInstance(shellType);
                 var shortcut = shell.CreateShortcut(shortcutPath);
                 shortcut.TargetPath = batPath;
                 shortcut.WorkingDirectory = exeDir;
-                shortcut.Description = $"Launch NecessaryAdminTool Suite as {adminUsername}";
+                shortcut.Description = $"Launch {LogoConfig.PRODUCT_FULL_NAME} as {adminUsername}";
                 shortcut.IconLocation = exePath + ",0";
                 shortcut.Save();
 
@@ -888,7 +889,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
                 ToastManager.ShowSuccess(
                     "✅ Admin launcher created successfully!\n\n" +
-                    $"Desktop shortcut: \"NecessaryAdminTool Suite (Admin)\"\n" +
+                    $"Desktop shortcut: \"{LogoConfig.PRODUCT_FULL_NAME} (Admin)\"\n" +
                     $"Batch file: {batPath}\n\n" +
                     "📌 FIRST TIME USE:\n" +
                     "1. Double-click the desktop shortcut\n" +
@@ -1329,7 +1330,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 {
                     client.Timeout = TimeSpan.FromSeconds(5);
                     // TAG: #USER_AGENT #DYNAMIC_VERSION
-                    client.DefaultRequestHeaders.Add("User-Agent", $"NecessaryAdminTool-Monitor/{LogoConfig.USER_AGENT_VERSION}");
+                    client.DefaultRequestHeaders.Add("User-Agent", $"{LogoConfig.PRODUCT_NAME}-Monitor/{LogoConfig.USER_AGENT_VERSION}");
 
                     int successCount = 0;
                     int failCount = 0;
@@ -1725,7 +1726,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             {
                 string backupPath = System.IO.Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                    "NecessaryAdminTool", "AutoSave");
+                    LogoConfig.PRODUCT_NAME, "AutoSave");
 
                 // Create directory if it doesn't exist
                 if (!System.IO.Directory.Exists(backupPath))
@@ -2145,7 +2146,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 var dialog = new SaveFileDialog
                 {
                     Filter = "CSV Files (*.csv)|*.csv",
-                    FileName = $"NecessaryAdminTool_Bookmarks_{DateTime.Now:yyyyMMdd}.csv",
+                    FileName = $"{LogoConfig.PRODUCT_NAME}_Bookmarks_{DateTime.Now:yyyyMMdd}.csv",
                     Title = "Export Bookmarks to CSV"
                 };
 
@@ -2182,7 +2183,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 var dialog = new SaveFileDialog
                 {
                     Filter = "JSON Files (*.json)|*.json",
-                    FileName = $"NecessaryAdminTool_Settings_Backup_{DateTime.Now:yyyyMMdd_HHmmss}.json",
+                    FileName = $"{LogoConfig.PRODUCT_NAME}_Settings_Backup_{DateTime.Now:yyyyMMdd_HHmmss}.json",
                     Title = "Export All Settings"
                 };
 
@@ -2986,7 +2987,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
                     ToastManager.ShowSuccess(
                         "✓ Setup wizard will run on next launch\n\n" +
-                        "The database setup wizard will appear when you restart NecessaryAdminTool.");
+                        $"The database setup wizard will appear when you restart {LogoConfig.PRODUCT_NAME}.");
                 }
                 // If Cancel, do nothing
             }

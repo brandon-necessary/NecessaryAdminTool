@@ -28,6 +28,7 @@ namespace NecessaryAdminTool
         public DatabaseSetupWizard()
         {
             InitializeComponent();
+            Title = $"Database Setup Wizard - {LogoConfig.PRODUCT_NAME}";
             InitializeDefaults();
             UpdateStepVisibility();
         }

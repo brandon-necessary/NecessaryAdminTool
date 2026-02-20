@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Concurrent;
@@ -152,8 +152,9 @@ namespace NecessaryAdminTool
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "NecessaryAdmin_Config_v2.xml");
 
-        public static string SharedLogPath { get; set; } = @"G:\PUBLIC\BNIT\01_Software\04_Update Logs\Master_Update_Log.csv";
-        public static string InventoryDbPath { get; set; } = @"G:\PUBLIC\BNIT\01_Software\04_Update Logs\Master_Inventory.csv";
+        // Configure via Options → Deployment Configuration
+        public static string SharedLogPath { get; set; } = "";
+        public static string InventoryDbPath { get; set; } = "";
         public static int MaxParallelScans { get; set; } = 30;
         public static int WmiTimeoutMs { get; set; } = 15000;  // 15 seconds - fast fail for hung queries
         public static int PingTimeoutMs { get; set; } = 1200;
@@ -399,7 +400,7 @@ namespace NecessaryAdminTool
                 Owner = owner,
                 ResizeMode = ResizeMode.NoResize,
                 Background = Brushes.Transparent,
-                WindowStyle = WindowStyle.None, // ⚡ Remove system title bar
+                WindowStyle = WindowStyle.None, // ? Remove system title bar
                 AllowsTransparency = true,
                 Tag = "ThemedDialog" // TAG: #THEME_DIALOG
             };
@@ -1339,6 +1340,8 @@ namespace NecessaryAdminTool
 
             Title = $"{toolName} - {hostname}";
             Width = 920; Height = 620;
+            MinWidth = 500; MinHeight = 400;
+            ResizeMode = ResizeMode.CanResize;
             Background = new SolidColorBrush(Color.FromRgb(13, 13, 13)); // #0D0D0D - darker background
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
 
@@ -1384,7 +1387,7 @@ namespace NecessaryAdminTool
             // Refresh button with orange accent
             Button btnRefresh = new Button
             {
-                Content = "↻ REFRESH",
+                Content = "🔄 REFRESH",
                 Width = 110,
                 Height = 34,
                 Background = new SolidColorBrush(Color.FromRgb(255, 133, 51)), // #FF8533 - orange
@@ -1719,7 +1722,7 @@ namespace NecessaryAdminTool
         public string Hostname { get; set; }
         public DateTime LastSeen { get; set; }
         public int AvgLatency { get; set; }
-        public string StatusIcon { get; set; }  // 🟢=recent, 🟡=week, 🟠=month, ⚫=old
+        public string StatusIcon { get; set; }  // ??=recent, ??=week, ??=month, ?=old
     }
 
     // ############################################################################
@@ -1829,7 +1832,7 @@ namespace NecessaryAdminTool
         private const uint LOGON_WITH_PROFILE = 0x1;
         private const uint CREATE_NEW_CONSOLE = 0x10;
 
-        // ── Inner Data Classes ──
+        // -- Inner Data Classes --
 
         public class AuditLog
         {
@@ -1863,29 +1866,37 @@ namespace NecessaryAdminTool
             private string _tags; public string Tags { get => _tags; set { _tags = value; OnProp(); } }
         }
 
-        // TAG: #DEPLOYMENT_RESULTS - Model for Master_Update_Log.csv rows (20 columns, shared schema for Feature/General/Preflight scripts)
+        // TAG: #DEPLOYMENT_RESULTS - Model for Master_Update_Log.csv rows (24 columns v2, shared schema for all 5 scripts)
+        // FUTURE CLAUDES: If adding columns, update: (1) this model, (2) parser in LoadDeploymentResultsAsync, (3) all 5 PS scripts' Write-MasterSummary
         public class DeploymentResult
         {
-            public string Hostname       { get; set; }
-            public string Script         { get; set; }
-            public string Timestamp      { get; set; }
-            public string OSVersion      { get; set; }
-            public string BuildNumber    { get; set; }
-            public string UptimeDays     { get; set; }
-            public string TotalRAMGB     { get; set; }
-            public string DiskFreeGB     { get; set; }
-            public string SerialNumber   { get; set; }
-            public string Manufacturer   { get; set; }
-            public string Model          { get; set; }
-            public string IPAddress      { get; set; }
-            public string LoggedInUser   { get; set; }
-            public string TPMPresent     { get; set; }
-            public string SecureBoot     { get; set; }
-            public string Status         { get; set; }
-            public string Method         { get; set; }
-            public string UpdateCount    { get; set; }
-            public string Details        { get; set; }
+            public string Hostname        { get; set; }
+            public string Script          { get; set; }
+            public string Timestamp       { get; set; }
+            public string OSVersion       { get; set; }
+            public string BuildNumber     { get; set; }
+            public string UptimeDays      { get; set; }
+            public string TotalRAMGB      { get; set; }
+            public string DiskFreeGB      { get; set; }
+            public string SerialNumber    { get; set; }
+            public string Manufacturer    { get; set; }
+            public string Model           { get; set; }
+            public string IPAddress       { get; set; }
+            public string LoggedInUser    { get; set; }
+            public string TPMPresent      { get; set; }
+            public string SecureBoot      { get; set; }
+            public string Status          { get; set; }
+            public string Method          { get; set; }
+            public string UpdateCount     { get; set; }
+            public string Details         { get; set; }
             public string DurationSeconds { get; set; }
+            // v2 columns (added Session 16)
+            public string DomainName      { get; set; }
+            public string ScriptVersion   { get; set; }
+            public string RunAsUser       { get; set; }
+            public string PSVersion       { get; set; }
+            // Source indicator for archive loading
+            public string Source          { get; set; } = "Current";
         }
 
         public class UserConfig
@@ -1951,16 +1962,19 @@ namespace NecessaryAdminTool
             }
         }
 
-        // ── State Variables ──
+        // -- State Variables --
 
         private ObservableCollection<AuditLog> _logs = new ObservableCollection<AuditLog>();
         private ObservableCollection<PCInventory> _inventory = new ObservableCollection<PCInventory>();
         // TAG: #DEPLOYMENT_RESULTS
         private ObservableCollection<DeploymentResult> _deploymentResults = new ObservableCollection<DeploymentResult>();
-        // Full unfiltered set — kept so the "Latest per PC" toggle and search can re-apply without re-reading disk
+        // Full unfiltered set � kept so the "Latest per PC" toggle and search can re-apply without re-reading disk
         private System.Collections.Generic.List<DeploymentResult> _allDeploymentResults = new System.Collections.Generic.List<DeploymentResult>();
         // When true: DataGrid shows only the most recent run per hostname; tally counts ALL runs regardless
         private bool _deploymentLatestPerPC = true;
+        // TAG: #DEPLOYMENT_RESULTS - Auto-refresh timer (reloads CSV at configurable interval while tab is active)
+        private System.Windows.Threading.DispatcherTimer _deploymentAutoRefreshTimer;
+        private bool _deploymentAutoRefreshEnabled = false;
         private ObservableCollection<PinnedDevice> _pinnedDevices = new ObservableCollection<PinnedDevice>();
         private ObservableCollection<GlobalServiceStatus> _essentialServices = new ObservableCollection<GlobalServiceStatus>();
         private ObservableCollection<GlobalServiceStatus> _highPriorityServices = new ObservableCollection<GlobalServiceStatus>();
@@ -2000,7 +2014,7 @@ namespace NecessaryAdminTool
         private static readonly TimeSpan _adminCheckCacheDuration = TimeSpan.FromMinutes(15);
 
         // TAG: #MMC_EMBEDDING #ADMIN_TOOLS
-        // MMC Console mapping (display name → snap-in file)
+        // MMC Console mapping (display name ? snap-in file)
         private Dictionary<string, string> _mmcConsoles = new Dictionary<string, string>
         {
             { "AD Users & Computers", "dsa.msc" },
@@ -2041,7 +2055,7 @@ namespace NecessaryAdminTool
         private string _xmlConfigPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "NecessaryAdmin_UserConfig.xml");
 
-        // ── PowerShell Scripts ──
+        // -- PowerShell Scripts --
 
         // GENERAL UPDATE: Downloads and installs all pending Windows Updates
         // including driver packs and firmware from Windows Update catalog
@@ -2102,7 +2116,7 @@ namespace NecessaryAdminTool
             }";
 
         // FEATURE UPDATE: In-place upgrade to latest Windows version
-        // (e.g., 22H2 → 23H2 → 24H2) keeping all apps, settings, data
+        // (e.g., 22H2 ? 23H2 ? 24H2) keeping all apps, settings, data
         private const string Script_Feature = @"
             Write-Output '>>> FEATURE UPDATE ENGINE (IN-PLACE UPGRADE)';
             $ErrorActionPreference = 'Continue';
@@ -2166,7 +2180,7 @@ namespace NecessaryAdminTool
                 Write-Output ""FEATURE UPDATE: COMPLETED WITH CODE $($Result.ResultCode)"";
             }";
 
-        // ── Startup & Shutdown ──
+        // -- Startup & Shutdown --
 
         public MainWindow()
         {
@@ -2181,7 +2195,7 @@ namespace NecessaryAdminTool
 
             // Set window title with version from AssemblyInfo (modular)
             // TAG: #MODULAR #VERSION
-            Title = $"NecessaryAdminTool Suite {LogoConfig.VERSION}";
+            Title = $"{LogoConfig.PRODUCT_FULL_NAME} {LogoConfig.VERSION}";
 
             // Set version badge in header (will be set after InitializeComponent loads controls)
             Loaded += (s, e) => {
@@ -2198,7 +2212,7 @@ namespace NecessaryAdminTool
                     Task.Delay(1000).ContinueWith(_ => {
                         Dispatcher.Invoke(() => {
                             Managers.UI.ToastManager.ShowSuccess(
-                                $"Welcome to NecessaryAdminTool Suite {LogoConfig.VERSION}",
+                                $"Welcome to {LogoConfig.PRODUCT_FULL_NAME} {LogoConfig.VERSION}",
                                 "View Docs",
                                 () => {
                                     try {
@@ -2312,7 +2326,7 @@ namespace NecessaryAdminTool
         {
             try
             {
-                // ⚡ Loading overlay is visible by default in XAML
+                // ? Loading overlay is visible by default in XAML
                 UpdateLoadingStatus("Initializing NecessaryAdminTool Suite...", "Checking system configuration");
 
                 if (IntPtr.Size == 4)
@@ -2361,7 +2375,7 @@ namespace NecessaryAdminTool
 
                 UpdateLoadingStatus("Applying Restrictions...", "Checking permissions");
                 ApplyRoleRestrictions(); // Lock down UI for non-admins
-                AppendTerminal($"NecessaryAdminTool Suite {LogoConfig.VERSION} (Kerberos Edition) initialized.", false);
+                AppendTerminal($"{LogoConfig.PRODUCT_FULL_NAME} {LogoConfig.VERSION} (Kerberos Edition) initialized.", false);
 
                 UpdateLoadingStatus("Ready", "Launching login dialog");
                 await Task.Delay(300); // Brief pause so user sees "Ready" status
@@ -2377,7 +2391,7 @@ namespace NecessaryAdminTool
                     await UpdateManager.PerformAutomaticUpdateCheckAsync();
                 });
 
-                // ⚡ INSTANT STARTUP: Show login immediately, check domain in background
+                // ? INSTANT STARTUP: Show login immediately, check domain in background
                 // The LoginWindow will check domain availability and handle the DC unavailable dialog if needed
                 _ = ShowLoginDialog();  // Fire-and-forget async login
             }
@@ -2430,7 +2444,7 @@ namespace NecessaryAdminTool
         /// <summary>
         /// TAG: #DOMAIN_DETECTION - Single source of truth for the NetBIOS domain name.
         /// Used by LoginWindow, PerformAuth, and domain badges so they all stay in sync.
-        /// Priority: CurrentDomainName (LDAP-detected) → Environment.UserDomainName → MachineName
+        /// Priority: CurrentDomainName (LDAP-detected) ? Environment.UserDomainName ? MachineName
         /// </summary>
         public static string GetNetBIOSDomain()
         {
@@ -2704,14 +2718,14 @@ namespace NecessaryAdminTool
         {
             try
             {
-                LogManager.LogInfo("[App Shutdown] ══════ Application shutdown initiated ══════");
+                LogManager.LogInfo("[App Shutdown] ------ Application shutdown initiated ------");
 
-                // ── 1. Save state ─────────────────────────────────────────────────
+                // -- 1. Save state -------------------------------------------------
                 try { SaveConfig(); } catch (Exception ex) { LogManager.LogError("[App Shutdown] SaveConfig failed", ex); }
                 try { SecureConfig.SaveConfiguration(); } catch (Exception ex) { LogManager.LogError("[App Shutdown] SecureConfig save failed", ex); }
                 try { SaveWindowPosition(); } catch (Exception ex) { LogManager.LogError("[App Shutdown] SaveWindowPosition failed", ex); }
 
-                // ── 2. Stop ALL timers ────────────────────────────────────────────
+                // -- 2. Stop ALL timers --------------------------------------------
                 // Prevent any timer callbacks from firing during shutdown
                 try
                 {
@@ -2720,11 +2734,12 @@ namespace NecessaryAdminTool
                     _refreshTimer?.Stop();
                     _domainVerificationTimer?.Stop();
                     _scanAnimationTimer?.Stop();
+                    _deploymentAutoRefreshTimer?.Stop();
                     LogManager.LogInfo("[App Shutdown] All timers stopped");
                 }
                 catch (Exception ex) { LogManager.LogError("[App Shutdown] Timer stop failed", ex); }
 
-                // ── 3. Cancel any in-progress background scans ────────────────────
+                // -- 3. Cancel any in-progress background scans --------------------
                 try
                 {
                     if (_scanTokenSource != null && !_scanTokenSource.IsCancellationRequested)
@@ -2735,7 +2750,7 @@ namespace NecessaryAdminTool
                 }
                 catch (Exception ex) { LogManager.LogError("[App Shutdown] Scan cancel failed", ex); }
 
-                // ── 4. Secure credential wipe ─────────────────────────────────────
+                // -- 4. Secure credential wipe -------------------------------------
                 try
                 {
                     SecureMemory.WipeAndDispose(ref _authPass);
@@ -2744,7 +2759,7 @@ namespace NecessaryAdminTool
                 }
                 catch (Exception ex) { LogManager.LogError("[App Shutdown] Credential wipe failed", ex); }
 
-                // ── 5. Dispose WMI/CIM managers ───────────────────────────────────
+                // -- 5. Dispose WMI/CIM managers -----------------------------------
                 try
                 {
                     _wmiManager?.Dispose();
@@ -2754,7 +2769,7 @@ namespace NecessaryAdminTool
                 }
                 catch (Exception ex) { LogManager.LogError("[App Shutdown] Manager dispose failed", ex); }
 
-                // ── 6. Kill all tracked external tool processes ───────────────────
+                // -- 6. Kill all tracked external tool processes -------------------
                 // (MMC consoles, RMM tools, diagnostic processes launched via ExternalToolManager)
                 // NOTE: The installed background service (Windows Scheduled Task) runs in its
                 //       own process and is NOT tracked here - it is intentionally left running.
@@ -2766,7 +2781,7 @@ namespace NecessaryAdminTool
                 }
                 catch (Exception ex) { LogManager.LogError("[App Shutdown] External tool close failed", ex); }
 
-                // ── 7. Close/detach embedded MMC console processes ────────────────
+                // -- 7. Close/detach embedded MMC console processes ----------------
                 try
                 {
                     bool killProcesses = Properties.Settings.Default.CloseMMCConsolesOnExit;
@@ -2794,11 +2809,11 @@ namespace NecessaryAdminTool
                 }
                 catch (Exception ex) { LogManager.LogError("[App Shutdown] MMC console close failed", ex); }
 
-                // ── 8. Force application exit ─────────────────────────────────────
+                // -- 8. Force application exit -------------------------------------
                 // Ensures no background threads or orphaned dispatcher work keeps the process alive.
                 // Application.Current.Shutdown() signals WPF to terminate gracefully;
                 // Environment.Exit(0) is the backstop if WPF's shutdown stalls.
-                LogManager.LogInfo("[App Shutdown] ══════ Shutdown complete — exiting process ══════");
+                LogManager.LogInfo("[App Shutdown] ------ Shutdown complete � exiting process ------");
                 // Brief wait to allow async log writes to flush before process exit
                 System.Threading.Thread.Sleep(150);
 
@@ -2812,10 +2827,10 @@ namespace NecessaryAdminTool
             }
         }
 
-        // ────────────────────────────────────────────────────────────────────────
+        // ------------------------------------------------------------------------
         // REGION: SUPERADMIN ACCESS
         // TAG: #SUPERADMIN #HIDDEN_FEATURE #WHITELABEL_GUI
-        // ────────────────────────────────────────────────────────────────────────
+        // ------------------------------------------------------------------------
 
         // SuperAdmin secret button click tracking (5 rapid clicks on version badge)
         // TAG: #SUPERADMIN #DEVELOPER_ACCESS
@@ -2923,7 +2938,7 @@ namespace NecessaryAdminTool
 
                     var headerText = new TextBlock
                     {
-                        Text = "🔒 Enter SuperAdmin Password",
+                        Text = "🔐 Enter SuperAdmin Password",
                         FontSize = 16,
                         FontWeight = FontWeights.Bold,
                         Foreground = Brushes.White,
@@ -3055,7 +3070,7 @@ namespace NecessaryAdminTool
             }
         }
 
-        // ── Role-Based Access Control ──
+        // -- Role-Based Access Control --
 
         /// <summary>
         /// Checks if the authenticated user is a member of Domain Admins.
@@ -3254,6 +3269,12 @@ namespace NecessaryAdminTool
                     PanelDeployment.IsEnabled = true;
                     BtnKillFirewall.IsEnabled = true;
                     BtnKillFirewall.Visibility = Visibility.Visible;
+
+                    // Deployment log destructive actions � domain admin only
+                    BtnClearDeploymentLog.IsEnabled = true;
+                    BtnClearDeploymentLog.ToolTip = "Delete Master_Update_Log.csv. You will be prompted to save a backup first.";
+                    BtnArchiveDeploymentLog.IsEnabled = true;
+                    BtnArchiveDeploymentLog.ToolTip = "Archive Master CSV entries >90 days and Individual PC logs >30 days to the Archives/ subfolder with date-stamped filenames.";
                 }
                 else if (_isLoggedIn)
                 {
@@ -3265,6 +3286,11 @@ namespace NecessaryAdminTool
                     PanelDeployment.IsEnabled = false;
                     BtnKillFirewall.IsEnabled = false;
                     BtnKillFirewall.Visibility = Visibility.Collapsed;
+
+                    BtnClearDeploymentLog.IsEnabled = false;
+                    BtnClearDeploymentLog.ToolTip = "Domain Admin login required to clear deployment logs.";
+                    BtnArchiveDeploymentLog.IsEnabled = false;
+                    BtnArchiveDeploymentLog.ToolTip = "Domain Admin login required to archive deployment logs.";
                 }
                 else
                 {
@@ -3275,6 +3301,11 @@ namespace NecessaryAdminTool
                     PanelDeployment.Visibility = Visibility.Collapsed;
                     BtnKillFirewall.IsEnabled = false;
                     BtnKillFirewall.Visibility = Visibility.Collapsed;
+
+                    BtnClearDeploymentLog.IsEnabled = false;
+                    BtnClearDeploymentLog.ToolTip = "Domain Admin login required to clear deployment logs.";
+                    BtnArchiveDeploymentLog.IsEnabled = false;
+                    BtnArchiveDeploymentLog.ToolTip = "Domain Admin login required to archive deployment logs.";
                 }
             });
         }
@@ -3290,7 +3321,7 @@ namespace NecessaryAdminTool
                 bool isAdmin = _isElevated;
                 bool hasCredentials = !string.IsNullOrEmpty(_authUser);
 
-                string message = "🔐 CURRENT ROLE INFORMATION\n\n";
+                string message = "ℹ️ CURRENT ROLE INFORMATION\n\n";
 
                 if (isAdmin)
                 {
@@ -3304,14 +3335,14 @@ namespace NecessaryAdminTool
                 else if (hasCredentials)
                 {
                     message += "✅ Running as: Domain User (NOT elevated)\n";
-                    message += $"✅ Authenticated with: {CurrentDomainName}\\{_authUser}\n\n";
+                    message += $"🔑 Authenticated with: {CurrentDomainName}\\{_authUser}\n\n";
                     message += "Domain admin credentials will be used for all operations.\n";
                     message += "This is the RECOMMENDED configuration for this tool.\n\n";
                     message += $"Windows User: {Environment.UserName}@{Environment.UserDomainName}";
                 }
                 else
                 {
-                    message += "❌ Running as: Local User (READ-ONLY)\n\n";
+                    message += "👤 Running as: Local User (READ-ONLY)\n\n";
                     message += "Some features are limited. Click the LOGIN button and authenticate\n";
                     message += "with domain admin credentials to unlock full functionality.\n\n";
                     message += $"Windows User: {Environment.UserName}@{Environment.UserDomainName}";
@@ -3327,7 +3358,7 @@ namespace NecessaryAdminTool
             }
         }
 
-        // ── Terminal Toggle ──
+        // -- Terminal Toggle --
 
         private void BtnToggleTerminal_Click(object sender, RoutedEventArgs e)
         {
@@ -3337,18 +3368,18 @@ namespace NecessaryAdminTool
                 // Expand terminal
                 TerminalPanel.Height = 220;
                 TerminalPanel.Visibility = Visibility.Visible;
-                BtnToggleTerminal.Content = "▲ TERMINAL";
+                BtnToggleTerminal.Content = "▼ TERMINAL";
             }
             else
             {
                 // Collapse terminal
                 TerminalPanel.Height = 0;
                 TerminalPanel.Visibility = Visibility.Collapsed;
-                BtnToggleTerminal.Content = "▼ TERMINAL";
+                BtnToggleTerminal.Content = "▲ TERMINAL";
             }
         }
 
-        // ── Logging & Audit ──
+        // -- Logging & Audit --
 
         private static DateTime _lastNetworkLogCheck = DateTime.MinValue;
         private static bool _networkLogAccessible = false;
@@ -3442,7 +3473,7 @@ namespace NecessaryAdminTool
             catch { TxtLogPath.Text = "LOG: ERROR"; TxtLogPath.Foreground = Brushes.Orange; }
         }
 
-        // ── Inventory Filter (debounced, CollectionView) ──
+        // -- Inventory Filter (debounced, CollectionView) --
 
         private void TxtInventorySearch_TextChanged(object sender, TextChangedEventArgs e)
         {
@@ -3526,7 +3557,7 @@ namespace NecessaryAdminTool
             });
         }
 
-        // ── WMI Executors (unchanged from previous patch) ──
+        // -- WMI Executors (unchanged from previous patch) --
 
         private void WMIQueryOutput(string query, string actionName, string targetHost)
         {
@@ -3668,7 +3699,7 @@ namespace NecessaryAdminTool
             string host = _currentTarget;
             if (string.IsNullOrEmpty(host) || !SecurityValidator.IsValidHostname(host)) { AppendTerminal("ERROR: Invalid hostname", true); return; }
             if (MessageBox.Show($"Reboot {host}?", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
-            AppendTerminal($"\n>>> REBOOT → {host}...");
+            AppendTerminal($"\n>>> REBOOT ? {host}...");
             await Task.Run(() =>
             {
                 try
@@ -3735,14 +3766,14 @@ namespace NecessaryAdminTool
             //   2. WMI Win32_Process.Create (no WinRM, no output capture - fire-and-forget)
             // PsExec removed: uploads binary to ADMIN$, plaintext credentials in process args,
             // flagged by all enterprise EDR products (Cortex XDR, CrowdStrike, Defender for Endpoint).
-            AppendTerminal($"\n>>> EXEC: {actionName} → {targetHost}...");
+            AppendTerminal($"\n>>> EXEC: {actionName} ? {targetHost}...");
             _ = Task.Run(async () =>
             {
                 bool success = false;
 
-                // ═══════════════════════════════════════════════════════════════
-                // METHOD 1: RemoteScriptManager (WinRM direct API → subprocess fallback)
-                // ═══════════════════════════════════════════════════════════════
+                // ---------------------------------------------------------------
+                // METHOD 1: RemoteScriptManager (WinRM direct API ? subprocess fallback)
+                // ---------------------------------------------------------------
                 try
                 {
                     var result = await Managers.RemoteScriptManager.ExecuteAsync(
@@ -3768,22 +3799,22 @@ namespace NecessaryAdminTool
                     }
                     else
                     {
-                        AppendTerminal($"[Method 1] ✗ RemoteScriptManager: {string.Join("; ", result.Errors)}", true);
+                        AppendTerminal($"[Method 1] ? RemoteScriptManager: {string.Join("; ", result.Errors)}", true);
                         LogManager.LogWarning($"[RunHybridExecutor] RemoteScriptManager failed for {actionName} on {targetHost}");
                     }
                 }
                 catch (Exception ex1)
                 {
-                    AppendTerminal($"[Method 1] ✗ Unexpected error: {ex1.Message}", true);
+                    AppendTerminal($"[Method 1] ? Unexpected error: {ex1.Message}", true);
                     LogManager.LogWarning($"[RunHybridExecutor] Method 1 exception for {actionName}: {ex1.Message}");
                 }
 
-                // ═══════════════════════════════════════════════════════════════
+                // ---------------------------------------------------------------
                 // METHOD 2: WMI Win32_Process.Create (fire-and-forget, no output)
                 // Used when both WinRM and subprocess fail (e.g. firewall blocks 5985
                 // AND CreateProcessWithLogonW is blocked by EDR).
                 // Note: only launches the process; cannot capture output.
-                // ═══════════════════════════════════════════════════════════════
+                // ---------------------------------------------------------------
                 if (!success)
                 {
                     try
@@ -3802,19 +3833,19 @@ namespace NecessaryAdminTool
                             if (code == 0)
                             {
                                 success = true;
-                                AppendTerminal($"[Method 2] ✓ WMI Win32_Process.Create launched (PID returned - no output capture)");
-                                AppendTerminal($"ℹ️ Enable WinRM on {targetHost} to get full output: Enable-PSRemoting -Force");
+                                AppendTerminal($"[Method 2] ✅ WMI Win32_Process.Create launched (PID returned - no output capture)");
+                                AppendTerminal($"💡 Enable WinRM on {targetHost} to get full output: Enable-PSRemoting -Force");
                                 AddLog(targetHost, actionName, "OK (WMI, no output)", "OK");
                             }
                             else
                             {
-                                AppendTerminal($"[Method 2] ✗ WMI returned code {code}", true);
+                                AppendTerminal($"[Method 2] ❌ WMI returned code {code}", true);
                             }
                         }
                     }
                     catch (Exception ex2)
                     {
-                        AppendTerminal($"[Method 2] ✗ WMI failed: {ex2.Message}", true);
+                        AppendTerminal($"[Method 2] ❌ WMI failed: {ex2.Message}", true);
                         LogManager.LogWarning($"[RunHybridExecutor] Method 2 (WMI) failed for {actionName}: {ex2.Message}");
                     }
                 }
@@ -3822,7 +3853,7 @@ namespace NecessaryAdminTool
                 if (!success)
                 {
                     AppendTerminal($"❌ {actionName} FAILED on {targetHost}", true);
-                    AppendTerminal($"ℹ️ To enable WinRM on target: Enable-PSRemoting -Force", false);
+                    AppendTerminal($"💡 To enable WinRM on target: Enable-PSRemoting -Force", false);
                     AddLog(targetHost, actionName, "All methods failed", "FAIL");
                 }
             });
@@ -3843,7 +3874,7 @@ namespace NecessaryAdminTool
             return $"powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand \"{b64}\"";
         }
 
-        // ── Fleet Scanner ──
+        // -- Fleet Scanner --
 
         private async void BtnInvScan_Click(object sender, RoutedEventArgs e)
         {
@@ -3890,7 +3921,7 @@ namespace NecessaryAdminTool
                 ResetErrorCounter(); // Clear error indicator for new scan
 
                 lock (_inventoryLock) { _inventory.Clear(); }
-                BtnScanFleet.Content = "⬛ STOP SCAN";
+                BtnScanFleet.Content = "⏹ STOP SCAN";
                 BtnScanFleet.Background = Brushes.DarkRed;
 
                 var newCts = new CancellationTokenSource();
@@ -4034,7 +4065,7 @@ namespace NecessaryAdminTool
 
                                             try
                                             {
-                                                // TAG: #VERSION_7 #OPTIMIZED_SCANNER - Use triple-fallback strategy (CIM/WS-MAN → CIM/DCOM → Legacy WMI)
+                                                // TAG: #VERSION_7 #OPTIMIZED_SCANNER - Use triple-fallback strategy (CIM/WS-MAN ? CIM/DCOM ? Legacy WMI)
                                                 spec = await scanner.ScanComputerWithFallbackAsync(host, _authUser, _authPass, token);
                                             }
                                             catch (UnauthorizedAccessException)
@@ -4143,7 +4174,7 @@ namespace NecessaryAdminTool
             }
         }
 
-        // ── Windows Version Helper ──
+        // -- Windows Version Helper --
 
         private static string GetWindowsVersionFromBuild(string buildNumber, string osCaption)
         {
@@ -4221,7 +4252,7 @@ namespace NecessaryAdminTool
             return System.Windows.Media.Brushes.Red;
         }
 
-        // ── System Specs Scanner (consolidated WMI queries) ──
+        // -- System Specs Scanner (consolidated WMI queries) --
 
         /// <summary>
         /// Convert NatAgent system info to HardwareSpec. TAG: #NAT_AGENT
@@ -4273,13 +4304,13 @@ namespace NecessaryAdminTool
                                 LogManager.LogDebug($"[AGENT] Hit for {hostname}");
                                 return ConvertAgentInfoToHardwareSpec(agentInfo);
                             }
-                            // Agent reachable but returned null (host offline or no data) — fall through to CIM/WMI
-                            AppendTerminal("[AGENT] Returned null — falling back to CIM/WMI");
+                            // Agent reachable but returned null (host offline or no data) � fall through to CIM/WMI
+                            AppendTerminal("[AGENT] Returned null � falling back to CIM/WMI");
                             LogManager.LogDebug($"[AGENT] Null response for {hostname} - falling back to CIM/WMI");
                         }
                         catch (Exception agentEx)
                         {
-                            AppendTerminal($"[AGENT] Exception: {agentEx.Message} — falling back to CIM/WMI", true);
+                            AppendTerminal($"[AGENT] Exception: {agentEx.Message} � falling back to CIM/WMI", true);
                             LogManager.LogDebug($"[AGENT] Exception for {hostname}: {agentEx.Message}");
                         }
                     }
@@ -4357,10 +4388,10 @@ namespace NecessaryAdminTool
 
                     if (connectionFailed) return spec;
 
-                        // ══════════════════════════════════════════════════════════════
+                        // --------------------------------------------------------------
                         // MULTICORE OPTIMIZATION: Parallel WMI queries using Task.WhenAll
                         // All queries are independent and can run concurrently
-                        // ══════════════════════════════════════════════════════════════
+                        // --------------------------------------------------------------
 
                         // Helper to update status with visual breathing effect
                         void UpdateStatus(string message)
@@ -4376,7 +4407,7 @@ namespace NecessaryAdminTool
                                     StatusProgressBar.Visibility = Visibility.Visible;
                                     StatusDot.Fill = new SolidColorBrush(Color.FromRgb(255, 133, 51)); // Orange
                                 }
-                                else if (message.EndsWith("✓"))
+                                else if (message.EndsWith("?"))
                                 {
                                     // Query completed - keep progress bar visible until all done
                                     StatusDot.Fill = new SolidColorBrush(Color.FromRgb(76, 175, 80)); // Green
@@ -4408,7 +4439,7 @@ namespace NecessaryAdminTool
                                         if (b != null) { spec.Serial = b["SerialNumber"]?.ToString() ?? "N/A"; b.Dispose(); }
                                     }
                                 }
-                                UpdateStatus("BIOS ✓");
+                                UpdateStatus("BIOS ?");
                             }
                             catch (UnauthorizedAccessException)
                             {
@@ -4460,7 +4491,7 @@ namespace NecessaryAdminTool
                                         }
                                     }
                                 }
-                                UpdateStatus("System Info ✓");
+                                UpdateStatus("System Info ?");
                             }
                             catch (UnauthorizedAccessException)
                             {
@@ -4505,7 +4536,7 @@ namespace NecessaryAdminTool
                                         }
                                     }
                                 }
-                                UpdateStatus("CPU ✓");
+                                UpdateStatus("CPU ?");
                             }
                             catch (Exception ex)
                             {
@@ -4565,7 +4596,7 @@ namespace NecessaryAdminTool
                                         }
                                     }
                                 }
-                                UpdateStatus("OS ✓");
+                                UpdateStatus("OS ?");
                             }
                             catch (Exception ex)
                             {
@@ -4597,7 +4628,7 @@ namespace NecessaryAdminTool
                                         }
                                     }
                                 }
-                                UpdateStatus("TimeZone ✓");
+                                UpdateStatus("TimeZone ?");
                             }
                             catch (Exception ex)
                             {
@@ -4643,7 +4674,7 @@ namespace NecessaryAdminTool
                                         }
                                     }
                                 }
-                                UpdateStatus("Network ✓");
+                                UpdateStatus("Network ?");
                             }
                             catch (Exception ex)
                             {
@@ -4689,7 +4720,7 @@ namespace NecessaryAdminTool
                                         }
                                     }
                                 }
-                                UpdateStatus("Battery ✓");
+                                UpdateStatus("Battery ?");
                             }
                             catch
                             {
@@ -4738,7 +4769,7 @@ namespace NecessaryAdminTool
                                         }
                                     }
                                 }
-                                UpdateStatus("Chassis ✓");
+                                UpdateStatus("Chassis ?");
                             }
                             catch (Exception ex)
                             {
@@ -4787,7 +4818,7 @@ namespace NecessaryAdminTool
                                         }
                                     }
                                 }
-                                UpdateStatus("Drives ✓");
+                                UpdateStatus("Drives ?");
                             }
                             catch (Exception ex)
                             {
@@ -4831,7 +4862,7 @@ namespace NecessaryAdminTool
                                         }
                                     }
                                 }
-                                UpdateStatus("BitLocker ✓");
+                                UpdateStatus("BitLocker ?");
                             }
                             catch (TimeoutException tex)
                             {
@@ -4896,7 +4927,7 @@ namespace NecessaryAdminTool
                                         }
                                     }
                                 }
-                                UpdateStatus("TPM ✓");
+                                UpdateStatus("TPM ?");
                             }
                             catch (TimeoutException tex)
                             {
@@ -5036,9 +5067,9 @@ namespace NecessaryAdminTool
                 #pragma warning restore CS4014
             }
 
-            // ══════════════════════════════════════════════════════════════
+            // --------------------------------------------------------------
             // FALLBACK: Use PowerShell remoting if WMI failed
-            // ══════════════════════════════════════════════════════════════
+            // --------------------------------------------------------------
             if (spec.Protocol == "FAILED" || spec.Protocol == "UNAUTHORIZED" || spec.Protocol == "TIMEOUT")
             {
                 LogManager.LogDebug($"WMI failed for {hostname}, trying PowerShell fallback...");
@@ -5178,7 +5209,7 @@ namespace NecessaryAdminTool
             }, ct);
         }
 
-        // ── Single Target Scan ──
+        // -- Single Target Scan --
 
         private async void BtnScan_Click(object sender, RoutedEventArgs e)
         {
@@ -5201,7 +5232,7 @@ namespace NecessaryAdminTool
                         "Remote WMI queries require admin credentials.\n" +
                         "Scanning may fail or show limited information.\n\n" +
                         "For full access:\n" +
-                        "• Use the desktop shortcut: \"NecessaryAdminTool Suite (Admin)\"\n" +
+                        $"• Use the desktop shortcut: \"{LogoConfig.PRODUCT_FULL_NAME} (Admin)\"\n" +
                         "• Or create it via: About → Debugging & Admin Tools\n\n" +
                         "Continue anyway with current user credentials?",
                         "Admin Credentials Recommended",
@@ -5272,7 +5303,7 @@ namespace NecessaryAdminTool
                             AddLog(hostname, "PROBE_SUCCESS", specs.Protocol, "OK");
                             UpdateBottomProgress(100, $"Scan Complete");
                             await Task.Delay(1000); // Show completion briefly
-                            HideBottomProgress($"Ready • {hostname.ToUpper()}");
+                            HideBottomProgress($"Ready � {hostname.ToUpper()}");
                         });
                     });
                 }
@@ -5305,9 +5336,9 @@ namespace NecessaryAdminTool
             }
         }
 
-        // ═══════════════════════════════════════════════════════
+        // -------------------------------------------------------
         // NEW REMOTE MANAGEMENT TOOLS
-        // ═══════════════════════════════════════════════════════
+        // -------------------------------------------------------
 
         private void Tool_RDP_Click(object sender, RoutedEventArgs e)
         {
@@ -5355,7 +5386,7 @@ namespace NecessaryAdminTool
                 // Launch RDP with admin mode
                 string sanitized = SecurityValidator.SanitizeHostname(_currentTarget);
                 using (Process.Start(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "mstsc.exe"), $"/v:{sanitized} /admin")) { }
-                AppendTerminal($"RDP launched → {sanitized} (admin mode)");
+                AppendTerminal($"RDP launched ? {sanitized} (admin mode)");
                 AddLog(_currentTarget, "RDP", "Session launched", "OK");
             }
             catch (Exception ex)
@@ -5389,7 +5420,7 @@ namespace NecessaryAdminTool
                 Mouse.OverrideCursor = Cursors.Wait;
                 string sanitized = SecurityValidator.SanitizeHostname(_currentTarget);
                 using (Process.Start("msra.exe", $"/offerRA {sanitized}")) { }
-                AppendTerminal($"Remote Assist → {_currentTarget}");
+                AppendTerminal($"Remote Assist ? {_currentTarget}");
                 AddLog(_currentTarget, "REMOTE_ASSIST", "Launched", "OK");
             }
             catch (Exception ex)
@@ -5443,10 +5474,10 @@ Write-Host 'Example: Get-ItemProperty -Path ''\\{safeTarget}\HKLM:\SOFTWARE\Micr
 Write-Host '';
 $connection = Test-Connection -ComputerName {safeTarget} -Count 1 -Quiet;
 if ($connection) {{
-    Write-Host '✓ Connection successful' -ForegroundColor Green;
+    Write-Host '? Connection successful' -ForegroundColor Green;
     Write-Host 'You can now use Get-ItemProperty, Set-ItemProperty, etc. with remote path';
 }} else {{
-    Write-Host '✗ Connection failed' -ForegroundColor Red;
+    Write-Host '? Connection failed' -ForegroundColor Red;
 }}
 ";
 
@@ -5556,23 +5587,48 @@ if ($connection) {{
 
         private async void Tool_DefenderScan_Click(object sender, RoutedEventArgs e)
         {
-            try { await WMIExecute("powershell -Command \"Start-MpScan -ScanType QuickScan\"", "DEFENDER_QUICK_SCAN"); }
+            Mouse.OverrideCursor = Cursors.Wait;
+            ShowBottomProgress("Running Windows Defender Quick Scan...");
+            AppendTerminal($"\n>>> DEFENDER QUICK SCAN: {_currentTarget}...");
+            try
+            {
+                await WMIExecute("powershell -Command \"Start-MpScan -ScanType QuickScan\"", "DEFENDER_QUICK_SCAN");
+                Managers.UI.ToastManager.ShowSuccess("Defender Quick Scan completed.");
+                AppendTerminal("Defender Quick Scan completed.");
+            }
             catch (Exception ex)
             {
                 // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
                 Managers.UI.ToastManager.ShowError($"Defender scan failed: {ex.Message}");
                 LogManager.LogError("Defender scan failed", ex);
+                AppendTerminal($"Defender scan error: {ex.Message}", true);
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+                HideBottomProgress();
             }
         }
 
         private async void Tool_FlushDNS_Click(object sender, RoutedEventArgs e)
         {
-            try { await WMIExecute("cmd.exe /c ipconfig /flushdns", "FLUSH_DNS"); }
+            Mouse.OverrideCursor = Cursors.Wait;
+            ShowBottomProgress("Flushing DNS cache...");
+            try
+            {
+                await WMIExecute("cmd.exe /c ipconfig /flushdns", "FLUSH_DNS");
+                Managers.UI.ToastManager.ShowSuccess("DNS cache flushed successfully.");
+            }
             catch (Exception ex)
             {
                 // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
                 Managers.UI.ToastManager.ShowError($"DNS flush failed: {ex.Message}");
                 LogManager.LogError("DNS flush failed", ex);
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+                HideBottomProgress();
             }
         }
 
@@ -5612,12 +5668,26 @@ if ($connection) {{
 
         private async void Tool_DiskCleanup_Click(object sender, RoutedEventArgs e)
         {
-            try { await WMIExecute("cmd.exe /c cleanmgr /sagerun:1", "DISK_CLEANUP"); }
+            Mouse.OverrideCursor = Cursors.Wait;
+            ShowBottomProgress("Running Disk Cleanup...");
+            AppendTerminal($"\n>>> DISK CLEANUP: {_currentTarget}...");
+            try
+            {
+                await WMIExecute("cmd.exe /c cleanmgr /sagerun:1", "DISK_CLEANUP");
+                Managers.UI.ToastManager.ShowSuccess("Disk Cleanup completed.");
+                AppendTerminal("Disk Cleanup completed.");
+            }
             catch (Exception ex)
             {
                 // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
                 Managers.UI.ToastManager.ShowError($"Disk cleanup failed: {ex.Message}");
                 LogManager.LogError("Disk cleanup failed", ex);
+                AppendTerminal($"Disk cleanup error: {ex.Message}", true);
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+                HideBottomProgress();
             }
         }
 
@@ -5637,7 +5707,7 @@ if ($connection) {{
                         "SELECT HotFixID, Description, InstalledOn FROM Win32_QuickFixEngineering");
 
                     tw.AppendOutput($"{"HotFix ID",-15} | {"Description",-30} | {"Installed"}");
-                    tw.AppendOutput(new string('═', 80));
+                    tw.AppendOutput(new string('-', 80));
                     int c = 0;
 
                     if (cimResults != null)
@@ -5684,7 +5754,7 @@ if ($connection) {{
                         "SELECT Name, Command, Location FROM Win32_StartupCommand");
 
                     tw.AppendOutput($"{"Name",-40} | {"Location",-20} | {"Command"}");
-                    tw.AppendOutput(new string('═', 120));
+                    tw.AppendOutput(new string('-', 120));
                     int c = 0;
 
                     if (cimResults != null)
@@ -5741,7 +5811,7 @@ if ($connection) {{
                         "SELECT JobId, Name, Owner, Status FROM Win32_ScheduledJob");
 
                     tw.AppendOutput($"{"Job ID",-10} | {"Name",-40} | {"Owner",-20} | {"Status"}");
-                    tw.AppendOutput(new string('═', 100));
+                    tw.AppendOutput(new string('-', 100));
 
                     int count = 0;
 
@@ -5792,7 +5862,7 @@ if ($connection) {{
                                     if (Directory.Exists(tasksPath))
                                     {
                                         tw.AppendOutput($"{"Task Name",-50} | {"Path"}");
-                                        tw.AppendOutput(new string('═', 100));
+                                        tw.AppendOutput(new string('-', 100));
 
                                         var taskFiles = Directory.GetFiles(tasksPath, "*", SearchOption.AllDirectories)
                                             .Where(f => !f.EndsWith(".job", StringComparison.OrdinalIgnoreCase))
@@ -5852,9 +5922,9 @@ if ($connection) {{
                 {
                     string protocol = "";
 
-                    // ═══════════════════════════════════════════════════════════════
+                    // ---------------------------------------------------------------
                     // IP ADDRESSES (Win32_NetworkAdapterConfiguration)
-                    // ═══════════════════════════════════════════════════════════════
+                    // ---------------------------------------------------------------
                     tw.AppendOutput("=== NETWORK ADAPTERS & IP ADDRESSES ===");
                     tw.AppendOutput("");
 
@@ -5865,7 +5935,7 @@ if ($connection) {{
                     protocol = proto1;
 
                     tw.AppendOutput($"{"Adapter",-40} | {"IP Address",-18} | {"Subnet",-16} | {"Gateway",-16} | {"DHCP"}");
-                    tw.AppendOutput(new string('─', 120));
+                    tw.AppendOutput(new string('-', 120));
 
                     if (cimResults1 != null)
                     {
@@ -5929,9 +5999,9 @@ if ($connection) {{
 
                     tw.AppendOutput("");
 
-                    // ═══════════════════════════════════════════════════════════════
+                    // ---------------------------------------------------------------
                     // ROUTING TABLE (Win32_IP4RouteTable)
-                    // ═══════════════════════════════════════════════════════════════
+                    // ---------------------------------------------------------------
                     tw.AppendOutput("=== DEFAULT ROUTES ===");
                     tw.AppendOutput("");
 
@@ -5940,7 +6010,7 @@ if ($connection) {{
                         "SELECT Destination, Mask, NextHop, Metric1 FROM Win32_IP4RouteTable WHERE Destination = '0.0.0.0'");
 
                     tw.AppendOutput($"{"Destination",-18} | {"Mask",-18} | {"Next Hop",-18} | {"Metric"}");
-                    tw.AppendOutput(new string('─', 80));
+                    tw.AppendOutput(new string('-', 80));
 
                     if (cimResults2 != null)
                     {
@@ -5978,9 +6048,9 @@ if ($connection) {{
 
                     tw.AppendOutput("");
 
-                    // ═══════════════════════════════════════════════════════════════
+                    // ---------------------------------------------------------------
                     // DNS CACHE (via Process execution - netsh command)
-                    // ═══════════════════════════════════════════════════════════════
+                    // ---------------------------------------------------------------
                     tw.AppendOutput("=== DNS CLIENT CACHE ===");
                     tw.AppendOutput("");
                     tw.AppendOutput("Note: DNS cache requires netsh command execution");
@@ -6009,7 +6079,7 @@ if ($connection) {{
                 // Re-verify elevation status in case it changed
                 if (!actuallyElevated)
                 {
-                    AppendTerminal($"[LAUNCH] ✗ MMC tools require Administrator elevation", true);
+                    AppendTerminal($"[LAUNCH] ? MMC tools require Administrator elevation", true);
 
                     var elevationDialog = new ElevationDialog();
                     var result = elevationDialog.ShowDialog();
@@ -6040,7 +6110,7 @@ if ($connection) {{
                     return;
                 }
 
-                AppendTerminal($"[LAUNCH] ✓ Running with Administrator privileges", false);
+                AppendTerminal($"[LAUNCH] ? Running with Administrator privileges", false);
 
                 // Check if the tool exists (RSAT check)
                 if (executable == "mmc" && args.Contains(".msc"))
@@ -6101,9 +6171,9 @@ if ($connection) {{
                 // Show diagnostics only when NOT elevated (when we're using alternate credentials)
                 if (_isLoggedIn && _authPass != null && !actuallyElevated)
                 {
-                    AppendTerminal($"═══════════════════════════════════════════════════════");
+                    AppendTerminal($"-------------------------------------------------------");
                     AppendTerminal($"DIAGNOSTIC: Launching {executable} as {_authUser}");
-                    AppendTerminal($"═══════════════════════════════════════════════════════");
+                    AppendTerminal($"-------------------------------------------------------");
 
                     // DIAGNOSTIC 1: Check Kerberos tickets
                     try
@@ -6199,16 +6269,16 @@ if ($connection) {{
 
                                 if (foundGroups.Any())
                                 {
-                                    AppendTerminal($"[DIAG] ✓ Required groups found for {toolName}:");
+                                    AppendTerminal($"[DIAG] ? Required groups found for {toolName}:");
                                     foreach (var g in foundGroups)
                                         AppendTerminal($"  {g.Trim()}");
                                 }
                                 else
                                 {
-                                    AppendTerminal($"[DIAG] ✗ WARNING: No required groups found for {toolName}!", true);
+                                    AppendTerminal($"[DIAG] ? WARNING: No required groups found for {toolName}!", true);
                                     AppendTerminal($"[DIAG] Your account needs one of these groups:", true);
                                     foreach (var reqGroup in requiredGroups)
-                                        AppendTerminal($"  • {reqGroup}", true);
+                                        AppendTerminal($"  � {reqGroup}", true);
                                     AppendTerminal($"[DIAG] Add your account to one of these groups and re-login to NecessaryAdminTool Suite.", true);
                                 }
                             }
@@ -6248,11 +6318,11 @@ if ($connection) {{
 
                                     if (result.Contains("True"))
                                     {
-                                        AppendTerminal($"[DIAG] ✓ RPC port 135 is accessible on {targetDc}");
+                                        AppendTerminal($"[DIAG] ? RPC port 135 is accessible on {targetDc}");
                                     }
                                     else
                                     {
-                                        AppendTerminal($"[DIAG] ✗ RPC port 135 NOT accessible on {targetDc}!", true);
+                                        AppendTerminal($"[DIAG] ? RPC port 135 NOT accessible on {targetDc}!", true);
                                         AppendTerminal($"[DIAG] This could indicate firewall blocking or network issues.", true);
                                     }
                                 }
@@ -6264,7 +6334,7 @@ if ($connection) {{
                         }
                     }
 
-                    AppendTerminal($"═══════════════════════════════════════════════════════");
+                    AppendTerminal($"-------------------------------------------------------");
                 }
 
                 Process proc = null;
@@ -6325,11 +6395,11 @@ if ($connection) {{
                             };
 
                             proc = Process.Start(psi);
-                            AppendTerminal($"[LAUNCH] ✓ Process started with domain credentials (PID: {proc?.Id})");
+                            AppendTerminal($"[LAUNCH] ? Process started with domain credentials (PID: {proc?.Id})");
                         }
                         catch (Exception credEx)
                         {
-                            AppendTerminal($"[LAUNCH] ✗ Failed with credentials: {credEx.Message}", true);
+                            AppendTerminal($"[LAUNCH] ? Failed with credentials: {credEx.Message}", true);
                             LogManager.LogError("Failed to start process with credentials", credEx);
 
                             // Fallback to current user
@@ -6360,7 +6430,7 @@ if ($connection) {{
 
                 if (proc != null)
                 {
-                    AppendTerminal($"✓ Launched {executable} {args} (PID: {proc.Id})");
+                    AppendTerminal($"✅ Launched {executable} {args} (PID: {proc.Id})");
 
                     // Verify MMC process started
                     await Task.Delay(1000);
@@ -6370,7 +6440,7 @@ if ($connection) {{
                         var mmcProcesses = Process.GetProcessesByName("mmc");
                         if (mmcProcesses.Length > 0)
                         {
-                            AppendTerminal($"✓ MMC process verified (count: {mmcProcesses.Length})");
+                            AppendTerminal($"✅ MMC process verified (count: {mmcProcesses.Length})");
                         }
                     }
 
@@ -6378,7 +6448,7 @@ if ($connection) {{
                 }
                 else
                 {
-                    AppendTerminal($"⚠ Process.Start returned null", true);
+                    AppendTerminal($"❌ Process.Start returned null", true);
                     LogManager.LogWarning($"Process.Start returned null for {executable}");
                 }
 
@@ -6393,9 +6463,9 @@ if ($connection) {{
             }
         }
 
-        // ═══════════════════════════════════════════════════════
+        // -------------------------------------------------------
         // EXISTING TOOL HANDLERS (preserved)
-        // ═══════════════════════════════════════════════════════
+        // -------------------------------------------------------
 
         private void Tool_Browse_Click(object sender, RoutedEventArgs e)
         {
@@ -6410,7 +6480,7 @@ if ($connection) {{
                     var psi = new ProcessStartInfo { FileName = "cmd.exe", Arguments = $"/c net use \"{unc}\" /user:{_authUser} \"{password}\" && explorer \"{unc}\"", UseShellExecute = false, CreateNoWindow = true };
                     using (var proc = Process.Start(psi)) { proc?.WaitForExit(3000); }
                 });
-                AppendTerminal($"C$ share → {_currentTarget}");
+                AppendTerminal($"C$ share ? {_currentTarget}");
             }
             else { try { using (Process.Start("explorer.exe", unc)) { } } catch (Exception ex) { Managers.UI.ToastManager.ShowError(ex.Message); } }
         }
@@ -6430,7 +6500,7 @@ if ($connection) {{
                         "SELECT Name, Version, Vendor FROM Win32_Product");
 
                     tw.AppendOutput($"{"Name",-60} | {"Version",-20} | {"Vendor"}");
-                    tw.AppendOutput(new string('═', 120));
+                    tw.AppendOutput(new string('-', 120));
 
                     List<string> packages = null;
 
@@ -6527,7 +6597,7 @@ if ($connection) {{
                                     "SELECT Name, ProcessId, ThreadCount, WorkingSetSize FROM Win32_Process");
 
                                 tw.AppendOutput($"{"Process",-45} | {"PID",-10} | {"Threads",-10} | {"MB"}");
-                                tw.AppendOutput(new string('═', 100));
+                                tw.AppendOutput(new string('-', 100));
 
                                 List<string> processes = null;
 
@@ -6617,7 +6687,7 @@ if ($connection) {{
                             "SELECT DisplayName, State, StartMode, Status FROM Win32_Service");
 
                         tw.AppendOutput($"{"Service",-50} | {"State",-12} | {"Startup",-12} | {"Status"}");
-                        tw.AppendOutput(new string('═', 100));
+                        tw.AppendOutput(new string('-', 100));
 
                         var svcs = new List<dynamic>();
 
@@ -6713,7 +6783,7 @@ if ($connection) {{
                         "SELECT TimeGenerated, EventCode, Message, SourceName FROM Win32_NTLogEvent WHERE Logfile='System' AND Type='Error'");
 
                     tw.AppendOutput($"{"Time",-20} | {"Source",-25} | {"ID",-8} | Message");
-                    tw.AppendOutput(new string('═', 120));
+                    tw.AppendOutput(new string('-', 120));
 
                     List<string> events = new List<string>();
 
@@ -6804,7 +6874,7 @@ if ($connection) {{
                 if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target"); return; }
                 if (MessageBox.Show("Run SFC + DISM repair? (15-30 min)", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
                 ShowBottomProgress($"Starting OS repair on {_currentTarget}...");
-                AppendTerminal($"OS Repair → {_currentTarget}...");
+                AppendTerminal($"OS Repair ? {_currentTarget}...");
                 await Task.Run(async () =>
                 {
                     try
@@ -6820,7 +6890,7 @@ if ($connection) {{
                             _ = Dispatcher.InvokeAsync(() => UpdateBottomProgress(80, "DISM repair started..."));
                             AppendTerminal("DISM started"); AddLog(_currentTarget, "OS_REPAIR", "SFC+DISM launched", "OK");
                             await Task.Delay(2000);
-                            _ = Dispatcher.InvokeAsync(() => HideBottomProgress("Ready • Repair running"));
+                            _ = Dispatcher.InvokeAsync(() => HideBottomProgress("Ready � Repair running"));
                         }
                     }
                     catch (Exception ex)
@@ -7056,15 +7126,15 @@ if ($connection) {{
             }
         }
 
-        // ═══════════════════════════════════════════════════════
+        // -------------------------------------------------------
         // CONTEXT MENUS & INVENTORY
-        // ═══════════════════════════════════════════════════════
+        // -------------------------------------------------------
 
         private void Ctx_Inspect_Click(object sender, RoutedEventArgs e)
         {
             if (GridInventory.SelectedItem is PCInventory pc)
             {
-                MainTabs.SelectedIndex = 0;
+                MainTabs.SelectedIndex = 1; // Tab 1 = Single System Inspector (was 0 = Dashboard � bug)
                 ComboTarget.Text = pc.Hostname;
                 AddToRecentTargets(pc.Hostname); // Track recent machines
                 BtnScan_Click(sender, e);
@@ -7203,7 +7273,7 @@ if ($connection) {{
                 {
                     var result = await ping.SendPingAsync(pc.Hostname, SecureConfig.PingTimeoutMs);
                     pc.Status = result.Status == System.Net.NetworkInformation.IPStatus.Success ? "ONLINE" : "Offline";
-                    LogManager.LogDebug($"RefreshNodeStatusAsync: {pc.Hostname} → {pc.Status}");
+                    LogManager.LogDebug($"RefreshNodeStatusAsync: {pc.Hostname} ? {pc.Status}");
                 }
             }
             catch (Exception ex)
@@ -7241,7 +7311,7 @@ if ($connection) {{
                     await LoadPinnedDevices();
 
                     AppendTerminal($"📌 Pinned device: {pc.Hostname}");
-                    Managers.UI.ToastManager.ShowSuccess($"✓ {pc.Hostname} added to pinned devices");
+                    Managers.UI.ToastManager.ShowSuccess($"📌 {pc.Hostname} added to pinned devices");
                 }
             }
             catch (Exception ex)
@@ -7267,7 +7337,7 @@ if ($connection) {{
                     {
                         BookmarkManager.AddBookmark(pc.Hostname, dialog.Description, dialog.Category);
                         AppendTerminal($"⭐ Added to favorites: {pc.Hostname}");
-                        Managers.UI.ToastManager.ShowSuccess($"✓ {pc.Hostname} added to favorites");
+                        Managers.UI.ToastManager.ShowSuccess($"⭐ {pc.Hostname} added to favorites");
                     }
                 }
             }
@@ -7297,8 +7367,8 @@ if ($connection) {{
                     if (result == MessageBoxResult.Yes)
                     {
                         BookmarkManager.RemoveBookmark(pc.Hostname);
-                        AppendTerminal($"💔 Removed from favorites: {pc.Hostname}");
-                        Managers.UI.ToastManager.ShowSuccess($"✓ {pc.Hostname} removed from favorites");
+                        AppendTerminal($"⭐ Removed from favorites: {pc.Hostname}");
+                        Managers.UI.ToastManager.ShowSuccess($"⭐ {pc.Hostname} removed from favorites");
                     }
                 }
             }
@@ -7309,10 +7379,10 @@ if ($connection) {{
             }
         }
 
-        // ══════════════════════════════════════════════════════════════
+        // --------------------------------------------------------------
         // QUICK FIX / AUTOMATED REMEDIATION HANDLERS
         // TAG: #VERSION_7.1 #REMEDIATION #AUTOMATION
-        // ══════════════════════════════════════════════════════════════
+        // --------------------------------------------------------------
 
         /// <summary>
         /// Quick Fix: Restart Windows Update service
@@ -7477,7 +7547,7 @@ if ($connection) {{
                 var stats = AssetTagManager.GetTagStatistics();
 
                 var message = new System.Text.StringBuilder();
-                message.AppendLine("🏷️ Asset Tags:");
+                message.AppendLine("??? Asset Tags:");
                 message.AppendLine();
 
                 foreach (var tag in tags)
@@ -7652,7 +7722,7 @@ if ($connection) {{
                     ItemsSource = presets.Select(p => new
                     {
                         p.Id,
-                        Display = p.IsBuiltIn ? $"🔒 {p.Name}" : $"📌 {p.Name}",
+                        Display = p.IsBuiltIn ? $"🔒 {p.Name}" : $"📋 {p.Name}",
                         p.Description,
                         p.Criteria
                     })
@@ -7796,11 +7866,11 @@ if ($connection) {{
             //// Update icon based on filter state
             //if (Managers.FilterManager.CurrentFilter.IsEmpty())
             //{
-            //    TxtFilterIcon.Text = "ℹ️";
+            //    TxtFilterIcon.Text = "??";
             //}
             //else
             //{
-            //    TxtFilterIcon.Text = "🔍";
+            //    TxtFilterIcon.Text = "??";
             //}
         }
 
@@ -7877,7 +7947,7 @@ foreach ($update in $searchResult.Updates) {
             };
             scriptWindow.ShowDialog();
 
-            AppendTerminal($"📊 Checked update status on {hostnames.Length} computer(s)");
+            AppendTerminal($"🔄 Checked update status on {hostnames.Length} computer(s)");
         }
 
         private void Ctx_CheckPendingReboot_Click(object sender, RoutedEventArgs e)
@@ -7896,9 +7966,9 @@ $rebootPending = $false
 if (Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending') { $rebootPending = $true }
 if (Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired') { $rebootPending = $true }
 if ($rebootPending) {
-    Write-Output '⚠️ REBOOT PENDING - Computer needs to restart for updates'
+    Write-Output 'REBOOT PENDING - Computer needs to restart for updates'
 } else {
-    Write-Output '✅ No reboot pending'
+    Write-Output 'No reboot pending'
 }";
             #pragma warning restore CS0219
 
@@ -7970,7 +8040,7 @@ if ($rebootPending) {
                 dialog.ShowDialog();
 
                 // Log completion
-                AppendTerminal($"🔧 Completed Quick Fix: {actionIcon} {actionName} on {selectedComputers.Length} computer(s)");
+                AppendTerminal($"✅ Completed Quick Fix: {actionIcon} {actionName} on {selectedComputers.Length} computer(s)");
                 LogManager.LogInfo($"[Quick Fix] Executed {actionName} on {selectedComputers.Length} computers");
             }
             catch (Exception ex)
@@ -8058,9 +8128,9 @@ if ($rebootPending) {
             CtxReboot.Visibility = isAdmin ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        // ═══════════════════════════════════════════════════════
+        // -------------------------------------------------------
         // AUTHENTICATION (Secure)
-        // ═══════════════════════════════════════════════════════
+        // -------------------------------------------------------
 
         private async void BtnAuth_Click(object sender, RoutedEventArgs e)
         {
@@ -8076,7 +8146,7 @@ if ($rebootPending) {
                 _adminCheckCache.Clear();
 
                 ApplyRoleRestrictions();
-                LogManager.LogInfo("User logged out — credentials wiped");
+                LogManager.LogInfo("User logged out � credentials wiped");
             }
             else await ShowLoginDialog();
         }
@@ -8115,7 +8185,7 @@ if ($rebootPending) {
                     // Validate username format
                     if (!Security.SecurityValidator.ValidateUsername(lw.Username))
                     {
-                        Managers.UI.ToastManager.ShowWarning("Invalid username. Enter just your username (e.g. john.smith) — domain is added automatically.");
+                        Managers.UI.ToastManager.ShowWarning("Invalid username. Enter just your username (e.g. john.smith) � domain is added automatically.");
                         LogManager.LogWarning($"[AUTH] Invalid username format: {lw.Username}");
                         attempt++;
                         continue;
@@ -8178,7 +8248,7 @@ if ($rebootPending) {
             // TAG: #UX_FEEDBACK - Step 1: Show contacting AD
             Dispatcher.Invoke(() =>
             {
-                Managers.UI.ToastManager.ShowInfo($"🔐 Contacting Active Directory...\n\nAuthenticating: {user}");
+                Managers.UI.ToastManager.ShowInfo($"🔄 Contacting Active Directory...\n\nAuthenticating: {user}");
             });
 
             await Task.Run(() =>
@@ -8189,7 +8259,7 @@ if ($rebootPending) {
                     string domain = GetNetBIOSDomain(), cleanUser = user;
                     if (user.Contains("\\")) { var p = user.Split('\\'); domain = p[0]; cleanUser = p[1]; }
                     LogManager.LogInfo($"[AUTH] Resolved: Domain='{domain}' User='{cleanUser}'");
-                    // SecureString → plaintext unavoidable for LogonUser P/Invoke
+                    // SecureString ? plaintext unavoidable for LogonUser P/Invoke
                     authenticated = LogonUser(cleanUser, domain, new NetworkCredential("", pass).Password, 2, 0, out token);
                     if (!authenticated)
                     {
@@ -8211,7 +8281,7 @@ if ($rebootPending) {
                 // TAG: #UX_FEEDBACK - Step 2: Credentials validated
                 Dispatcher.Invoke(() =>
                 {
-                    Managers.UI.ToastManager.ShowSuccess("✓ Credentials validated");
+                    Managers.UI.ToastManager.ShowSuccess("✅ Credentials validated");
                 });
 
                 // TAG: #SECURITY_CRITICAL #RATE_LIMITING
@@ -8232,7 +8302,7 @@ if ($rebootPending) {
                 BtnAuth.Content = "LOGOUT";
 
                 // TAG: #SECURITY_CRITICAL #AUDIT_LOG
-                LogManager.LogInfo($"[AUTH] ✓ Authentication successful: {user} (Admin: {_isDomainAdmin}, Elevated: {_isElevated})");
+                LogManager.LogInfo($"[AUTH] ✅ Authentication successful: {user} (Admin: {_isDomainAdmin}, Elevated: {_isElevated})");
 
                 // Apply restrictions based on domain admin status and elevation
                 ApplyRoleRestrictions();
@@ -8247,24 +8317,24 @@ if ($rebootPending) {
                 {
                     if (_isDomainAdmin)
                     {
-                        Managers.UI.ToastManager.ShowSuccess($"✓ Login successful!\n\nAccess Level: {accessLevel}");
+                        Managers.UI.ToastManager.ShowSuccess($"✅ Login successful!\n\nAccess Level: {accessLevel}");
                     }
                     else
                     {
                         // Inform user of their limited access level
-                        Managers.UI.ToastManager.ShowWarning($"⚠ Limited Access\n\nYou are authenticated but NOT a Domain Admin.\n\nSome features (deployment, destructive tools) are disabled.\n\nContact your IT administrator for Domain Admin access.");
+                        Managers.UI.ToastManager.ShowWarning($"⚠️ Limited Access\n\nYou are authenticated but NOT a Domain Admin.\n\nSome features (deployment, destructive tools) are disabled.\n\nContact your IT administrator for Domain Admin access.");
                     }
                 });
             }
             else
             {
                 // TAG: #SECURITY_CRITICAL #AUDIT_LOG #FAILED_AUTH
-                LogManager.LogWarning($"[AUTH] ✗ Authentication failed for user: {user}");
+                LogManager.LogWarning($"[AUTH] ❌ Authentication failed for user: {user}");
 
                 // TAG: #UX_FEEDBACK - Show authentication failure
                 Dispatcher.Invoke(() =>
                 {
-                    Managers.UI.ToastManager.ShowError("✗ Authentication failed\n\nInvalid credentials or insufficient permissions.");
+                    Managers.UI.ToastManager.ShowError("❌ Authentication failed\n\nInvalid credentials or insufficient permissions.");
                 });
             }
 
@@ -8305,7 +8375,7 @@ if ($rebootPending) {
                     cbSize = Marshal.SizeOf(typeof(CREDUI_INFO)),
                     hwndParent = new System.Windows.Interop.WindowInteropHelper(this).Handle,
                     pszMessageText = "Enter your domain administrator credentials to run NecessaryAdminTool Suite with full privileges.",
-                    pszCaptionText = "NecessaryAdminTool Suite - Administrator Login"
+                    pszCaptionText = $"{LogoConfig.PRODUCT_FULL_NAME} - Administrator Login"
                 };
 
                 uint authPackage = 0;
@@ -8391,9 +8461,9 @@ if ($rebootPending) {
             return false;
         }
 
-        // ═══════════════════════════════════════════════════════
+        // -------------------------------------------------------
         // UTILITY
-        // ═══════════════════════════════════════════════════════
+        // -------------------------------------------------------
 
         /// <summary>
         /// Initialize DC cluster view (Domain & Directory tab)
@@ -8476,9 +8546,9 @@ if ($rebootPending) {
                 return;
             }
 
-            // ══════════════════════════════════════════════════════════════
+            // --------------------------------------------------------------
             // MULTICORE OPTIMIZATION: Parallel DC health checks with Task.WhenAll
-            // ══════════════════════════════════════════════════════════════════
+            // ------------------------------------------------------------------
             long bestPing = 9999; string bestDC = ""; object lk = new object();
             var dcHealthTasks = new List<Task>();
 
@@ -8512,7 +8582,7 @@ if ($rebootPending) {
             foreach (var dc in dcList)
             {
                 // Split hostname into short name + domain suffix for cleaner display
-                // e.g. "JDXTNDC01.process.local" → shortName="JDXTNDC01", domainSuffix=".process.local"
+                // e.g. "JDXTNDC01.process.local" ? shortName="JDXTNDC01", domainSuffix=".process.local"
                 int dotIdx = dc.IndexOf('.');
                 string shortName = dotIdx > 0 ? dc.Substring(0, dotIdx) : dc;
                 string domainSuffix = dotIdx > 0 ? dc.Substring(dotIdx) : "";
@@ -8736,7 +8806,7 @@ if ($rebootPending) {
                 await Application.Current.Dispatcher.InvokeAsync(() =>
                 {
                     int dcCount = ComboDC.Items.Count - 1; // -1 for "Auto" item
-                    HideBottomProgress($"Ready • {dcCount} DCs found");
+                    HideBottomProgress($"Ready � {dcCount} DCs found");
                 });
             });
 
@@ -8783,18 +8853,18 @@ if ($rebootPending) {
                 details: $"Error: {ex.Message}",
                 reasons: new[]
                 {
-                    "🔌 Not connected to corporate VPN",
-                    "🌐 Not connected to local network",
-                    "💻 Machine is not domain-joined",
-                    "🔥 Firewall blocking LDAP/Kerberos (ports 389, 636, 88)",
-                    "📡 DNS misconfigured or domain unreachable",
-                    "⚡ Domain controller is offline or unreachable"
+                    "❌ Not connected to corporate VPN",
+                    "❌ Not connected to local network",
+                    "❌ Machine is not domain-joined",
+                    "🔒 Firewall blocking LDAP/Kerberos (ports 389, 636, 88)",
+                    "❌ DNS misconfigured or domain unreachable",
+                    "❌ Domain controller is offline or unreachable"
                 },
                 actions: new[]
                 {
-                    "✓ Connect to corporate VPN",
-                    "✓ Verify network connectivity",
-                    "✓ Check domain membership (System Properties)"
+                    "🔧 Connect to corporate VPN",
+                    "🔧 Verify network connectivity",
+                    "🔧 Check domain membership (System Properties)"
                 }
             );
         }
@@ -8816,7 +8886,7 @@ if ($rebootPending) {
                     if (TxtTerminalStatus != null)
                     {
                         string statusText = text.Length > 60 ? text.Substring(0, 57) + "..." : text;
-                        TxtTerminalStatus.Text = $"• {statusText}";
+                        TxtTerminalStatus.Text = $"� {statusText}";
                         TxtTerminalStatus.Foreground = isError
                             ? new SolidColorBrush(Color.FromRgb(255, 100, 100))
                             : (SolidColorBrush)FindResource("AccentOrangeBrush");
@@ -8863,9 +8933,9 @@ if ($rebootPending) {
             });
         }
 
-        // ═══════════════════════════════════════════════════════════════
+        // ---------------------------------------------------------------
         // TOOL OPERATION PROGRESS INDICATOR
-        // ═══════════════════════════════════════════════════════════════
+        // ---------------------------------------------------------------
 
         /// <summary>Shows the tool progress indicator with tool name and initial status</summary>
         private void ShowToolProgress(string toolName, string status = "Initializing...")
@@ -9235,7 +9305,7 @@ if ($rebootPending) {
             }
         }
 
-        // ── Remaining Event Handlers ──
+        // -- Remaining Event Handlers --
         private void ChkRememberDC_Click(object sender, RoutedEventArgs e) => SaveConfig();
 
         /// <summary>
@@ -9362,12 +9432,12 @@ if ($rebootPending) {
         /// <summary>
         /// Extracts a clean, validated hostname from a DC display string.
         /// Handles all ComboBox display formats:
-        ///   "JDXTNDC01.process.local"                    → "JDXTNDC01.process.local"
-        ///   "Auto (JDXTNDC01.process.local - 1ms)"       → "JDXTNDC01.process.local"
-        ///   "JDXTNDC01.process.local (1ms)"              → "JDXTNDC01.process.local"
-        ///   "JDXTNDC01.process.local (probing...)"       → "JDXTNDC01.process.local"
-        ///   "JDXTNDC01.process.local (error)"            → "JDXTNDC01.process.local"
-        ///   "Auto" or null                               → null
+        ///   "JDXTNDC01.process.local"                    ? "JDXTNDC01.process.local"
+        ///   "Auto (JDXTNDC01.process.local - 1ms)"       ? "JDXTNDC01.process.local"
+        ///   "JDXTNDC01.process.local (1ms)"              ? "JDXTNDC01.process.local"
+        ///   "JDXTNDC01.process.local (probing...)"       ? "JDXTNDC01.process.local"
+        ///   "JDXTNDC01.process.local (error)"            ? "JDXTNDC01.process.local"
+        ///   "Auto" or null                               ? null
         /// TAG: #AD_FLEET_INVENTORY #DC_DISCOVERY #SECURITY
         /// </summary>
         private static string ExtractHostnameFromDCString(string rawDCString)
@@ -9379,7 +9449,7 @@ if ($rebootPending) {
             if (Security.SecurityValidator.IsValidHostname(rawDCString))
                 return rawDCString;
 
-            // Format: "Auto (JDXTNDC01.process.local - 1ms)" → extract between "(" and " -" or ")"
+            // Format: "Auto (JDXTNDC01.process.local - 1ms)" ? extract between "(" and " -" or ")"
             var autoMatch = System.Text.RegularExpressions.Regex.Match(
                 rawDCString, @"Auto\s*\(([^)\s]+?)(?:\s+-\s+\d+ms)?\)");
             if (autoMatch.Success)
@@ -9440,7 +9510,7 @@ if ($rebootPending) {
                 {
                     string rawTag = item.Tag is string s ? s : item.Tag.ToString();
                     selectedDC = ExtractHostnameFromDCString(rawTag);
-                    LogManager.LogDebug($"[AD Browser] Raw DC tag: '{rawTag}' → extracted hostname: '{selectedDC}'");
+                    LogManager.LogDebug($"[AD Browser] Raw DC tag: '{rawTag}' ? extracted hostname: '{selectedDC}'");
                 }
 
                 if (string.IsNullOrEmpty(selectedDC))
@@ -9499,13 +9569,13 @@ if ($rebootPending) {
             if (DCHistoryPanel.Visibility == Visibility.Collapsed)
             {
                 DCHistoryPanel.Visibility = Visibility.Visible;
-                DCHistoryToggleIcon.Text = "▲";
+                DCHistoryToggleIcon.Text = "?";
                 LoadDCHistory();
             }
             else
             {
                 DCHistoryPanel.Visibility = Visibility.Collapsed;
-                DCHistoryToggleIcon.Text = "▼";
+                DCHistoryToggleIcon.Text = "?";
             }
         }
 
@@ -9526,14 +9596,14 @@ if ($rebootPending) {
                     {
                         // Calculate time since last seen
                         var timeSinceLastSeen = DateTime.Now - dc.LastSeen;
-                        string statusIcon = "⚫"; // Offline/unknown
+                        string statusIcon = "?"; // Offline/unknown
 
                         if (timeSinceLastSeen.TotalHours < 24)
-                            statusIcon = "🟢"; // Recently seen
+                            statusIcon = "??"; // Recently seen
                         else if (timeSinceLastSeen.TotalDays < 7)
-                            statusIcon = "🟡"; // Seen within a week
+                            statusIcon = "??"; // Seen within a week
                         else if (timeSinceLastSeen.TotalDays < 30)
-                            statusIcon = "🟠"; // Seen within a month
+                            statusIcon = "??"; // Seen within a month
 
                         allDCs.Add(new DCHistoryItem
                         {
@@ -9561,7 +9631,7 @@ if ($rebootPending) {
             }
         }
 
-        private void BtnSync_Click(object sender, RoutedEventArgs e) => Managers.UI.ToastManager.ShowInfo("Script sync — implement per deployment");
+        private void BtnSync_Click(object sender, RoutedEventArgs e) => Managers.UI.ToastManager.ShowInfo("Script sync � implement per deployment");
 
         private void BtnDownloadScripts_Click(object sender, RoutedEventArgs e)
         {
@@ -9600,8 +9670,8 @@ if ($rebootPending) {
                             {
                                 string content = reader.ReadToEnd();
 
-                                // Inject configured settings from Options → Deployment Configuration.
-                                // Only replaces a placeholder when the setting has an actual value —
+                                // Inject configured settings from Options ? Deployment Configuration.
+                                // Only replaces a placeholder when the setting has an actual value �
                                 // leaving it blank preserves the env-var default so the script still
                                 // works without hardcoded paths (useful for resetting to defaults).
                                 string dbPath   = NecessaryAdminTool.Properties.Settings.Default.DatabasePath ?? @"C:\ProgramData\NecessaryAdminTool";
@@ -9610,35 +9680,35 @@ if ($rebootPending) {
                                 string pattern  = NecessaryAdminTool.Properties.Settings.Default.LocalISOHostnamePattern ?? "";
                                 int injectedCount = 0;
 
-                                // LogDir — use configured value, or default path if blank
+                                // LogDir � use configured value, or default path if blank
                                 string effectiveLogDir = !string.IsNullOrEmpty(logDir)
                                     ? logDir
                                     : Path.Combine(dbPath, "DeploymentLogs");
                                 // Both scripts now align vars with 14 spaces
                                 content = content.Replace(
                                     "$LogDir              = $env:NECESSARYADMINTOOL_LOG_DIR",
-                                    $"$LogDir              = \"{effectiveLogDir}\"  # Set in NecessaryAdminTool: Options → Deployment Configuration");
+                                    $"$LogDir              = \"{effectiveLogDir}\"  # Set in NecessaryAdminTool: Options ? Deployment Configuration");
                                 injectedCount++;
 
-                                // ISOPath — only inject if configured, otherwise leave env-var placeholder
+                                // ISOPath -- only inject if configured, otherwise leave env-var placeholder
                                 if (!string.IsNullOrEmpty(isoPath))
                                 {
                                     content = content.Replace(
                                         "$ISOPath             = $env:NECESSARYADMINTOOL_ISO_PATH",
-                                        $"$ISOPath             = \"{isoPath}\"  # Set in NecessaryAdminTool: Options → Deployment Configuration");
+                                        $"$ISOPath             = \"{isoPath}\"  # Set in NecessaryAdminTool: Options ? Deployment Configuration");
                                     injectedCount++;
                                 }
 
-                                // HostnamePattern — only inject if configured
+                                // HostnamePattern � only inject if configured
                                 if (!string.IsNullOrEmpty(pattern))
                                 {
                                     content = content.Replace(
                                         "$HostnamePattern     = if ($env:NECESSARYADMINTOOL_HOSTNAME_PATTERN) { $env:NECESSARYADMINTOOL_HOSTNAME_PATTERN } else { \"*\" }",
-                                        $"$HostnamePattern     = \"{pattern}\"  # Set in NecessaryAdminTool: Options → Deployment Configuration");
+                                        $"$HostnamePattern     = \"{pattern}\"  # Set in NecessaryAdminTool: Options ? Deployment Configuration");
                                     injectedCount++;
                                 }
 
-                                // SQL Server database — inject type + connection string when configured
+                                // SQL Server database � inject type + connection string when configured
                                 string dbType = NecessaryAdminTool.Properties.Settings.Default.DatabaseType ?? "";
                                 string connStr = NecessaryAdminTool.Properties.Settings.Default.DatabasePath ?? "";
                                 if (dbType.Equals("SqlServer", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(connStr))
@@ -9646,28 +9716,28 @@ if ($rebootPending) {
                                     // PowerShell doesn't use \ as escape so no escaping needed
                                     content = content.Replace(
                                         "$DatabaseType        = \"\"  # NAT_INJECT_DB_TYPE",
-                                        "$DatabaseType        = \"SqlServer\"  # Set in NecessaryAdminTool: Options \u2192 Database");
+                                        "$DatabaseType        = \"SqlServer\"  # Set in NecessaryAdminTool: Options -> Database");
                                     content = content.Replace(
                                         "$SqlConnectionString = \"\"  # NAT_INJECT_SQL_CONN",
-                                        "$SqlConnectionString = \"" + connStr + "\"  # Set in NecessaryAdminTool: Options \u2192 Database");
+                                        "$SqlConnectionString = \"" + connStr + "\"  # Set in NecessaryAdminTool: Options -> Database");
                                     injectedCount += 2;
                                 }
 
                                 string targetPath = Path.Combine(targetFolder, script.FileName);
-                                File.WriteAllText(targetPath, content);
+                                File.WriteAllText(targetPath, content, new System.Text.UTF8Encoding(true));
                                 filesWritten++;
-                                AppendTerminal($"✓ Saved: {script.FileName} ({injectedCount} setting(s) injected)", false);
+                                AppendTerminal($"✅ Saved: {script.FileName} ({injectedCount} setting(s) injected)", false);
                             }
                         }
                         else
                         {
-                            AppendTerminal($"✗ Resource not found: {script.ResourceName}", true);
+                            AppendTerminal($"❌ Resource not found: {script.ResourceName}", true);
                         }
                     }
 
                     if (filesWritten > 0)
                     {
-                        Managers.UI.ToastManager.ShowSuccess($"Successfully downloaded {filesWritten} PowerShell script(s) to:\n{targetFolder}\n\n" +"Scripts included:\n" +"• NecessaryAdminTool_GeneralUpdate.ps1 (Windows Updates + Firmware)\n" +"• NecessaryAdminTool_FeatureUpdate.ps1 (Major OS Upgrades)\n\n" +"These scripts are compatible with ManageEngine Endpoint Central.");
+                        Managers.UI.ToastManager.ShowSuccess($"Successfully downloaded {filesWritten} PowerShell script(s) to:\n{targetFolder}\n\n" +"Scripts included:\n" +"� NecessaryAdminTool_GeneralUpdate.ps1 (Windows Updates + Firmware)\n" +"� NecessaryAdminTool_FeatureUpdate.ps1 (Major OS Upgrades)\n\n" +"These scripts are compatible with ManageEngine Endpoint Central.");
 
                         // Open folder
                         Process.Start("explorer.exe", targetFolder);
@@ -9677,7 +9747,7 @@ if ($rebootPending) {
             catch (Exception ex)
             {
                 LogManager.LogError("Failed to download scripts", ex);
-                AppendTerminal($"✗ Download failed: {ex.Message}", true);
+                AppendTerminal($"❌ Download failed: {ex.Message}", true);
                 Managers.UI.ToastManager.ShowError($"Failed to download scripts:\n{ex.Message}");
             }
         }
@@ -9703,7 +9773,7 @@ if ($rebootPending) {
 
                     if (resourceName == null)
                     {
-                        AppendTerminal($"✗ Embedded resource not found: {resourceFileName}", true);
+                        AppendTerminal($"❌ Embedded resource not found: {resourceFileName}", true);
                         Managers.UI.ToastManager.ShowError($"Could not find embedded resource: {resourceFileName}");
                         return;
                     }
@@ -9722,12 +9792,12 @@ if ($rebootPending) {
                             : Path.Combine(dbPath, "DeploymentLogs");
                         content = content.Replace(
                             "$LogDir              = $env:NECESSARYADMINTOOL_LOG_DIR",
-                            $"$LogDir              = \"{effectiveLogDir}\"  # Set in NecessaryAdminTool: Options \u2192 Deployment Configuration");
+                            $"$LogDir              = \"{effectiveLogDir}\"  # Set in NecessaryAdminTool: Options -> Deployment Configuration");
                         injectedCount++;
 
                         string targetPath = Path.Combine(targetFolder, outputFileName);
-                        File.WriteAllText(targetPath, content);
-                        AppendTerminal($"✓ Saved: {outputFileName} ({injectedCount} setting(s) injected)", false);
+                        File.WriteAllText(targetPath, content, new System.Text.UTF8Encoding(true));
+                        AppendTerminal($"✅ Saved: {outputFileName} ({injectedCount} setting(s) injected)", false);
                     }
 
                     Managers.UI.ToastManager.ShowSuccess(
@@ -9743,7 +9813,7 @@ if ($rebootPending) {
             catch (Exception ex)
             {
                 LogManager.LogError("BtnDownloadPreflightScript_Click failed", ex);
-                AppendTerminal($"✗ Download failed: {ex.Message}", true);
+                AppendTerminal($"❌ Download failed: {ex.Message}", true);
                 Managers.UI.ToastManager.ShowError($"Failed to download preflight script:\n{ex.Message}");
             }
         }
@@ -9879,7 +9949,7 @@ if ($rebootPending) {
         }
         private void BtnSyncDB_Click(object sender, RoutedEventArgs e) { try { if (File.Exists(SecureConfig.InventoryDbPath)) Managers.UI.ToastManager.ShowSuccess($"Synced to:\n{SecureConfig.InventoryDbPath}"); else Managers.UI.ToastManager.ShowWarning("DB not accessible"); } catch (Exception ex) { Managers.UI.ToastManager.ShowError(ex.Message); } }
         private void BtnWarranty_Click(object sender, RoutedEventArgs e) { if (!string.IsNullOrEmpty(_currentServiceTag) && _currentServiceTag != "N/A") try { Process.Start(new ProcessStartInfo($"https://www.dell.com/support/home/en-us/product-support/servicetag/{_currentServiceTag}/overview") { UseShellExecute = true }); } catch { } }
-        private void BtnWOL_Click(object sender, RoutedEventArgs e) => Managers.UI.ToastManager.ShowInfo("WOL — implement Magic Packet logic");
+        private void BtnWOL_Click(object sender, RoutedEventArgs e) => Managers.UI.ToastManager.ShowInfo("WOL � implement Magic Packet logic");
         private void BtnOpenLog_Click(object sender, RoutedEventArgs e) { if (File.Exists(LogManager.GetDebugLogPath())) Process.Start("notepad.exe", LogManager.GetDebugLogPath()); }
 
         // TAG: #FEATURE_BULK_OPERATIONS #WINDOW_LAUNCH
@@ -9945,7 +10015,7 @@ if ($rebootPending) {
             catch (Exception ex) { Managers.UI.ToastManager.ShowError($"Export failed: {ex.Message}"); }
         }
 
-        // ── Deployment Results Tab (TAG: #DEPLOYMENT_RESULTS) ────────────────────
+        // -- Deployment Results Tab (TAG: #DEPLOYMENT_RESULTS) --------------------
 
         /// <summary>Returns the path to Master_Update_Log.csv from DeploymentLogDirectory setting.</summary>
         private string GetMasterUpdateLogPath()
@@ -9956,11 +10026,38 @@ if ($rebootPending) {
             return Path.Combine(dir, "Master_Update_Log.csv");
         }
 
+        // TAG: #DEPLOYMENT_RESULTS - Pulsing dot animation helpers (shown while CSV is loading)
+        private void StartDeploymentLoadingAnimation()
+        {
+            DeploymentLoadingPulse.Visibility = Visibility.Visible;
+            var anim = new System.Windows.Media.Animation.DoubleAnimation
+            {
+                From = 1.0,
+                To = 0.1,
+                Duration = new Duration(TimeSpan.FromSeconds(0.55)),
+                AutoReverse = true,
+                RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever
+            };
+            DeploymentLoadingPulse.BeginAnimation(UIElement.OpacityProperty, anim);
+        }
+
+        private void StopDeploymentLoadingAnimation()
+        {
+            DeploymentLoadingPulse.BeginAnimation(UIElement.OpacityProperty, null); // clear animation
+            DeploymentLoadingPulse.Visibility = Visibility.Collapsed;
+        }
+
         /// <summary>Reads Master_Update_Log.csv and populates _deploymentResults (async to avoid blocking UI).</summary>
+        /// <remarks>
+        /// Uses a shadow-copy approach: copies the network share CSV to a local temp file first,
+        /// then reads from the local copy. This avoids file-lock conflicts with ManageEngine scripts
+        /// that may be actively appending rows to the same file on the network share.
+        /// </remarks>
         // TAG: #DEPLOYMENT_RESULTS
         private async Task LoadDeploymentResultsAsync()
         {
             LogManager.LogInfo("LoadDeploymentResultsAsync() - START");
+            StartDeploymentLoadingAnimation();
             try
             {
                 string csvPath = GetMasterUpdateLogPath();
@@ -9972,30 +10069,82 @@ if ($rebootPending) {
 
                 if (!File.Exists(csvPath))
                 {
-                    TxtDeploymentCount.Text = "0 records — log not found";
-                    Managers.UI.ToastManager.ShowWarning($"Master_Update_Log.csv not found at:\n{csvPath}\n\nCheck Options → Deployment Configuration.");
+                    TxtDeploymentCount.Text = "0 records � log not found";
+                    Managers.UI.ToastManager.ShowWarning($"Master_Update_Log.csv not found at:\n{csvPath}\n\nCheck Options ? Deployment Configuration.");
                     LogManager.LogWarning($"LoadDeploymentResultsAsync() - File not found: {csvPath}");
                     return;
                 }
 
                 // Run file I/O + parsing on ThreadPool to avoid blocking UI thread (large CSVs on network shares)
-                // Expected header: Hostname,Script,Timestamp,OSVersion,BuildNumber,UptimeDays,TotalRAMGB,DiskFreeGB,SerialNumber,Manufacturer,Model,IPAddress,LoggedInUser,TPMPresent,SecureBoot,Status,Method,UpdateCount,Details,DurationSeconds
+                // SHADOW COPY: Copy the network CSV to a local temp file, then parse from there.
+                // This eliminates lock contention with ManageEngine scripts appending to the same file.
                 var results = await Task.Run(() =>
                 {
                     var list = new System.Collections.Generic.List<DeploymentResult>();
-                    var rawLines = File.ReadAllLines(csvPath, System.Text.Encoding.UTF8);
-                    for (int i = 1; i < rawLines.Length; i++) // skip header row
+                    string shadowPath = Path.Combine(Path.GetTempPath(), "NAT_Master_Update_Log_shadow.csv");
+
+                    // Step 1: Shadow-copy from network share to local temp (with retry for transient locks)
+                    IOException lastIOEx = null;
+                    for (int attempt = 1; attempt <= 3; attempt++)
                     {
-                        if (string.IsNullOrWhiteSpace(rawLines[i])) continue;
-                        var fields = ParseCsvLine(rawLines[i]);
+                        try
+                        {
+                            using (var srcFs = new FileStream(csvPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                            using (var dstFs = new FileStream(shadowPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                            {
+                                srcFs.CopyTo(dstFs);
+                            }
+                            lastIOEx = null;
+                            break;
+                        }
+                        catch (IOException ioEx)
+                        {
+                            lastIOEx = ioEx;
+                            LogManager.LogWarning($"LoadDeploymentResultsAsync() - Shadow copy locked (attempt {attempt}/3): {ioEx.Message}");
+                            if (attempt < 3)
+                                System.Threading.Thread.Sleep(500 * attempt);
+                        }
+                    }
+                    if (lastIOEx != null) throw lastIOEx;
+
+                    // Step 2: Read from local shadow copy (no lock contention possible)
+                    var lines = new System.Collections.Generic.List<string>();
+                    using (var fs = new FileStream(shadowPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                    using (var sr = new StreamReader(fs, System.Text.Encoding.UTF8))
+                    {
+                        string line;
+                        while ((line = sr.ReadLine()) != null)
+                            lines.Add(line);
+                    }
+
+                    // Diagnostics: log what we got
+                    LogManager.LogInfo($"LoadDeploymentResultsAsync() - Shadow copy: {new FileInfo(shadowPath).Length} bytes, {lines.Count} lines (incl. header)");
+                    if (lines.Count > 0)
+                        LogManager.LogDebug($"LoadDeploymentResultsAsync() - Header: {lines[0].Substring(0, Math.Min(200, lines[0].Length))}");
+                    if (lines.Count > 1)
+                    {
+                        var firstDataFields = ParseCsvLine(lines[1]);
+                        LogManager.LogDebug($"LoadDeploymentResultsAsync() - First data line: {firstDataFields?.Length ?? 0} fields � '{lines[1].Substring(0, Math.Min(120, lines[1].Length))}'");
+                    }
+
+                    // Step 3: Parse data rows (skip header)
+                    int skippedEmpty = 0, skippedParse = 0, skippedFields = 0;
+                    for (int i = 1; i < lines.Count; i++)
+                    {
+                        if (string.IsNullOrWhiteSpace(lines[i])) { skippedEmpty++; continue; }
+                        var fields = ParseCsvLine(lines[i]);
                         if (fields == null)
                         {
-                            LogManager.LogWarning($"LoadDeploymentResultsAsync() - Skipped unparseable line {i}");
+                            skippedParse++;
+                            if (skippedParse <= 3) // log first 3 parse failures, suppress rest
+                                LogManager.LogWarning($"LoadDeploymentResultsAsync() - Skipped unparseable line {i}");
                             continue;
                         }
-                        if (fields.Length < 16)
+                        if (fields.Length < 20)
                         {
-                            LogManager.LogWarning($"LoadDeploymentResultsAsync() - Skipped line {i}: only {fields.Length} fields (need ≥16)");
+                            skippedFields++;
+                            if (skippedFields <= 3)
+                                LogManager.LogWarning($"LoadDeploymentResultsAsync() - Skipped line {i}: {fields.Length} fields (need 20+)");
                             continue;
                         }
 
@@ -10021,8 +10170,21 @@ if ($rebootPending) {
                             UpdateCount     = SafeGet(fields, 17),
                             Details         = SafeGet(fields, 18),
                             DurationSeconds = SafeGet(fields, 19),
+                            // v2 columns (24-col schema) � SafeGet returns "" if column not present (backward compat with old 20-col CSVs)
+                            DomainName      = SafeGet(fields, 20),
+                            ScriptVersion   = SafeGet(fields, 21),
+                            RunAsUser       = SafeGet(fields, 22),
+                            PSVersion       = SafeGet(fields, 23),
+                            Source          = "Current",
                         });
                     }
+
+                    if (skippedEmpty + skippedParse + skippedFields > 0)
+                        LogManager.LogInfo($"LoadDeploymentResultsAsync() - Skipped: {skippedEmpty} empty, {skippedParse} unparseable, {skippedFields} too-few-fields");
+
+                    // Clean up shadow file (best-effort)
+                    try { File.Delete(shadowPath); } catch { }
+
                     return list;
                 }).ConfigureAwait(true); // true = resume on UI thread for _deploymentResults/GridDeploymentResults
 
@@ -10040,18 +10202,22 @@ if ($rebootPending) {
                 LogManager.LogError("LoadDeploymentResultsAsync() - FAILED", ex);
                 TxtDeploymentCount.Text = "Error loading results";
             }
+            finally
+            {
+                StopDeploymentLoadingAnimation();
+            }
         }
 
         /// <summary>
         /// Applies "Latest per PC" grouping (if enabled) then text search filter.
-        /// Always returns a new list — caller populates _deploymentResults from it.
+        /// Always returns a new list � caller populates _deploymentResults from it.
         /// </summary>
         private System.Collections.Generic.List<DeploymentResult> ApplyDeploymentView(
             System.Collections.Generic.List<DeploymentResult> source, string searchText)
         {
             var filtered = source;
 
-            // "Latest per PC" — keep only the most recent run per hostname, sorted newest first
+            // "Latest per PC" � keep only the most recent run per hostname, sorted newest first
             if (_deploymentLatestPerPC)
             {
                 filtered = filtered
@@ -10136,7 +10302,7 @@ if ($rebootPending) {
             return $"{visible:N0} of {total:N0} runs";
         }
 
-        /// <summary>"Latest per PC" checkbox toggle — re-applies view without re-reading disk.</summary>
+        /// <summary>"Latest per PC" checkbox toggle � re-applies view without re-reading disk.</summary>
         private void ChkLatestPerPC_Changed(object sender, RoutedEventArgs e)
         {
             _deploymentLatestPerPC = ChkLatestPerPC.IsChecked == true;
@@ -10148,79 +10314,133 @@ if ($rebootPending) {
             TxtDeploymentCount.Text = BuildDeploymentCountText(display.Count, _allDeploymentResults.Count);
         }
 
-        /// <summary>Archive entries older than 90 days to a yearly archive CSV.</summary>
+        /// <summary>Archive Master CSV entries older than 90 days + Individual PC logs older than 30 days to Archives/ subfolder.</summary>
         private void BtnArchiveDeploymentLog_Click(object sender, RoutedEventArgs e)
         {
             LogManager.LogInfo("BtnArchiveDeploymentLog_Click() - START");
             try
             {
                 string csvPath = GetMasterUpdateLogPath();
+                string logDir = Properties.Settings.Default.DeploymentLogDirectory ?? "";
+                string archiveDir = Path.Combine(logDir, "Archives");
+                string pcLogDir = Path.Combine(logDir, "Individual_PC_Logs");
+                string dateStamp = DateTime.Now.ToString("yyyy-MM-dd");
+
                 if (!File.Exists(csvPath))
                 {
-                    Managers.UI.ToastManager.ShowWarning("Master_Update_Log.csv not found — nothing to archive.");
+                    Managers.UI.ToastManager.ShowWarning("Master_Update_Log.csv not found � nothing to archive.");
                     return;
+                }
+
+                // Count old PC logs (>30 days) for the confirmation dialog
+                int oldPCLogCount = 0;
+                if (Directory.Exists(pcLogDir))
+                {
+                    var cutoff30 = DateTime.Now.AddDays(-30);
+                    oldPCLogCount = Directory.GetFiles(pcLogDir, "*.txt")
+                        .Count(f => File.GetLastWriteTime(f) < cutoff30);
                 }
 
                 var confirm = MessageBox.Show(
-                    "Move entries older than 90 days to an archive file?\n\n" +
-                    $"Archive destination: Master_Update_Log_Archive_{DateTime.Now.Year}.csv\n" +
-                    "(created in the same directory as the main log)\n\n" +
-                    "The main log will retain only the last 90 days.",
-                    "Archive Old Deployment Entries",
+                    "This will archive:\n\n" +
+                    $"  \u2022 Master CSV entries older than 90 days\n" +
+                    $"      \u2192 Archives/Master_Update_Log_Archive_{dateStamp}.csv\n\n" +
+                    $"  \u2022 Individual PC logs older than 30 days ({oldPCLogCount} files)\n" +
+                    $"      \u2192 Archives/PC_Logs_Archived_{dateStamp}/\n\n" +
+                    "Continue?",
+                    "Archive Old Deployment Data",
                     MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.Yes);
                 if (confirm != MessageBoxResult.Yes) return;
 
-                var cutoff   = DateTime.Now.AddDays(-90);
-                var rawLines = File.ReadAllLines(csvPath, System.Text.Encoding.UTF8);
-                if (rawLines.Length < 2)
+                // Ensure Archives/ subfolder exists
+                if (!Directory.Exists(archiveDir))
+                    Directory.CreateDirectory(archiveDir);
+
+                // --- PART 1: Archive Master CSV entries >90 days ---
+                var cutoff90 = DateTime.Now.AddDays(-90);
+                var rawLines = new System.Collections.Generic.List<string>();
+                using (var fs = new FileStream(csvPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (var sr = new StreamReader(fs, System.Text.Encoding.UTF8))
                 {
-                    Managers.UI.ToastManager.ShowInfo("Log has no data rows to archive.");
-                    return;
+                    string rdLine;
+                    while ((rdLine = sr.ReadLine()) != null) rawLines.Add(rdLine);
                 }
 
-                string header = rawLines[0];
-                var keep    = new System.Collections.Generic.List<string>();
+                string header = rawLines.Count > 0 ? rawLines[0] : "";
+                var keep = new System.Collections.Generic.List<string>();
                 var archive = new System.Collections.Generic.List<string>();
 
-                for (int i = 1; i < rawLines.Length; i++)
+                for (int i = 1; i < rawLines.Count; i++)
                 {
                     if (string.IsNullOrWhiteSpace(rawLines[i])) continue;
                     var fields = ParseCsvLine(rawLines[i]);
                     bool isOld = false;
                     if (fields != null && fields.Length > 2 &&
                         DateTime.TryParse(SafeGet(fields, 2), out DateTime ts))
-                        isOld = ts < cutoff;
+                        isOld = ts < cutoff90;
                     (isOld ? archive : keep).Add(rawLines[i]);
                 }
 
-                if (archive.Count == 0)
+                int archivedCsvRows = 0;
+                if (archive.Count > 0)
                 {
-                    Managers.UI.ToastManager.ShowInfo($"No entries older than 90 days found ({keep.Count} rows are within the last 90 days).");
-                    return;
+                    string archivePath = Path.Combine(archiveDir,
+                        $"Master_Update_Log_Archive_{dateStamp}.csv");
+                    bool archiveExisted = File.Exists(archivePath);
+                    using (var afs = new FileStream(archivePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite))
+                    {
+                        afs.Seek(0, SeekOrigin.End);
+                        using (var sw = new StreamWriter(afs, System.Text.Encoding.UTF8))
+                        {
+                            if (!archiveExisted || afs.Length == 0) sw.WriteLine(header);
+                            foreach (var line in archive) sw.WriteLine(line);
+                        }
+                    }
+
+                    // Rewrite main log with only recent rows
+                    using (var mfs = new FileStream(csvPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
+                    using (var sw = new StreamWriter(mfs, System.Text.Encoding.UTF8))
+                    {
+                        sw.WriteLine(header);
+                        foreach (var line in keep) sw.WriteLine(line);
+                    }
+                    archivedCsvRows = archive.Count;
                 }
 
-                // Append archived rows to yearly archive file
-                string archivePath = Path.Combine(
-                    Path.GetDirectoryName(csvPath) ?? "",
-                    $"Master_Update_Log_Archive_{DateTime.Now.Year}.csv");
-                bool archiveExisted = File.Exists(archivePath);
-                using (var sw = new StreamWriter(archivePath, append: true, encoding: System.Text.Encoding.UTF8))
+                // --- PART 2: Archive Individual PC logs >30 days ---
+                int archivedPCLogs = 0;
+                if (Directory.Exists(pcLogDir) && oldPCLogCount > 0)
                 {
-                    if (!archiveExisted) sw.WriteLine(header);
-                    foreach (var line in archive) sw.WriteLine(line);
+                    string pcArchiveDir = Path.Combine(archiveDir, $"PC_Logs_Archived_{dateStamp}");
+                    if (!Directory.Exists(pcArchiveDir))
+                        Directory.CreateDirectory(pcArchiveDir);
+
+                    var cutoff30 = DateTime.Now.AddDays(-30);
+                    foreach (var file in Directory.GetFiles(pcLogDir, "*.txt"))
+                    {
+                        if (File.GetLastWriteTime(file) < cutoff30)
+                        {
+                            string dest = Path.Combine(pcArchiveDir, Path.GetFileName(file));
+                            File.Move(file, dest);
+                            archivedPCLogs++;
+                        }
+                    }
                 }
 
-                // Rewrite main log with only recent rows
-                using (var sw = new StreamWriter(csvPath, append: false, encoding: System.Text.Encoding.UTF8))
-                {
-                    sw.WriteLine(header);
-                    foreach (var line in keep) sw.WriteLine(line);
-                }
+                // --- Summary ---
+                var summary = new System.Text.StringBuilder();
+                if (archivedCsvRows > 0)
+                    summary.AppendLine($"Archived {archivedCsvRows} CSV entries (>90 days) to Archives/");
+                else
+                    summary.AppendLine("No CSV entries older than 90 days.");
+                if (archivedPCLogs > 0)
+                    summary.AppendLine($"Moved {archivedPCLogs} PC logs (>30 days) to Archives/");
+                else
+                    summary.AppendLine("No PC logs older than 30 days.");
+                summary.AppendLine($"{keep.Count} recent entries remain in the main log.");
 
-                LogManager.LogInfo($"BtnArchiveDeploymentLog_Click() - Archived {archive.Count} rows → {archivePath}; kept {keep.Count} rows");
-                Managers.UI.ToastManager.ShowSuccess(
-                    $"Archived {archive.Count} old entries to {Path.GetFileName(archivePath)}\n" +
-                    $"{keep.Count} recent entries remain in the main log.");
+                LogManager.LogInfo($"BtnArchiveDeploymentLog_Click() - CSV archived: {archivedCsvRows}, PC logs moved: {archivedPCLogs}, kept: {keep.Count}");
+                Managers.UI.ToastManager.ShowSuccess(summary.ToString().Trim());
                 _ = LoadDeploymentResultsAsync();
             }
             catch (Exception ex)
@@ -10258,6 +10478,218 @@ if ($rebootPending) {
             arr != null && idx < arr.Length ? arr[idx].Trim() : "";
 
         private async void BtnRefreshDeploymentResults_Click(object sender, RoutedEventArgs e) => await LoadDeploymentResultsAsync();
+
+        // TAG: #DEPLOYMENT_RESULTS - Auto-refresh toggle and timer
+        private void ChkDeploymentAutoRefresh_Changed(object sender, RoutedEventArgs e)
+        {
+            _deploymentAutoRefreshEnabled = ChkDeploymentAutoRefresh.IsChecked == true;
+            LogManager.LogInfo($"ChkDeploymentAutoRefresh_Changed() - AutoRefresh={_deploymentAutoRefreshEnabled}");
+
+            if (_deploymentAutoRefreshEnabled)
+            {
+                if (_deploymentAutoRefreshTimer == null)
+                {
+                    _deploymentAutoRefreshTimer = new System.Windows.Threading.DispatcherTimer
+                    {
+                        Interval = TimeSpan.FromSeconds(60)
+                    };
+                    _deploymentAutoRefreshTimer.Tick += async (s, args) =>
+                    {
+                        if (!_deploymentAutoRefreshEnabled) return;
+                        LogManager.LogDebug("DeploymentAutoRefresh - tick - reloading CSV");
+                        await LoadDeploymentResultsAsync();
+                    };
+                }
+                _deploymentAutoRefreshTimer.Start();
+                Managers.UI.ToastManager.ShowInfo("Auto-refresh enabled � deployment log will reload every 60 seconds.");
+            }
+            else
+            {
+                _deploymentAutoRefreshTimer?.Stop();
+                Managers.UI.ToastManager.ShowInfo("Auto-refresh disabled.");
+            }
+        }
+
+        // TAG: #DEPLOYMENT_RESULTS - Double-click navigates to Single System Inspector for the selected hostname
+        private void GridDeploymentResults_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            try
+            {
+                if (GridDeploymentResults.SelectedItem is DeploymentResult dr && !string.IsNullOrWhiteSpace(dr.Hostname))
+                {
+                    MainTabs.SelectedIndex = 1; // Single System Inspector
+                    ComboTarget.Text = dr.Hostname;
+                    AddToRecentTargets(dr.Hostname);
+                    BtnScan_Click(sender, new RoutedEventArgs());
+                    LogManager.LogInfo($"[DeploymentResults] Double-click ? inspecting {dr.Hostname}");
+                }
+            }
+            catch (Exception ex) { LogManager.LogError("GridDeploymentResults_MouseDoubleClick failed", ex); }
+        }
+
+        // TAG: #DEPLOYMENT_RESULTS - Enable VIEW LOG button when a row is selected
+        private void GridDeploymentResults_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            BtnViewPCLog.IsEnabled = GridDeploymentResults.SelectedItem is DeploymentResult;
+        }
+
+        // TAG: #DEPLOYMENT_RESULTS - Open Individual_PC_Logs folder in Explorer
+        private void BtnBrowsePCLogs_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string dir = Path.Combine(
+                    Properties.Settings.Default.DeploymentLogDirectory ?? "",
+                    "Individual_PC_Logs");
+                if (Directory.Exists(dir))
+                    System.Diagnostics.Process.Start("explorer.exe", dir);
+                else
+                    Managers.UI.ToastManager.ShowWarning($"Folder not found:\n{dir}");
+            }
+            catch (Exception ex) { LogManager.LogError("BtnBrowsePCLogs_Click failed", ex); }
+        }
+
+        // TAG: #DEPLOYMENT_RESULTS - Open the individual PC log for the selected deployment row
+        private void BtnViewPCLog_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (GridDeploymentResults.SelectedItem is not DeploymentResult dr) return;
+                string dir = Path.Combine(
+                    Properties.Settings.Default.DeploymentLogDirectory ?? "",
+                    "Individual_PC_Logs");
+                if (!Directory.Exists(dir))
+                {
+                    Managers.UI.ToastManager.ShowWarning($"Individual_PC_Logs folder not found at:\n{dir}");
+                    return;
+                }
+                // Match pattern: HOSTNAME_Script_*.txt (exclude transcripts)
+                string scriptName = (dr.Script ?? "").Trim();
+                string pattern = $"{dr.Hostname}_{scriptName}_*.txt";
+                var matches = Directory.GetFiles(dir, pattern)
+                    .Where(f => f.IndexOf("_Transcript", StringComparison.OrdinalIgnoreCase) < 0)
+                    .OrderByDescending(f => f)
+                    .ToArray();
+                if (matches.Length > 0)
+                {
+                    System.Diagnostics.Process.Start("notepad.exe", matches[0]);
+                    LogManager.LogInfo($"[DeploymentResults] Opened PC log: {Path.GetFileName(matches[0])}");
+                }
+                else
+                    Managers.UI.ToastManager.ShowWarning($"No log file found matching:\n{pattern}");
+            }
+            catch (Exception ex) { LogManager.LogError("BtnViewPCLog_Click failed", ex); }
+        }
+
+        // TAG: #DEPLOYMENT_RESULTS - Load archived CSV data and merge into grid
+        private async void BtnLoadArchive_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string archiveDir = Path.Combine(
+                    Properties.Settings.Default.DeploymentLogDirectory ?? "",
+                    "Archives");
+                if (!Directory.Exists(archiveDir))
+                {
+                    Managers.UI.ToastManager.ShowInfo("No Archives folder found � nothing to load.");
+                    return;
+                }
+
+                var archiveFiles = Directory.GetFiles(archiveDir, "Master_Update_Log_Archive_*.csv")
+                    .OrderByDescending(f => f)
+                    .ToArray();
+                if (archiveFiles.Length == 0)
+                {
+                    Managers.UI.ToastManager.ShowInfo("No archive CSV files found in Archives folder.");
+                    return;
+                }
+
+                // Build selection list
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine("Available archives:");
+                for (int i = 0; i < archiveFiles.Length; i++)
+                    sb.AppendLine($"  {i + 1}. {Path.GetFileName(archiveFiles[i])}");
+                sb.AppendLine($"\nLoad all {archiveFiles.Length} archive(s)?");
+
+                var result = System.Windows.MessageBox.Show(
+                    sb.ToString(),
+                    "Load Archived Deployment Results",
+                    System.Windows.MessageBoxButton.YesNo,
+                    System.Windows.MessageBoxImage.Question);
+                if (result != System.Windows.MessageBoxResult.Yes) return;
+
+                int totalLoaded = 0;
+                foreach (var archiveFile in archiveFiles)
+                {
+                    string archiveName = Path.GetFileNameWithoutExtension(archiveFile)
+                        .Replace("Master_Update_Log_Archive_", "Archive ");
+
+                    var archiveResults = await Task.Run(() =>
+                    {
+                        var list = new System.Collections.Generic.List<DeploymentResult>();
+                        var lines = new System.Collections.Generic.List<string>();
+                        using (var fs = new FileStream(archiveFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                        using (var sr = new StreamReader(fs, System.Text.Encoding.UTF8))
+                        {
+                            string line;
+                            while ((line = sr.ReadLine()) != null) lines.Add(line);
+                        }
+                        for (int i = 1; i < lines.Count; i++)
+                        {
+                            if (string.IsNullOrWhiteSpace(lines[i])) continue;
+                            var fields = ParseCsvLine(lines[i]);
+                            if (fields == null || fields.Length < 20) continue;
+                            list.Add(new DeploymentResult
+                            {
+                                Hostname        = SafeGet(fields, 0),
+                                Script          = SafeGet(fields, 1),
+                                Timestamp       = SafeGet(fields, 2),
+                                OSVersion       = SafeGet(fields, 3),
+                                BuildNumber     = SafeGet(fields, 4),
+                                UptimeDays      = SafeGet(fields, 5),
+                                TotalRAMGB      = SafeGet(fields, 6),
+                                DiskFreeGB      = SafeGet(fields, 7),
+                                SerialNumber    = SafeGet(fields, 8),
+                                Manufacturer    = SafeGet(fields, 9),
+                                Model           = SafeGet(fields, 10),
+                                IPAddress       = SafeGet(fields, 11),
+                                LoggedInUser    = SafeGet(fields, 12),
+                                TPMPresent      = SafeGet(fields, 13),
+                                SecureBoot      = SafeGet(fields, 14),
+                                Status          = SafeGet(fields, 15),
+                                Method          = SafeGet(fields, 16),
+                                UpdateCount     = SafeGet(fields, 17),
+                                Details         = SafeGet(fields, 18),
+                                DurationSeconds = SafeGet(fields, 19),
+                                DomainName      = SafeGet(fields, 20),
+                                ScriptVersion   = SafeGet(fields, 21),
+                                RunAsUser       = SafeGet(fields, 22),
+                                PSVersion       = SafeGet(fields, 23),
+                                Source          = archiveName,
+                            });
+                        }
+                        return list;
+                    }).ConfigureAwait(true);
+
+                    _allDeploymentResults.AddRange(archiveResults);
+                    totalLoaded += archiveResults.Count;
+                }
+
+                // Re-apply view filter with merged data
+                var display = ApplyDeploymentView(_allDeploymentResults, TxtDeploymentSearch.Text);
+                _deploymentResults.Clear();
+                foreach (var r in display) _deploymentResults.Add(r);
+                UpdateDeploymentTally(_allDeploymentResults);
+                TxtDeploymentCount.Text = BuildDeploymentCountText(display.Count, _allDeploymentResults.Count);
+                Managers.UI.ToastManager.ShowSuccess($"Loaded {totalLoaded} archived results from {archiveFiles.Length} archive(s).");
+                LogManager.LogInfo($"BtnLoadArchive_Click() - Loaded {totalLoaded} archived rows from {archiveFiles.Length} files");
+            }
+            catch (Exception ex)
+            {
+                Managers.UI.ToastManager.ShowError($"Failed to load archives: {ex.Message}");
+                LogManager.LogError("BtnLoadArchive_Click failed", ex);
+            }
+        }
 
         private void TxtDeploymentSearch_TextChanged(object sender, TextChangedEventArgs e)
         {
@@ -10307,7 +10739,7 @@ if ($rebootPending) {
                 string csvPath = GetMasterUpdateLogPath();
                 if (!File.Exists(csvPath))
                 {
-                    Managers.UI.ToastManager.ShowWarning($"Nothing to clear — log not found:\n{csvPath}");
+                    Managers.UI.ToastManager.ShowWarning($"Nothing to clear � log not found:\n{csvPath}");
                     return;
                 }
 
@@ -10340,7 +10772,7 @@ if ($rebootPending) {
                     if (dlg.ShowDialog() != true)
                     {
                         LogManager.LogInfo("BtnClearDeploymentLog_Click() - Backup save dialog cancelled");
-                        return; // User cancelled the save dialog — abort the whole operation
+                        return; // User cancelled the save dialog � abort the whole operation
                     }
 
                     File.Copy(csvPath, dlg.FileName, overwrite: true);
@@ -10366,7 +10798,7 @@ if ($rebootPending) {
                 _deploymentResults.Clear();
                 _allDeploymentResults.Clear();
                 UpdateDeploymentTally(new System.Collections.Generic.List<DeploymentResult>());
-                TxtDeploymentCount.Text = "0 records — cleared";
+                TxtDeploymentCount.Text = "0 records � cleared";
                 Managers.UI.ToastManager.ShowSuccess("Master_Update_Log.csv deleted. Grid cleared.");
                 AddLog("local", "CLEAR_DEPLOYMENT_LOG", csvPath, "OK");
                 LogManager.LogInfo($"BtnClearDeploymentLog_Click() - SUCCESS - Deleted {csvPath}");
@@ -10392,7 +10824,7 @@ if ($rebootPending) {
         private void BtnConsole_Click(object sender, RoutedEventArgs e)
         {
             string cmd = TxtConsoleInput.Text; if (string.IsNullOrWhiteSpace(cmd)) return;
-            if (SecurityValidator.ContainsDangerousPatterns(cmd)) { Managers.UI.ToastManager.ShowWarning("Blocked — dangerous patterns"); return; }
+            if (SecurityValidator.ContainsDangerousPatterns(cmd)) { Managers.UI.ToastManager.ShowWarning("Blocked � dangerous patterns"); return; }
             RunHybridExecutor(cmd, "", "CONSOLE_CMD"); TxtConsoleInput.Text = "";
         }
         private void BtnUninstall_Click(object sender, RoutedEventArgs e) { Managers.UI.ToastManager.ShowInfo("Use standard Windows uninstall."); }
@@ -10407,13 +10839,13 @@ if ($rebootPending) {
         {
             switch (toolType)
             {
-                case RmmToolType.AnyDesk: return "🖥️";
-                case RmmToolType.ScreenConnect: return "📡";
-                case RmmToolType.TeamViewer: return "👁️";
-                case RmmToolType.RemotePC: return "💻";
-                case RmmToolType.Dameware: return "🔧";
-                case RmmToolType.ManageEngine: return "⚙️";
-                default: return "🔌";
+                case RmmToolType.AnyDesk: return "???";
+                case RmmToolType.ScreenConnect: return "??";
+                case RmmToolType.TeamViewer: return "???";
+                case RmmToolType.RemotePC: return "??";
+                case RmmToolType.Dameware: return "??";
+                case RmmToolType.ManageEngine: return "??";
+                default: return "??";
             }
         }
 
@@ -10954,10 +11386,10 @@ if ($rebootPending) {
             }
         }
 
-        // ═══════════════════════════════════════════════════════════════
+        // ---------------------------------------------------------------
         // AD OBJECT MANAGEMENT HANDLERS
         // TAG: #VERSION_7 #AD_MANAGEMENT
-        // ═══════════════════════════════════════════════════════════════
+        // ---------------------------------------------------------------
 
         /// <summary>
         /// Refresh AD Object Browser
@@ -10997,11 +11429,11 @@ if ($rebootPending) {
                 // Re-initialize the AD Object Browser with current credentials
                 await ADObjectBrowserDomainTab.InitializeAsync(dc, _authUser, password);
 
-                AppendTerminal($"[AD Management] ✓ AD Object Browser refreshed successfully");
+                AppendTerminal($"[AD Management] ? AD Object Browser refreshed successfully");
             }
             catch (Exception ex)
             {
-                AppendTerminal($"[AD Management] ✗ Failed to refresh: {ex.Message}", isError: true);
+                AppendTerminal($"[AD Management] ? Failed to refresh: {ex.Message}", isError: true);
                 LogManager.LogError("Failed to refresh AD Object Browser", ex);
                 Managers.UI.ToastManager.ShowError($"Failed to refresh AD Object Browser:\n\n{ex.Message}");
             }
@@ -11059,7 +11491,7 @@ if ($rebootPending) {
             }
             catch (Exception ex)
             {
-                AppendTerminal($"[AD Management] ✗ Failed to create object: {ex.Message}", isError: true);
+                AppendTerminal($"[AD Management] ? Failed to create object: {ex.Message}", isError: true);
                 LogManager.LogError("Failed to create AD object", ex);
                 Managers.UI.ToastManager.ShowError($"Failed to create AD object:\n\n{ex.Message}");
             }
@@ -11117,7 +11549,7 @@ if ($rebootPending) {
             }
             catch (Exception ex)
             {
-                AppendTerminal($"[AD Management] ✗ Failed to edit object: {ex.Message}", isError: true);
+                AppendTerminal($"[AD Management] ? Failed to edit object: {ex.Message}", isError: true);
                 LogManager.LogError("Failed to edit AD object", ex);
                 Managers.UI.ToastManager.ShowError($"Failed to edit AD object:\n\n{ex.Message}");
             }
@@ -11176,15 +11608,15 @@ if ($rebootPending) {
             }
             catch (Exception ex)
             {
-                AppendTerminal($"[AD Management] ✗ Failed to delete object: {ex.Message}", isError: true);
+                AppendTerminal($"[AD Management] ? Failed to delete object: {ex.Message}", isError: true);
                 LogManager.LogError("Failed to delete AD object", ex);
                 Managers.UI.ToastManager.ShowError($"Failed to delete AD object:\n\n{ex.Message}");
             }
         }
 
-        // ═══════════════════════════════════════════════════════════════
+        // ---------------------------------------------------------------
         // DASHBOARD ANALYTICS - TAG: #VERSION_7.1 #DASHBOARD
-        // ═══════════════════════════════════════════════════════════════
+        // ---------------------------------------------------------------
 
         /// <summary>
         /// Refresh dashboard statistics and charts
@@ -11260,6 +11692,22 @@ if ($rebootPending) {
                     // Low disk space check
                     var lowDiskComputers = _inventory.Count(c => c.Disk?.Contains("<10%") == true || c.Disk?.Contains("< 10%") == true);
                     if (lowDiskComputers > 0) alerts.Add($"⚠️ {lowDiskComputers} computers with low disk space (<10%)");
+
+                    // Deployment Results integration � surface recent failures in dashboard alerts
+                    if (_allDeploymentResults != null && _allDeploymentResults.Count > 0)
+                    {
+                        // Count recent deployment failures (last 7 days)
+                        var recentDeploys = _allDeploymentResults.Where(d =>
+                            DateTime.TryParse(d.Timestamp, out var dt) && (DateTime.Now - dt).TotalDays <= 7).ToList();
+                        int deployFails = recentDeploys.Count(d =>
+                            d.Status != null && d.Status.IndexOf("FAIL", StringComparison.OrdinalIgnoreCase) >= 0);
+                        int deployTotal = recentDeploys.Count;
+
+                        if (deployFails > 0)
+                            alerts.Add($"🔴 {deployFails}/{deployTotal} deployments FAILED in last 7 days (see Deployment Results tab)");
+                        else if (deployTotal > 0)
+                            alerts.Add($"✅ {deployTotal} deployments in last 7 days — all successful");
+                    }
 
                     if (alerts.Count > 0)
                     {
@@ -11452,7 +11900,7 @@ if ($rebootPending) {
                 }
 
                 BtnRefreshDCHealth.IsEnabled = false;
-                BtnRefreshDCHealth.Content = "⏳ Scanning...";
+                BtnRefreshDCHealth.Content = "🔄 Scanning...";
 
                 // Discover domain controllers
                 var dcList = await _dcManager.DiscoverDomainControllersAsync();
@@ -11514,9 +11962,9 @@ if ($rebootPending) {
                         // Strip domain suffix for cleaner display
                         Hostname = dc.Hostname.Contains(".") ? dc.Hostname.Split('.')[0] : dc.Hostname,
                         AvgLatency = dc.AvgLatency,
-                        HealthIcon = dc.AvgLatency < 50 ? "✅" :
-                                    dc.AvgLatency < 100 ? "⚠️" :
-                                    dc.AvgLatency < 200 ? "🔶" : "❌",
+                        HealthIcon = dc.AvgLatency < 50 ? "?" :
+                                    dc.AvgLatency < 100 ? "??" :
+                                    dc.AvgLatency < 200 ? "??" : "?",
                         LatencyColor = dc.AvgLatency < 50 ? "#10B981" :  // Green
                                       dc.AvgLatency < 100 ? "#F59E0B" :  // Amber
                                       dc.AvgLatency < 200 ? "#FF8533" :  // Orange
@@ -11534,6 +11982,7 @@ if ($rebootPending) {
                     RefreshDCHealthDisplay();
 
                     LogManager.LogInfo($"[Dashboard] DC Health refreshed: {dcList.Count} DCs, avg latency: {dcList.Average(d => d.AvgLatency):F0}ms");
+                    _lastDCHealthRefresh = DateTime.Now;
                     Managers.UI.ToastManager.ShowSuccess($"Found {dcList.Count} domain controllers");
                 }
                 else
@@ -11716,7 +12165,7 @@ if ($rebootPending) {
                 // Update FavoriteIcon property
                 foreach (var dc in sortedList)
                 {
-                    dc.FavoriteIcon = _favoriteDCs.Contains(dc.Hostname) ? "⭐" : "☆";
+                    dc.FavoriteIcon = _favoriteDCs.Contains(dc.Hostname) ? "?" : "?";
                 }
 
                 // Apply visibility (show only 6 if collapsed)
@@ -11785,12 +12234,12 @@ if ($rebootPending) {
                     // Notify user to login with profile credentials
                     Managers.UI.ToastManager.ShowInfo($"Connection profile \'{profile.Name}\' loaded.\n\n" +$"Domain Controller: {profile.DomainController}\n" +$"Username: {profile.Username}\n\n" +"Please login using the credentials for this profile.");
 
-                    AppendTerminal($"[Connection Profile] ✓ Profile loaded successfully");
+                    AppendTerminal($"[Connection Profile] ? Profile loaded successfully");
                 }
             }
             catch (Exception ex)
             {
-                AppendTerminal($"[Connection Profile] ✗ Failed to manage profiles: {ex.Message}", isError: true);
+                AppendTerminal($"[Connection Profile] ? Failed to manage profiles: {ex.Message}", isError: true);
                 LogManager.LogError("Failed to manage connection profiles", ex);
                 Managers.UI.ToastManager.ShowError($"Failed to manage connection profiles:\n\n{ex.Message}");
             }
@@ -11826,6 +12275,7 @@ if ($rebootPending) {
         /// TAG: #VERSION_7 #AD_MANAGEMENT #DC_HEALTH #AUTO_LOAD
         /// </summary>
         private bool _adObjectBrowserInitialized = false;
+        private DateTime _lastDCHealthRefresh = DateTime.MinValue;
         private async void MainTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             try
@@ -11838,8 +12288,12 @@ if ($rebootPending) {
                 // TAG: #DC_HEALTH #AUTO_LOAD #DC_SYNC - Auto-refresh ALL DC components when Dashboard opens
                 if (tabHeader.Contains("DASHBOARD"))
                 {
-                    // Only refresh Dashboard widget (not full cluster) to avoid redundant work
-                    _ = RefreshDCHealthAsync();
+                    // Debounce: skip refresh if last DC refresh was <60 seconds ago
+                    if ((DateTime.Now - _lastDCHealthRefresh).TotalSeconds > 60)
+                    {
+                        _ = RefreshDCHealthAsync();
+                        _lastDCHealthRefresh = DateTime.Now;
+                    }
                     LogManager.LogDebug("[Dashboard] Auto-loading DC Health widget on tab selection");
                 }
 
@@ -11876,11 +12330,11 @@ if ($rebootPending) {
                                 ADObjectBrowserDomainTab.ObjectSelectionChanged += ADObjectBrowser_SelectionChanged;
 
                                 _adObjectBrowserInitialized = true;
-                                AppendTerminal($"[AD Management] ✓ AD Object Browser initialized successfully");
+                                AppendTerminal($"[AD Management] ? AD Object Browser initialized successfully");
                             }
                             else
                             {
-                                AppendTerminal($"[AD Management] ℹ Please login to use AD Object Browser", isError: false);
+                                AppendTerminal($"[AD Management] ? Please login to use AD Object Browser", isError: false);
                             }
                         }
                     }
@@ -11924,7 +12378,7 @@ if ($rebootPending) {
 
             // Uses LaunchMMCWithCreds which handles credential passing via runas /netonly
             _ = LaunchMMCWithCredsAsync("mmc", $"{mmc} {args}", "ADMIN_TOOL");
-            AppendTerminal($"Launched: {tool} → {dc}");
+            AppendTerminal($"Launched: {tool} ? {dc}");
             AddLog(dc, "ADMIN_TOOL", tool, "OK");
         }
 
@@ -11990,9 +12444,9 @@ if ($rebootPending) {
 
                     Dispatcher.Invoke(() => AppendTerminal($"Authenticating as: {capturedUser} (Domain: {domain ?? "current"})"));
 
-                    // ═══════════════════════════════════════════════════════════════
+                    // ---------------------------------------------------------------
                     // METHOD 1: EventLogReader (WinRM-based) - Modern, fastest
-                    // ═══════════════════════════════════════════════════════════════
+                    // ---------------------------------------------------------------
                     try
                     {
                         Dispatcher.Invoke(() => AppendTerminal($"[Method 1] Attempting EventLogReader (WinRM)..."));
@@ -12053,17 +12507,17 @@ if ($rebootPending) {
                         anyMethodSucceeded = true;
                         Dispatcher.Invoke(() =>
                         {
-                            AppendTerminal($"[Method 1] ✓ EventLogReader succeeded - read {lockouts.Count} lockout events");
+                            AppendTerminal($"[Method 1] ? EventLogReader succeeded - read {lockouts.Count} lockout events");
                         });
                     }
                     catch (Exception ex1)
                     {
                         LogManager.LogWarning($"Method 1 (EventLogReader) failed: {ex1.Message}");
-                        Dispatcher.Invoke(() => AppendTerminal($"[Method 1] ✗ Failed: {ex1.Message}"));
+                        Dispatcher.Invoke(() => AppendTerminal($"[Method 1] ? Failed: {ex1.Message}"));
 
-                        // ═══════════════════════════════════════════════════════════════
+                        // ---------------------------------------------------------------
                         // METHOD 2: Traditional RPC/DCOM EventLog - No WinRM required
-                        // ═══════════════════════════════════════════════════════════════
+                        // ---------------------------------------------------------------
                         try
                         {
                             Dispatcher.Invoke(() => AppendTerminal($"[Method 2] Attempting traditional RPC/DCOM..."));
@@ -12116,17 +12570,17 @@ if ($rebootPending) {
                             anyMethodSucceeded = true;
                             Dispatcher.Invoke(() =>
                             {
-                                AppendTerminal($"[Method 2] ✓ RPC/DCOM succeeded - read {lockouts.Count} lockout events");
+                                AppendTerminal($"[Method 2] ? RPC/DCOM succeeded - read {lockouts.Count} lockout events");
                             });
                         }
                         catch (Exception ex2)
                         {
                             LogManager.LogWarning($"Method 2 (RPC/DCOM) failed: {ex2.Message}");
-                            Dispatcher.Invoke(() => AppendTerminal($"[Method 2] ✗ Failed: {ex2.Message}"));
+                            Dispatcher.Invoke(() => AppendTerminal($"[Method 2] ? Failed: {ex2.Message}"));
 
-                            // ═══════════════════════════════════════════════════════════════
+                            // ---------------------------------------------------------------
                             // METHOD 3: Direct EVTX file access via admin$ share
-                            // ═══════════════════════════════════════════════════════════════
+                            // ---------------------------------------------------------------
                             try
                             {
                                 Dispatcher.Invoke(() => AppendTerminal($"[Method 3] Attempting direct EVTX file access..."));
@@ -12178,7 +12632,7 @@ if ($rebootPending) {
                                         anyMethodSucceeded = true;
                                         Dispatcher.Invoke(() =>
                                         {
-                                            AppendTerminal($"[Method 3] ✓ Direct EVTX access succeeded - read {lockouts.Count} lockout events");
+                                            AppendTerminal($"[Method 3] ? Direct EVTX access succeeded - read {lockouts.Count} lockout events");
                                         });
                                     }
                                     finally
@@ -12192,29 +12646,29 @@ if ($rebootPending) {
                             catch (Exception ex3)
                             {
                                 LogManager.LogError($"Method 3 (Direct EVTX) failed", ex3);
-                                Dispatcher.Invoke(() => AppendTerminal($"[Method 3] ✗ Failed: {ex3.Message}"));
+                                Dispatcher.Invoke(() => AppendTerminal($"[Method 3] ? Failed: {ex3.Message}"));
 
                                 // All methods failed - show comprehensive error
                                 Dispatcher.Invoke(() =>
                                 {
-                                    AppendTerminal($"════════════════════════════════════════════════════════");
-                                    AppendTerminal($"✗✗✗ ALL 3 EVENT LOG ACCESS METHODS FAILED ✗✗✗");
-                                    AppendTerminal($"════════════════════════════════════════════════════════");
+                                    AppendTerminal($"--------------------------------------------------------");
+                                    AppendTerminal($"??? ALL 3 EVENT LOG ACCESS METHODS FAILED ???");
+                                    AppendTerminal($"--------------------------------------------------------");
                                     AppendTerminal($"Method 1 (WinRM): {ex1.Message}");
                                     AppendTerminal($"Method 2 (RPC/DCOM): {ex2.Message}");
                                     AppendTerminal($"Method 3 (Direct EVTX): {ex3.Message}");
-                                    AppendTerminal($"════════════════════════════════════════════════════════");
+                                    AppendTerminal($"--------------------------------------------------------");
 
                                     string errorMsg = $"All event log access methods failed:\n\n" +
                                         $"1. EventLogReader (WinRM): {ex1.Message}\n\n" +
                                         $"2. RPC/DCOM: {ex2.Message}\n\n" +
                                         $"3. Direct EVTX: {ex3.Message}\n\n" +
                                         $"Possible causes:\n" +
-                                        $"• Insufficient permissions (need Domain Admin)\n" +
-                                        $"• All remote access methods blocked by firewall\n" +
-                                        $"• DC hardening policies preventing remote event log access\n" +
-                                        $"• DC authentication issues (check Event Viewer on DC)\n" +
-                                        $"• Cisco Duo or other security software blocking RPC/DCOM\n\n" +
+                                        $"� Insufficient permissions (need Domain Admin)\n" +
+                                        $"� All remote access methods blocked by firewall\n" +
+                                        $"� DC hardening policies preventing remote event log access\n" +
+                                        $"� DC authentication issues (check Event Viewer on DC)\n" +
+                                        $"� Cisco Duo or other security software blocking RPC/DCOM\n\n" +
                                         $"FALLBACK OPTION:\n" +
                                         $"Click YES to open Event Viewer manually (like ADUC).\n" +
                                         $"Click NO to cancel.";
@@ -12241,19 +12695,19 @@ if ($rebootPending) {
 
                                             if (proc != null)
                                             {
-                                                AppendTerminal($"✓ Event Viewer launched (PID: {proc.Id})");
+                                                AppendTerminal($"✅ Event Viewer launched (PID: {proc.Id})");
                                                 AppendTerminal($"Navigate to: Windows Logs > Security");
                                                 AppendTerminal($"Filter: Event ID 4740 (Account Lockout)");
-                                                Managers.UI.ToastManager.ShowInfo("Event Viewer opened successfully!\n\n" +"Steps to view lockouts:\n" +"1. Navigate to: Windows Logs → Security\n" +"2. Right-click Security → Filter Current Log\n" +"3. Enter Event ID: 4740\n" +"4. Click OK");
+                                                Managers.UI.ToastManager.ShowInfo("Event Viewer opened successfully!\n\n" +"Steps to view lockouts:\n" +"1. Navigate to: Windows Logs ? Security\n" +"2. Right-click Security ? Filter Current Log\n" +"3. Enter Event ID: 4740\n" +"4. Click OK");
                                             }
                                             else
                                             {
-                                                AppendTerminal($"⚠ Event Viewer launch returned null", true);
+                                                AppendTerminal($"❌ Event Viewer launch returned null", true);
                                             }
                                         }
                                         catch (Exception evtEx)
                                         {
-                                            AppendTerminal($"✗ Failed to launch Event Viewer: {evtEx.Message}", true);
+                                            AppendTerminal($"❌ Failed to launch Event Viewer: {evtEx.Message}", true);
                                             LogManager.LogError("Event Viewer launch failed", evtEx);
                                             // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
                                             Managers.UI.ToastManager.ShowError(
@@ -12284,12 +12738,12 @@ if ($rebootPending) {
                     // If all methods failed, the error was already shown
                     if (anyMethodSucceeded)
                     {
-                        AppendTerminal($"✓ Successfully accessed event logs on {dc} - no lockouts found in last 30 days");
+                        AppendTerminal($"✅ Successfully accessed event logs on {dc} - no lockouts found in last 30 days");
                         Managers.UI.ToastManager.ShowInfo("No account lockout events found in the Security log for the past 30 days.\n\nThe event log was successfully queried.");
                     }
                     else
                     {
-                        AppendTerminal($"✗ ALL ACCESS METHODS FAILED for {dc}");
+                        AppendTerminal($"❌ ALL ACCESS METHODS FAILED for {dc}");
                         AppendTerminal($"Check the error popup for details, or review the log file");
                         // Don't show "no lockouts" message - the error MessageBox was already shown
                     }
@@ -12297,7 +12751,7 @@ if ($rebootPending) {
                 else
                 {
                     AppendTerminal($"Found {lockouts.Count} lockout events on {dc}");
-                    HideBottomProgress($"Ready • {lockouts.Count} lockouts found");
+                    HideBottomProgress($"Ready � {lockouts.Count} lockouts found");
                     ShowLockoutWindow(lockouts.OrderByDescending(l => l.Timestamp).ToList());
                     return;
                 }
@@ -12351,7 +12805,7 @@ if ($rebootPending) {
                 string mmcFile = _mmcConsoles[selectedConsole];
                 string toolKey = $"MMC_{selectedConsole}";
 
-                // Full paths — mmc.exe lives in System32; .msc snap-ins may be in System32 or AdminTools
+                // Full paths � mmc.exe lives in System32; .msc snap-ins may be in System32 or AdminTools
                 string mmcExe = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "mmc.exe");
                 string[] mscSearchPaths = {
                     Environment.GetFolderPath(Environment.SpecialFolder.System),                      // C:\Windows\System32
@@ -12366,7 +12820,7 @@ if ($rebootPending) {
                 // TAG: #MMC_EMBEDDING - Check mmc.exe exists (should always be there on Windows)
                 if (!File.Exists(mmcExe))
                 {
-                    Managers.UI.ToastManager.ShowError("mmc.exe not found — MMC is not available on this Windows installation.");
+                    Managers.UI.ToastManager.ShowError("mmc.exe not found � MMC is not available on this Windows installation.");
                     LogManager.LogError($"[MMC] mmc.exe not found at: {mmcExe}", null);
                     return;
                 }
@@ -12442,7 +12896,7 @@ if ($rebootPending) {
                 }
                 catch (Exception ex)
                 {
-                    LogManager.LogWarning($"[MMC] Credential launch failed ({ex.GetType().Name}): {ex.Message} — offering manual credential fallback");
+                    LogManager.LogWarning($"[MMC] Credential launch failed ({ex.GetType().Name}): {ex.Message} � offering manual credential fallback");
                     success = false;
                 }
 
@@ -12572,17 +13026,17 @@ if ($rebootPending) {
                     // Show warning dialog with options
                     var result = MessageBox.Show(
                         $"⚠️ CREDENTIAL LIMITATION DETECTED\n\n" +
-                        $"NecessaryAdminTool is running as Administrator (elevated).\n\n" +
+                        $"{LogoConfig.PRODUCT_NAME} is running as Administrator (elevated).\n\n" +
                         $"Windows security prevents elevated apps from using your domain admin credentials ({domain}\\{username}) to launch MMC.\n\n" +
                         $"MMC will run with your Windows login credentials ({Environment.UserName}@{Environment.UserDomainName}), which may have limited permissions.\n\n" +
                         $"⚠️ You may get 'Access Denied' errors when:\n" +
-                        $"   • Deleting computers\n" +
-                        $"   • Modifying group policies\n" +
-                        $"   • Changing AD objects\n\n" +
+                        $"   � Deleting computers\n" +
+                        $"   � Modifying group policies\n" +
+                        $"   � Changing AD objects\n\n" +
                         $"Options:\n" +
-                        $"   • Click YES to launch MMC anyway (embedded, limited permissions)\n" +
-                        $"   • Click NO to cancel\n" +
-                        $"   • To use domain admin credentials: Restart NecessaryAdminTool as a normal user (not Administrator)\n\n" +
+                        $"   � Click YES to launch MMC anyway (embedded, limited permissions)\n" +
+                        $"   � Click NO to cancel\n" +
+                        $"   � To use domain admin credentials: Restart NecessaryAdminTool as a normal user (not Administrator)\n\n" +
                         $"Continue with limited permissions?",
                         "MMC Credential Warning",
                         MessageBoxButton.YesNo,
@@ -12659,7 +13113,7 @@ if ($rebootPending) {
             // Console icon
             var icon = new TextBlock
             {
-                Text = "🖥️",
+                Text = "???",
                 FontSize = 12,
                 VerticalAlignment = VerticalAlignment.Center
             };
@@ -12669,7 +13123,7 @@ if ($rebootPending) {
             var statusIndicator = new TextBlock
             {
                 Name = "TxtTabStatus",
-                Text = "🟢", // Green dot = running
+                Text = "??", // Green dot = running
                 FontSize = 10,
                 VerticalAlignment = VerticalAlignment.Center,
                 ToolTip = "MMC process is running"
@@ -12690,7 +13144,7 @@ if ($rebootPending) {
             // Force close button
             var closeButton = new Button
             {
-                Content = "✖",
+                Content = "?",
                 FontSize = 10,
                 Padding = new Thickness(4, 2, 4, 2),
                 Margin = new Thickness(0),
@@ -12739,7 +13193,7 @@ if ($rebootPending) {
             // Build credential dialog inline
             var dlg = new System.Windows.Window
             {
-                Title = $"Credentials Required – {toolName}",
+                Title = $"Credentials Required � {toolName}",
                 Width = 430,
                 SizeToContent = System.Windows.SizeToContent.Height,
                 WindowStartupLocation = System.Windows.WindowStartupLocation.CenterOwner,
@@ -12904,7 +13358,7 @@ if ($rebootPending) {
         }
 
         /// <summary>
-        /// Fallback MMC launch via runas /netonly — Windows will prompt the user for credentials.
+        /// Fallback MMC launch via runas /netonly � Windows will prompt the user for credentials.
         /// Used when CreateProcessWithLogonW is blocked (EDR) or credential passing fails.
         /// TAG: #MMC_EMBEDDING #CREDENTIALS #FALLBACK
         /// </summary>
@@ -12983,7 +13437,7 @@ if ($rebootPending) {
                 bool isRunning = ExternalToolManager.IsToolRunning(toolKey);
 
                 // Update status indicator
-                TxtMMCStatus.Text = isRunning ? "🟢" : "🔴";
+                TxtMMCStatus.Text = isRunning ? "??" : "??";
                 TxtMMCStatus.ToolTip = isRunning ? "Tool is running" : "Tool is not running";
 
                 // Show/hide Force Close button
@@ -13180,9 +13634,9 @@ if ($rebootPending) {
             window.Show();
         }
 
-        // ═══════════════════════════════════════════════════════════════
+        // ---------------------------------------------------------------
         // EVENT LOG HELPER METHODS
-        // ═══════════════════════════════════════════════════════════════
+        // ---------------------------------------------------------------
 
         /// <summary>Extracts account name from Event ID 4740 message</summary>
         private static string ExtractAccountName(string message)
@@ -13226,9 +13680,9 @@ if ($rebootPending) {
             }
         }
 
-        // ═══════════════════════════════════════════════════════
+        // -------------------------------------------------------
         // PINNED DEVICES MONITOR
-        // ═══════════════════════════════════════════════════════
+        // -------------------------------------------------------
 
         /// <summary>
         /// Adds a new pinned device to the monitor list
@@ -13318,7 +13772,7 @@ if ($rebootPending) {
 
             BtnRefreshPinnedDevices.Content = "🔄 REFRESH ALL";
             BtnRefreshPinnedDevices.IsEnabled = true;
-            HideBottomProgress($"Ready • {_pinnedDevices.Count} devices refreshed");
+            HideBottomProgress($"Ready � {_pinnedDevices.Count} devices refreshed");
         }
 
         /// <summary>
@@ -13397,7 +13851,7 @@ if ($rebootPending) {
                         device.ResolvedName = resolvedName;
                         device.ResolvedIP = resolvedIP;
                         device.IsOnline = isOnline;
-                        device.Status = isOnline ? "● Online" : "○ Offline";
+                        device.Status = isOnline ? "🟢 Online" : "🔴 Offline";
                         device.StatusColor = isOnline ? Brushes.LimeGreen : Brushes.Red;
                         device.ResponseTime = isOnline ? $"{responseTime} ms" : "N/A";
 
@@ -13436,7 +13890,7 @@ if ($rebootPending) {
                     LogManager.LogError($"Failed to check pinned device: {device.Input}", ex);
                     Dispatcher.Invoke(() =>
                     {
-                        device.Status = "✗ Error";
+                        device.Status = "🔴 Error";
                         device.StatusColor = Brushes.Orange;
                         device.ResolvedName = "Error";
                         device.ResolvedIP = "Error";
@@ -13811,7 +14265,7 @@ if ($rebootPending) {
 
             BtnRefreshGlobalServices.Content = "🔄 CHECK ALL";
             BtnRefreshGlobalServices.IsEnabled = true;
-            HideBottomProgress($"Ready • {totalCount} services checked");
+            HideBottomProgress($"Ready — {totalCount} services checked");
         }
 
         /// <summary>
@@ -13845,7 +14299,7 @@ if ($rebootPending) {
                     });
                 }, null, TimeSpan.Zero, TimeSpan.FromMinutes(5));
 
-                BtnAutoRefreshGlobalServices.Content = "⏱ ENABLED";
+                BtnAutoRefreshGlobalServices.Content = "✅ ENABLED";
                 BtnAutoRefreshGlobalServices.Background = new SolidColorBrush(Color.FromRgb(0, 200, 83)); // Green
             }
             else
@@ -13853,7 +14307,7 @@ if ($rebootPending) {
                 // Stop auto-refresh
                 _globalServicesTimer?.Dispose();
                 _globalServicesTimer = null;
-                BtnAutoRefreshGlobalServices.Content = "⏱ AUTO (5 MIN)";
+                BtnAutoRefreshGlobalServices.Content = "🔄 AUTO (5 MIN)";
                 BtnAutoRefreshGlobalServices.ClearValue(Button.BackgroundProperty); // Reset to style default
             }
         }
@@ -13882,7 +14336,7 @@ if ($rebootPending) {
                         {
                             if (result.Status == System.Net.NetworkInformation.IPStatus.Success)
                             {
-                                service.Status = "✓ Online";
+                                service.Status = "🟢 Online";
                                 service.StatusColor = new SolidColorBrush(Color.FromRgb(0, 255, 0));
                                 service.Latency = $"{result.RoundtripTime} ms";
                                 service.LatencyColor = result.RoundtripTime < 50
@@ -13893,7 +14347,7 @@ if ($rebootPending) {
                             }
                             else
                             {
-                                service.Status = "✗ Offline";
+                                service.Status = "🔴 Offline";
                                 service.StatusColor = new SolidColorBrush(Color.FromRgb(255, 100, 100));
                                 service.Latency = "Timeout";
                                 service.LatencyColor = Brushes.Gray;
@@ -13917,7 +14371,7 @@ if ($rebootPending) {
                                 if (response.IsSuccessStatusCode)
                                 {
                                     // Successfully reached API - parse response if needed
-                                    service.Status = "✓ Operational";
+                                    service.Status = "🟢 Operational";
                                     service.StatusColor = new SolidColorBrush(Color.FromRgb(0, 255, 0));
                                     service.Latency = $"{stopwatch.ElapsedMilliseconds} ms";
                                     service.LatencyColor = stopwatch.ElapsedMilliseconds < 500
@@ -13931,7 +14385,7 @@ if ($rebootPending) {
                                 }
                                 else
                                 {
-                                    service.Status = "⚠ Degraded";
+                                    service.Status = "🟡 Degraded";
                                     service.StatusColor = new SolidColorBrush(Color.FromRgb(255, 165, 0));
                                     service.Latency = $"HTTP {(int)response.StatusCode}";
                                     service.LatencyColor = new SolidColorBrush(Color.FromRgb(255, 165, 0));
@@ -13944,7 +14398,7 @@ if ($rebootPending) {
                 {
                     await Dispatcher.InvokeAsync(() =>
                     {
-                        service.Status = "✗ Error";
+                        service.Status = "🔴 Error";
                         service.StatusColor = new SolidColorBrush(Color.FromRgb(255, 100, 100));
                         service.Latency = "Unreachable";
                         service.LatencyColor = Brushes.Gray;
@@ -14089,7 +14543,10 @@ if ($rebootPending) {
             Title = "Device Monitor - NecessaryAdminTool Suite";
             Width = 1100;
             Height = 700;
+            MinWidth = 600;
+            MinHeight = 400;
             WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            ResizeMode = ResizeMode.CanResize;
             Background = new SolidColorBrush(Color.FromRgb(13, 13, 13)); // #0D0D0D
             WindowStyle = WindowStyle.None;
             AllowsTransparency = true;
@@ -14139,7 +14596,7 @@ if ($rebootPending) {
 
             var closeBtn = new Button
             {
-                Content = "✕",
+                Content = "?",
                 Width = 32,
                 Height = 32,
                 Background = Brushes.Transparent,
@@ -14387,7 +14844,7 @@ if ($rebootPending) {
             var uptimeStack = new StackPanel();
             uptimeStack.Children.Add(new TextBlock
             {
-                Text = "⏱ SYSTEM UPTIME",
+                Text = "⏱️ SYSTEM UPTIME",
                 Foreground = new SolidColorBrush(Color.FromRgb(255, 133, 51)),
                 FontSize = 11,
                 FontWeight = FontWeights.Bold,
@@ -15122,7 +15579,7 @@ if ($rebootPending) {
                                 double total = Convert.ToDouble(sizeVal) / (1024.0 * 1024 * 1024);
                                 double free = Convert.ToDouble(freeVal) / (1024.0 * 1024 * 1024);
                                 double used = total - free;
-                                drives.Add($"{deviceID} — {used:F0} GB used / {total:F0} GB total");
+                                drives.Add($"{deviceID} � {used:F0} GB used / {total:F0} GB total");
                             }
                         }
                     }
@@ -15139,7 +15596,7 @@ if ($rebootPending) {
                                     double total = Convert.ToDouble(obj["Size"]) / (1024.0 * 1024 * 1024);
                                     double free = Convert.ToDouble(obj["FreeSpace"]) / (1024.0 * 1024 * 1024);
                                     double used = total - free;
-                                    drives.Add($"{deviceID} — {used:F0} GB used / {total:F0} GB total");
+                                    drives.Add($"{deviceID} � {used:F0} GB used / {total:F0} GB total");
                                 }
                             }
                         }
@@ -15537,9 +15994,9 @@ if ($rebootPending) {
     // LOGIN WINDOW
     // ############################################################################
 
-    // ══════════════════════════════════════════════════════════════
+    // --------------------------------------------------------------
     // TAG: #DYNAMIC_BRANDING #WHITE_LABEL - All branding pulls from LogoConfig constants
-    // ══════════════════════════════════════════════════════════════
+    // --------------------------------------------------------------
     // LOGO_CONFIG: Change these values to update the logo across the entire application
     public static class LogoConfig
     {
@@ -15558,6 +16015,27 @@ if ($rebootPending) {
         // Product Name - TAG: #PRODUCT_NAME
         public const string PRODUCT_NAME = "NecessaryAdminTool";
         public const string PRODUCT_FULL_NAME = "NecessaryAdminTool Suite";
+
+        // Application paths — TAG: #APPDATA_PATHS #REBRANDING
+        public const string APPDATA_FOLDER = "NecessaryAdminTool";
+        public const string LOG_PREFIX = "NAT";
+        public const string CONFIG_FILENAME = "NecessaryAdmin_Config_v2.xml";
+
+        public static string AppDataPath => System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            APPDATA_FOLDER);
+        public static string LogDirectory => System.IO.Path.Combine(AppDataPath, "Logs");
+        public static string ProgramDataPath => System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+            APPDATA_FOLDER);
+
+        // Registry & service — TAG: #REGISTRY #SERVICE_NAME #REBRANDING
+        public const string REGISTRY_ROOT = @"SOFTWARE\NecessaryAdminTool";
+        public const string SERVICE_NAME = "NecessaryAdminAgent";
+        public const string SERVICE_DISPLAY = "NecessaryAdminTool Agent";
+
+        // Temp/log naming used by PS scripts
+        public const string TEMP_LOG_FOLDER = "NecessaryAdminTool_Logs";
 
         /// <summary>
         /// Gets version in CalVer format: Major.YYMM.Minor
@@ -15609,7 +16087,7 @@ if ($rebootPending) {
         {
             get
             {
-                return $"Copyright © {COPYRIGHT_HOLDER} {DateTime.Now.Year}";
+                return $"Copyright � {COPYRIGHT_HOLDER} {DateTime.Now.Year}";
             }
         }
 
@@ -15817,9 +16295,9 @@ if ($rebootPending) {
         }
     }
 
-    // ══════════════════════════════════════════════════════════════
+    // --------------------------------------------------------------
     // ELEVATION DIALOG - Orange/Zinc Theme
-    // ══════════════════════════════════════════════════════════════
+    // --------------------------------------------------------------
     public class ElevationDialog : Window
     {
         public ElevationDialog()
@@ -15873,7 +16351,7 @@ if ($rebootPending) {
             var messagePanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 20) };
             messagePanel.Children.Add(new TextBlock
             {
-                Text = "⚠",
+                Text = "?",
                 FontSize = 32,
                 Foreground = new SolidColorBrush(Color.FromRgb(247, 99, 12)), // Orange warning
                 Margin = new Thickness(0, 0, 15, 0),
@@ -15958,9 +16436,9 @@ if ($rebootPending) {
         }
     }
 
-    // ══════════════════════════════════════════════════════════════
+    // --------------------------------------------------------------
     // LOGIN WINDOW - Orange/Zinc Theme with Elevation Button
-    // ══════════════════════════════════════════════════════════════
+    // --------------------------------------------------------------
     public class LoginWindow : Window
     {
         private TextBox _txtUser;
@@ -16145,7 +16623,7 @@ if ($rebootPending) {
             // Clear button - TAG: #TAB_ORDER - excluded from tab navigation
             var clearBtn = new Button
             {
-                Content = "✕",
+                Content = "?",
                 Width = 28,
                 Height = 28,
                 Background = Brushes.Transparent,
@@ -16260,7 +16738,7 @@ if ($rebootPending) {
 
             var applyDomainBtn = new Button
             {
-                Content = "✓",
+                Content = "?",
                 FontSize = 12,
                 Padding = new Thickness(8, 5, 8, 5),
                 Margin = new Thickness(4, 0, 0, 0),
@@ -16404,7 +16882,7 @@ if ($rebootPending) {
 
             var separatorText = new TextBlock
             {
-                Text = "•",
+                Text = "�",
                 Foreground = new SolidColorBrush(Color.FromRgb(80, 80, 80)),
                 FontSize = 9,
                 Margin = new Thickness(0, 0, 8, 0)
@@ -16433,7 +16911,7 @@ if ($rebootPending) {
                 if (!string.IsNullOrEmpty(_txtUser.Text)) _txtPass.Focus();
                 else _txtUser.Focus();
 
-                // ⚡ INSTANT STARTUP: Check domain immediately with 2-second timeout
+                // ? INSTANT STARTUP: Check domain immediately with 2-second timeout
                 // TAG: #DC_DISCOVERY #PERFORMANCE
                 await CheckDomainOnStartup();
             };
@@ -16555,7 +17033,7 @@ if ($rebootPending) {
 
             try
             {
-                // ⚡ Race domain check against 2-second timeout
+                // ? Race domain check against 2-second timeout
                 var domainCheckTask = Task.Run(() =>
                 {
                     try
@@ -16725,11 +17203,11 @@ if ($rebootPending) {
 
             var reasonsPanel = new StackPanel { Margin = new Thickness(20, 0, 0, 20) };
             var reasons = new[] {
-                "• Not connected to corporate VPN",
-                "• Network connectivity issues",
-                "• Not joined to the domain",
-                "• Firewall blocking domain traffic",
-                "• DNS configuration problems"
+                "� Not connected to corporate VPN",
+                "� Network connectivity issues",
+                "� Not joined to the domain",
+                "� Firewall blocking domain traffic",
+                "� DNS configuration problems"
             };
 
             foreach (var reason in reasons)
@@ -16832,9 +17310,9 @@ if ($rebootPending) {
         }
     }
 
-    // ══════════════════════════════════════════════════════════════
+    // --------------------------------------------------------------
     // DASHBOARD DATA MODEL - TAG: #VERSION_7.1 #DASHBOARD
-    // ══════════════════════════════════════════════════════════════
+    // --------------------------------------------------------------
 
     /// <summary>
     /// Data model for top computers in dashboard
@@ -16882,7 +17360,7 @@ if ($rebootPending) {
                     // Switch to Grid View
                     GridInventory.Visibility = Visibility.Visible;
                     CardViewContainer.Visibility = Visibility.Collapsed;
-                    BtnToggleView.Content = "📇 CARD VIEW";
+                    BtnToggleView.Content = "📋 CARD VIEW";
                     Managers.UI.ToastManager.ShowInfo("Switched to grid view");
                     LogManager.LogInfo("View switched to DataGrid");
                 }

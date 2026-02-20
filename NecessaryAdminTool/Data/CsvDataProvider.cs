@@ -69,7 +69,7 @@ namespace NecessaryAdminTool.Data
         {
             if (!File.Exists(filePath))
             {
-                await Task.Run(() => File.WriteAllText(filePath, defaultContent, Encoding.UTF8));
+                await Task.Run(() => WriteFileSafe(filePath, defaultContent));
                 LogManager.LogInfo($"Created data file: {Path.GetFileName(filePath)}");
             }
         }
@@ -83,7 +83,7 @@ namespace NecessaryAdminTool.Data
                     return new List<ComputerInfo>();
                 }
 
-                var json = await Task.Run(() => File.ReadAllText(_computersFile, Encoding.UTF8));
+                var json = await Task.Run(() => ReadFileSafe(_computersFile));
                 var computers = _serializer.Deserialize<List<ComputerInfo>>(json);
                 return computers ?? new List<ComputerInfo>();
             }
@@ -102,7 +102,7 @@ namespace NecessaryAdminTool.Data
                 // Read current data inside the lock to prevent lost-write races
                 var computers = File.Exists(_computersFile)
                     ? _serializer.Deserialize<List<ComputerInfo>>(
-                        await Task.Run(() => File.ReadAllText(_computersFile, Encoding.UTF8)).ConfigureAwait(false))
+                        await Task.Run(() => ReadFileSafe(_computersFile)).ConfigureAwait(false))
                       ?? new List<ComputerInfo>()
                     : new List<ComputerInfo>();
 
@@ -113,7 +113,7 @@ namespace NecessaryAdminTool.Data
                 else                   computers.Add(computer);
 
                 var json = _serializer.Serialize(computers);
-                await Task.Run(() => File.WriteAllText(_computersFile, json, Encoding.UTF8)).ConfigureAwait(false);
+                await Task.Run(() => WriteFileSafe(_computersFile, json)).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -148,7 +148,7 @@ namespace NecessaryAdminTool.Data
             {
                 var computers = File.Exists(_computersFile)
                     ? _serializer.Deserialize<List<ComputerInfo>>(
-                        await Task.Run(() => File.ReadAllText(_computersFile, Encoding.UTF8)).ConfigureAwait(false))
+                        await Task.Run(() => ReadFileSafe(_computersFile)).ConfigureAwait(false))
                       ?? new List<ComputerInfo>()
                     : new List<ComputerInfo>();
 
@@ -158,7 +158,7 @@ namespace NecessaryAdminTool.Data
                 if (removed > 0)
                 {
                     var json = _serializer.Serialize(computers);
-                    await Task.Run(() => File.WriteAllText(_computersFile, json, Encoding.UTF8)).ConfigureAwait(false);
+                    await Task.Run(() => WriteFileSafe(_computersFile, json)).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
@@ -468,7 +468,7 @@ namespace NecessaryAdminTool.Data
                     return 0;
                 }
 
-                var json = await Task.Run(() => File.ReadAllText(filePath, Encoding.UTF8));
+                var json = await Task.Run(() => ReadFileSafe(filePath));
                 var array = _serializer.Deserialize<List<object>>(json);
                 return array?.Count ?? 0;
             }
@@ -550,7 +550,7 @@ namespace NecessaryAdminTool.Data
                         $"{EscapeCsv(computer.Notes)}");
                 }
 
-                await Task.Run(() => File.WriteAllText(outputPath, csv.ToString(), Encoding.UTF8));
+                await Task.Run(() => WriteFileSafe(outputPath, csv.ToString()));
                 LogManager.LogInfo($"Exported {computers.Count} computers to CSV: {outputPath}");
             }
             catch (Exception ex)
@@ -601,7 +601,7 @@ namespace NecessaryAdminTool.Data
                     throw new ArgumentException("CSV file exceeds maximum allowed size (50 MB)");
                 }
 
-                var lines = await Task.Run(() => File.ReadAllLines(csvPath, Encoding.UTF8));
+                var lines = await Task.Run(() => ReadLinesSafe(csvPath));
                 if (lines.Length < 2)
                 {
                     throw new InvalidOperationException("CSV file is empty or has no data rows");
@@ -654,7 +654,7 @@ namespace NecessaryAdminTool.Data
                 try
                 {
                     var json = _serializer.Serialize(computers);
-                    await Task.Run(() => File.WriteAllText(_computersFile, json, Encoding.UTF8)).ConfigureAwait(false);
+                    await Task.Run(() => WriteFileSafe(_computersFile, json)).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -721,6 +721,35 @@ namespace NecessaryAdminTool.Data
 
             fields.Add(currentField.ToString());
             return fields.ToArray();
+        }
+
+        /// <summary>Reads a file with FileShare.ReadWrite to avoid locking conflicts on network shares.</summary>
+        private static string ReadFileSafe(string path)
+        {
+            using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var sr = new StreamReader(fs, Encoding.UTF8))
+                return sr.ReadToEnd();
+        }
+
+        /// <summary>Writes a file with FileShare.Read to allow concurrent readers on network shares.</summary>
+        private static void WriteFileSafe(string path, string content)
+        {
+            using (var fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read))
+            using (var sw = new StreamWriter(fs, Encoding.UTF8))
+                sw.Write(content);
+        }
+
+        /// <summary>Reads all lines with FileShare.ReadWrite for network share safety.</summary>
+        private static string[] ReadLinesSafe(string path)
+        {
+            var lines = new List<string>();
+            using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var sr = new StreamReader(fs, Encoding.UTF8))
+            {
+                string line;
+                while ((line = sr.ReadLine()) != null) lines.Add(line);
+            }
+            return lines.ToArray();
         }
 
         public void Dispose()

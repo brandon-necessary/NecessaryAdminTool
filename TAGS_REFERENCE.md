@@ -1,6 +1,6 @@
-# ArtaznIT Code Tags Reference
+# NecessaryAdminTool Code Tags Reference
 
-This document serves as a centralized repository for all code tags used throughout the ArtaznIT project. Tags make it easy to find and update related code across the entire codebase.
+This document serves as a centralized repository for all code tags used throughout the NecessaryAdminTool project. Tags make it easy to find and update related code across the entire codebase.
 
 ## How to Use Tags
 
@@ -51,7 +51,7 @@ BgMedium      = #2D2D2D (RGB: 45, 45, 45)
 ### #THEME_LOGO
 **Purpose:** Logo placements using LogoConfig system
 **Location:** Various UI elements
-**Description:** All locations where the Artazn logo/icon is displayed. Updates to LogoConfig automatically propagate here.
+**Description:** All locations where the NecessaryAdminTool logo/icon is displayed. Updates to LogoConfig automatically propagate here.
 
 **Files:**
 - `MainWindow.xaml.cs` (line ~543) - ThemedDialog header logo
@@ -272,9 +272,33 @@ When creating a new tag, follow this format:
 | Error handling | `#LOG_MANAGER` |
 | Security validation | `#SECURITY_VALIDATION` |
 | Async patterns | `#ASYNC_VOID_FIX` |
+| Rebranding support | `#REBRANDING` |
+| Deployment scripts | `#DEPLOYMENT_SCRIPT` |
+| AppData paths | `#APPDATA_PATHS` |
 
 ---
 
-**Last Updated:** 2026-02-13
-**Maintained by:** ArtaznIT Development Team
-**File Location:** `C:\Users\brandon.necessary\source\repos\ArtaznIT\TAGS_REFERENCE.md`
+### #REBRANDING
+**Purpose:** Marks code that references product names, paths, or branding via LogoConfig
+**Location:** LogoConfig class, LogManager, window titles
+**Description:** All code centralized for easy white-label rebranding via LogoConfig constants.
+
+### #DEPLOYMENT_SCRIPT
+**Purpose:** PowerShell scripts deployed via ManageEngine or similar RMM platforms
+**Location:** `Scripts/*.ps1`
+**Files:**
+- `Scripts/GeneralUpdate.ps1` - Windows Updates + Firmware
+- `Scripts/FeatureUpdate.ps1` - Major OS upgrades (Feature Updates)
+- `Scripts/PreflightReboot.ps1` - Pre-upgrade reboot handler
+- `Scripts/WMIEnable.ps1` - WMI/WinRM firewall enablement
+- `Scripts/AgentInstall.ps1` - NecessaryAdminAgent deployment
+
+### #APPDATA_PATHS
+**Purpose:** Application data directory references centralized in LogoConfig
+**Location:** `LogoConfig.APPDATA_FOLDER`, `LogoConfig.AppDataPath`, `LogoConfig.LogDirectory`
+
+---
+
+**Last Updated:** 2026-02-20
+**Maintained by:** NecessaryAdminTool Development Team
+**File Location:** `C:\Users\brandon.necessary\source\repos\NecessaryAdminTool\TAGS_REFERENCE.md`

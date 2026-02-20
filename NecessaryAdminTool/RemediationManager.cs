@@ -389,6 +389,10 @@ namespace NecessaryAdminTool
         /// </summary>
         private static ManagementScope GetWmiScope(string hostname, string username, string password)
         {
+            // TAG: #SECURITY_HARDENED - Validate hostname before embedding in WMI path
+            if (string.IsNullOrWhiteSpace(hostname) || !Security.SecurityValidator.IsValidHostname(hostname))
+                throw new ArgumentException($"Invalid hostname: '{hostname}'");
+
             var options = new ConnectionOptions
             {
                 Timeout = TimeSpan.FromSeconds(30),

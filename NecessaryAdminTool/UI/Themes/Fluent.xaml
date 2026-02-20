@@ -54,7 +54,7 @@
     <!-- TYPOGRAPHY SCALE (Segoe UI Variable) -->
     <!-- ═══════════════════════════════════════════════════════════════════ -->
 
-    <FontFamily x:Key="FluentFont">Segoe UI Variable</FontFamily>
+    <FontFamily x:Key="FluentFont">Segoe UI Variable, Segoe UI Emoji, Segoe UI Symbol</FontFamily>
     <FontFamily x:Key="FluentFontDisplay">Segoe UI Variable Display</FontFamily>
 
     <!-- Font Sizes -->

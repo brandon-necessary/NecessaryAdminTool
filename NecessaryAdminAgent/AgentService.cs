@@ -1,9 +1,11 @@
-// TAG: #NAT_AGENT #VERSION_1_0 #WINDOWS_SERVICE
+// TAG: #NAT_AGENT #VERSION_1_1 #WINDOWS_SERVICE #SECURITY_HARDENED
 // AgentService.cs - Windows ServiceBase + TcpListener loop
 // Max 20 concurrent connections via SemaphoreSlim.
 // Auth: validates JSON "token" field against registry value.
+// Security: message size limit (1MB), per-IP rate limiting (5 failures/min), log ACLs.
 
 using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -21,6 +23,16 @@ namespace NecessaryAdminAgent
         private TcpListener _listener;
         private readonly SemaphoreSlim _connSemaphore = new SemaphoreSlim(20, 20);
 
+        // TAG: #SECURITY_HARDENED - Max request size to prevent DoS via unbounded ReadLine
+        private const int MAX_REQUEST_BYTES = 1 * 1024 * 1024; // 1 MB
+
+        // TAG: #SECURITY_HARDENED - Per-IP rate limiter for failed auth attempts
+        private static readonly ConcurrentDictionary<string, AuthFailureTracker> _authFailures
+            = new ConcurrentDictionary<string, AuthFailureTracker>();
+        private const int MAX_AUTH_FAILURES = 5;          // max failures per window
+        private static readonly TimeSpan AUTH_WINDOW = TimeSpan.FromMinutes(1);
+        private Timer _rateLimitCleanupTimer;
+
         public AgentService()
         {
             ServiceName = Program.SERVICE_NAME;
@@ -33,6 +45,10 @@ namespace NecessaryAdminAgent
         {
             AgentLog.Write("AgentService.OnStart() - starting TCP listener thread");
             _running = true;
+
+            // Periodic cleanup of expired rate-limit entries (every 2 minutes)
+            _rateLimitCleanupTimer = new Timer(_ => CleanExpiredAuthEntries(), null, AUTH_WINDOW, TimeSpan.FromMinutes(2));
+
             _listenerThread = new Thread(ListenerLoop) { IsBackground = true, Name = "AgentListener" };
             _listenerThread.Start();
         }
@@ -41,6 +57,7 @@ namespace NecessaryAdminAgent
         {
             AgentLog.Write("AgentService.OnStop() - stopping");
             _running = false;
+            try { _rateLimitCleanupTimer?.Dispose(); } catch { }
             try { _listener?.Stop(); } catch { }
             _listenerThread?.Join(5000);
             AgentLog.Write("AgentService.OnStop() - done");
@@ -102,18 +119,44 @@ namespace NecessaryAdminAgent
         private void HandleClient(TcpClient client)
         {
             string remoteEp = "(unknown)";
+            string remoteIp = "(unknown)";
             try
             {
                 remoteEp = client.Client.RemoteEndPoint?.ToString() ?? "(unknown)";
+                // Extract IP without port for rate-limiting key
+                var remoteEndPoint = client.Client.RemoteEndPoint as IPEndPoint;
+                remoteIp = remoteEndPoint?.Address.ToString() ?? "(unknown)";
+
                 client.ReceiveTimeout = 10000;  // 10s to send request
                 client.SendTimeout = 30000;     // 30s to receive response
 
+                // TAG: #SECURITY_HARDENED - Check per-IP rate limit before processing
+                if (IsRateLimited(remoteIp))
+                {
+                    AgentLog.Write($"HandleClient() - RATE LIMITED {remoteEp} (too many auth failures)");
+                    try
+                    {
+                        using (client)
+                        using (var stream = client.GetStream())
+                        using (var writer = new StreamWriter(stream, new UTF8Encoding(false)) { AutoFlush = true, NewLine = "\n" })
+                            writer.WriteLine("{\"success\":false,\"error\":\"Rate limited\"}");
+                    }
+                    catch { }
+                    return;
+                }
+
                 using (client)
                 using (var stream = client.GetStream())
-                using (var reader = new StreamReader(stream, Encoding.UTF8))
                 using (var writer = new StreamWriter(stream, new UTF8Encoding(false)) { AutoFlush = true, NewLine = "\n" })
                 {
-                    string line = reader.ReadLine();
+                    // TAG: #SECURITY_HARDENED - Bounded read to prevent DoS via unbounded ReadLine
+                    string line = ReadLineBounded(stream, MAX_REQUEST_BYTES);
+                    if (line == null)
+                    {
+                        AgentLog.Write($"HandleClient() - Request from {remoteEp} exceeded {MAX_REQUEST_BYTES} bytes or was empty");
+                        writer.WriteLine("{\"success\":false,\"error\":\"Request too large\"}");
+                        return;
+                    }
                     if (string.IsNullOrWhiteSpace(line))
                     {
                         writer.WriteLine("{\"success\":false,\"error\":\"Empty request\"}");
@@ -127,12 +170,15 @@ namespace NecessaryAdminAgent
                     string expectedToken = ReadTokenFromRegistry();
                     if (string.IsNullOrEmpty(expectedToken) || !ConstantTimeEquals(token, expectedToken))
                     {
+                        RecordAuthFailure(remoteIp);
                         AgentLog.Write($"HandleClient() - UNAUTHORIZED from {remoteEp}");
                         writer.WriteLine("{\"success\":false,\"error\":\"Unauthorized\"}");
                         return;
                     }
 
-                    AgentLog.Write($"HandleClient() - {command} from {remoteEp}");
+                    // Strip newlines from command before logging (prevent log injection)
+                    string safeCmd = command?.Replace("\n", "").Replace("\r", "") ?? "(null)";
+                    AgentLog.Write($"HandleClient() - {safeCmd} from {remoteEp}");
                     string response = QueryHandler.Execute(command);
                     writer.WriteLine(response);
                 }
@@ -147,6 +193,87 @@ namespace NecessaryAdminAgent
                 try { client?.Close(); } catch { }
             }
         }
+
+        /// <summary>
+        /// Reads a single line from the stream with a maximum byte limit.
+        /// Returns null if the limit is exceeded (DoS protection).
+        /// Returns empty string if nothing was read before newline/EOF.
+        /// </summary>
+        private static string ReadLineBounded(NetworkStream stream, int maxBytes)
+        {
+            var sb = new StringBuilder();
+            int totalRead = 0;
+            int b;
+            while ((b = stream.ReadByte()) != -1)
+            {
+                totalRead++;
+                if (totalRead > maxBytes) return null; // exceeded limit
+                if (b == '\n') break;
+                if (b == '\r') continue; // skip CR in CRLF
+                sb.Append((char)b);
+            }
+            return sb.ToString();
+        }
+
+        // ── Rate Limiting ────────────────────────────────────────────────
+
+        private static bool IsRateLimited(string ip)
+        {
+            if (!_authFailures.TryGetValue(ip, out var tracker)) return false;
+            lock (tracker)
+            {
+                // Expire old entries
+                if (DateTime.UtcNow - tracker.WindowStart > AUTH_WINDOW)
+                {
+                    tracker.Count = 0;
+                    tracker.WindowStart = DateTime.UtcNow;
+                    return false;
+                }
+                return tracker.Count >= MAX_AUTH_FAILURES;
+            }
+        }
+
+        private static void RecordAuthFailure(string ip)
+        {
+            var tracker = _authFailures.GetOrAdd(ip, _ => new AuthFailureTracker());
+            lock (tracker)
+            {
+                if (DateTime.UtcNow - tracker.WindowStart > AUTH_WINDOW)
+                {
+                    // Start new window
+                    tracker.Count = 1;
+                    tracker.WindowStart = DateTime.UtcNow;
+                }
+                else
+                {
+                    tracker.Count++;
+                }
+
+                if (tracker.Count == MAX_AUTH_FAILURES)
+                    AgentLog.Write($"RateLimit - IP {ip} blocked after {MAX_AUTH_FAILURES} auth failures in {AUTH_WINDOW.TotalSeconds}s");
+            }
+        }
+
+        private static void CleanExpiredAuthEntries()
+        {
+            var now = DateTime.UtcNow;
+            foreach (var kvp in _authFailures)
+            {
+                lock (kvp.Value)
+                {
+                    if (now - kvp.Value.WindowStart > AUTH_WINDOW)
+                        _authFailures.TryRemove(kvp.Key, out _);
+                }
+            }
+        }
+
+        private class AuthFailureTracker
+        {
+            public int Count;
+            public DateTime WindowStart = DateTime.UtcNow;
+        }
+
+        // ── JSON / Auth helpers ──────────────────────────────────────────
 
         // Minimal JSON field extractor — avoids pulling in Newtonsoft for a lightweight service.
         // Handles escaped characters inside string values (e.g. \", \\) to prevent auth bypass.
@@ -234,7 +361,10 @@ namespace NecessaryAdminAgent
         protected override void Dispose(bool disposing)
         {
             if (disposing)
+            {
+                _rateLimitCleanupTimer?.Dispose();
                 _connSemaphore?.Dispose();
+            }
             base.Dispose(disposing);
         }
     }
@@ -254,7 +384,10 @@ namespace NecessaryAdminAgent
                 string line = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}";
                 lock (_lock)
                 {
-                    File.AppendAllText(Program.LOG_PATH, line + Environment.NewLine, Encoding.UTF8);
+                    // FileShare.ReadWrite: allows concurrent readers (e.g. admin viewing log) while agent writes
+                    using (var fs = new FileStream(Program.LOG_PATH, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
+                    using (var sw = new StreamWriter(fs, Encoding.UTF8))
+                        sw.WriteLine(line);
                 }
             }
             catch { /* log failures are non-fatal */ }

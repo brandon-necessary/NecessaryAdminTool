@@ -152,6 +152,11 @@
                                MouseLeftButtonDown="TxtRoleBadge_MouseLeftButtonDown"/>
                 </Border>
 
+                <!-- Header separator: Logo/Role | Status group -->
+                <Border Grid.Column="1" HorizontalAlignment="Right" Margin="12,0,0,0"
+                        Width="1" Background="#FF333333" VerticalAlignment="Stretch"
+                        Opacity="0.7"/>
+
                 <!-- Split Error Indicator - TAG: #ERROR_TRACKING #STATUS_INDICATORS -->
                 <StackPanel x:Name="ErrorIndicator" Grid.Column="2" Orientation="Horizontal" Margin="15,0,0,0"
                             VerticalAlignment="Center" Visibility="Collapsed">
@@ -258,6 +263,11 @@
                         </Button.Style>
                     </Button>
                 </StackPanel>
+
+                <!-- Header separator: Status group | Actions group -->
+                <Border Grid.Column="5" HorizontalAlignment="Right" Margin="0,0,-4,0"
+                        Width="1" Background="#FF333333" VerticalAlignment="Stretch"
+                        Opacity="0.7"/>
 
                 <!-- TAG: #TOOLTIPS #NAVIGATION -->
                 <!-- Auth Button -->
@@ -427,8 +437,10 @@
 
         <!-- ══════════════════════════════════════ -->
         <!-- MAIN CONTENT AREA                      -->
+        <!-- Ultrawide: content stays readable,     -->
+        <!-- dark bg fills edges on 3440px+ screens  -->
         <!-- ══════════════════════════════════════ -->
-        <Grid>
+        <Grid MaxWidth="1920" HorizontalAlignment="Stretch">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="1*" MinWidth="320" MaxWidth="480"/>
                 <ColumnDefinition Width="Auto"/>
@@ -1638,102 +1650,123 @@
                                                HorizontalAlignment="Center"/>
 
                                     <!-- TAG: #TOOLTIPS #SYSTEM_TOOLS -->
-                                    <!-- Row 1: File & Software - TAG: #THEME_COLORS #SECTION_HEADERS -->
-                                    <TextBlock Text="FILE &amp; SOFTWARE" Foreground="{StaticResource AccentOrangeBrush}"
-                                               FontSize="10" FontWeight="Bold" Margin="0,0,0,10"/>
-                                    <UniformGrid Columns="2" Margin="0,0,0,14">
-                                        <Button Content="📁  BROWSE C$ SHARE" Style="{StaticResource BtnTool}"
-                                                Click="Tool_Browse_Click" Margin="0,0,4,5"
-                                                ToolTip="Opens Windows Explorer to the target computer's C$ administrative share. Provides direct file system access for copying files, viewing logs, or managing configurations. Requires admin credentials and File Sharing enabled on target."/>
-                                        <Button Content="📦  SOFTWARE INVENTORY" Style="{StaticResource BtnTool}"
-                                                Click="Tool_Soft_Click" Margin="4,0,0,5"
-                                                ToolTip="Displays complete list of installed software on target computer. Queries registry (Uninstall keys) and Windows Installer database. Shows application names, versions, publishers, and install dates. Export to CSV for reporting."/>
-                                        <Button Content="📋  INSTALLED HOTFIXES" Style="{StaticResource BtnTool}"
-                                                Click="Tool_Hotfix_Click" Margin="0,0,4,5"
-                                                ToolTip="Lists all installed Windows Updates and hotfixes on target computer. Shows KB numbers, install dates, and update descriptions. Useful for verifying patch compliance and troubleshooting update-related issues."/>
-                                        <Button Content="🗑  DISK CLEANUP" Style="{StaticResource BtnTool}"
-                                                Click="Tool_DiskCleanup_Click" Margin="4,0,0,5"
-                                                ToolTip="Launches Disk Cleanup wizard on target computer to free up disk space. Removes temporary files, Windows Update cleanup, recycle bin contents, and other safe-to-delete items. Runs interactively on target system."/>
-                                    </UniformGrid>
+                                    <!-- Collapsible tool category groups -->
 
-                                    <!-- Row 2: Process & Service - TAG: #THEME_COLORS #SECTION_HEADERS -->
-                                    <TextBlock Text="PROCESS &amp; SERVICE MANAGEMENT" Foreground="{StaticResource AccentOrangeBrush}"
-                                               FontSize="10" FontWeight="Bold" Margin="0,0,0,10"/>
-                                    <UniformGrid Columns="2" Margin="0,0,0,14">
-                                        <Button Content="⚙  PROCESS MANAGER" Style="{StaticResource BtnTool}"
-                                                Click="Tool_Proc_Click" Margin="0,0,4,5"
-                                                ToolTip="Opens Task Manager on target computer to view and manage running processes. Kill unresponsive applications, check CPU/memory usage, and monitor system performance. Launches remotely via WMI or PowerShell Remoting."/>
-                                        <Button Content="🔧  SERVICES MANAGER" Style="{StaticResource BtnTool}"
-                                                Click="Tool_Svc_Click" Margin="4,0,0,5"
-                                                ToolTip="Opens Services management console (services.msc) for target computer. Start, stop, restart, or configure Windows services remotely. View service status, startup type, and dependencies. Requires admin credentials."/>
-                                        <Button Content="📊  STARTUP PROGRAMS" Style="{StaticResource BtnTool}"
-                                                Click="Tool_Startup_Click" Margin="0,0,4,5"
-                                                ToolTip="Displays programs configured to run at system startup on target computer. Shows startup location (Registry, Startup folder, Task Scheduler), program name, and path. Disable unwanted startup items to improve boot time and performance."/>
-                                        <Button Content="📝  SCHEDULED TASKS" Style="{StaticResource BtnTool}"
-                                                Click="Tool_SchedTask_Click" Margin="4,0,0,5"
-                                                ToolTip="Opens Task Scheduler for target computer. View, create, modify, or delete scheduled tasks. Useful for managing automated scripts, maintenance jobs, and Windows Update schedules. Full remote task management capabilities."/>
-                                    </UniformGrid>
+                                    <!-- FILE & SOFTWARE -->
+                                    <Expander IsExpanded="True" Margin="0,0,0,6">
+                                        <Expander.Header>
+                                            <TextBlock Text="FILE &amp; SOFTWARE" Foreground="{StaticResource AccentOrangeBrush}"
+                                                       FontSize="10" FontWeight="Bold"/>
+                                        </Expander.Header>
+                                        <UniformGrid Columns="2" Margin="0,6,0,0">
+                                            <Button Content="📁  BROWSE C$ SHARE" Style="{StaticResource BtnTool}"
+                                                    Click="Tool_Browse_Click" Margin="0,0,4,5"
+                                                    ToolTip="Opens Windows Explorer to the target computer's C$ administrative share. Provides direct file system access for copying files, viewing logs, or managing configurations. Requires admin credentials and File Sharing enabled on target."/>
+                                            <Button Content="📦  SOFTWARE INVENTORY" Style="{StaticResource BtnTool}"
+                                                    Click="Tool_Soft_Click" Margin="4,0,0,5"
+                                                    ToolTip="Displays complete list of installed software on target computer. Queries registry (Uninstall keys) and Windows Installer database. Shows application names, versions, publishers, and install dates. Export to CSV for reporting."/>
+                                            <Button Content="📋  INSTALLED HOTFIXES" Style="{StaticResource BtnTool}"
+                                                    Click="Tool_Hotfix_Click" Margin="0,0,4,5"
+                                                    ToolTip="Lists all installed Windows Updates and hotfixes on target computer. Shows KB numbers, install dates, and update descriptions. Useful for verifying patch compliance and troubleshooting update-related issues."/>
+                                            <Button Content="🗑  DISK CLEANUP" Style="{StaticResource BtnTool}"
+                                                    Click="Tool_DiskCleanup_Click" Margin="4,0,0,5"
+                                                    ToolTip="Launches Disk Cleanup wizard on target computer to free up disk space. Removes temporary files, Windows Update cleanup, recycle bin contents, and other safe-to-delete items. Runs interactively on target system."/>
+                                        </UniformGrid>
+                                    </Expander>
 
-                                    <!-- Row 3: Diagnostics - TAG: #THEME_COLORS #SECTION_HEADERS -->
-                                    <TextBlock Text="DIAGNOSTICS &amp; REPAIR" Foreground="{StaticResource AccentOrangeBrush}"
-                                               FontSize="10" FontWeight="Bold" Margin="0,0,0,10"/>
-                                    <UniformGrid Columns="2" Margin="0,0,0,14">
-                                        <Button Content="📄  EVENT LOGS (SYSTEM)" Style="{StaticResource BtnTool}"
-                                                Click="Tool_Evt_Click" Margin="0,0,4,5"
-                                                ToolTip="Opens Event Viewer to view System event logs on target computer. Review errors, warnings, and information events for troubleshooting boot issues, driver problems, and system crashes. Filter by event ID or source."/>
-                                        <Button Content="🛡  OS REPAIR (DISM+SFC)" Style="{StaticResource BtnTool}"
-                                                Click="Tool_Repair_Click" Margin="4,0,0,5"
-                                                ToolTip="Runs Windows system file repair tools (DISM and SFC) on target computer. Repairs corrupted system files, Windows component store issues, and OS integrity problems. Requires elevation and may take 15-30 minutes. System restore point recommended."/>
-                                        <Button Content="🔍  DEFENDER QUICK SCAN" Style="{StaticResource BtnTool}"
-                                                Click="Tool_DefenderScan_Click" Margin="0,0,4,5"
-                                                ToolTip="Initiates Windows Defender Quick Scan on target computer. Scans common malware locations (Downloads, Temp, Startup folders). Faster than full scan. Results available in Windows Security. Requires Defender enabled and up-to-date."/>
-                                        <Button Content="🌐  NETWORK DIAGNOSTICS" Style="{StaticResource BtnTool}"
-                                                Click="Tool_NetDiag_Click" Margin="4,0,0,5"
-                                                ToolTip="Runs comprehensive network diagnostics on target computer including ping tests, trace routes, DNS resolution, and connectivity checks. Useful for troubleshooting internet access, VPN issues, and network performance problems."/>
-                                        <Button Content="🔄  RENEW IP ADDRESS" Style="{StaticResource BtnTool}"
-                                                Click="Tool_RenewIP_Click" Margin="0,0,4,5"
-                                                ToolTip="Releases and renews DHCP IP address on target computer (ipconfig /release + /renew). Fixes IP conflicts, stale DHCP leases, and network connectivity issues. Network connection briefly interrupted during renewal."/>
-                                        <Button Content="🔄  FLUSH DNS" Style="{StaticResource BtnTool}"
-                                                Click="Tool_FlushDNS_Click" Margin="4,0,0,5"
-                                                ToolTip="Clears DNS resolver cache on target computer (ipconfig /flushdns). Fixes DNS resolution issues, stale cached entries, and website access problems after DNS changes. Takes effect immediately without reboot."/>
-                                    </UniformGrid>
+                                    <!-- PROCESS & SERVICE MANAGEMENT -->
+                                    <Expander IsExpanded="True" Margin="0,0,0,6">
+                                        <Expander.Header>
+                                            <TextBlock Text="PROCESS &amp; SERVICE MANAGEMENT" Foreground="{StaticResource AccentOrangeBrush}"
+                                                       FontSize="10" FontWeight="Bold"/>
+                                        </Expander.Header>
+                                        <UniformGrid Columns="2" Margin="0,6,0,0">
+                                            <Button Content="⚙  PROCESS MANAGER" Style="{StaticResource BtnTool}"
+                                                    Click="Tool_Proc_Click" Margin="0,0,4,5"
+                                                    ToolTip="Opens Task Manager on target computer to view and manage running processes. Kill unresponsive applications, check CPU/memory usage, and monitor system performance. Launches remotely via WMI or PowerShell Remoting."/>
+                                            <Button Content="🔧  SERVICES MANAGER" Style="{StaticResource BtnTool}"
+                                                    Click="Tool_Svc_Click" Margin="4,0,0,5"
+                                                    ToolTip="Opens Services management console (services.msc) for target computer. Start, stop, restart, or configure Windows services remotely. View service status, startup type, and dependencies. Requires admin credentials."/>
+                                            <Button Content="📊  STARTUP PROGRAMS" Style="{StaticResource BtnTool}"
+                                                    Click="Tool_Startup_Click" Margin="0,0,4,5"
+                                                    ToolTip="Displays programs configured to run at system startup on target computer. Shows startup location (Registry, Startup folder, Task Scheduler), program name, and path. Disable unwanted startup items to improve boot time and performance."/>
+                                            <Button Content="📝  SCHEDULED TASKS" Style="{StaticResource BtnTool}"
+                                                    Click="Tool_SchedTask_Click" Margin="4,0,0,5"
+                                                    ToolTip="Opens Task Scheduler for target computer. View, create, modify, or delete scheduled tasks. Useful for managing automated scripts, maintenance jobs, and Windows Update schedules. Full remote task management capabilities."/>
+                                        </UniformGrid>
+                                    </Expander>
 
-                                    <!-- Row 4: Remote Access - TAG: #THEME_COLORS #SECTION_HEADERS -->
-                                    <TextBlock Text="REMOTE ACCESS" Foreground="{StaticResource AccentOrangeBrush}"
-                                               FontSize="10" FontWeight="Bold" Margin="0,0,0,10"/>
-                                    <UniformGrid Columns="2" Margin="0,0,0,14">
-                                        <Button Content="🖥  REMOTE DESKTOP" Style="{StaticResource BtnTool}"
-                                                Click="Tool_RDP_Click" Margin="0,0,4,5"
-                                                ToolTip="Launches Remote Desktop Connection (mstsc.exe) to target computer. Provides full interactive desktop access. Requires RDP enabled on target, network access to port 3389, and valid user credentials. Network Level Authentication recommended."/>
-                                        <Button Content="💻  REMOTE ASSIST" Style="{StaticResource BtnTool}"
-                                                Click="Tool_RemoteAssist_Click" Margin="4,0,0,5"
-                                                ToolTip="Opens Windows Remote Assistance connection to target computer. Allows viewing and optionally controlling user's desktop with their permission. Useful for user support and troubleshooting. Requires user acceptance to establish connection."/>
-                                        <Button Content="📡  REMOTE REGISTRY" Style="{StaticResource BtnTool}"
-                                                Click="Tool_RemoteReg_Click" Margin="0,0,4,5"
-                                                ToolTip="Opens Registry Editor connected to target computer's registry. Full read/write access to HKLM and HKU hives. Modify system settings, troubleshoot configuration issues, and manage registry keys remotely. CAUTION: Incorrect changes can break system."/>
-                                        <Button Content="🔌  REMOTE CMD" Style="{StaticResource BtnTool}"
-                                                Click="Tool_PsExec_Click" Margin="4,0,0,5"
-                                                ToolTip="Opens command prompt on target computer using PsExec (if available) or PowerShell Remoting. Execute commands remotely with SYSTEM or user context. Requires PsExec in PATH or PowerShell Remoting enabled. Full command-line access."/>
-                                    </UniformGrid>
+                                    <!-- DIAGNOSTICS & REPAIR -->
+                                    <Expander IsExpanded="True" Margin="0,0,0,6">
+                                        <Expander.Header>
+                                            <TextBlock Text="DIAGNOSTICS &amp; REPAIR" Foreground="{StaticResource AccentOrangeBrush}"
+                                                       FontSize="10" FontWeight="Bold"/>
+                                        </Expander.Header>
+                                        <UniformGrid Columns="2" Margin="0,6,0,0">
+                                            <Button Content="📄  EVENT LOGS (SYSTEM)" Style="{StaticResource BtnTool}"
+                                                    Click="Tool_Evt_Click" Margin="0,0,4,5"
+                                                    ToolTip="Opens Event Viewer to view System event logs on target computer. Review errors, warnings, and information events for troubleshooting boot issues, driver problems, and system crashes. Filter by event ID or source."/>
+                                            <Button Content="🛡  OS REPAIR (DISM+SFC)" Style="{StaticResource BtnTool}"
+                                                    Click="Tool_Repair_Click" Margin="4,0,0,5"
+                                                    ToolTip="Runs Windows system file repair tools (DISM and SFC) on target computer. Repairs corrupted system files, Windows component store issues, and OS integrity problems. Requires elevation and may take 15-30 minutes. System restore point recommended."/>
+                                            <Button Content="🔍  DEFENDER QUICK SCAN" Style="{StaticResource BtnTool}"
+                                                    Click="Tool_DefenderScan_Click" Margin="0,0,4,5"
+                                                    ToolTip="Initiates Windows Defender Quick Scan on target computer. Scans common malware locations (Downloads, Temp, Startup folders). Faster than full scan. Results available in Windows Security. Requires Defender enabled and up-to-date."/>
+                                            <Button Content="🌐  NETWORK DIAGNOSTICS" Style="{StaticResource BtnTool}"
+                                                    Click="Tool_NetDiag_Click" Margin="4,0,0,5"
+                                                    ToolTip="Runs comprehensive network diagnostics on target computer including ping tests, trace routes, DNS resolution, and connectivity checks. Useful for troubleshooting internet access, VPN issues, and network performance problems."/>
+                                            <Button Content="🔄  RENEW IP ADDRESS" Style="{StaticResource BtnTool}"
+                                                    Click="Tool_RenewIP_Click" Margin="0,0,4,5"
+                                                    ToolTip="Releases and renews DHCP IP address on target computer (ipconfig /release + /renew). Fixes IP conflicts, stale DHCP leases, and network connectivity issues. Network connection briefly interrupted during renewal."/>
+                                        </UniformGrid>
+                                    </Expander>
 
-                                    <!-- Row 5: System Actions - TAG: #THEME_COLORS #SECTION_HEADERS -->
-                                    <TextBlock Text="SYSTEM ACTIONS" Foreground="{StaticResource AccentOrangeBrush}"
-                                               FontSize="10" FontWeight="Bold" Margin="0,0,0,10"/>
-                                    <UniformGrid Columns="2" Margin="0,0,0,8">
-                                        <Button x:Name="BtnGP" Content="⚡  FORCE GPUPDATE"
-                                                Style="{StaticResource BtnTool}" Click="Tool_GP_Click"
-                                                IsEnabled="False" Margin="0,0,4,5"
-                                                ToolTip="Forces immediate Group Policy update on target computer (gpupdate /force). Applies latest GPO settings without waiting for background refresh interval. Useful after policy changes. Takes 1-2 minutes. May require reboot for some policies."/>
-                                        <Button Content="🔄  FLUSH DNS" Style="{StaticResource BtnTool}"
-                                                Click="Tool_FlushDNS_Click" Margin="4,0,0,5"
-                                                ToolTip="Clears DNS resolver cache on target computer (ipconfig /flushdns). Fixes DNS resolution issues, stale cached entries, and website access problems after DNS changes. Takes effect immediately without reboot."/>
-                                    </UniformGrid>
+                                    <!-- REMOTE ACCESS -->
+                                    <Expander IsExpanded="True" Margin="0,0,0,6">
+                                        <Expander.Header>
+                                            <TextBlock Text="REMOTE ACCESS" Foreground="{StaticResource AccentOrangeBrush}"
+                                                       FontSize="10" FontWeight="Bold"/>
+                                        </Expander.Header>
+                                        <UniformGrid Columns="2" Margin="0,6,0,0">
+                                            <Button Content="🖥  REMOTE DESKTOP" Style="{StaticResource BtnTool}"
+                                                    Click="Tool_RDP_Click" Margin="0,0,4,5"
+                                                    ToolTip="Launches Remote Desktop Connection (mstsc.exe) to target computer. Provides full interactive desktop access. Requires RDP enabled on target, network access to port 3389, and valid user credentials. Network Level Authentication recommended."/>
+                                            <Button Content="💻  REMOTE ASSIST" Style="{StaticResource BtnTool}"
+                                                    Click="Tool_RemoteAssist_Click" Margin="4,0,0,5"
+                                                    ToolTip="Opens Windows Remote Assistance connection to target computer. Allows viewing and optionally controlling user's desktop with their permission. Useful for user support and troubleshooting. Requires user acceptance to establish connection."/>
+                                            <Button Content="📡  REMOTE REGISTRY" Style="{StaticResource BtnTool}"
+                                                    Click="Tool_RemoteReg_Click" Margin="0,0,4,5"
+                                                    ToolTip="Opens Registry Editor connected to target computer's registry. Full read/write access to HKLM and HKU hives. Modify system settings, troubleshoot configuration issues, and manage registry keys remotely. CAUTION: Incorrect changes can break system."/>
+                                            <Button Content="🔌  REMOTE CMD" Style="{StaticResource BtnTool}"
+                                                    Click="Tool_PsExec_Click" Margin="4,0,0,5"
+                                                    ToolTip="Opens command prompt on target computer using PsExec (if available) or PowerShell Remoting. Execute commands remotely with SYSTEM or user context. Requires PsExec in PATH or PowerShell Remoting enabled. Full command-line access."/>
+                                        </UniformGrid>
+                                    </Expander>
 
-                                    <Button x:Name="BtnReboot" Content="⚠  REBOOT SYSTEM"
-                                            Style="{StaticResource BtnDanger}" Click="Tool_Reboot_Click"
-                                            IsEnabled="False" Margin="0,10,0,0" Padding="6,12"
-                                            FontSize="13" FontWeight="Bold"
-                                            ToolTip="Immediately reboots the target computer. WARNING: All unsaved work will be lost. Users will be logged off without warning. Use for applying critical updates, completing installations, or troubleshooting. Requires admin credentials and WMI access."/>
+                                    <!-- SYSTEM ACTIONS -->
+                                    <Expander IsExpanded="True" Margin="0,0,0,6">
+                                        <Expander.Header>
+                                            <TextBlock Text="SYSTEM ACTIONS" Foreground="{StaticResource AccentOrangeBrush}"
+                                                       FontSize="10" FontWeight="Bold"/>
+                                        </Expander.Header>
+                                        <StackPanel Margin="0,6,0,0">
+                                            <UniformGrid Columns="2" Margin="0,0,0,8">
+                                                <Button x:Name="BtnGP" Content="⚡  FORCE GPUPDATE"
+                                                        Style="{StaticResource BtnTool}" Click="Tool_GP_Click"
+                                                        IsEnabled="False" Margin="0,0,4,5"
+                                                        ToolTip="Forces immediate Group Policy update on target computer (gpupdate /force). Applies latest GPO settings without waiting for background refresh interval. Useful after policy changes. Takes 1-2 minutes. May require reboot for some policies."/>
+                                                <Button Content="🔄  FLUSH DNS" Style="{StaticResource BtnTool}"
+                                                        Click="Tool_FlushDNS_Click" Margin="4,0,0,5"
+                                                        ToolTip="Clears DNS resolver cache on target computer (ipconfig /flushdns). Fixes DNS resolution issues, stale cached entries, and website access problems after DNS changes. Takes effect immediately without reboot."/>
+                                            </UniformGrid>
+
+                                            <Button x:Name="BtnReboot" Content="⚠  REBOOT SYSTEM"
+                                                    Style="{StaticResource BtnDanger}" Click="Tool_Reboot_Click"
+                                                    IsEnabled="False" Margin="0,4,0,0" Padding="6,12"
+                                                    FontSize="13" FontWeight="Bold"
+                                                    ToolTip="Immediately reboots the target computer. WARNING: All unsaved work will be lost. Users will be logged off without warning. Use for applying critical updates, completing installations, or troubleshooting. Requires admin credentials and WMI access."/>
+                                        </StackPanel>
+                                    </Expander>
                                 </StackPanel>
                             </ScrollViewer>
                         </Border>
@@ -2864,8 +2897,9 @@
                                     <Button x:Name="BtnClearDeploymentLog"
                                             Style="{StaticResource BtnGhost}"
                                             Click="BtnClearDeploymentLog_Click"
+                                            IsEnabled="False"
                                             Padding="12,8" FontSize="11" Foreground="#EF4444"
-                                            ToolTip="Delete Master_Update_Log.csv. You will be prompted to save a backup first.">
+                                            ToolTip="Domain Admin login required to clear deployment logs.">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="🗑️" Margin="0,0,6,0"/>
                                             <TextBlock Text="CLEAR LOG"/>
@@ -2874,11 +2908,44 @@
                                     <Button x:Name="BtnArchiveDeploymentLog"
                                             Style="{StaticResource BtnGhost}"
                                             Click="BtnArchiveDeploymentLog_Click"
+                                            IsEnabled="False"
                                             Padding="12,8" FontSize="11" Foreground="#F59E0B" Margin="8,0,0,0"
-                                            ToolTip="Move entries older than 90 days to Master_Update_Log_Archive_YYYY.csv in the same directory. The main log keeps only recent entries.">
+                                            ToolTip="Domain Admin login required to archive deployment logs.">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="📦" Margin="0,0,6,0"/>
                                             <TextBlock Text="ARCHIVE OLD"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <!-- TAG: #DEPLOYMENT_RESULTS #TOOLTIPS - PC Log access buttons -->
+                                    <Button x:Name="BtnBrowsePCLogs"
+                                            Style="{StaticResource BtnGhost}"
+                                            Click="BtnBrowsePCLogs_Click"
+                                            Padding="12,8" FontSize="11" Margin="0,0,8,0"
+                                            ToolTip="Open the Individual_PC_Logs folder in Windows Explorer to browse all per-computer deployment logs.">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="📁" Margin="0,0,6,0"/>
+                                            <TextBlock Text="BROWSE LOGS"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="BtnViewPCLog"
+                                            Style="{StaticResource BtnGhost}"
+                                            Click="BtnViewPCLog_Click"
+                                            IsEnabled="False"
+                                            Padding="12,8" FontSize="11" Margin="0,0,8,0"
+                                            ToolTip="Open the individual PC log file for the selected deployment result row. Select a row first.">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="📄" Margin="0,0,6,0"/>
+                                            <TextBlock Text="VIEW LOG"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="BtnLoadArchive"
+                                            Style="{StaticResource BtnGhost}"
+                                            Click="BtnLoadArchive_Click"
+                                            Padding="12,8" FontSize="11" Foreground="#3B82F6" Margin="0,0,8,0"
+                                            ToolTip="Load archived deployment results from the Archives folder and merge them into the grid with a Source indicator.">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="📂" Margin="0,0,6,0"/>
+                                            <TextBlock Text="LOAD ARCHIVE"/>
                                         </StackPanel>
                                     </Button>
                                     <!-- TAG: #DEPLOYMENT_RESULTS - "Latest per PC" toggle -->
@@ -2888,6 +2955,19 @@
                                               VerticalContentAlignment="Center" Margin="16,0,0,0"
                                               Checked="ChkLatestPerPC_Changed" Unchecked="ChkLatestPerPC_Changed"
                                               ToolTip="When checked: shows only the most recent run per computer (cleaner view). Uncheck to see the full run history for every PC."/>
+                                    <!-- TAG: #DEPLOYMENT_RESULTS - pulsing dot during load -->
+                                    <Ellipse x:Name="DeploymentLoadingPulse"
+                                             Width="10" Height="10" Fill="#F59E0B"
+                                             VerticalAlignment="Center" Margin="12,0,0,0"
+                                             Visibility="Collapsed"
+                                             ToolTip="Loading deployment results…"/>
+                                    <!-- TAG: #DEPLOYMENT_RESULTS - Auto-refresh toggle -->
+                                    <CheckBox x:Name="ChkDeploymentAutoRefresh"
+                                              Content="Auto-refresh (60s)" IsChecked="False"
+                                              Foreground="#A1A1AA" FontSize="11"
+                                              VerticalContentAlignment="Center" Margin="16,0,0,0"
+                                              Checked="ChkDeploymentAutoRefresh_Changed" Unchecked="ChkDeploymentAutoRefresh_Changed"
+                                              ToolTip="Automatically reload the deployment log every 60 seconds while this tab is visible. Useful for monitoring active deployments in real-time."/>
                                 </StackPanel>
 
                                 <!-- Centre: search -->
@@ -2914,49 +2994,137 @@
                         </Border>
 
                         <!-- Outcome tally strip - TAG: #DEPLOYMENT_RESULTS #TALLY -->
-                        <Border DockPanel.Dock="Top" Background="#141414" BorderBrush="#333"
-                                BorderThickness="1" CornerRadius="6" Padding="14,8" Margin="0,0,0,10">
-                            <WrapPanel Orientation="Horizontal">
-                                <StackPanel Orientation="Horizontal" Margin="0,0,22,0">
-                                    <TextBlock Text="Win11 Installed:" Foreground="#6B7280" FontSize="10" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                    <TextBlock x:Name="TxtTallyWin11" Text="—" Foreground="#10B981" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"
-                                               ToolTip="FeatureUpdate runs where Windows 11 was successfully installed (via Windows Update or ISO) and a reboot was issued."/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,22,0">
-                                    <TextBlock Text="Win10 Updated:" Foreground="#6B7280" FontSize="10" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                    <TextBlock x:Name="TxtTallyWin10" Text="—" Foreground="#3B82F6" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"
-                                               ToolTip="FeatureUpdate runs where Windows 10 22H2 was installed via the Win11-incompatible fallback path."/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,22,0">
-                                    <TextBlock Text="Patches Applied:" Foreground="#6B7280" FontSize="10" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                    <TextBlock x:Name="TxtTallyPatches" Text="—" Foreground="#A78BFA" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"
-                                               ToolTip="GeneralUpdate runs where Windows cumulative patches were successfully installed."/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,22,0">
-                                    <TextBlock Text="Up to Date:" Foreground="#6B7280" FontSize="10" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                    <TextBlock x:Name="TxtTallyCompliant" Text="—" Foreground="#10B981" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"
-                                               ToolTip="Machines already on the target OS version — no upgrade or patch action was needed."/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,22,0">
-                                    <TextBlock Text="HW Blocked:" Foreground="#6B7280" FontSize="10" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                    <TextBlock x:Name="TxtTallyHWBlocked" Text="—" Foreground="#EF4444" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"
-                                               ToolTip="Machines that failed Windows 11 hardware requirements (TPM/SecureBoot/RAM/Disk)."/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,22,0">
-                                    <TextBlock Text="Failed:" Foreground="#6B7280" FontSize="10" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                    <TextBlock x:Name="TxtTallyFailed" Text="—" Foreground="#EF4444" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"
-                                               ToolTip="Runs that ended with a script failure (WU error, module install failure, ISO timeout, etc.)."/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,22,0">
-                                    <TextBlock Text="Postponed:" Foreground="#6B7280" FontSize="10" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                    <TextBlock x:Name="TxtTallyPostponed" Text="—" Foreground="#F59E0B" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"
-                                               ToolTip="Machines where the user chose to postpone the upgrade dialog (up to the configured maximum)."/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Total Runs:" Foreground="#6B7280" FontSize="10" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                    <TextBlock x:Name="TxtTallyTotal" Text="—" Foreground="{StaticResource AccentOrangeBrush}" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"
-                                               ToolTip="Total number of script run entries in the log (all PCs, all runs). Use 'Latest per PC' toggle to see unique PC count."/>
-                                </StackPanel>
+                        <Border DockPanel.Dock="Top" Background="#0F0F14" BorderBrush="#252525"
+                                BorderThickness="1" CornerRadius="6" Padding="10,7" Margin="0,0,0,6">
+                            <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+
+                                <!-- Success group (green pill) -->
+                                <Border Background="#0D2818" CornerRadius="4" Padding="10,5" Margin="0,0,8,0"
+                                        ToolTip="FeatureUpdate: Win11 installed via WU or ISO. FeatureUpdate fallback: Win10 22H2 installed.">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Win11:" Foreground="#6EE7B7" FontSize="10.5" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                        <TextBlock x:Name="TxtTallyWin11" Text="—" Foreground="#10B981" FontSize="13" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,14,0"/>
+                                        <TextBlock Text="Win10:" Foreground="#93C5FD" FontSize="10.5" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                        <TextBlock x:Name="TxtTallyWin10" Text="—" Foreground="#3B82F6" FontSize="13" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,14,0"/>
+                                        <TextBlock Text="Patches:" Foreground="#C4B5FD" FontSize="10.5" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                        <TextBlock x:Name="TxtTallyPatches" Text="—" Foreground="#A78BFA" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Compliant group (muted green pill) -->
+                                <Border Background="#111A18" CornerRadius="4" Padding="10,5" Margin="0,0,8,0"
+                                        ToolTip="Machines already on the target OS version or with no pending patches.">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Up to Date:" Foreground="#6EE7B7" FontSize="10.5" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                        <TextBlock x:Name="TxtTallyCompliant" Text="—" Foreground="#10B981" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Problem group (red pill) -->
+                                <Border Background="#1F1215" CornerRadius="4" Padding="10,5" Margin="0,0,8,0"
+                                        ToolTip="HW Blocked = failed Win11 hardware requirements (TPM/SecureBoot/RAM/Disk). Failed = script error (WU, module install, ISO timeout, etc.).">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="HW Blocked:" Foreground="#FCA5A5" FontSize="10.5" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                        <TextBlock x:Name="TxtTallyHWBlocked" Text="—" Foreground="#EF4444" FontSize="13" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,14,0"/>
+                                        <TextBlock Text="Failed:" Foreground="#FCA5A5" FontSize="10.5" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                        <TextBlock x:Name="TxtTallyFailed" Text="—" Foreground="#EF4444" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Pending group (amber pill) -->
+                                <Border Background="#1F1A0D" CornerRadius="4" Padding="10,5" Margin="0,0,8,0"
+                                        ToolTip="User chose to postpone the upgrade dialog (up to the configured maximum).">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Postponed:" Foreground="#FCD34D" FontSize="10.5" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                        <TextBlock x:Name="TxtTallyPostponed" Text="—" Foreground="#F59E0B" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Total group (orange pill) -->
+                                <Border Background="#1F1508" CornerRadius="4" Padding="10,5"
+                                        ToolTip="Total script runs in the log (all PCs, all runs). Use 'Latest per PC' toggle to see unique PC count.">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Total Runs:" Foreground="#FDBA74" FontSize="10.5" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                        <TextBlock x:Name="TxtTallyTotal" Text="—" Foreground="{StaticResource AccentOrangeBrush}" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+
+                            </WrapPanel>
+                        </Border>
+
+                        <!-- TAG: #DEPLOYMENT_RESULTS - colour + exit-code legend strip -->
+                        <Border DockPanel.Dock="Top"
+                                Background="#0F0F14" BorderBrush="#252525"
+                                BorderThickness="1" CornerRadius="6"
+                                Padding="10,7" Margin="0,0,0,8">
+                            <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+
+                                <!-- ── STATUS section ── -->
+                                <Border Background="#1A1A22" CornerRadius="4" Padding="10,5" Margin="0,0,10,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="STATUS" Foreground="#6B7280" FontSize="9.5" FontWeight="Bold"
+                                                   VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                        <Ellipse Width="9" Height="9" Fill="#10B981" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                        <TextBlock Text="Success / Compliant" Foreground="#9CA3AF" FontSize="10"
+                                                   VerticalAlignment="Center" Margin="0,0,16,0"/>
+                                        <Ellipse Width="9" Height="9" Fill="#EF4444" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                        <TextBlock Text="Failed / HW Blocked" Foreground="#9CA3AF" FontSize="10"
+                                                   VerticalAlignment="Center" Margin="0,0,16,0"/>
+                                        <Ellipse Width="9" Height="9" Fill="#F59E0B" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                        <TextBlock Text="Rebooting / Postponed" Foreground="#9CA3AF" FontSize="10"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- ── SCRIPT section ── -->
+                                <Border Background="#1A1A22" CornerRadius="4" Padding="10,5" Margin="0,0,10,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="SCRIPT" Foreground="#6B7280" FontSize="9.5" FontWeight="Bold"
+                                                   VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                        <Border Background="#2D2042" CornerRadius="3" Padding="6,2" Margin="0,0,5,0">
+                                            <TextBlock Text="Feature" Foreground="#A78BFA" FontSize="10" FontWeight="SemiBold"
+                                                       VerticalAlignment="Center"/>
+                                        </Border>
+                                        <TextBlock Text="Win 10/11 upgrade" Foreground="#9CA3AF" FontSize="10"
+                                                   VerticalAlignment="Center" Margin="0,0,16,0"/>
+                                        <Border Background="#1A2740" CornerRadius="3" Padding="6,2" Margin="0,0,5,0">
+                                            <TextBlock Text="General" Foreground="#3B82F6" FontSize="10" FontWeight="SemiBold"
+                                                       VerticalAlignment="Center"/>
+                                        </Border>
+                                        <TextBlock Text="Cumulative patches" Foreground="#9CA3AF" FontSize="10"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- ── EXIT CODES section ── -->
+                                <Border Background="#1A1A22" CornerRadius="4" Padding="10,5"
+                                        ToolTip="ManageEngine shows these exit codes in the task result column so you can see outcomes at a glance without opening log files.">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="EXIT" Foreground="#6B7280" FontSize="9.5" FontWeight="Bold"
+                                                   VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                        <TextBlock Text="11" Foreground="#10B981" FontSize="10" FontWeight="Bold"
+                                                   VerticalAlignment="Center" Margin="0,0,2,0"/>
+                                        <TextBlock Text="Win11" Foreground="#6B7280" FontSize="10"
+                                                   VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                        <TextBlock Text="10" Foreground="#3B82F6" FontSize="10" FontWeight="Bold"
+                                                   VerticalAlignment="Center" Margin="0,0,2,0"/>
+                                        <TextBlock Text="Win10" Foreground="#6B7280" FontSize="10"
+                                                   VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                        <TextBlock Text="0" Foreground="#A1A1AA" FontSize="10" FontWeight="Bold"
+                                                   VerticalAlignment="Center" Margin="0,0,2,0"/>
+                                        <TextBlock Text="No change" Foreground="#6B7280" FontSize="10"
+                                                   VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                        <TextBlock Text="20-29" Foreground="#EF4444" FontSize="10" FontWeight="Bold"
+                                                   VerticalAlignment="Center" Margin="0,0,2,0"/>
+                                        <TextBlock Text="Feature fail" Foreground="#6B7280" FontSize="10"
+                                                   VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                        <TextBlock Text="10-13" Foreground="#EF4444" FontSize="10" FontWeight="Bold"
+                                                   VerticalAlignment="Center" Margin="0,0,2,0"/>
+                                        <TextBlock Text="General fail" Foreground="#6B7280" FontSize="10"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+
                             </WrapPanel>
                         </Border>
 
@@ -2968,7 +3136,10 @@
                                   RowBackground="#1A1A1A" AlternatingRowBackground="#212121"
                                   ColumnHeaderHeight="30" RowHeight="26"
                                   HorizontalScrollBarVisibility="Auto"
-                                  VerticalScrollBarVisibility="Auto">
+                                  VerticalScrollBarVisibility="Auto"
+                                  MouseDoubleClick="GridDeploymentResults_MouseDoubleClick"
+                                  SelectionChanged="GridDeploymentResults_SelectionChanged"
+                                  ToolTip="Double-click a row to inspect that computer in the Single System Inspector tab.">
                             <DataGrid.Columns>
                                 <!-- Status with colour coding -->
                                 <DataGridTemplateColumn Header="Status" Width="120" MinWidth="90" SortMemberPath="Status">

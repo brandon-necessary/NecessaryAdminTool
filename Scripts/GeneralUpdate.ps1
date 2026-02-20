@@ -1,5 +1,7 @@
 ﻿#Requires -Version 5.1
 #Requires -RunAsAdministrator
+# TAG: #DEPLOYMENT_SCRIPT #WINDOWS_UPDATE #MANAGEENGINE_COMPATIBLE #VERSION_1_0
+# FUTURE CLAUDES: Ensure Write-MasterSummary 24-column schema matches all other scripts exactly.
 # ==============================================================================
 # NECESSARYADMINTOOL IT - GENERAL UPDATE SUITE (v1.0 - Bulletproof Edition)
 # Includes: Windows Updates, Firmware, Uptime Guard, Power Check, ManageEngine Compatible
@@ -7,7 +9,7 @@
 # ------------------------------------------------------------------------------
 # EXIT CODE LEGEND (visible in ManageEngine task result at a glance):
 #   0  = Success (updates installed, already up-to-date, or uptime/postpone handled)
-#   10 = Disk space still too low after automatic cleanup — manual cleanup required
+#   10 = Disk space still too low after automatic cleanup -- manual cleanup required
 #   11 = PSWindowsUpdate module could not be installed (no internet / policy blocked)
 #   12 = PSWindowsUpdate module installed but failed to import
 #   13 = Windows Update installation failed (see individual PC log for KB details)
@@ -279,7 +281,7 @@ function Test-UserLoggedIn {
     return ($null -ne $UserSessions -and @($UserSessions).Count -gt 0)
 }
 
-# User-visible notification — ServiceNotification flag reaches session-1 user from SYSTEM/session-0.
+# User-visible notification -- ServiceNotification flag reaches session-1 user from SYSTEM/session-0.
 # Silently skipped when no user is logged in (unattended machines).
 function Show-UserNotification {
     param(
@@ -429,12 +431,12 @@ if ($UptimeDays -gt 30) {
 
 # --- 4. PRE-EXECUTION CHECKS ---
 
-# Check disk space — attempt automatic cleanup if below threshold
+# Check disk space -- attempt automatic cleanup if below threshold
 Show-NecessaryAdminToolLogo -Msg "Checking system requirements..."
 $FreeGB = [math]::Round((Get-PSDrive C).Free / 1GB, 2)
 if ($FreeGB -lt $MIN_DISK_SPACE_GB) {
     Write-NecessaryAdminToolLog -Status "DISK_SPACE_LOW_${FreeGB}GB_ATTEMPTING_CLEANUP" -ToMaster $false
-    Show-NecessaryAdminToolLogo -Msg "Disk space low (${FreeGB}GB free) — attempting automatic cleanup before updates..." "Yellow"
+    Show-NecessaryAdminToolLogo -Msg "Disk space low (${FreeGB}GB free) -- attempting automatic cleanup before updates..." "Yellow"
     $FreeGB = Invoke-DiskCleanup
     if ($FreeGB -lt $MIN_DISK_SPACE_GB) {
         Write-NecessaryAdminToolLog -Status "ERROR_DISK_SPACE_STILL_LOW_${FreeGB}GB_AFTER_CLEANUP" -ToMaster $true
@@ -442,7 +444,7 @@ if ($FreeGB -lt $MIN_DISK_SPACE_GB) {
         Write-Error "Low disk space. Cleanup freed some space but ${FreeGB}GB is still below the ${MIN_DISK_SPACE_GB}GB minimum. Manual cleanup required."
         exit 10  # Disk space still too low after cleanup
     }
-    Show-NecessaryAdminToolLogo -Msg "Cleanup successful — ${FreeGB}GB now free. Continuing with updates..." "Green"
+    Show-NecessaryAdminToolLogo -Msg "Cleanup successful -- ${FreeGB}GB now free. Continuing with updates..." "Green"
     Write-NecessaryAdminToolLog -Status "DISK_CLEANUP_RESOLVED_${FreeGB}GB_FREE" -ToMaster $false
 }
 
@@ -498,8 +500,11 @@ try {
 
 # Check for updates
 Show-NecessaryAdminToolLogo -Msg "Scanning for updates..."
-# @() cast ensures $Updates is always an array — prevents .Count throwing on null in PS 5.x
-$Updates = @(Get-WindowsUpdate -MicrosoftUpdate -Criteria "IsInstalled=0" -ErrorAction SilentlyContinue)
+# Pipe through Write-Output to flatten — Get-WindowsUpdate can return Object[] as a single pipeline item
+# which @() would nest instead of flattening (PS 5.1 behaviour with COM-backed cmdlets)
+[array]$Updates = Get-WindowsUpdate -MicrosoftUpdate -Criteria "IsInstalled=0" -ErrorAction SilentlyContinue |
+    Write-Output
+if (-not $Updates) { $Updates = @() }
 
 if ($Updates.Count -eq 0) {
     Write-NecessaryAdminToolLog -Status "COMPLIANT_NO_UPDATES_FOUND" -ToMaster $false
@@ -514,7 +519,7 @@ Write-NecessaryAdminToolLog -Status "UPDATES_FOUND_$($Updates.Count)" -ToMaster 
 foreach ($Update in $Updates) {
     $KB       = if ($Update.KB) { "KB$($Update.KB)" } else { "NoKB" }
     $Severity = if ($Update.MsrcSeverity) { $Update.MsrcSeverity } else { "Unspecified" }
-    $SizeMB   = [math]::Round($Update.Size / 1MB, 1)
+    $SizeMB   = if ($Update.Size) { [math]::Round($Update.Size / 1MB, 1) } else { 0 }
     $KBList  += "[$Severity] $KB"
     Write-NecessaryAdminToolLog -Status "DETECTED: [$Severity] $($Update.Title) ($KB) - ${SizeMB}MB" -ToMaster $false
     Write-Host "  - [$Severity] $($Update.Title) ($KB)" -ForegroundColor Cyan
@@ -531,7 +536,7 @@ $RebootRequired = $false
 
 try {
     Get-WindowsUpdate -MicrosoftUpdate -AcceptAll -Install -IgnoreReboot -Verbose -ErrorAction Stop
-    # Check WU registry key — -IgnoreReboot defers the physical restart but sets this key
+    # Check WU registry key -- -IgnoreReboot defers the physical restart but sets this key
     $RebootRequired = Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired" -ErrorAction SilentlyContinue
     $RebootStatus   = if ($RebootRequired) { "REBOOT_REQUIRED" } else { "NO_REBOOT_NEEDED" }
     Write-NecessaryAdminToolLog -Status "SUCCESS_$RebootStatus" -ToMaster $false
@@ -553,7 +558,7 @@ Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\P
 if ($ScriptSuccess -and $RebootRequired) {
     Write-NecessaryAdminToolLog -Status "REBOOT_REQUIRED_PROMPTING_USER" -ToMaster $false
     if (Test-UserLoggedIn) {
-        # User is present — ask them just like Windows Update normally would
+        # User is present -- ask them just like Windows Update normally would
         $Choice = Show-UserNotification `
             -Title   "NecessaryAdminTool - Restart Required" `
             -Message "Windows Updates have been installed successfully.`n`nA restart is required to complete the installation. Please save your work.`n`nRestart now?" `
@@ -572,9 +577,9 @@ if ($ScriptSuccess -and $RebootRequired) {
                 -Buttons "OK"
         }
     } else {
-        # No user logged in — restart automatically after 5 minutes (gives ME time to record the result)
+        # No user logged in -- restart automatically after 5 minutes (gives ME time to record the result)
         Write-NecessaryAdminToolLog -Status "REBOOT_NO_USER_AUTO_RESTART_IN_300s" -ToMaster $true
-        Show-NecessaryAdminToolLogo -Msg "No user logged in — restarting in 5 minutes to complete updates." "Yellow"
+        Show-NecessaryAdminToolLogo -Msg "No user logged in -- restarting in 5 minutes to complete updates." "Yellow"
         & "$env:SystemRoot\System32\shutdown.exe" /r /t 300 /c "NecessaryAdminTool: Restarting to complete Windows Update installation."
     }
 } elseif ($ScriptSuccess -and !$RebootRequired) {

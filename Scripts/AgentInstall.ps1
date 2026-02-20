@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 #Requires -RunAsAdministrator
 # TAG: #NAT_AGENT #DEPLOYMENT_SCRIPT #AGENT_INSTALL #VERSION_1_0 #MANAGEENGINE_COMPATIBLE
-# FUTURE CLAUDES: ManageEngine deployment script — update UNC path help text and token format docs
+# FUTURE CLAUDES: ManageEngine deployment script -- update UNC path help text and token format docs
 #                 if NecessaryAdminAgent auth or install protocol changes.
 #                 Ensure Write-MasterSummary column schema matches GeneralUpdate.ps1 exactly (20 columns).
 # ==============================================================================
@@ -11,7 +11,7 @@
 # ==============================================================================
 # Parameters (configure in ME before deployment):
 #   $AgentExeUNCPath - UNC path to NecessaryAdminAgent.exe (e.g. \\SERVER\Share\NecessaryAdminAgent.exe)
-#   $AgentToken      - Pre-shared auth token (must match NAT Options → Agent Token)
+#   $AgentToken      - Pre-shared auth token (must match NAT Options -> Agent Token)
 #   $AgentPort       - TCP port for agent listener (default: 443)
 # ==============================================================================
 
@@ -81,7 +81,7 @@ function Write-Log {
     try { "[$Stamp] $Status" | Out-File $PCLog -Append -Encoding UTF8 -ErrorAction Stop } catch { Write-Host "[$Stamp] $Status" -ForegroundColor Yellow }
 }
 
-# 20-column master CSV — matches GeneralUpdate.ps1 + FeatureUpdate.ps1 schema exactly.
+# 20-column master CSV -- matches GeneralUpdate.ps1 + FeatureUpdate.ps1 schema exactly.
 function Write-MasterSummary {
     param([string]$Status, [string]$Details = "")
     $Stamp    = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
@@ -124,7 +124,7 @@ if ([string]::IsNullOrEmpty($AgentToken)) {
     exit 2
 }
 
-# Validate token format: alphanumeric only, 32-256 chars — prevents injection if token is ever
+# Validate token format: alphanumeric only, 32-256 chars -- prevents injection if token is ever
 # interpolated into a log/CSV field, and ensures it was actually set rather than left as a stub
 if ($AgentToken -notmatch '^[a-zA-Z0-9\-_]{32,256}$') {
     Write-Log "ERROR: AgentToken format invalid - must be 32-256 alphanumeric/hyphen/underscore characters"

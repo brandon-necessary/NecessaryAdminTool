@@ -104,12 +104,42 @@ namespace NecessaryAdminAgent
                 Environment.Exit(2);
             }
 
-            // 2. Ensure log directory exists
+            // 2. Ensure log directory exists with restricted ACL (SYSTEM + Administrators only)
             try
             {
                 string logDir = Path.GetDirectoryName(LOG_PATH);
                 if (!Directory.Exists(logDir))
                     Directory.CreateDirectory(logDir);
+
+                // TAG: #SECURITY_HARDENED - Restrict log directory to SYSTEM + Administrators
+                try
+                {
+                    var dirInfo = new System.IO.DirectoryInfo(logDir);
+                    var acl = dirInfo.GetAccessControl();
+                    // Remove inherited rules, apply explicit SYSTEM + Administrators only
+                    acl.SetAccessRuleProtection(true, false); // disable inheritance, remove inherited rules
+                    acl.AddAccessRule(new System.Security.AccessControl.FileSystemAccessRule(
+                        new System.Security.Principal.SecurityIdentifier(System.Security.Principal.WellKnownSidType.LocalSystemSid, null),
+                        System.Security.AccessControl.FileSystemRights.FullControl,
+                        System.Security.AccessControl.InheritanceFlags.ContainerInherit | System.Security.AccessControl.InheritanceFlags.ObjectInherit,
+                        System.Security.AccessControl.PropagationFlags.None,
+                        System.Security.AccessControl.AccessControlType.Allow));
+                    acl.AddAccessRule(new System.Security.AccessControl.FileSystemAccessRule(
+                        new System.Security.Principal.SecurityIdentifier(System.Security.Principal.WellKnownSidType.BuiltinAdministratorsSid, null),
+                        System.Security.AccessControl.FileSystemRights.FullControl,
+                        System.Security.AccessControl.InheritanceFlags.ContainerInherit | System.Security.AccessControl.InheritanceFlags.ObjectInherit,
+                        System.Security.AccessControl.PropagationFlags.None,
+                        System.Security.AccessControl.AccessControlType.Allow));
+                    dirInfo.SetAccessControl(acl);
+                    Console.WriteLine("[NecessaryAdminAgent] Log directory ACL set (SYSTEM + Administrators only).");
+                    AgentLog.Write("Install() - Log directory ACL restricted to SYSTEM + Administrators");
+                }
+                catch (Exception aclEx)
+                {
+                    // Non-fatal — log directory still usable, just not restricted
+                    Console.Error.WriteLine($"WARNING: Could not set log directory ACL: {aclEx.Message}");
+                    AgentLog.Write($"Install() - WARNING: ACL set failed: {aclEx.Message}");
+                }
             }
             catch { /* non-fatal */ }
 

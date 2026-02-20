@@ -44,10 +44,7 @@
     <Reference Include="System.Data" />
     <Reference Include="System.DirectoryServices" />
     <Reference Include="System.Management" />
-    <Reference Include="System.Management.Automation">
-      <HintPath>C:\Windows\Microsoft.NET\assembly\GAC_MSIL\System.Management.Automation\v4.0_3.0.0.0__31bf3856ad364e35\System.Management.Automation.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
+    <!-- System.Management.Automation: see fully-qualified reference below (line ~75) -->
     <Reference Include="Microsoft.Management.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>C:\Windows\Microsoft.NET\assembly\GAC_MSIL\Microsoft.Management.Infrastructure\v4.0_1.0.0.0__31bf3856ad364e35\Microsoft.Management.Infrastructure.dll</HintPath>
       <Private>False</Private>
@@ -87,7 +84,6 @@
     <!-- SQLite native interop DLL - copied to output for x64 builds -->
     <Content Include="libs\x64\SQLite.Interop.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>x64\SQLite.Interop.dll</Link>
     </Content>
   </ItemGroup>
   <ItemGroup>

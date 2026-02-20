@@ -16,10 +16,10 @@ namespace NecessaryAdminTool
     {
         private static readonly string LogDirectory = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "NecessaryAdminTool", "Logs");
+            LogoConfig.APPDATA_FOLDER, "Logs");
 
         private static readonly string LogFile = Path.Combine(LogDirectory,
-            $"NAT_{DateTime.Now:yyyy-MM-dd}.log");
+            $"{LogoConfig.LOG_PREFIX}_{DateTime.Now:yyyy-MM-dd}.log");
 
         private static readonly object _lockObject = new object();
         private static bool _initialized = false;
@@ -61,7 +61,7 @@ namespace NecessaryAdminTool
                 // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
                 // Validate log directory is within allowed base path
                 string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                string allowedBasePath = Path.Combine(appDataPath, "NecessaryAdminTool");
+                string allowedBasePath = Path.Combine(appDataPath, LogoConfig.APPDATA_FOLDER);
 
                 if (!SecurityValidator.IsValidFilePath(LogDirectory, allowedBasePath))
                 {
@@ -73,7 +73,7 @@ namespace NecessaryAdminTool
                 await Task.Run(() =>
                 {
                     var cutoffDate = DateTime.Now.AddDays(-30);
-                    var logFiles = Directory.GetFiles(LogDirectory, "NAT_*.log");
+                    var logFiles = Directory.GetFiles(LogDirectory, $"{LogoConfig.LOG_PREFIX}_*.log");
 
                     foreach (var logFile in logFiles)
                     {
@@ -160,7 +160,7 @@ namespace NecessaryAdminTool
                 // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
                 // Validate log file path before writing
                 string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                string allowedBasePath = Path.Combine(appDataPath, "NecessaryAdminTool");
+                string allowedBasePath = Path.Combine(appDataPath, LogoConfig.APPDATA_FOLDER);
                 string fullLogPath = Path.GetFullPath(LogFile);
 
                 if (!SecurityValidator.IsValidFilePath(fullLogPath, allowedBasePath))
@@ -177,7 +177,10 @@ namespace NecessaryAdminTool
                 {
                     lock (_lockObject)
                     {
-                        File.AppendAllText(LogFile, logEntry, Encoding.UTF8);
+                        // FileShare.ReadWrite: allows concurrent readers (Debug Log viewer, support tools)
+                        using (var fs = new FileStream(LogFile, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
+                        using (var sw = new StreamWriter(fs, Encoding.UTF8))
+                            sw.Write(logEntry);
                     }
                 }).ConfigureAwait(false);
             }
@@ -189,11 +192,11 @@ namespace NecessaryAdminTool
                 // (registration requires admin and happens at install time).
                 try
                 {
-                    string evtSource = System.Diagnostics.EventLog.SourceExists("NecessaryAdminTool")
-                        ? "NecessaryAdminTool" : "Application";
+                    string evtSource = System.Diagnostics.EventLog.SourceExists(LogoConfig.PRODUCT_NAME)
+                        ? LogoConfig.PRODUCT_NAME : "Application";
                     System.Diagnostics.EventLog.WriteEntry(
                         evtSource,
-                        $"NecessaryAdminTool LogManager: file write failed: {fileEx.Message} | Level: {level} | Msg: {message}",
+                        $"{LogoConfig.PRODUCT_NAME} LogManager: file write failed: {fileEx.Message} | Level: {level} | Msg: {message}",
                         System.Diagnostics.EventLogEntryType.Warning);
                 }
                 catch { /* Event log also unavailable — best effort */ }
@@ -227,7 +230,7 @@ namespace NecessaryAdminTool
                 // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
                 // Validate log file path before reading
                 string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                string allowedBasePath = Path.Combine(appDataPath, "NecessaryAdminTool");
+                string allowedBasePath = Path.Combine(appDataPath, LogoConfig.APPDATA_FOLDER);
                 string fullLogPath = Path.GetFullPath(LogFile);
 
                 if (!SecurityValidator.IsValidFilePath(fullLogPath, allowedBasePath))
@@ -279,7 +282,7 @@ namespace NecessaryAdminTool
                 // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
                 // Validate log directory before clearing
                 string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                string allowedBasePath = Path.Combine(appDataPath, "NecessaryAdminTool");
+                string allowedBasePath = Path.Combine(appDataPath, LogoConfig.APPDATA_FOLDER);
 
                 if (!SecurityValidator.IsValidFilePath(LogDirectory, allowedBasePath))
                 {
@@ -290,7 +293,7 @@ namespace NecessaryAdminTool
                 // TAG: #ASYNC_OPTIMIZATION - Run file system operations on background thread
                 await Task.Run(() =>
                 {
-                    var logFiles = Directory.GetFiles(LogDirectory, "NAT_*.log");
+                    var logFiles = Directory.GetFiles(LogDirectory, $"{LogoConfig.LOG_PREFIX}_*.log");
                     foreach (var logFile in logFiles)
                     {
                         // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION

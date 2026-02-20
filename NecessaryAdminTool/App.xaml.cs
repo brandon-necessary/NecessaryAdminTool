@@ -581,7 +581,10 @@ namespace NecessaryAdminTool
                 sb.AppendLine($"  Offline:     {offline}");
                 sb.AppendLine("========================================");
 
-                System.IO.File.WriteAllText(logFile, sb.ToString());
+                // FileShare.Read: DeploymentLogDirectory may be a network share
+                using (var fs = new System.IO.FileStream(logFile, System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.Read))
+                using (var sw = new System.IO.StreamWriter(fs, System.Text.Encoding.UTF8))
+                    sw.Write(sb.ToString());
                 LogManager.LogInfo($"[AutoScan] Summary written to: {logFile}");
             }
             catch (Exception ex)
