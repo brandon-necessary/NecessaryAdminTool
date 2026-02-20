@@ -9552,6 +9552,73 @@ if ($rebootPending) {
                 Managers.UI.ToastManager.ShowError($"Failed to download scripts:\n{ex.Message}");
             }
         }
+        private void BtnDownloadPreflightScript_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var folderDialog = new System.Windows.Forms.FolderBrowserDialog
+                {
+                    Description = "Select folder to save PreflightReboot.ps1",
+                    ShowNewFolderButton = true
+                };
+
+                if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    string targetFolder = folderDialog.SelectedPath;
+                    const string resourceFileName = "PreflightReboot.ps1";
+                    const string outputFileName   = "NecessaryAdminTool_PreflightReboot.ps1";
+
+                    var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+                    var resourceName = assembly.GetManifestResourceNames()
+                        .FirstOrDefault(r => r.EndsWith(resourceFileName));
+
+                    if (resourceName == null)
+                    {
+                        AppendTerminal($"✗ Embedded resource not found: {resourceFileName}", true);
+                        Managers.UI.ToastManager.ShowError($"Could not find embedded resource: {resourceFileName}");
+                        return;
+                    }
+
+                    using (Stream stream = assembly.GetManifestResourceStream(resourceName))
+                    using (StreamReader reader = new StreamReader(stream))
+                    {
+                        string content = reader.ReadToEnd();
+                        int injectedCount = 0;
+
+                        // Inject log directory (same placeholder as the other scripts)
+                        string dbPath  = NecessaryAdminTool.Properties.Settings.Default.DatabasePath ?? @"C:\ProgramData\NecessaryAdminTool";
+                        string logDir  = NecessaryAdminTool.Properties.Settings.Default.DeploymentLogDirectory;
+                        string effectiveLogDir = !string.IsNullOrEmpty(logDir)
+                            ? logDir
+                            : Path.Combine(dbPath, "DeploymentLogs");
+                        content = content.Replace(
+                            "$LogDir              = $env:NECESSARYADMINTOOL_LOG_DIR",
+                            $"$LogDir              = \"{effectiveLogDir}\"  # Set in NecessaryAdminTool: Options \u2192 Deployment Configuration");
+                        injectedCount++;
+
+                        string targetPath = Path.Combine(targetFolder, outputFileName);
+                        File.WriteAllText(targetPath, content);
+                        AppendTerminal($"✓ Saved: {outputFileName} ({injectedCount} setting(s) injected)", false);
+                    }
+
+                    Managers.UI.ToastManager.ShowSuccess(
+                        $"Downloaded to:\n{targetFolder}\n\n" +
+                        $"Deploy order for ManageEngine:\n" +
+                        $"  Step 1: {outputFileName}\n" +
+                        $"  Step 2: NecessaryAdminTool_FeatureUpdate.ps1\n\n" +
+                        "Wait for machines to come back online between steps.");
+
+                    Process.Start("explorer.exe", targetFolder);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("BtnDownloadPreflightScript_Click failed", ex);
+                AppendTerminal($"✗ Download failed: {ex.Message}", true);
+                Managers.UI.ToastManager.ShowError($"Failed to download preflight script:\n{ex.Message}");
+            }
+        }
+
         private void BtnTheme_Click(object sender, RoutedEventArgs e)
         {
             try

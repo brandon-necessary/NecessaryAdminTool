@@ -1539,6 +1539,24 @@
                                         </StackPanel>
                                     </Border>
 
+                                    <!-- PRE-FLIGHT SECTION -->
+                                    <Border Background="#FF252525" CornerRadius="6" Padding="14"
+                                            BorderThickness="1" BorderBrush="#FF555555" Margin="0,0,0,8">
+                                        <StackPanel>
+                                            <TextBlock Text="&#x2708; PRE-FLIGHT TOOLS" Foreground="#FF6BC5FF"
+                                                       FontSize="11" FontWeight="Bold" Margin="0,0,0,4"
+                                                       HorizontalAlignment="Center"/>
+                                            <TextBlock TextWrapping="Wrap" FontSize="9" Margin="0,0,0,10"
+                                                       Foreground="{StaticResource TextMutedBrush}"
+                                                       Text="Deploy BEFORE Feature Update. Reboots machines with pending updates so FeatureUpdate.ps1 runs clean. ME sees full visibility for both steps."/>
+                                            <!-- TAG: #TOOLTIPS #DEPLOYMENT -->
+                                            <Button Content="📥 DOWNLOAD PREFLIGHT REBOOT CHECK"
+                                                    Style="{StaticResource BtnGhost}"
+                                                    Click="BtnDownloadPreflightScript_Click" Height="30" FontSize="10"
+                                                    ToolTip="Downloads PreflightReboot.ps1 - deploy this via ManageEngine BEFORE FeatureUpdate.ps1. Checks for pending reboots; if found, reboots the machine (exit 0) so ME marks it complete. Push FeatureUpdate.ps1 after machines are back online."/>
+                                        </StackPanel>
+                                    </Border>
+
                                     <!-- UTILITIES SECTION -->
                                     <Border Background="#FF252525" CornerRadius="6" Padding="14"
                                             BorderThickness="1" BorderBrush="#FF555555">

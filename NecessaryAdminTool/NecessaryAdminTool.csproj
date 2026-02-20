@@ -444,6 +444,7 @@
   <ItemGroup>
     <EmbeddedResource Include="..\Scripts\GeneralUpdate.ps1" />
     <EmbeddedResource Include="..\Scripts\FeatureUpdate.ps1" />
+    <EmbeddedResource Include="..\Scripts\PreflightReboot.ps1" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
