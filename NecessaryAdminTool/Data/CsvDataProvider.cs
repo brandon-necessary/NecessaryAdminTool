@@ -22,6 +22,8 @@ namespace NecessaryAdminTool.Data
         private readonly string _scriptsFile;
         private readonly string _bookmarksFile;
         private readonly JavaScriptSerializer _serializer;
+        // Serialize write operations to prevent concurrent read-modify-write corruption
+        private readonly System.Threading.SemaphoreSlim _fileLock = new System.Threading.SemaphoreSlim(1, 1);
         private bool _disposed = false;
 
         public CsvDataProvider(string dataDirectory)
@@ -94,32 +96,33 @@ namespace NecessaryAdminTool.Data
 
         public async Task SaveComputerAsync(ComputerInfo computer)
         {
+            await _fileLock.WaitAsync().ConfigureAwait(false);
             try
             {
-                // Load existing computers
-                var computers = await GetAllComputersAsync();
+                // Read current data inside the lock to prevent lost-write races
+                var computers = File.Exists(_computersFile)
+                    ? _serializer.Deserialize<List<ComputerInfo>>(
+                        await Task.Run(() => File.ReadAllText(_computersFile, Encoding.UTF8)).ConfigureAwait(false))
+                      ?? new List<ComputerInfo>()
+                    : new List<ComputerInfo>();
 
-                // Update or add
                 var existingIndex = computers.FindIndex(c =>
                     c.Hostname?.Equals(computer.Hostname, StringComparison.OrdinalIgnoreCase) == true);
 
-                if (existingIndex >= 0)
-                {
-                    computers[existingIndex] = computer;
-                }
-                else
-                {
-                    computers.Add(computer);
-                }
+                if (existingIndex >= 0) computers[existingIndex] = computer;
+                else                   computers.Add(computer);
 
-                // Save back to file
                 var json = _serializer.Serialize(computers);
-                await Task.Run(() => File.WriteAllText(_computersFile, json, Encoding.UTF8));
+                await Task.Run(() => File.WriteAllText(_computersFile, json, Encoding.UTF8)).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
                 LogManager.LogError($"Failed to save computer {computer.Hostname} to JSON file", ex);
                 throw;
+            }
+            finally
+            {
+                _fileLock.Release();
             }
         }
 
@@ -140,22 +143,32 @@ namespace NecessaryAdminTool.Data
 
         public async Task DeleteComputerAsync(string hostname)
         {
+            await _fileLock.WaitAsync().ConfigureAwait(false);
             try
             {
-                var computers = await GetAllComputersAsync();
+                var computers = File.Exists(_computersFile)
+                    ? _serializer.Deserialize<List<ComputerInfo>>(
+                        await Task.Run(() => File.ReadAllText(_computersFile, Encoding.UTF8)).ConfigureAwait(false))
+                      ?? new List<ComputerInfo>()
+                    : new List<ComputerInfo>();
+
                 var removed = computers.RemoveAll(c =>
                     c.Hostname?.Equals(hostname, StringComparison.OrdinalIgnoreCase) == true);
 
                 if (removed > 0)
                 {
                     var json = _serializer.Serialize(computers);
-                    await Task.Run(() => File.WriteAllText(_computersFile, json, Encoding.UTF8));
+                    await Task.Run(() => File.WriteAllText(_computersFile, json, Encoding.UTF8)).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
             {
                 LogManager.LogError($"Failed to delete computer {hostname} from JSON file", ex);
                 throw;
+            }
+            finally
+            {
+                _fileLock.Release();
             }
         }
 
@@ -636,9 +649,17 @@ namespace NecessaryAdminTool.Data
                     }
                 }
 
-                // Save imported data
-                var json = _serializer.Serialize(computers);
-                await Task.Run(() => File.WriteAllText(_computersFile, json, Encoding.UTF8));
+                // Save imported data (lock for atomic write)
+                await _fileLock.WaitAsync().ConfigureAwait(false);
+                try
+                {
+                    var json = _serializer.Serialize(computers);
+                    await Task.Run(() => File.WriteAllText(_computersFile, json, Encoding.UTF8)).ConfigureAwait(false);
+                }
+                finally
+                {
+                    _fileLock.Release();
+                }
 
                 LogManager.LogInfo($"Imported {computers.Count} computers from CSV: {csvPath}");
             }
@@ -706,6 +727,7 @@ namespace NecessaryAdminTool.Data
         {
             if (!_disposed)
             {
+                _fileLock?.Dispose();
                 _disposed = true;
                 LogManager.LogInfo("CSV/JSON provider disposed");
             }

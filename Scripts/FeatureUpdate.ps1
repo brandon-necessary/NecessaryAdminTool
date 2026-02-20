@@ -10,6 +10,9 @@
 # (most common cause: #Requires -RunAsAdministrator failing in non-elevated agent context)
 Write-Host "  [$(Get-Date -Format 'HH:mm:ss')] FeatureUpdate.ps1 - Script loaded on $env:COMPUTERNAME, starting execution..." -ForegroundColor Cyan
 
+# Enterprise standard: fail loudly on unexpected errors; use -ErrorAction SilentlyContinue where fallback is intentional
+$ErrorActionPreference = 'Stop'
+
 # --- 1. CONFIGURABLE PATHS (Environment Variable Based) ---
 # ALL paths are configured via environment variables or app settings
 # NO hardcoded paths - configured through NecessaryAdminTool Options menu

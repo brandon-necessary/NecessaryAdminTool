@@ -16,6 +16,9 @@
     Push FeatureUpdate.ps1 after machines are back online.
 #>
 
+# Enterprise standard: fail loudly on unexpected errors; use -ErrorAction SilentlyContinue where fallback is intentional
+$ErrorActionPreference = 'Stop'
+
 # ============================================================
 # CONFIGURATION (injected by NecessaryAdminTool on download)
 # ============================================================

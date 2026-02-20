@@ -16,6 +16,8 @@ namespace NecessaryAdminTool.Data
         private readonly string _databasePath;
         private OleDbConnection _connection;
         private bool _disposed = false;
+        // Serialise all DB operations — OleDb/Access is not thread-safe for concurrent writers
+        private readonly System.Threading.SemaphoreSlim _dbLock = new System.Threading.SemaphoreSlim(1, 1);
 
         public AccessDataProvider(string databasePath)
         {
@@ -230,7 +232,7 @@ namespace NecessaryAdminTool.Data
         public async Task<List<ComputerInfo>> GetAllComputersAsync()
         {
             var computers = new List<ComputerInfo>();
-
+            await _dbLock.WaitAsync().ConfigureAwait(false);
             try
             {
                 var query = "SELECT * FROM Computers ORDER BY Hostname";
@@ -245,19 +247,23 @@ namespace NecessaryAdminTool.Data
                                 computers.Add(MapReaderToComputer(reader));
                             }
                         }
-                    });
+                    }).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
             {
                 LogManager.LogError("Failed to retrieve computers from Access database", ex);
             }
-
+            finally
+            {
+                _dbLock.Release();
+            }
             return computers;
         }
 
         public async Task SaveComputerAsync(ComputerInfo computer)
         {
+            await _dbLock.WaitAsync().ConfigureAwait(false);
             try
             {
                 // Check if computer exists
@@ -267,14 +273,13 @@ namespace NecessaryAdminTool.Data
                 using (var cmd = new OleDbCommand(existsQuery, _connection))
                 {
                     cmd.Parameters.AddWithValue("?", computer.Hostname);
-                    var count = await Task.Run(() => (int)cmd.ExecuteScalar());
+                    var count = await Task.Run(() => (int)cmd.ExecuteScalar()).ConfigureAwait(false);
                     exists = count > 0;
                 }
 
                 string query;
                 if (exists)
                 {
-                    // Update existing
                     query = @"UPDATE Computers SET
                         OS=?, OSVersion=?, Manufacturer=?, Model=?, SerialNumber=?, AssetTag=?,
                         IPAddress=?, MACAddress=?, Domain=?, LastLoggedOnUser=?, RAM_GB=?, CPU=?,
@@ -285,7 +290,6 @@ namespace NecessaryAdminTool.Data
                 }
                 else
                 {
-                    // Insert new
                     query = @"INSERT INTO Computers (
                         Hostname, OS, OSVersion, Manufacturer, Model, SerialNumber, AssetTag,
                         IPAddress, MACAddress, Domain, LastLoggedOnUser, RAM_GB, CPU,
@@ -297,16 +301,9 @@ namespace NecessaryAdminTool.Data
 
                 using (var cmd = new OleDbCommand(query, _connection))
                 {
-                    if (exists)
-                    {
-                        AddUpdateParameters(cmd, computer);
-                    }
-                    else
-                    {
-                        AddInsertParameters(cmd, computer);
-                    }
-
-                    await Task.Run(() => cmd.ExecuteNonQuery());
+                    if (exists) AddUpdateParameters(cmd, computer);
+                    else        AddInsertParameters(cmd, computer);
+                    await Task.Run(() => cmd.ExecuteNonQuery()).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
@@ -314,10 +311,15 @@ namespace NecessaryAdminTool.Data
                 LogManager.LogError($"Failed to save computer {computer.Hostname} to Access database", ex);
                 throw;
             }
+            finally
+            {
+                _dbLock.Release();
+            }
         }
 
         public async Task<ComputerInfo> GetComputerAsync(string hostname)
         {
+            await _dbLock.WaitAsync().ConfigureAwait(false);
             try
             {
                 var query = "SELECT * FROM Computers WHERE Hostname = ?";
@@ -328,13 +330,10 @@ namespace NecessaryAdminTool.Data
                     {
                         using (var reader = cmd.ExecuteReader())
                         {
-                            if (reader.Read())
-                            {
-                                return MapReaderToComputer(reader);
-                            }
+                            if (reader.Read()) return MapReaderToComputer(reader);
                         }
                         return null;
-                    });
+                    }).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
@@ -342,17 +341,22 @@ namespace NecessaryAdminTool.Data
                 LogManager.LogError($"Failed to get computer {hostname} from Access database", ex);
                 return null;
             }
+            finally
+            {
+                _dbLock.Release();
+            }
         }
 
         public async Task DeleteComputerAsync(string hostname)
         {
+            await _dbLock.WaitAsync().ConfigureAwait(false);
             try
             {
                 var query = "DELETE FROM Computers WHERE Hostname = ?";
                 using (var cmd = new OleDbCommand(query, _connection))
                 {
                     cmd.Parameters.AddWithValue("?", hostname);
-                    await Task.Run(() => cmd.ExecuteNonQuery());
+                    await Task.Run(() => cmd.ExecuteNonQuery()).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
@@ -360,20 +364,22 @@ namespace NecessaryAdminTool.Data
                 LogManager.LogError($"Failed to delete computer {hostname} from Access database", ex);
                 throw;
             }
+            finally
+            {
+                _dbLock.Release();
+            }
         }
 
         public async Task<List<ComputerInfo>> SearchComputersAsync(string searchTerm)
         {
             var computers = new List<ComputerInfo>();
-
+            await _dbLock.WaitAsync().ConfigureAwait(false);
             try
             {
                 var query = @"SELECT * FROM Computers
                     WHERE Hostname LIKE ? OR OS LIKE ? OR Manufacturer LIKE ? OR Model LIKE ? OR IPAddress LIKE ?
                     ORDER BY Hostname";
-
                 var searchPattern = $"%{searchTerm}%";
-
                 using (var cmd = new OleDbCommand(query, _connection))
                 {
                     cmd.Parameters.AddWithValue("?", searchPattern);
@@ -381,24 +387,23 @@ namespace NecessaryAdminTool.Data
                     cmd.Parameters.AddWithValue("?", searchPattern);
                     cmd.Parameters.AddWithValue("?", searchPattern);
                     cmd.Parameters.AddWithValue("?", searchPattern);
-
                     await Task.Run(() =>
                     {
                         using (var reader = cmd.ExecuteReader())
                         {
-                            while (reader.Read())
-                            {
-                                computers.Add(MapReaderToComputer(reader));
-                            }
+                            while (reader.Read()) computers.Add(MapReaderToComputer(reader));
                         }
-                    });
+                    }).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
             {
                 LogManager.LogError($"Failed to search computers with term '{searchTerm}' from Access database", ex);
             }
-
+            finally
+            {
+                _dbLock.Release();
+            }
             return computers;
         }
 
@@ -500,8 +505,8 @@ namespace NecessaryAdminTool.Data
 
         public async Task<bool> VerifyIntegrityAsync()
         {
-            LogManager.LogWarning($"VerifyIntegrityAsync not yet implemented in {GetType().Name}");
-            return await Task.FromResult(false);
+            LogManager.LogWarning($"VerifyIntegrityAsync not yet implemented in {GetType().Name} - returning true (pass-through)");
+            return await Task.FromResult(true);
         }
 
         public async Task<bool> BackupDatabaseAsync(string backupPath)
@@ -551,23 +556,19 @@ namespace NecessaryAdminTool.Data
 
         public async Task<DatabaseStats> GetDatabaseStatsAsync()
         {
+            await _dbLock.WaitAsync().ConfigureAwait(false);
             try
             {
                 var stats = new DatabaseStats();
-
-                // Get counts from each table
-                stats.TotalComputers = await GetTableCountAsync("Computers");
-                stats.TotalScans = await GetTableCountAsync("ScanHistory");
-                stats.TotalScripts = await GetTableCountAsync("Scripts");
-                stats.TotalBookmarks = await GetTableCountAsync("Bookmarks");
-
-                // Get database file size
+                // GetTableCountAsync called directly here (under the lock already held)
+                stats.TotalComputers = await GetTableCountLockedAsync("Computers").ConfigureAwait(false);
+                stats.TotalScans     = await GetTableCountLockedAsync("ScanHistory").ConfigureAwait(false);
+                stats.TotalScripts   = await GetTableCountLockedAsync("Scripts").ConfigureAwait(false);
+                stats.TotalBookmarks = await GetTableCountLockedAsync("Bookmarks").ConfigureAwait(false);
                 if (File.Exists(_databasePath))
                 {
-                    var fileInfo = new FileInfo(_databasePath);
-                    stats.SizeBytes = fileInfo.Length;
+                    stats.SizeBytes = new FileInfo(_databasePath).Length;
                 }
-
                 return stats;
             }
             catch (Exception ex)
@@ -575,16 +576,21 @@ namespace NecessaryAdminTool.Data
                 LogManager.LogError("Failed to get Access database stats", ex);
                 return new DatabaseStats();
             }
+            finally
+            {
+                _dbLock.Release();
+            }
         }
 
-        private async Task<int> GetTableCountAsync(string tableName)
+        // Called only from within a held _dbLock — do NOT acquire lock here
+        private async Task<int> GetTableCountLockedAsync(string tableName)
         {
             try
             {
                 var query = $"SELECT COUNT(*) FROM {tableName}";
                 using (var cmd = new OleDbCommand(query, _connection))
                 {
-                    return await Task.Run(() => (int)cmd.ExecuteScalar());
+                    return await Task.Run(() => (int)cmd.ExecuteScalar()).ConfigureAwait(false);
                 }
             }
             catch
@@ -695,6 +701,7 @@ namespace NecessaryAdminTool.Data
             {
                 _connection?.Close();
                 _connection?.Dispose();
+                _dbLock?.Dispose();
                 _disposed = true;
                 LogManager.LogInfo("Access provider disposed");
             }

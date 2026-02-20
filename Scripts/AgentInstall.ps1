@@ -20,6 +20,9 @@ param(
 # EARLY HEARTBEAT
 Write-Host "  [$(Get-Date -Format 'HH:mm:ss')] AgentInstall.ps1 - Script loaded on $env:COMPUTERNAME, starting execution..." -ForegroundColor Cyan
 
+# Enterprise standard: fail loudly on unexpected errors
+$ErrorActionPreference = 'Stop'
+
 # --- 0. CONFIGURABLE PATHS ---
 $LogDir = $env:NECESSARYADMINTOOL_LOG_DIR
 

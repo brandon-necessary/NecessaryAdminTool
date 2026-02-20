@@ -10,6 +10,9 @@
 # EARLY HEARTBEAT - first executable line; if ME execution log is blank, script never loaded
 Write-Host "  [$(Get-Date -Format 'HH:mm:ss')] WMIEnable.ps1 - Script loaded on $env:COMPUTERNAME, starting execution..." -ForegroundColor Cyan
 
+# Enterprise standard: fail loudly on unexpected errors
+$ErrorActionPreference = 'Stop'
+
 # --- 0. CONFIGURABLE PATHS ---
 $LogDir = $env:NECESSARYADMINTOOL_LOG_DIR
 

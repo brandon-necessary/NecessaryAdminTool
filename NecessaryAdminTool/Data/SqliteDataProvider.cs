@@ -302,29 +302,89 @@ namespace NecessaryAdminTool.Data
         #endif
 
         // TAG MANAGEMENT - Simplified implementations
-        public async Task<List<string>> GetComputerTagsAsync(string hostname) => new List<string>();
-        public async Task AddTagAsync(string hostname, string tagName) => await Task.CompletedTask;
-        public async Task RemoveTagAsync(string hostname, string tagName) => await Task.CompletedTask;
-        public async Task<List<string>> GetAllTagsAsync() => new List<string>();
+        public async Task<List<string>> GetComputerTagsAsync(string hostname)
+        {
+            LogManager.LogWarning($"SqliteDataProvider.GetComputerTagsAsync not implemented - returning empty for {hostname}");
+            return await Task.FromResult(new List<string>());
+        }
+        public async Task AddTagAsync(string hostname, string tagName)
+        {
+            LogManager.LogWarning($"SqliteDataProvider.AddTagAsync not implemented - '{tagName}' on {hostname} not saved");
+            await Task.CompletedTask;
+        }
+        public async Task RemoveTagAsync(string hostname, string tagName)
+        {
+            LogManager.LogWarning($"SqliteDataProvider.RemoveTagAsync not implemented - '{tagName}' on {hostname} not removed");
+            await Task.CompletedTask;
+        }
+        public async Task<List<string>> GetAllTagsAsync()
+        {
+            LogManager.LogWarning("SqliteDataProvider.GetAllTagsAsync not implemented - returning empty");
+            return await Task.FromResult(new List<string>());
+        }
 
         // SCAN HISTORY - Simplified implementations
-        public async Task<ScanHistory> GetLastScanAsync() => null;
-        public async Task SaveScanHistoryAsync(ScanHistory scan) => await Task.CompletedTask;
-        public async Task<List<ScanHistory>> GetScanHistoryAsync(int limit = 10) => new List<ScanHistory>();
+        public async Task<ScanHistory> GetLastScanAsync()
+        {
+            LogManager.LogWarning("SqliteDataProvider.GetLastScanAsync not implemented - returning null");
+            return await Task.FromResult<ScanHistory>(null);
+        }
+        public async Task SaveScanHistoryAsync(ScanHistory scan)
+        {
+            LogManager.LogWarning("SqliteDataProvider.SaveScanHistoryAsync not implemented - scan history not persisted");
+            await Task.CompletedTask;
+        }
+        public async Task<List<ScanHistory>> GetScanHistoryAsync(int limit = 10)
+        {
+            LogManager.LogWarning("SqliteDataProvider.GetScanHistoryAsync not implemented - returning empty");
+            return await Task.FromResult(new List<ScanHistory>());
+        }
 
         // SETTINGS - Simplified implementations
-        public async Task<string> GetSettingAsync(string key, string defaultValue = null) => defaultValue;
-        public async Task SaveSettingAsync(string key, string value) => await Task.CompletedTask;
+        public async Task<string> GetSettingAsync(string key, string defaultValue = null)
+        {
+            LogManager.LogWarning($"SqliteDataProvider.GetSettingAsync not implemented - returning default for key '{key}'");
+            return await Task.FromResult(defaultValue);
+        }
+        public async Task SaveSettingAsync(string key, string value)
+        {
+            LogManager.LogWarning($"SqliteDataProvider.SaveSettingAsync not implemented - '{key}' not persisted");
+            await Task.CompletedTask;
+        }
 
         // SCRIPTS - Simplified implementations
-        public async Task<List<ScriptInfo>> GetAllScriptsAsync() => new List<ScriptInfo>();
-        public async Task SaveScriptAsync(ScriptInfo script) => await Task.CompletedTask;
-        public async Task DeleteScriptAsync(int scriptId) => await Task.CompletedTask;
+        public async Task<List<ScriptInfo>> GetAllScriptsAsync()
+        {
+            LogManager.LogWarning("SqliteDataProvider.GetAllScriptsAsync not implemented - returning empty");
+            return await Task.FromResult(new List<ScriptInfo>());
+        }
+        public async Task SaveScriptAsync(ScriptInfo script)
+        {
+            LogManager.LogWarning("SqliteDataProvider.SaveScriptAsync not implemented - script not persisted");
+            await Task.CompletedTask;
+        }
+        public async Task DeleteScriptAsync(int scriptId)
+        {
+            LogManager.LogWarning($"SqliteDataProvider.DeleteScriptAsync not implemented - script {scriptId} not deleted");
+            await Task.CompletedTask;
+        }
 
         // BOOKMARKS - Simplified implementations
-        public async Task<List<BookmarkInfo>> GetAllBookmarksAsync() => new List<BookmarkInfo>();
-        public async Task SaveBookmarkAsync(BookmarkInfo bookmark) => await Task.CompletedTask;
-        public async Task DeleteBookmarkAsync(string hostname) => await Task.CompletedTask;
+        public async Task<List<BookmarkInfo>> GetAllBookmarksAsync()
+        {
+            LogManager.LogWarning("SqliteDataProvider.GetAllBookmarksAsync not implemented - returning empty");
+            return await Task.FromResult(new List<BookmarkInfo>());
+        }
+        public async Task SaveBookmarkAsync(BookmarkInfo bookmark)
+        {
+            LogManager.LogWarning("SqliteDataProvider.SaveBookmarkAsync not implemented - bookmark not persisted");
+            await Task.CompletedTask;
+        }
+        public async Task DeleteBookmarkAsync(string hostname)
+        {
+            LogManager.LogWarning($"SqliteDataProvider.DeleteBookmarkAsync not implemented - {hostname} bookmark not deleted");
+            await Task.CompletedTask;
+        }
 
         // DATABASE OPERATIONS
         public async Task OptimizeDatabaseAsync()

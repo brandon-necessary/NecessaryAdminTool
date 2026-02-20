@@ -197,7 +197,7 @@ namespace NecessaryAdminTool
             }
 
             // Strategy 0: NecessaryAdminAgent (no WMI firewall ports required)
-            if (!string.IsNullOrEmpty(Properties.Settings.Default.AgentToken))
+            if (!string.IsNullOrEmpty(NecessaryAdminTool.Properties.Settings.Default.AgentToken))
             {
                 try
                 {

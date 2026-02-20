@@ -92,7 +92,7 @@ namespace NecessaryAdminTool
                             File.Delete(logFile);
                         }
                     }
-                });
+                }).ConfigureAwait(false);
             }
             catch
             {
@@ -179,17 +179,21 @@ namespace NecessaryAdminTool
                     {
                         File.AppendAllText(LogFile, logEntry, Encoding.UTF8);
                     }
-                });
+                }).ConfigureAwait(false);
             }
             catch (Exception fileEx)
             {
                 // File write failed — emit a best-effort entry to Windows Event Log
-                // so there is SOME audit trail of the failure
+                // so there is SOME audit trail of the failure.
+                // Fall back to "Application" source if our custom source isn't registered
+                // (registration requires admin and happens at install time).
                 try
                 {
+                    string evtSource = System.Diagnostics.EventLog.SourceExists("NecessaryAdminTool")
+                        ? "NecessaryAdminTool" : "Application";
                     System.Diagnostics.EventLog.WriteEntry(
-                        "NecessaryAdminTool",
-                        $"LogManager file write failed: {fileEx.Message} | Level: {level} | Msg: {message}",
+                        evtSource,
+                        $"NecessaryAdminTool LogManager: file write failed: {fileEx.Message} | Level: {level} | Msg: {message}",
                         System.Diagnostics.EventLogEntryType.Warning);
                 }
                 catch { /* Event log also unavailable — best effort */ }
@@ -245,7 +249,7 @@ namespace NecessaryAdminTool
                         : allLines;
 
                     return string.Join(Environment.NewLine, recentLines);
-                });
+                }).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -254,11 +258,14 @@ namespace NecessaryAdminTool
         }
 
         /// <summary>
-        /// Read recent log entries (synchronous wrapper for backward compatibility)
+        /// Read recent log entries (synchronous — safe to call only from non-UI threads).
+        /// Use GetRecentLogsAsync() from UI code to avoid STA thread deadlock.
         /// </summary>
         public static string GetRecentLogs(int lines = 100)
         {
-            return GetRecentLogsAsync(lines).GetAwaiter().GetResult();
+            // Task.Run wraps the call so the continuation does NOT try to marshal
+            // back to the STA/UI thread, preventing deadlock when called from UI context.
+            return Task.Run(() => GetRecentLogsAsync(lines)).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -297,7 +304,7 @@ namespace NecessaryAdminTool
 
                         File.Delete(logFile);
                     }
-                });
+                }).ConfigureAwait(false);
 
                 LogInfo("All log files cleared");
             }
