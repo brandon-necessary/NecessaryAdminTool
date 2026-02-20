@@ -4,6 +4,18 @@
 # NECESSARYADMINTOOL IT - FEATURE UPDATE SUITE (v1.0 - Bulletproof Edition)
 # Includes: Windows Major OS Updates, HW Guard, ISO/Cloud Logic, ManageEngine Compatible
 # Security Hardened: Admin checks, configurable patterns, resource cleanup, timeouts
+# ------------------------------------------------------------------------------
+# EXIT CODE LEGEND (visible in ManageEngine task result at a glance):
+#   0  = Success (upgrade installed + reboot issued, already compliant, or user postponed)
+#   20 = Power check failed — device is on battery and below 20%, plug in charger
+#   21 = Pending reboot detected — run PreflightReboot.ps1 first, then re-push task
+#   22 = 32-bit OS — incompatible with Windows 11 (64-bit only)
+#   23 = Hardware incompatible — TPM 2.0 / Secure Boot / RAM / Disk requirements not met
+#   24 = PSWindowsUpdate module could not be installed (no internet / policy blocked)
+#   25 = No feature upgrade offered via Windows Update (WUfB policy / not yet targeted)
+#   26 = Cloud (Windows Update) upgrade install failed
+#   27 = ISO file too small — re-download or check UNC path
+#   28 = ISO setup timed out — setup.exe did not complete within the allowed window
 # ==============================================================================
 
 # EARLY HEARTBEAT - first executable line; if ME execution log is blank, script never loaded
@@ -435,7 +447,7 @@ if (!(Test-PowerOK)) {
     Write-NecessaryAdminToolLog -Status "FAILED_POWER_CHECK_$Reason" -ToMaster $false
     Write-MasterSummary -Status "FAILED" -Method "None" -Details $Reason
     Show-NecessaryAdminToolLogo -Msg "Power check failed - not safe to upgrade on battery" "Red"
-    exit 1
+    exit 20  # Power check failed — device on battery
 }
 Write-Host "  Power check: OK (AC or sufficient battery)" -ForegroundColor Green
 Write-NecessaryAdminToolLog -Status "POWER_CHECK_PASSED" -ToMaster $false
@@ -449,7 +461,7 @@ if (Test-PendingReboot) {
     Write-NecessaryAdminToolLog -Status "FAILED_PENDING_REBOOT" -ToMaster $false
     Write-MasterSummary -Status "FAILED" -Method "None" -Details $Reason
     Show-NecessaryAdminToolLogo -Msg "Pending reboot - run Preflight script first, then re-push task" "Yellow"
-    exit 1
+    exit 21  # Pending reboot detected — run PreflightReboot.ps1 first
 }
 Write-Host "  Pending reboot: None detected - OK to proceed with upgrade." -ForegroundColor Green
 Write-Host "  [PREFLIGHT PASS] No pending reboot (WU/CBS/PFR keys all clear)." -ForegroundColor Green
@@ -494,7 +506,7 @@ if (!$Is64Bit) {
     Write-NecessaryAdminToolLog -Status "FAILED_HW_COMPATIBILITY_32-bit OS cannot be upgraded to Windows 11" -ToMaster $false
     Write-MasterSummary -Status "HW_INCOMPATIBLE" -Method "None" -Details "32-bit OS ($OSArch) cannot be upgraded to Windows 11"
     Show-NecessaryAdminToolLogo -Msg "INCOMPATIBLE: 32-bit OS - Windows 11 is 64-bit only" "Red"
-    exit 1
+    exit 22  # 32-bit OS — incompatible with Windows 11
 }
 
 # Check RAM - Win11 requires 4 GB minimum (reuse $TotalRAMGB captured at startup)
@@ -528,7 +540,7 @@ if (!$TPM -or !$SecureBoot -or !$RAMOk -or $FreeGB -lt $MIN_DISK_SPACE_GB) {
     Show-NecessaryAdminToolLogo -Msg "INCOMPATIBLE HARDWARE: $ReasonText" "Red"
     Write-Host "`nUpgrade cannot proceed due to hardware requirements." -ForegroundColor Red
     Start-Sleep -Seconds 5
-    exit 1
+    exit 23  # Hardware incompatible — TPM/SecureBoot/RAM/Disk
 }
 
 Write-NecessaryAdminToolLog -Status "HW_COMPAT_CHECK_PASSED_TPM2_SECUREBOOT_RAM_${RAMGB}GB_DISK_${FreeGB}GB" -ToMaster $false
@@ -600,7 +612,7 @@ function Run-CloudUpdate {
             Write-NecessaryAdminToolLog -Status "CLOUD_MODULE_INSTALL_FAILED_$($_.Exception.Message)" -ToMaster $false
             Write-MasterSummary -Status "FAILED" -Method $Method -Details "PSWindowsUpdate install failed - configure ISO path for reliable deployment: $($_.Exception.Message)"
             Show-NecessaryAdminToolLogo -Msg "Module install failed. Configure an ISO path in NecessaryAdminTool Options." "Red"
-            exit 1
+            exit 24  # PSWindowsUpdate module install failed
         }
     }
 
@@ -625,7 +637,7 @@ function Run-CloudUpdate {
             Write-NecessaryAdminToolLog -Status "CLOUD_WU_NO_UPGRADE_OFFERED" -ToMaster $false
             Write-MasterSummary -Status "FAILED" -Method $Method -Details $Advice
             Show-NecessaryAdminToolLogo -Msg "No feature upgrade offered via Windows Update - see log for options" "Yellow"
-            exit 1
+            exit 25  # No feature upgrade offered via Windows Update
         }
 
         $UpdateTitle = $FeatureUpdates[0].Title
@@ -670,7 +682,7 @@ function Run-CloudUpdate {
         Write-NecessaryAdminToolLog -Status "CLOUD_WU_FAILED_$($_.Exception.Message)" -ToMaster $false
         Write-MasterSummary -Status "FAILED" -Method $Method -Details $_.Exception.Message
         Show-NecessaryAdminToolLogo -Msg "Cloud upgrade failed: $($_.Exception.Message)" "Red"
-        exit 1
+        exit 26  # Cloud (Windows Update) upgrade install failed
     }
 }
 
@@ -1022,7 +1034,7 @@ if ($HostnameMatch -and $ISOExists) {
     if ($ISOSize -lt $MIN_ISO_SIZE_GB) {
         Write-NecessaryAdminToolLog -Status "ERROR_ISO_TOO_SMALL_${ISOSize}GB_EXPECTED_${MIN_ISO_SIZE_GB}GB" -ToMaster $false
         Run-CloudUpdate -Method "Cloud-ISOTooSmall"
-        exit 1   # Run-CloudUpdate exits internally; this is a safety backstop
+        exit 27  # ISO too small — Run-CloudUpdate exits internally; this is a safety backstop
     }
 
     Write-Host "  Selected method: ISO ($ISOPath)" -ForegroundColor Green
@@ -1068,7 +1080,7 @@ if ($HostnameMatch -and $ISOExists) {
                 Write-MasterSummary -Status "FAILED" -Method "ISO" -Details "Timed out after $($SETUP_TIMEOUT_SECONDS / 3600) hours"
                 $Proc.Kill()
                 Show-NecessaryAdminToolLogo -Msg "ISO setup timed out after $($SETUP_TIMEOUT_SECONDS / 3600) hours" "Red"
-                exit 1
+                exit 28  # ISO setup timed out
             }
 
             Start-Sleep -Seconds $ISOCheckInterval

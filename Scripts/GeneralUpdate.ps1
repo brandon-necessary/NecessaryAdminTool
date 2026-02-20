@@ -4,6 +4,13 @@
 # NECESSARYADMINTOOL IT - GENERAL UPDATE SUITE (v1.0 - Bulletproof Edition)
 # Includes: Windows Updates, Firmware, Uptime Guard, Power Check, ManageEngine Compatible
 # Security Hardened: Admin checks, module validation, safe cleanup, disk space checks
+# ------------------------------------------------------------------------------
+# EXIT CODE LEGEND (visible in ManageEngine task result at a glance):
+#   0  = Success (updates installed, already up-to-date, or uptime/postpone handled)
+#   10 = Disk space still too low after automatic cleanup — manual cleanup required
+#   11 = PSWindowsUpdate module could not be installed (no internet / policy blocked)
+#   12 = PSWindowsUpdate module installed but failed to import
+#   13 = Windows Update installation failed (see individual PC log for KB details)
 # ==============================================================================
 
 # EARLY HEARTBEAT - first executable line; if ME execution log is blank, script never loaded
@@ -433,7 +440,7 @@ if ($FreeGB -lt $MIN_DISK_SPACE_GB) {
         Write-NecessaryAdminToolLog -Status "ERROR_DISK_SPACE_STILL_LOW_${FreeGB}GB_AFTER_CLEANUP" -ToMaster $true
         Show-NecessaryAdminToolLogo -Msg "Insufficient disk space after cleanup: ${FreeGB}GB free (minimum ${MIN_DISK_SPACE_GB}GB required)" "Red"
         Write-Error "Low disk space. Cleanup freed some space but ${FreeGB}GB is still below the ${MIN_DISK_SPACE_GB}GB minimum. Manual cleanup required."
-        exit 1
+        exit 10  # Disk space still too low after cleanup
     }
     Show-NecessaryAdminToolLogo -Msg "Cleanup successful — ${FreeGB}GB now free. Continuing with updates..." "Green"
     Write-NecessaryAdminToolLog -Status "DISK_CLEANUP_RESOLVED_${FreeGB}GB_FREE" -ToMaster $false
@@ -458,7 +465,7 @@ if (!(Get-Module -ListAvailable -Name PSWindowsUpdate)) {
         Write-NecessaryAdminToolLog -Status "ERROR_MODULE_INSTALL_FAILED_$($_.Exception.Message)" -ToMaster $true
         Show-NecessaryAdminToolLogo -Msg "Failed to install PSWindowsUpdate: $($_.Exception.Message)" "Red"
         Write-Error "Module installation failed: $($_.Exception.Message)"
-        exit 1
+        exit 11  # PSWindowsUpdate module install failed
     }
 }
 
@@ -470,7 +477,7 @@ try {
     Write-NecessaryAdminToolLog -Status "ERROR_MODULE_IMPORT_FAILED" -ToMaster $true
     Show-NecessaryAdminToolLogo -Msg "Failed to import PSWindowsUpdate module" "Red"
     Write-Error "Module import failed: $($_.Exception.Message)"
-    exit 1
+    exit 12  # PSWindowsUpdate module import failed
 }
 
 # --- 5. EXECUTION ---
@@ -581,5 +588,5 @@ if ($ScriptSuccess) {
     exit 0  # Success
 } else {
     Write-NecessaryAdminToolLog -Status "SCRIPT_COMPLETED_FAILURE" -ToMaster $false
-    exit 1  # Failure
+    exit 13  # Windows Update installation failed
 }
