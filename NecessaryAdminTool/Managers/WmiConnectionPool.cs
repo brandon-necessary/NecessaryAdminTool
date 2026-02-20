@@ -239,6 +239,18 @@ namespace NecessaryAdminTool.Managers
         }
 
         /// <summary>
+        /// Shuts down the pool: disposes the background cleanup timer, then clears all connections.
+        /// Call this on application exit (Window_Closing) to prevent the timer from firing
+        /// after the app has begun teardown.
+        /// </summary>
+        public static void Shutdown()
+        {
+            try { _cleanupTimer?.Dispose(); } catch { }
+            ClearAll();
+            LogManager.LogInfo("WmiConnectionPool: Shutdown complete - timer disposed");
+        }
+
+        /// <summary>
         /// Clears all connections from the pool and disposes them.
         /// Use this on application shutdown or when you want to force reconnect.
         /// </summary>

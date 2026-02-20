@@ -2745,7 +2745,7 @@ namespace NecessaryAdminTool
                 {
                     _wmiManager?.Dispose();
                     _cimManager?.Dispose();
-                    Managers.WmiConnectionPool.ClearAll();
+                    Managers.WmiConnectionPool.Shutdown(); // Disposes cleanup timer + clears all connections
                     LogManager.LogInfo("[App Shutdown] WMI/CIM managers disposed");
                 }
                 catch (Exception ex) { LogManager.LogError("[App Shutdown] Manager dispose failed", ex); }

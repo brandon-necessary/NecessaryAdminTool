@@ -538,8 +538,9 @@ namespace NecessaryAdminTool.Managers
 
             lock (_lock)
             {
-                if (_runningTools.ContainsKey(toolKey))
+                if (_runningTools.TryGetValue(toolKey, out var tracked))
                 {
+                    try { tracked.Process?.Dispose(); } catch { }
                     _runningTools.Remove(toolKey);
                 }
             }

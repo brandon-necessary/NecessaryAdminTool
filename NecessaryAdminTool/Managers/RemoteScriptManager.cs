@@ -81,7 +81,7 @@ namespace NecessaryAdminTool.Managers
             {
                 // ── Method 1: Direct WinRM API (System.Management.Automation) ──
                 progressCallback?.Invoke("[Method 1] Testing WinRM port 5985...");
-                bool winRmOpen = await IsPortOpenAsync(targetComputer, WinRmPort, timeoutMs: 3000);
+                bool winRmOpen = await IsPortOpenAsync(targetComputer, WinRmPort, timeoutMs: 3000).ConfigureAwait(false);
 
                 if (winRmOpen)
                 {
@@ -89,7 +89,7 @@ namespace NecessaryAdminTool.Managers
                     progressCallback?.Invoke("[Method 1] WinRM available - connecting via System.Management.Automation...");
 
                     var result = await ExecuteViaWinRmApiAsync(
-                        targetComputer, scriptContent, domain, username, authPass, progressCallback, timeoutMs);
+                        targetComputer, scriptContent, domain, username, authPass, progressCallback, timeoutMs).ConfigureAwait(false);
 
                     result.Elapsed = sw.Elapsed;
 
@@ -115,7 +115,7 @@ namespace NecessaryAdminTool.Managers
                 LogManager.LogInfo($"[RemoteScriptManager] Falling back to subprocess for {targetComputer}");
 
                 var fallbackResult = await ExecuteViaSubprocessAsync(
-                    targetComputer, scriptContent, domain, username, authPass, progressCallback, timeoutMs);
+                    targetComputer, scriptContent, domain, username, authPass, progressCallback, timeoutMs).ConfigureAwait(false);
 
                 fallbackResult.Elapsed = sw.Elapsed;
                 return fallbackResult;
@@ -338,7 +338,7 @@ namespace NecessaryAdminTool.Managers
 
                         if (!proc.WaitForExit(timeoutMs))
                         {
-                            proc.Kill();
+                            try { proc.Kill(); } catch (InvalidOperationException) { /* Already exited between check and kill */ }
                             result.Errors.Add($"Subprocess timed out after {timeoutMs / 1000}s");
                             progressCallback?.Invoke($"[Method 2] ✗ Timed out after {timeoutMs / 1000}s");
                             LogManager.LogWarning($"[RemoteScriptManager] Subprocess timed out for {targetComputer}");
@@ -384,7 +384,7 @@ namespace NecessaryAdminTool.Managers
                 using (var tcp = new TcpClient())
                 {
                     var connectTask = tcp.ConnectAsync(host, port);
-                    if (await Task.WhenAny(connectTask, Task.Delay(timeoutMs)) == connectTask
+                    if (await Task.WhenAny(connectTask, Task.Delay(timeoutMs)).ConfigureAwait(false) == connectTask
                         && !connectTask.IsFaulted)
                     {
                         return true;

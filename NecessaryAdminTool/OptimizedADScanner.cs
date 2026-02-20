@@ -123,7 +123,9 @@ namespace NecessaryAdminTool
                     LogManager.LogInfo($"[AD] Found {totalFound} enabled computers in Active Directory");
 
                     // TAG: #SECURITY_CRITICAL #LDAP_INJECTION_PREVENTION
-                    // Extract hostnames with validation
+                    // Extract hostnames with validation.
+                    // SearchResultCollection is disposed in the finally block below;
+                    // individual SearchResult items are not IDisposable.
                     foreach (SearchResult result in results)
                     {
                         ct.ThrowIfCancellationRequested();
@@ -202,7 +204,7 @@ namespace NecessaryAdminTool
                 try
                 {
                     LogManager.LogDebug($"[SCAN] {hostname} - Trying NatAgent");
-                    var agentInfo = await NatAgentClient.GetSystemInfoAsync(hostname);
+                    var agentInfo = await NatAgentClient.GetSystemInfoAsync(hostname).ConfigureAwait(false);
                     if (agentInfo != null)
                     {
                         LogManager.LogDebug($"[SCAN] {hostname} - Agent hit");
@@ -219,7 +221,7 @@ namespace NecessaryAdminTool
             try
             {
                 LogManager.LogDebug($"[SCAN] {hostname} - Trying CIM/WS-MAN");
-                return await ScanViaCimAsync(hostname, username, password, useWSMan: true, ct);
+                return await ScanViaCimAsync(hostname, username, password, useWSMan: true, ct).ConfigureAwait(false);
             }
             catch (Exception wsmanEx)
             {
@@ -229,7 +231,7 @@ namespace NecessaryAdminTool
                 try
                 {
                     LogManager.LogDebug($"[SCAN] {hostname} - Trying CIM/DCOM");
-                    return await ScanViaCimAsync(hostname, username, password, useWSMan: false, ct);
+                    return await ScanViaCimAsync(hostname, username, password, useWSMan: false, ct).ConfigureAwait(false);
                 }
                 catch (Exception dcomEx)
                 {
@@ -239,7 +241,7 @@ namespace NecessaryAdminTool
                     try
                     {
                         LogManager.LogDebug($"[SCAN] {hostname} - Trying legacy WMI");
-                        return await ScanViaLegacyWmiAsync(hostname, username, password, ct);
+                        return await ScanViaLegacyWmiAsync(hostname, username, password, ct).ConfigureAwait(false);
                     }
                     catch (Exception wmiEx)
                     {
@@ -332,7 +334,7 @@ namespace NecessaryAdminTool
 
                 try
                 {
-                    await Task.WhenAll(osTask, csTask, biosTask);
+                    await Task.WhenAll(osTask, csTask, biosTask).ConfigureAwait(false);
                     // Now safe - WhenAll already caught exceptions
                     osInstance = osTask.Result;
                     csInstance = csTask.Result;
@@ -434,7 +436,7 @@ namespace NecessaryAdminTool
                     LogManager.LogDebug($"[CIM] Query {className} failed: {ex.Message}");
                     throw;
                 }
-            }, ct);
+            }, ct).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -471,7 +473,7 @@ namespace NecessaryAdminTool
                     try
                     {
                         // Wait for all three to complete (or timeout)
-                        await Task.WhenAll(osTask, csTask, biosTask);
+                        await Task.WhenAll(osTask, csTask, biosTask).ConfigureAwait(false);
                         // Now safe - WhenAll already caught exceptions
                         osResult = osTask.Result;
                         csResult = csTask.Result;
@@ -531,7 +533,7 @@ namespace NecessaryAdminTool
                     LogManager.LogDebug($"[WMI] {hostname} - Legacy WMI failed: {ex.Message}");
                     throw;
                 }
-            }, ct);
+            }, ct).ConfigureAwait(false);
         }
 
         /// <summary>

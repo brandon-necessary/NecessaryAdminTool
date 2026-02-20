@@ -61,47 +61,50 @@ namespace NecessaryAdminTool
 
             try
             {
+                // Task.Run offloads the blocking ManagementScope.Connect() call (10–60s) off the
+                // calling thread. CancellationToken is checked at the start to honour early cancel.
                 await Task.Run(async () =>
                 {
+                    ct.ThrowIfCancellationRequested();
                     switch (action)
                     {
                         case RemediationAction.RestartWindowsUpdate:
-                            await RestartWindowsUpdateServiceAsync(hostname, username, password);
+                            await RestartWindowsUpdateServiceAsync(hostname, username, password).ConfigureAwait(false);
                             result.Success = true;
                             result.Message = "Windows Update service restarted and cache cleared";
                             break;
 
                         case RemediationAction.ClearDNSCache:
-                            await ClearDNSCacheAsync(hostname, username, password);
+                            await ClearDNSCacheAsync(hostname, username, password).ConfigureAwait(false);
                             result.Success = true;
                             result.Message = "DNS cache flushed successfully";
                             break;
 
                         case RemediationAction.RestartPrintSpooler:
-                            await RestartPrintSpoolerAsync(hostname, username, password);
+                            await RestartPrintSpoolerAsync(hostname, username, password).ConfigureAwait(false);
                             result.Success = true;
                             result.Message = "Print Spooler service restarted";
                             break;
 
                         case RemediationAction.EnableWinRM:
-                            await EnableWinRMAsync(hostname, username, password);
+                            await EnableWinRMAsync(hostname, username, password).ConfigureAwait(false);
                             result.Success = true;
                             result.Message = "WinRM enabled and configured";
                             break;
 
                         case RemediationAction.FixTimeSync:
-                            await FixTimeSyncAsync(hostname, username, password);
+                            await FixTimeSyncAsync(hostname, username, password).ConfigureAwait(false);
                             result.Success = true;
                             result.Message = "Time synchronized with domain";
                             break;
 
                         case RemediationAction.ClearEventLogs:
-                            await ClearEventLogsAsync(hostname, username, password);
+                            await ClearEventLogsAsync(hostname, username, password).ConfigureAwait(false);
                             result.Success = true;
                             result.Message = "Event logs cleared (Application, System, Security)";
                             break;
                     }
-                }, ct);
+                }, ct).ConfigureAwait(false);
 
                 result.Duration = DateTime.Now - startTime;
                 LogManager.LogInfo($"[Remediation] {action} completed on {hostname} in {result.Duration.TotalSeconds:F1}s");
@@ -175,7 +178,7 @@ namespace NecessaryAdminTool
                 inParams["CommandLine"] = "ipconfig /flushdns";
                 using (var outParams = processClass.InvokeMethod("Create", inParams, null))
                 {
-                    returnCode = outParams["ReturnValue"].ToString();
+                    returnCode = outParams?["ReturnValue"]?.ToString() ?? "-1";
                 }
             }
 
@@ -228,7 +231,7 @@ namespace NecessaryAdminTool
                 inParams["CommandLine"] = "winrm quickconfig -force -quiet";
                 using (var outParams = processClass.InvokeMethod("Create", inParams, null))
                 {
-                    returnCode = outParams["ReturnValue"].ToString();
+                    returnCode = outParams?["ReturnValue"]?.ToString() ?? "-1";
                 }
             }
 

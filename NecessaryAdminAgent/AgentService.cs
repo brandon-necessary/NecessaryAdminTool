@@ -230,6 +230,13 @@ namespace NecessaryAdminAgent
             }
             catch { return ""; }
         }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+                _connSemaphore?.Dispose();
+            base.Dispose(disposing);
+        }
     }
 
     // Minimal thread-safe file logger (no dependency on NAT's LogManager)
