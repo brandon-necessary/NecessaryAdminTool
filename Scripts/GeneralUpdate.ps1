@@ -77,6 +77,21 @@ $UptimeDays  = [math]::Round(((Get-Date) - $OSInfo.LastBootUpTime).TotalDays, 2)
 $FreeGB      = try { [math]::Round((Get-PSDrive C -ErrorAction Stop).Free / 1GB, 2) } catch { 0 }
 $LogDirSrc   = if ($env:NECESSARYADMINTOOL_LOG_DIR) { "Configured ($env:NECESSARYADMINTOOL_LOG_DIR)" } else { "LOCAL FALLBACK ($LogDir)" }
 
+# Additional system info for fleet master log (single BIOS + network query at startup)
+$SerialNumber = try { (Get-CimInstance Win32_BIOS -ErrorAction SilentlyContinue).SerialNumber.Trim() } catch { "Unknown" }
+$Manufacturer = if ($SysInfo) { $SysInfo.Manufacturer.Trim() } else { "Unknown" }
+$Model        = if ($SysInfo) { $SysInfo.Model.Trim() } else { "Unknown" }
+$LoggedInUser = if ($SysInfo -and $SysInfo.UserName) { $SysInfo.UserName } else { "None" }
+$IPAddress    = try {
+    $IP = $null
+    foreach ($Adapter in @(Get-CimInstance Win32_NetworkAdapterConfiguration -Filter "IPEnabled=True" -ErrorAction SilentlyContinue)) {
+        $ValidIP = @($Adapter.IPAddress) | Where-Object { $_ -match '^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$' -and $_ -notmatch '^(127\.|169\.254\.)' }
+        if ($ValidIP) { $IP = $ValidIP[0]; break }
+    }
+    if ($IP) { $IP } else { "Unknown" }
+} catch { "Unknown" }
+$CurrentBuild = try { [int]$OSInfo.BuildNumber } catch { 0 }
+
 # --- 1. LOGGING (Thread-Safe with File Locking) ---
 function Write-NecessaryAdminToolLog {
     param([string]$Status, [bool]$ToMaster = $false)
@@ -109,17 +124,17 @@ function Write-NecessaryAdminToolLog {
     }
 }
 
-# --- 1b. MASTER CSV SUMMARY (Rich columns for fleet reporting) ---
+# --- 1b. MASTER CSV SUMMARY (Rich 20-column fleet reporting schema - matches FeatureUpdate) ---
 function Write-MasterSummary {
     param(
         [string]$Status,
         [string]$UpdatesFound = "0",
-        [string]$Details = ""
+        [string]$Details      = ""
     )
     $Stamp    = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $Duration = [math]::Round(((Get-Date) - $ScriptStart).TotalSeconds, 0)
-    $Header   = "Hostname,Script,Timestamp,OSVersion,UptimeDays,DiskFreeGB,Status,UpdatesFound,Details,DurationSeconds"
-    $Row      = "`"$Comp`",`"General`",`"$Stamp`",`"$OSVersion`",`"$UptimeDays`",`"$FreeGB`",`"$Status`",`"$UpdatesFound`",`"$Details`",`"$Duration`""
+    $Header   = "Hostname,Script,Timestamp,OSVersion,BuildNumber,UptimeDays,TotalRAMGB,DiskFreeGB,SerialNumber,Manufacturer,Model,IPAddress,LoggedInUser,TPMPresent,SecureBoot,Status,Method,UpdateCount,Details,DurationSeconds"
+    $Row      = "`"$Comp`",`"General`",`"$Stamp`",`"$OSVersion`",`"$CurrentBuild`",`"$UptimeDays`",`"$TotalRAMGB`",`"$FreeGB`",`"$SerialNumber`",`"$Manufacturer`",`"$Model`",`"$IPAddress`",`"$LoggedInUser`",`"N/A`",`"N/A`",`"$Status`",`"PSWindowsUpdate`",`"$UpdatesFound`",`"$Details`",`"$Duration`""
 
     # Named system mutex - OS auto-releases on process crash; no stale lock risk
     $Mtx = $null; $Acquired = $false

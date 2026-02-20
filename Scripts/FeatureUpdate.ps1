@@ -64,6 +64,24 @@ $SysInfo     = Get-CimInstance Win32_ComputerSystem -ErrorAction SilentlyContinu
 $DomainName  = if ($SysInfo) { $SysInfo.Domain } else { "Unknown" }
 $TotalRAMGB  = if ($SysInfo) { [math]::Round($SysInfo.TotalPhysicalMemory / 1GB, 2) } else { 0 }
 
+# Additional system info for fleet master log (single BIOS + network query at startup)
+$SerialNumber = try { (Get-CimInstance Win32_BIOS -ErrorAction SilentlyContinue).SerialNumber.Trim() } catch { "Unknown" }
+$Manufacturer = if ($SysInfo) { $SysInfo.Manufacturer.Trim() } else { "Unknown" }
+$Model        = if ($SysInfo) { $SysInfo.Model.Trim() } else { "Unknown" }
+$LoggedInUser = if ($SysInfo -and $SysInfo.UserName) { $SysInfo.UserName } else { "None" }
+$IPAddress    = try {
+    $IP = $null
+    foreach ($Adapter in @(Get-CimInstance Win32_NetworkAdapterConfiguration -Filter "IPEnabled=True" -ErrorAction SilentlyContinue)) {
+        $ValidIP = @($Adapter.IPAddress) | Where-Object { $_ -match '^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$' -and $_ -notmatch '^(127\.|169\.254\.)' }
+        if ($ValidIP) { $IP = $ValidIP[0]; break }
+    }
+    if ($IP) { $IP } else { "Unknown" }
+} catch { "Unknown" }
+# Pre-init compat vars as "Unchecked" - overwritten in Section 4 (safe for pre-Section-4 CSV writes)
+$CurrentBuild     = try { [int]$OSInfo.BuildNumber } catch { 0 }
+$TPMStatus        = "Unchecked"
+$SecureBootStatus = "Unchecked"
+
 # --- 2. LOGGING (Thread-Safe with File Locking) ---
 function Write-NecessaryAdminToolLog {
     param([string]$Status, [bool]$ToMaster = $false)
@@ -95,17 +113,18 @@ function Write-NecessaryAdminToolLog {
     }
 }
 
-# --- 2b. MASTER CSV SUMMARY (Rich columns for fleet reporting) ---
+# --- 2b. MASTER CSV SUMMARY (Rich 20-column fleet reporting schema) ---
 function Write-MasterSummary {
     param(
         [string]$Status,
-        [string]$Method  = "",
-        [string]$Details = ""
+        [string]$Method      = "N/A",
+        [string]$UpdateCount = "N/A",
+        [string]$Details     = ""
     )
     $Stamp    = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $Duration = [math]::Round(((Get-Date) - $ScriptStart).TotalSeconds, 0)
-    $Header   = "Hostname,Script,Timestamp,OSVersion,UptimeDays,DiskFreeGB,Status,Method,Details,DurationSeconds"
-    $Row      = "`"$Comp`",`"Feature`",`"$Stamp`",`"$OSVersion`",`"$UptimeDays`",`"$FreeGB`",`"$Status`",`"$Method`",`"$Details`",`"$Duration`""
+    $Header   = "Hostname,Script,Timestamp,OSVersion,BuildNumber,UptimeDays,TotalRAMGB,DiskFreeGB,SerialNumber,Manufacturer,Model,IPAddress,LoggedInUser,TPMPresent,SecureBoot,Status,Method,UpdateCount,Details,DurationSeconds"
+    $Row      = "`"$Comp`",`"Feature`",`"$Stamp`",`"$OSVersion`",`"$CurrentBuild`",`"$UptimeDays`",`"$TotalRAMGB`",`"$FreeGB`",`"$SerialNumber`",`"$Manufacturer`",`"$Model`",`"$IPAddress`",`"$LoggedInUser`",`"$TPMStatus`",`"$SecureBootStatus`",`"$Status`",`"$Method`",`"$UpdateCount`",`"$Details`",`"$Duration`""
 
     # Named system mutex - OS auto-releases on process crash; no stale lock risk
     $Mtx = $null; $Acquired = $false
@@ -300,6 +319,36 @@ function Get-InstallExitDescription {
     return "$Hex - Unknown exit code (check %TEMP%\`$WINDOWS.~BT\Sources\Panther\setupact.log or run SetupDiag)"
 }
 
+# User-visible notification dialog (ServiceNotification flag reaches session 0 -> active user desktop)
+# Only shown when a user is logged in; silently skipped for unattended machines.
+function Show-UserNotification {
+    param(
+        [string]$Title   = "NecessaryAdminTool IT",
+        [string]$Message = "",
+        [string]$Icon    = "Information"
+    )
+    if ([string]::IsNullOrEmpty($Message)) { return }
+    if (!(Test-UserLoggedIn)) {
+        Write-NecessaryAdminToolLog -Status "USER_NOTIFY_SKIPPED_NO_USER - $Title" -ToMaster $false
+        return
+    }
+    try {
+        Add-Type -AssemblyName System.Windows.Forms
+        $IconEnum = [System.Windows.Forms.MessageBoxIcon]::$Icon
+        Write-NecessaryAdminToolLog -Status "USER_NOTIFY_SHOWING - $Title" -ToMaster $false
+        [System.Windows.Forms.MessageBox]::Show(
+            $Message, $Title,
+            [System.Windows.Forms.MessageBoxButtons]::OK,
+            $IconEnum,
+            [System.Windows.Forms.MessageBoxDefaultButton]::Button1,
+            [System.Windows.Forms.MessageBoxOptions]::ServiceNotification
+        ) | Out-Null
+        Write-NecessaryAdminToolLog -Status "USER_NOTIFY_DISMISSED - $Title" -ToMaster $false
+    } catch {
+        Write-NecessaryAdminToolLog -Status "USER_NOTIFY_FAILED - $($_.Exception.Message)" -ToMaster $false
+    }
+}
+
 # Pre-upgrade disk cleanup - frees WU cache + temp files and runs DISM component cleanup
 function Invoke-PreUpgradeDiskCleanup {
     Write-Host "  Attempting pre-upgrade disk cleanup..." -ForegroundColor Cyan
@@ -421,6 +470,7 @@ try {
 } catch {
     Write-NecessaryAdminToolLog -Status "TPM_CHECK_FAILED_$($_.Exception.Message)" -ToMaster $false
 }
+$TPMStatus = "$TPM (SpecVersion: $TPMVersion)"
 Write-Host "  TPM 2.0: $TPM (SpecVersion: $TPMVersion)" -ForegroundColor Cyan
 
 # Check Secure Boot (gracefully handle legacy BIOS)
@@ -430,6 +480,7 @@ $SecureBoot = try {
     Write-NecessaryAdminToolLog -Status "SECUREBOOT_CHECK_FAILED_ASSUMING_FALSE" -ToMaster $false
     $false
 }
+$SecureBootStatus = "$SecureBoot"
 Write-Host "  Secure Boot: $SecureBoot" -ForegroundColor Cyan
 
 # Check OS architecture - Windows 11 is 64-bit only; 32-bit systems can never be upgraded
@@ -500,8 +551,9 @@ Write-NecessaryAdminToolLog -Status "OS_VERSION_${OSVersion}_BUILD_${CurrentBuil
 if ($CurrentBuild -ge $WIN11_TARGET_BUILD) {
     Write-Host "  RESULT: Already on Windows 11 $WIN11_TARGET_NAME or later (Build $CurrentBuild). No upgrade needed." -ForegroundColor Green
     Write-NecessaryAdminToolLog -Status "ALREADY_COMPLIANT_WIN11_${WIN11_TARGET_NAME}_BUILD_${CurrentBuild}" -ToMaster $false
-    Write-MasterSummary -Status "COMPLIANT" -Method "None" -Details "Already on Windows 11 $WIN11_TARGET_NAME (Build $CurrentBuild) - no upgrade required"
+    Write-MasterSummary -Status "COMPLIANT" -Method "AlreadyUpToDate" -Details "Already on Windows 11 $WIN11_TARGET_NAME (Build $CurrentBuild) - no upgrade required"
     Show-NecessaryAdminToolLogo -Msg "Already up to date: $OSVersion (Build $CurrentBuild)" "Green"
+    Show-UserNotification -Title "Windows is Up to Date" -Message "Your PC is already running Windows 11 $WIN11_TARGET_NAME (Build $CurrentBuild). No upgrade is needed. This notification was generated by your IT team." -Icon "Information"
     exit 0
 }
 
@@ -591,8 +643,9 @@ function Run-CloudUpdate {
         }
 
         Write-NecessaryAdminToolLog -Status "CLOUD_WU_COMPLETE_ISSUING_FORCED_REBOOT" -ToMaster $false
-        Write-MasterSummary -Status "SUCCESS" -Method $Method -Details "Windows Update feature upgrade complete - forced reboot issued to finish installation"
+        Write-MasterSummary -Status "SUCCESS" -Method $Method -UpdateCount "1" -Details "Windows Update feature upgrade complete - forced reboot issued to finish installation"
         Show-NecessaryAdminToolLogo -Msg "Windows Update upgrade complete - restarting to finish installation..." "Green"
+        Show-UserNotification -Title "Windows 11 Upgrade Complete" -Message "Windows 11 $WIN11_TARGET_NAME has been installed successfully. Your computer will restart in 5 minutes to complete the upgrade. PLEASE SAVE YOUR WORK NOW." -Icon "Warning"
 
         # Always force reboot - feature upgrades require it and WU policies may defer auto-restart
         # indefinitely (WUfB active hours, WU restart policies, etc.).
@@ -1025,8 +1078,9 @@ if ($HostnameMatch -and $ISOExists) {
         Write-NecessaryAdminToolLog -Status "ISO_COMPLETE_CODE_${ExitCode}_$ExitDesc" -ToMaster $false
 
         if ($ExitCode -eq 0 -or $ExitCode -eq 3010) {
-            Write-MasterSummary -Status "SUCCESS" -Method "ISO" -Details $ExitDesc
+            Write-MasterSummary -Status "SUCCESS" -Method "ISO" -UpdateCount "1" -Details $ExitDesc
             Show-NecessaryAdminToolLogo -Msg "ISO upgrade completed successfully" "Green"
+            Show-UserNotification -Title "Windows 11 Upgrade Complete" -Message "Windows 11 $WIN11_TARGET_NAME has been installed successfully. Your computer will restart shortly to complete the upgrade. PLEASE SAVE YOUR WORK NOW." -Icon "Warning"
             exit 0
         } else {
             # setup.exe exited with an error - attempt Windows Update as fallback before giving up.

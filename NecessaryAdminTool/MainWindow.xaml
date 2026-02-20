@@ -2822,6 +2822,157 @@
                     <local:RemoteControlTab x:Name="RemoteControlTabContent"/>
                 </TabItem>
 
+                <!-- ══════════════════════════════════════════════════════════════ -->
+                <!-- TAB: DEPLOYMENT RESULTS - TAG: #DEPLOYMENT_RESULTS #CSV_VIEW  -->
+                <!-- ══════════════════════════════════════════════════════════════ -->
+                <TabItem Header="📋 DEPLOYMENT RESULTS">
+                    <DockPanel Margin="15">
+
+                        <!-- Toolbar -->
+                        <Border DockPanel.Dock="Top" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
+                                BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Left: action buttons -->
+                                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                    <!-- TAG: #TOOLTIPS #ACTIONS -->
+                                    <Button x:Name="BtnRefreshDeploymentResults"
+                                            Style="{StaticResource BtnPrimary}"
+                                            Click="BtnRefreshDeploymentResults_Click"
+                                            Padding="14,8" FontSize="11" FontWeight="Bold" Margin="0,0,8,0"
+                                            ToolTip="Reload Master_Update_Log.csv from the Deployment Log Directory configured in Options.">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="🔄" Margin="0,0,6,0"/>
+                                            <TextBlock Text="REFRESH"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="BtnExportDeploymentResults"
+                                            Style="{StaticResource BtnGhost}"
+                                            Click="BtnExportDeploymentResults_Click"
+                                            Padding="12,8" FontSize="11" Margin="0,0,8,0"
+                                            ToolTip="Export the currently visible (filtered) results to a dated CSV file on your Desktop.">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="📊" Margin="0,0,6,0"/>
+                                            <TextBlock Text="EXPORT CSV"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="BtnClearDeploymentLog"
+                                            Style="{StaticResource BtnGhost}"
+                                            Click="BtnClearDeploymentLog_Click"
+                                            Padding="12,8" FontSize="11" Foreground="#EF4444"
+                                            ToolTip="Delete Master_Update_Log.csv. You will be prompted to save a backup first.">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="🗑️" Margin="0,0,6,0"/>
+                                            <TextBlock Text="CLEAR LOG"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+
+                                <!-- Centre: search -->
+                                <Border Grid.Column="1" Background="#2D2D2D" CornerRadius="4"
+                                        BorderBrush="#444" BorderThickness="1" Margin="12,0,12,0">
+                                    <TextBox x:Name="TxtDeploymentSearch"
+                                             Background="Transparent" Foreground="White" BorderThickness="0"
+                                             Padding="8,6" FontSize="11" VerticalContentAlignment="Center"
+                                             TextChanged="TxtDeploymentSearch_TextChanged"
+                                             Tag="Search hostname, status, OS, user, serial..."/>
+                                </Border>
+
+                                <!-- Right: status info -->
+                                <StackPanel Grid.Column="2" Orientation="Vertical" VerticalAlignment="Center">
+                                    <TextBlock x:Name="TxtDeploymentCount"
+                                               Text="0 records" Foreground="{StaticResource AccentOrangeBrush}"
+                                               FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Right"/>
+                                    <TextBlock x:Name="TxtDeploymentLogPath"
+                                               Text="Log: not loaded" Foreground="#A1A1AA"
+                                               FontSize="9" HorizontalAlignment="Right"
+                                               TextTrimming="CharacterEllipsis" MaxWidth="350"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- DataGrid -->
+                        <DataGrid x:Name="GridDeploymentResults"
+                                  AutoGenerateColumns="False" IsReadOnly="True"
+                                  CanUserReorderColumns="True" CanUserSortColumns="True"
+                                  SelectionMode="Extended" GridLinesVisibility="Horizontal"
+                                  RowBackground="#1A1A1A" AlternatingRowBackground="#212121"
+                                  ColumnHeaderHeight="30" RowHeight="26"
+                                  HorizontalScrollBarVisibility="Auto"
+                                  VerticalScrollBarVisibility="Auto">
+                            <DataGrid.Columns>
+                                <!-- Status with colour coding -->
+                                <DataGridTemplateColumn Header="Status" Width="120" MinWidth="90" SortMemberPath="Status">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Status}" FontWeight="SemiBold" FontSize="10"
+                                                       VerticalAlignment="Center" Padding="4,0">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="#A1A1AA"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Status}" Value="COMPLIANT">
+                                                                <Setter Property="Foreground" Value="#10B981"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Status}" Value="SUCCESS">
+                                                                <Setter Property="Foreground" Value="#10B981"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Status}" Value="FAILED">
+                                                                <Setter Property="Foreground" Value="#EF4444"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Status}" Value="HW_INCOMPATIBLE">
+                                                                <Setter Property="Foreground" Value="#EF4444"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Status}" Value="REBOOTING_UNATTENDED">
+                                                                <Setter Property="Foreground" Value="#F59E0B"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Status}" Value="REBOOTING_AFTER_USER_WARNING">
+                                                                <Setter Property="Foreground" Value="#F59E0B"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Status}" Value="NO_REBOOT_NEEDED">
+                                                                <Setter Property="Foreground" Value="#10B981"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Status}" Value="POSTPONED">
+                                                                <Setter Property="Foreground" Value="#F59E0B"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTextColumn Header="Hostname"     Binding="{Binding Hostname}"       Width="130" MinWidth="100"/>
+                                <DataGridTextColumn Header="Script"       Binding="{Binding Script}"         Width="75"  MinWidth="60"/>
+                                <DataGridTextColumn Header="Timestamp"    Binding="{Binding Timestamp}"      Width="145" MinWidth="110"/>
+                                <DataGridTextColumn Header="Method"       Binding="{Binding Method}"         Width="110" MinWidth="70"/>
+                                <DataGridTextColumn Header="OS"           Binding="{Binding OSVersion}"      Width="180" MinWidth="110"/>
+                                <DataGridTextColumn Header="Build"        Binding="{Binding BuildNumber}"    Width="60"  MinWidth="50"/>
+                                <DataGridTextColumn Header="Updates"      Binding="{Binding UpdateCount}"    Width="58"  MinWidth="45"/>
+                                <DataGridTextColumn Header="Uptime(d)"    Binding="{Binding UptimeDays}"     Width="65"  MinWidth="50"/>
+                                <DataGridTextColumn Header="RAM(GB)"      Binding="{Binding TotalRAMGB}"     Width="62"  MinWidth="50"/>
+                                <DataGridTextColumn Header="Disk(GB)"     Binding="{Binding DiskFreeGB}"     Width="62"  MinWidth="50"/>
+                                <DataGridTextColumn Header="IP Address"   Binding="{Binding IPAddress}"      Width="105" MinWidth="80"/>
+                                <DataGridTextColumn Header="LoggedInUser" Binding="{Binding LoggedInUser}"   Width="130" MinWidth="90"/>
+                                <DataGridTextColumn Header="Serial"       Binding="{Binding SerialNumber}"   Width="120" MinWidth="80"/>
+                                <DataGridTextColumn Header="Manufacturer" Binding="{Binding Manufacturer}"   Width="110" MinWidth="80"/>
+                                <DataGridTextColumn Header="Model"        Binding="{Binding Model}"          Width="145" MinWidth="100"/>
+                                <DataGridTextColumn Header="TPM"          Binding="{Binding TPMPresent}"     Width="60"  MinWidth="45"/>
+                                <DataGridTextColumn Header="SecureBoot"   Binding="{Binding SecureBoot}"     Width="80"  MinWidth="60"/>
+                                <DataGridTextColumn Header="Duration(s)"  Binding="{Binding DurationSeconds}" Width="75" MinWidth="55"/>
+                                <DataGridTextColumn Header="Details"      Binding="{Binding Details}"        Width="*"   MinWidth="150"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                    </DockPanel>
+                </TabItem>
+
             </TabControl>
         </Grid>
 

@@ -1863,6 +1863,31 @@ namespace NecessaryAdminTool
             private string _tags; public string Tags { get => _tags; set { _tags = value; OnProp(); } }
         }
 
+        // TAG: #DEPLOYMENT_RESULTS - Model for Master_Update_Log.csv rows (20 columns, shared schema for Feature/General/Preflight scripts)
+        public class DeploymentResult
+        {
+            public string Hostname       { get; set; }
+            public string Script         { get; set; }
+            public string Timestamp      { get; set; }
+            public string OSVersion      { get; set; }
+            public string BuildNumber    { get; set; }
+            public string UptimeDays     { get; set; }
+            public string TotalRAMGB     { get; set; }
+            public string DiskFreeGB     { get; set; }
+            public string SerialNumber   { get; set; }
+            public string Manufacturer   { get; set; }
+            public string Model          { get; set; }
+            public string IPAddress      { get; set; }
+            public string LoggedInUser   { get; set; }
+            public string TPMPresent     { get; set; }
+            public string SecureBoot     { get; set; }
+            public string Status         { get; set; }
+            public string Method         { get; set; }
+            public string UpdateCount    { get; set; }
+            public string Details        { get; set; }
+            public string DurationSeconds { get; set; }
+        }
+
         public class UserConfig
         {
             public string LastUser { get; set; }
@@ -1930,6 +1955,8 @@ namespace NecessaryAdminTool
 
         private ObservableCollection<AuditLog> _logs = new ObservableCollection<AuditLog>();
         private ObservableCollection<PCInventory> _inventory = new ObservableCollection<PCInventory>();
+        // TAG: #DEPLOYMENT_RESULTS
+        private ObservableCollection<DeploymentResult> _deploymentResults = new ObservableCollection<DeploymentResult>();
         private ObservableCollection<PinnedDevice> _pinnedDevices = new ObservableCollection<PinnedDevice>();
         private ObservableCollection<GlobalServiceStatus> _essentialServices = new ObservableCollection<GlobalServiceStatus>();
         private ObservableCollection<GlobalServiceStatus> _highPriorityServices = new ObservableCollection<GlobalServiceStatus>();
@@ -9814,6 +9841,239 @@ if ($rebootPending) {
                 AddLog("local", "EXPORT", path, "OK");
             }
             catch (Exception ex) { Managers.UI.ToastManager.ShowError($"Export failed: {ex.Message}"); }
+        }
+
+        // ── Deployment Results Tab (TAG: #DEPLOYMENT_RESULTS) ────────────────────
+
+        /// <summary>Returns the path to Master_Update_Log.csv from DeploymentLogDirectory setting.</summary>
+        private string GetMasterUpdateLogPath()
+        {
+            string dir = NecessaryAdminTool.Properties.Settings.Default.DeploymentLogDirectory;
+            if (string.IsNullOrWhiteSpace(dir))
+                dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "NecessaryAdminTool");
+            return Path.Combine(dir, "Master_Update_Log.csv");
+        }
+
+        /// <summary>Reads Master_Update_Log.csv and populates _deploymentResults.</summary>
+        private void LoadDeploymentResults()
+        {
+            LogManager.LogInfo("LoadDeploymentResults() - START");
+            try
+            {
+                string csvPath = GetMasterUpdateLogPath();
+                TxtDeploymentLogPath.Text = $"Log: {csvPath}";
+                _deploymentResults.Clear();
+
+                if (!File.Exists(csvPath))
+                {
+                    TxtDeploymentCount.Text = "0 records — log not found";
+                    Managers.UI.ToastManager.ShowWarning($"Master_Update_Log.csv not found at:\n{csvPath}\n\nCheck Options → Deployment Configuration.");
+                    LogManager.LogWarning($"LoadDeploymentResults() - File not found: {csvPath}");
+                    return;
+                }
+
+                var lines = File.ReadAllLines(csvPath, System.Text.Encoding.UTF8);
+                int loaded = 0;
+                // Expected header: Hostname,Script,Timestamp,OSVersion,BuildNumber,UptimeDays,TotalRAMGB,DiskFreeGB,SerialNumber,Manufacturer,Model,IPAddress,LoggedInUser,TPMPresent,SecureBoot,Status,Method,UpdateCount,Details,DurationSeconds
+                for (int i = 1; i < lines.Length; i++) // skip header row
+                {
+                    if (string.IsNullOrWhiteSpace(lines[i])) continue;
+                    var fields = ParseCsvLine(lines[i]);
+                    if (fields == null || fields.Length < 16) continue;
+
+                    _deploymentResults.Add(new DeploymentResult
+                    {
+                        Hostname        = SafeGet(fields, 0),
+                        Script          = SafeGet(fields, 1),
+                        Timestamp       = SafeGet(fields, 2),
+                        OSVersion       = SafeGet(fields, 3),
+                        BuildNumber     = SafeGet(fields, 4),
+                        UptimeDays      = SafeGet(fields, 5),
+                        TotalRAMGB      = SafeGet(fields, 6),
+                        DiskFreeGB      = SafeGet(fields, 7),
+                        SerialNumber    = SafeGet(fields, 8),
+                        Manufacturer    = SafeGet(fields, 9),
+                        Model           = SafeGet(fields, 10),
+                        IPAddress       = SafeGet(fields, 11),
+                        LoggedInUser    = SafeGet(fields, 12),
+                        TPMPresent      = SafeGet(fields, 13),
+                        SecureBoot      = SafeGet(fields, 14),
+                        Status          = SafeGet(fields, 15),
+                        Method          = SafeGet(fields, 16),
+                        UpdateCount     = SafeGet(fields, 17),
+                        Details         = SafeGet(fields, 18),
+                        DurationSeconds = SafeGet(fields, 19),
+                    });
+                    loaded++;
+                }
+
+                GridDeploymentResults.ItemsSource = _deploymentResults;
+                TxtDeploymentCount.Text = $"{loaded:N0} record{(loaded == 1 ? "" : "s")}";
+                LogManager.LogInfo($"LoadDeploymentResults() - SUCCESS - {loaded} rows from {csvPath}");
+            }
+            catch (Exception ex)
+            {
+                Managers.UI.ToastManager.ShowError($"Failed to load deployment results:\n{ex.Message}");
+                LogManager.LogError("LoadDeploymentResults() - FAILED", ex);
+            }
+        }
+
+        /// <summary>Parses one CSV line respecting quoted fields.</summary>
+        private static string[] ParseCsvLine(string line)
+        {
+            try
+            {
+                var result = new System.Collections.Generic.List<string>();
+                bool inQuote = false;
+                var field = new System.Text.StringBuilder();
+                foreach (char c in line)
+                {
+                    if (c == '"') { inQuote = !inQuote; }
+                    else if (c == ',' && !inQuote) { result.Add(field.ToString()); field.Clear(); }
+                    else { field.Append(c); }
+                }
+                result.Add(field.ToString());
+                return result.ToArray();
+            }
+            catch { return null; }
+        }
+
+        private static string SafeGet(string[] arr, int idx) =>
+            arr != null && idx < arr.Length ? arr[idx].Trim() : "";
+
+        private void BtnRefreshDeploymentResults_Click(object sender, RoutedEventArgs e) => LoadDeploymentResults();
+
+        private void TxtDeploymentSearch_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            try
+            {
+                string q = TxtDeploymentSearch.Text.Trim().ToLower();
+                var view = CollectionViewSource.GetDefaultView(_deploymentResults);
+                view.Filter = string.IsNullOrEmpty(q) ? (Predicate<object>)null : obj =>
+                {
+                    var r = (DeploymentResult)obj;
+                    return (r.Hostname      ?? "").ToLower().Contains(q) ||
+                           (r.Status        ?? "").ToLower().Contains(q) ||
+                           (r.OSVersion     ?? "").ToLower().Contains(q) ||
+                           (r.LoggedInUser  ?? "").ToLower().Contains(q) ||
+                           (r.SerialNumber  ?? "").ToLower().Contains(q) ||
+                           (r.Model         ?? "").ToLower().Contains(q) ||
+                           (r.IPAddress     ?? "").ToLower().Contains(q) ||
+                           (r.Script        ?? "").ToLower().Contains(q) ||
+                           (r.Details       ?? "").ToLower().Contains(q);
+                };
+
+                // Update visible count
+                int visible = view.Cast<object>().Count();
+                TxtDeploymentCount.Text = string.IsNullOrEmpty(q)
+                    ? $"{_deploymentResults.Count:N0} record{(_deploymentResults.Count == 1 ? "" : "s")}"
+                    : $"{visible:N0} of {_deploymentResults.Count:N0} records";
+            }
+            catch (Exception ex) { LogManager.LogError("DeploymentSearch filter failed", ex); }
+        }
+
+        private void BtnExportDeploymentResults_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var view = CollectionViewSource.GetDefaultView(_deploymentResults);
+                var rows = view?.Cast<DeploymentResult>().ToList() ?? _deploymentResults.ToList();
+                if (rows.Count == 0) { Managers.UI.ToastManager.ShowWarning("No records to export. Load data first."); return; }
+
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine("Hostname,Script,Timestamp,OSVersion,BuildNumber,UptimeDays,TotalRAMGB,DiskFreeGB,SerialNumber,Manufacturer,Model,IPAddress,LoggedInUser,TPMPresent,SecureBoot,Status,Method,UpdateCount,Details,DurationSeconds");
+                foreach (var r in rows)
+                    sb.AppendLine($"\"{r.Hostname}\",\"{r.Script}\",\"{r.Timestamp}\",\"{r.OSVersion}\",\"{r.BuildNumber}\",\"{r.UptimeDays}\",\"{r.TotalRAMGB}\",\"{r.DiskFreeGB}\",\"{r.SerialNumber}\",\"{r.Manufacturer}\",\"{r.Model}\",\"{r.IPAddress}\",\"{r.LoggedInUser}\",\"{r.TPMPresent}\",\"{r.SecureBoot}\",\"{r.Status}\",\"{r.Method}\",\"{r.UpdateCount}\",\"{r.Details}\",\"{r.DurationSeconds}\"");
+
+                string outPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+                    $"NecessaryAdminTool_DeploymentResults_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
+                File.WriteAllText(outPath, sb.ToString(), System.Text.Encoding.UTF8);
+                Managers.UI.ToastManager.ShowSuccess($"Exported {rows.Count:N0} records to Desktop:\n{Path.GetFileName(outPath)}");
+                AddLog("local", "EXPORT_DEPLOYMENT_RESULTS", outPath, "OK");
+                LogManager.LogInfo($"BtnExportDeploymentResults_Click() - Exported {rows.Count} rows to {outPath}");
+            }
+            catch (Exception ex)
+            {
+                Managers.UI.ToastManager.ShowError($"Export failed: {ex.Message}");
+                LogManager.LogError("BtnExportDeploymentResults_Click() - FAILED", ex);
+            }
+        }
+
+        private void BtnClearDeploymentLog_Click(object sender, RoutedEventArgs e)
+        {
+            LogManager.LogInfo("BtnClearDeploymentLog_Click() - START");
+            try
+            {
+                string csvPath = GetMasterUpdateLogPath();
+                if (!File.Exists(csvPath))
+                {
+                    Managers.UI.ToastManager.ShowWarning($"Nothing to clear — log not found:\n{csvPath}");
+                    return;
+                }
+
+                // Step 1: Offer backup before deleting
+                var backupResult = MessageBox.Show(
+                    $"Do you want to save a backup of Master_Update_Log.csv before clearing it?\n\n" +
+                    $"Source: {csvPath}\n\nClick YES to backup first (recommended)\nClick NO to delete without backup\nClick CANCEL to abort.",
+                    "Backup Before Clearing?",
+                    MessageBoxButton.YesNoCancel,
+                    MessageBoxImage.Warning,
+                    MessageBoxResult.Yes);
+
+                if (backupResult == MessageBoxResult.Cancel)
+                {
+                    LogManager.LogInfo("BtnClearDeploymentLog_Click() - Cancelled by user");
+                    return;
+                }
+
+                if (backupResult == MessageBoxResult.Yes)
+                {
+                    // Ask where to save backup
+                    var dlg = new Microsoft.Win32.SaveFileDialog
+                    {
+                        Title            = "Save Backup of Master_Update_Log.csv",
+                        Filter           = "CSV files (*.csv)|*.csv|All files (*.*)|*.*",
+                        FileName         = $"Master_Update_Log_Backup_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
+                        InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
+                    };
+
+                    if (dlg.ShowDialog() != true)
+                    {
+                        LogManager.LogInfo("BtnClearDeploymentLog_Click() - Backup save dialog cancelled");
+                        return; // User cancelled the save dialog — abort the whole operation
+                    }
+
+                    File.Copy(csvPath, dlg.FileName, overwrite: true);
+                    Managers.UI.ToastManager.ShowSuccess($"Backup saved:\n{Path.GetFileName(dlg.FileName)}");
+                    LogManager.LogInfo($"BtnClearDeploymentLog_Click() - Backup saved to {dlg.FileName}");
+                }
+
+                // Step 2: Confirm deletion
+                var confirmResult = MessageBox.Show(
+                    $"Are you sure you want to permanently delete Master_Update_Log.csv?\n\n{csvPath}",
+                    "Confirm Clear",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question,
+                    MessageBoxResult.No);
+
+                if (confirmResult != MessageBoxResult.Yes)
+                {
+                    LogManager.LogInfo("BtnClearDeploymentLog_Click() - Delete confirmation declined");
+                    return;
+                }
+
+                File.Delete(csvPath);
+                _deploymentResults.Clear();
+                TxtDeploymentCount.Text = "0 records — cleared";
+                Managers.UI.ToastManager.ShowSuccess("Master_Update_Log.csv deleted. Grid cleared.");
+                AddLog("local", "CLEAR_DEPLOYMENT_LOG", csvPath, "OK");
+                LogManager.LogInfo($"BtnClearDeploymentLog_Click() - SUCCESS - Deleted {csvPath}");
+            }
+            catch (Exception ex)
+            {
+                Managers.UI.ToastManager.ShowError($"Failed to clear log:\n{ex.Message}");
+                LogManager.LogError("BtnClearDeploymentLog_Click() - FAILED", ex);
+            }
         }
 
         private void Ctx_KillProc_Click(object sender, RoutedEventArgs e) { if (AuditGrid.SelectedItem is AuditLog log) { var pn = log.Details.Split(' ')[0]; if (!SecurityValidator.ContainsDangerousPatterns(pn)) RunHybridExecutor($"Stop-Process -Name {pn} -Force", "", "KILL_PROC"); } }
