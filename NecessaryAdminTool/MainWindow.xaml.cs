@@ -3836,7 +3836,7 @@ namespace NecessaryAdminTool
             // Backtick escaping is PS-internal only and does not survive the WMI CommandLine
             // round-trip; -EncodedCommand is injection-proof regardless of special chars.
             string b64 = Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(psCommand));
-            return $"powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand {b64}";
+            return $"powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand \"{b64}\"";
         }
 
         // ── Fleet Scanner ──
@@ -4269,11 +4269,14 @@ namespace NecessaryAdminTool
                                 LogManager.LogDebug($"[AGENT] Hit for {hostname}");
                                 return ConvertAgentInfoToHardwareSpec(agentInfo);
                             }
+                            // Agent reachable but returned null (host offline or no data) — fall through to CIM/WMI
+                            AppendTerminal("[AGENT] Returned null — falling back to CIM/WMI");
+                            LogManager.LogDebug($"[AGENT] Null response for {hostname} - falling back to CIM/WMI");
                         }
                         catch (Exception agentEx)
                         {
-                            AppendTerminal($"[AGENT] Miss: {agentEx.Message}", true);
-                            LogManager.LogDebug($"[AGENT] Failed for {hostname}: {agentEx.Message}");
+                            AppendTerminal($"[AGENT] Exception: {agentEx.Message} — falling back to CIM/WMI", true);
+                            LogManager.LogDebug($"[AGENT] Exception for {hostname}: {agentEx.Message}");
                         }
                     }
 
@@ -7174,7 +7177,37 @@ if ($connection) {{
 
         private void Ctx_PushGeneral_Click(object sender, RoutedEventArgs e) { if (GridInventory.SelectedItem is PCInventory pc && pc.Status == "ONLINE") RunHybridExecutor(Script_General, "", "PUSH_GENERAL", pc.Hostname, trustedScript: true); }
         private void Ctx_PushFeature_Click(object sender, RoutedEventArgs e) { if (GridInventory.SelectedItem is PCInventory pc && pc.Status == "ONLINE") RunHybridExecutor(Script_Feature, "", "PUSH_FEATURE", pc.Hostname, trustedScript: true); }
-        private async void Ctx_RefreshNode_Click(object sender, RoutedEventArgs e) { try { if (GridInventory.SelectedItem is PCInventory pc) { await Task.Run(async () => { try { using (var p = new Ping()) { var r = await p.SendPingAsync(pc.Hostname, SecureConfig.PingTimeoutMs); Application.Current.Dispatcher.Invoke(() => pc.Status = r.Status == IPStatus.Success ? "ONLINE" : "Offline"); } } catch { Application.Current.Dispatcher.Invoke(() => pc.Status = "Error"); } }); } } catch { } }
+        private async void Ctx_RefreshNode_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (!(GridInventory.SelectedItem is PCInventory pc)) return;
+                await RefreshNodeStatusAsync(pc);
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Ctx_RefreshNode_Click - FAILED", ex);
+                Managers.UI.ToastManager.ShowError("Failed to refresh node status");
+            }
+        }
+
+        private async Task RefreshNodeStatusAsync(PCInventory pc)
+        {
+            try
+            {
+                using (var ping = new Ping())
+                {
+                    var result = await ping.SendPingAsync(pc.Hostname, SecureConfig.PingTimeoutMs);
+                    pc.Status = result.Status == System.Net.NetworkInformation.IPStatus.Success ? "ONLINE" : "Offline";
+                    LogManager.LogDebug($"RefreshNodeStatusAsync: {pc.Hostname} → {pc.Status}");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"RefreshNodeStatusAsync - FAILED for {pc.Hostname}", ex);
+                pc.Status = "Error";
+            }
+        }
 
         /// <summary>Pin selected device from inventory to pinned devices monitor</summary>
         private async void Ctx_PinDevice_Click(object sender, RoutedEventArgs e)
@@ -9919,67 +9952,83 @@ if ($rebootPending) {
             return Path.Combine(dir, "Master_Update_Log.csv");
         }
 
-        /// <summary>Reads Master_Update_Log.csv and populates _deploymentResults.</summary>
-        private void LoadDeploymentResults()
+        /// <summary>Reads Master_Update_Log.csv and populates _deploymentResults (async to avoid blocking UI).</summary>
+        private async Task LoadDeploymentResultsAsync()
         {
-            LogManager.LogInfo("LoadDeploymentResults() - START");
+            LogManager.LogInfo("LoadDeploymentResultsAsync() - START");
             try
             {
                 string csvPath = GetMasterUpdateLogPath();
                 TxtDeploymentLogPath.Text = $"Log: {csvPath}";
                 _deploymentResults.Clear();
+                TxtDeploymentCount.Text = "Loading...";
 
                 if (!File.Exists(csvPath))
                 {
                     TxtDeploymentCount.Text = "0 records — log not found";
                     Managers.UI.ToastManager.ShowWarning($"Master_Update_Log.csv not found at:\n{csvPath}\n\nCheck Options → Deployment Configuration.");
-                    LogManager.LogWarning($"LoadDeploymentResults() - File not found: {csvPath}");
+                    LogManager.LogWarning($"LoadDeploymentResultsAsync() - File not found: {csvPath}");
                     return;
                 }
 
-                var lines = File.ReadAllLines(csvPath, System.Text.Encoding.UTF8);
-                int loaded = 0;
+                // Run file I/O + parsing on ThreadPool to avoid blocking UI thread (large CSVs on network shares)
                 // Expected header: Hostname,Script,Timestamp,OSVersion,BuildNumber,UptimeDays,TotalRAMGB,DiskFreeGB,SerialNumber,Manufacturer,Model,IPAddress,LoggedInUser,TPMPresent,SecureBoot,Status,Method,UpdateCount,Details,DurationSeconds
-                for (int i = 1; i < lines.Length; i++) // skip header row
+                var results = await Task.Run(() =>
                 {
-                    if (string.IsNullOrWhiteSpace(lines[i])) continue;
-                    var fields = ParseCsvLine(lines[i]);
-                    if (fields == null || fields.Length < 16) continue;
-
-                    _deploymentResults.Add(new DeploymentResult
+                    var list = new System.Collections.Generic.List<DeploymentResult>();
+                    var rawLines = File.ReadAllLines(csvPath, System.Text.Encoding.UTF8);
+                    for (int i = 1; i < rawLines.Length; i++) // skip header row
                     {
-                        Hostname        = SafeGet(fields, 0),
-                        Script          = SafeGet(fields, 1),
-                        Timestamp       = SafeGet(fields, 2),
-                        OSVersion       = SafeGet(fields, 3),
-                        BuildNumber     = SafeGet(fields, 4),
-                        UptimeDays      = SafeGet(fields, 5),
-                        TotalRAMGB      = SafeGet(fields, 6),
-                        DiskFreeGB      = SafeGet(fields, 7),
-                        SerialNumber    = SafeGet(fields, 8),
-                        Manufacturer    = SafeGet(fields, 9),
-                        Model           = SafeGet(fields, 10),
-                        IPAddress       = SafeGet(fields, 11),
-                        LoggedInUser    = SafeGet(fields, 12),
-                        TPMPresent      = SafeGet(fields, 13),
-                        SecureBoot      = SafeGet(fields, 14),
-                        Status          = SafeGet(fields, 15),
-                        Method          = SafeGet(fields, 16),
-                        UpdateCount     = SafeGet(fields, 17),
-                        Details         = SafeGet(fields, 18),
-                        DurationSeconds = SafeGet(fields, 19),
-                    });
-                    loaded++;
-                }
+                        if (string.IsNullOrWhiteSpace(rawLines[i])) continue;
+                        var fields = ParseCsvLine(rawLines[i]);
+                        if (fields == null)
+                        {
+                            LogManager.LogWarning($"LoadDeploymentResultsAsync() - Skipped unparseable line {i}");
+                            continue;
+                        }
+                        if (fields.Length < 16)
+                        {
+                            LogManager.LogWarning($"LoadDeploymentResultsAsync() - Skipped line {i}: only {fields.Length} fields (need ≥16)");
+                            continue;
+                        }
 
+                        list.Add(new DeploymentResult
+                        {
+                            Hostname        = SafeGet(fields, 0),
+                            Script          = SafeGet(fields, 1),
+                            Timestamp       = SafeGet(fields, 2),
+                            OSVersion       = SafeGet(fields, 3),
+                            BuildNumber     = SafeGet(fields, 4),
+                            UptimeDays      = SafeGet(fields, 5),
+                            TotalRAMGB      = SafeGet(fields, 6),
+                            DiskFreeGB      = SafeGet(fields, 7),
+                            SerialNumber    = SafeGet(fields, 8),
+                            Manufacturer    = SafeGet(fields, 9),
+                            Model           = SafeGet(fields, 10),
+                            IPAddress       = SafeGet(fields, 11),
+                            LoggedInUser    = SafeGet(fields, 12),
+                            TPMPresent      = SafeGet(fields, 13),
+                            SecureBoot      = SafeGet(fields, 14),
+                            Status          = SafeGet(fields, 15),
+                            Method          = SafeGet(fields, 16),
+                            UpdateCount     = SafeGet(fields, 17),
+                            Details         = SafeGet(fields, 18),
+                            DurationSeconds = SafeGet(fields, 19),
+                        });
+                    }
+                    return list;
+                }).ConfigureAwait(true); // true = resume on UI thread for _deploymentResults/GridDeploymentResults
+
+                foreach (var r in results) _deploymentResults.Add(r);
                 GridDeploymentResults.ItemsSource = _deploymentResults;
-                TxtDeploymentCount.Text = $"{loaded:N0} record{(loaded == 1 ? "" : "s")}";
-                LogManager.LogInfo($"LoadDeploymentResults() - SUCCESS - {loaded} rows from {csvPath}");
+                TxtDeploymentCount.Text = $"{results.Count:N0} record{(results.Count == 1 ? "" : "s")}";
+                LogManager.LogInfo($"LoadDeploymentResultsAsync() - SUCCESS - {results.Count} rows from {csvPath}");
             }
             catch (Exception ex)
             {
                 Managers.UI.ToastManager.ShowError($"Failed to load deployment results:\n{ex.Message}");
-                LogManager.LogError("LoadDeploymentResults() - FAILED", ex);
+                LogManager.LogError("LoadDeploymentResultsAsync() - FAILED", ex);
+                TxtDeploymentCount.Text = "Error loading results";
             }
         }
 
@@ -10000,13 +10049,17 @@ if ($rebootPending) {
                 result.Add(field.ToString());
                 return result.ToArray();
             }
-            catch { return null; }
+            catch (Exception ex)
+            {
+                LogManager.LogWarning($"ParseCsvLine - parse error (first 80 chars: '{line.Substring(0, Math.Min(80, line.Length))}'): {ex.Message}");
+                return null;
+            }
         }
 
         private static string SafeGet(string[] arr, int idx) =>
             arr != null && idx < arr.Length ? arr[idx].Trim() : "";
 
-        private void BtnRefreshDeploymentResults_Click(object sender, RoutedEventArgs e) => LoadDeploymentResults();
+        private async void BtnRefreshDeploymentResults_Click(object sender, RoutedEventArgs e) => await LoadDeploymentResultsAsync();
 
         private void TxtDeploymentSearch_TextChanged(object sender, TextChangedEventArgs e)
         {
