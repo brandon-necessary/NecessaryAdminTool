@@ -2871,6 +2871,23 @@
                                             <TextBlock Text="CLEAR LOG"/>
                                         </StackPanel>
                                     </Button>
+                                    <Button x:Name="BtnArchiveDeploymentLog"
+                                            Style="{StaticResource BtnGhost}"
+                                            Click="BtnArchiveDeploymentLog_Click"
+                                            Padding="12,8" FontSize="11" Foreground="#F59E0B" Margin="8,0,0,0"
+                                            ToolTip="Move entries older than 90 days to Master_Update_Log_Archive_YYYY.csv in the same directory. The main log keeps only recent entries.">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="📦" Margin="0,0,6,0"/>
+                                            <TextBlock Text="ARCHIVE OLD"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <!-- TAG: #DEPLOYMENT_RESULTS - "Latest per PC" toggle -->
+                                    <CheckBox x:Name="ChkLatestPerPC"
+                                              Content="Latest per PC" IsChecked="True"
+                                              Foreground="#A1A1AA" FontSize="11"
+                                              VerticalContentAlignment="Center" Margin="16,0,0,0"
+                                              Checked="ChkLatestPerPC_Changed" Unchecked="ChkLatestPerPC_Changed"
+                                              ToolTip="When checked: shows only the most recent run per computer (cleaner view). Uncheck to see the full run history for every PC."/>
                                 </StackPanel>
 
                                 <!-- Centre: search -->
@@ -2894,6 +2911,48 @@
                                                TextTrimming="CharacterEllipsis" MaxWidth="350"/>
                                 </StackPanel>
                             </Grid>
+                        </Border>
+
+                        <!-- Outcome tally strip - TAG: #DEPLOYMENT_RESULTS #TALLY -->
+                        <Border DockPanel.Dock="Top" Background="#141414" BorderBrush="#333"
+                                BorderThickness="1" CornerRadius="6" Padding="14,8" Margin="0,0,0,10">
+                            <WrapPanel Orientation="Horizontal">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,22,0">
+                                    <TextBlock Text="Win11 Installed:" Foreground="#6B7280" FontSize="10" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <TextBlock x:Name="TxtTallyWin11" Text="—" Foreground="#10B981" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"
+                                               ToolTip="Machines that had Windows 11 successfully installed (via Windows Update or ISO) in all recorded runs."/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,22,0">
+                                    <TextBlock Text="Win10 Updated:" Foreground="#6B7280" FontSize="10" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <TextBlock x:Name="TxtTallyWin10" Text="—" Foreground="#3B82F6" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"
+                                               ToolTip="Machines that received a Windows 10 22H2 update via the Win11-incompatible fallback path."/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,22,0">
+                                    <TextBlock Text="Up to Date:" Foreground="#6B7280" FontSize="10" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <TextBlock x:Name="TxtTallyCompliant" Text="—" Foreground="#10B981" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"
+                                               ToolTip="Machines already on the target OS version — no upgrade needed."/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,22,0">
+                                    <TextBlock Text="HW Blocked:" Foreground="#6B7280" FontSize="10" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <TextBlock x:Name="TxtTallyHWBlocked" Text="—" Foreground="#EF4444" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"
+                                               ToolTip="Machines that failed Windows 11 hardware requirements (TPM/SecureBoot/RAM/Disk)."/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,22,0">
+                                    <TextBlock Text="Failed:" Foreground="#6B7280" FontSize="10" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <TextBlock x:Name="TxtTallyFailed" Text="—" Foreground="#EF4444" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"
+                                               ToolTip="Runs that ended with a script failure (WU error, module install failure, ISO timeout, etc.)."/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,22,0">
+                                    <TextBlock Text="Postponed:" Foreground="#6B7280" FontSize="10" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <TextBlock x:Name="TxtTallyPostponed" Text="—" Foreground="#F59E0B" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"
+                                               ToolTip="Machines where the user chose to postpone the upgrade dialog (up to the configured maximum)."/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Total Runs:" Foreground="#6B7280" FontSize="10" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <TextBlock x:Name="TxtTallyTotal" Text="—" Foreground="{StaticResource AccentOrangeBrush}" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"
+                                               ToolTip="Total number of script run entries in the log (all PCs, all runs). Use 'Latest per PC' toggle to see unique PC count."/>
+                                </StackPanel>
+                            </WrapPanel>
                         </Border>
 
                         <!-- DataGrid -->

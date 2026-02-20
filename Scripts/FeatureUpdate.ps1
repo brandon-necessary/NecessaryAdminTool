@@ -6,7 +6,9 @@
 # Security Hardened: Admin checks, configurable patterns, resource cleanup, timeouts
 # ------------------------------------------------------------------------------
 # EXIT CODE LEGEND (visible in ManageEngine task result at a glance):
-#   0  = Success (upgrade installed + reboot issued, already compliant, or user postponed)
+#   0  = Already compliant (Win11 up to date) OR user postponed — no OS change made this run
+#   10 = Windows 10 22H2 installed via fallback (machine is Win11-incompatible) + reboot issued
+#   11 = Windows 11 upgrade installed successfully (via Windows Update or ISO) + reboot issued
 #   20 = Power check failed — device is on battery and below 20%, plug in charger
 #   21 = Pending reboot detected — run PreflightReboot.ps1 first, then re-push task
 #   22 = 32-bit OS — incompatible with Windows 11 (64-bit only)
@@ -622,7 +624,7 @@ if (!$TPM -or !$SecureBoot -or !$RAMOk -or $FreeGB -lt $MIN_DISK_SPACE_GB) {
         $RebootDelay = if (Test-UserLoggedIn) { 300 } else { 60 }
         Write-NecessaryAdminToolLog -Status "WIN10_FALLBACK_REBOOT_IN_${RebootDelay}s" -ToMaster $false
         & "$env:SystemRoot\System32\shutdown.exe" /r /t $RebootDelay /c "NecessaryAdminTool: Windows 10 update installed. Restarting to complete."
-        exit 0
+        exit 10  # Windows 10 22H2 installed via fallback + reboot issued
 
     } catch {
         Write-NecessaryAdminToolLog -Status "WIN10_FALLBACK_FAILED_$($_.Exception.Message)" -ToMaster $false
@@ -765,7 +767,7 @@ function Run-CloudUpdate {
         Write-Host "  Issuing restart in $RebootDelay seconds (user present: $(Test-UserLoggedIn))..." -ForegroundColor Yellow
         Write-NecessaryAdminToolLog -Status "CLOUD_WU_REBOOT_DELAY_${RebootDelay}s" -ToMaster $false
         & "$env:SystemRoot\System32\shutdown.exe" /r /t $RebootDelay /c "NecessaryAdminTool: Windows 11 upgrade installed. Restarting to complete installation."
-        exit 0
+        exit 11  # Windows 11 installed via Windows Update + reboot issued
 
     } catch {
         Write-NecessaryAdminToolLog -Status "CLOUD_WU_FAILED_$($_.Exception.Message)" -ToMaster $false
@@ -1206,7 +1208,7 @@ if ($HostnameMatch -and $ISOExists) {
             Write-MasterSummary -Status "SUCCESS" -Method "ISO" -UpdateCount "1" -Details $ExitDesc
             Show-NecessaryAdminToolLogo -Msg "ISO upgrade completed successfully" "Green"
             Show-UserNotification -Title "Windows 11 Upgrade Complete" -Message "Windows 11 $WIN11_TARGET_NAME has been installed successfully. Your computer will restart shortly to complete the upgrade. PLEASE SAVE YOUR WORK NOW." -Icon "Warning"
-            exit 0
+            exit 11  # Windows 11 installed via ISO + reboot issued
         } else {
             # setup.exe exited with an error - attempt Windows Update as fallback before giving up.
             # Note: hardware/driver/app compat failures (0xC190xxxx) will likely fail WU too,

@@ -1957,6 +1957,10 @@ namespace NecessaryAdminTool
         private ObservableCollection<PCInventory> _inventory = new ObservableCollection<PCInventory>();
         // TAG: #DEPLOYMENT_RESULTS
         private ObservableCollection<DeploymentResult> _deploymentResults = new ObservableCollection<DeploymentResult>();
+        // Full unfiltered set — kept so the "Latest per PC" toggle and search can re-apply without re-reading disk
+        private System.Collections.Generic.List<DeploymentResult> _allDeploymentResults = new System.Collections.Generic.List<DeploymentResult>();
+        // When true: DataGrid shows only the most recent run per hostname; tally counts ALL runs regardless
+        private bool _deploymentLatestPerPC = true;
         private ObservableCollection<PinnedDevice> _pinnedDevices = new ObservableCollection<PinnedDevice>();
         private ObservableCollection<GlobalServiceStatus> _essentialServices = new ObservableCollection<GlobalServiceStatus>();
         private ObservableCollection<GlobalServiceStatus> _highPriorityServices = new ObservableCollection<GlobalServiceStatus>();
@@ -9953,6 +9957,7 @@ if ($rebootPending) {
         }
 
         /// <summary>Reads Master_Update_Log.csv and populates _deploymentResults (async to avoid blocking UI).</summary>
+        // TAG: #DEPLOYMENT_RESULTS
         private async Task LoadDeploymentResultsAsync()
         {
             LogManager.LogInfo("LoadDeploymentResultsAsync() - START");
@@ -9961,7 +9966,9 @@ if ($rebootPending) {
                 string csvPath = GetMasterUpdateLogPath();
                 TxtDeploymentLogPath.Text = $"Log: {csvPath}";
                 _deploymentResults.Clear();
+                _allDeploymentResults.Clear();
                 TxtDeploymentCount.Text = "Loading...";
+                UpdateDeploymentTally(new System.Collections.Generic.List<DeploymentResult>());
 
                 if (!File.Exists(csvPath))
                 {
@@ -10019,16 +10026,189 @@ if ($rebootPending) {
                     return list;
                 }).ConfigureAwait(true); // true = resume on UI thread for _deploymentResults/GridDeploymentResults
 
-                foreach (var r in results) _deploymentResults.Add(r);
+                _allDeploymentResults = results;
+                var display = ApplyDeploymentView(results, TxtDeploymentSearch.Text);
+                foreach (var r in display) _deploymentResults.Add(r);
                 GridDeploymentResults.ItemsSource = _deploymentResults;
-                TxtDeploymentCount.Text = $"{results.Count:N0} record{(results.Count == 1 ? "" : "s")}";
-                LogManager.LogInfo($"LoadDeploymentResultsAsync() - SUCCESS - {results.Count} rows from {csvPath}");
+                UpdateDeploymentTally(results); // tally always counts ALL runs, not just the filtered view
+                TxtDeploymentCount.Text = BuildDeploymentCountText(display.Count, results.Count);
+                LogManager.LogInfo($"LoadDeploymentResultsAsync() - SUCCESS - {results.Count} total runs, {display.Count} displayed from {csvPath}");
             }
             catch (Exception ex)
             {
                 Managers.UI.ToastManager.ShowError($"Failed to load deployment results:\n{ex.Message}");
                 LogManager.LogError("LoadDeploymentResultsAsync() - FAILED", ex);
                 TxtDeploymentCount.Text = "Error loading results";
+            }
+        }
+
+        /// <summary>
+        /// Applies "Latest per PC" grouping (if enabled) then text search filter.
+        /// Always returns a new list — caller populates _deploymentResults from it.
+        /// </summary>
+        private System.Collections.Generic.List<DeploymentResult> ApplyDeploymentView(
+            System.Collections.Generic.List<DeploymentResult> source, string searchText)
+        {
+            var filtered = source;
+
+            // "Latest per PC" — keep only the most recent run per hostname, sorted newest first
+            if (_deploymentLatestPerPC)
+            {
+                filtered = filtered
+                    .GroupBy(r => r.Hostname ?? "", StringComparer.OrdinalIgnoreCase)
+                    .Select(g => g.OrderByDescending(r => r.Timestamp).First())
+                    .OrderByDescending(r => r.Timestamp)
+                    .ToList();
+            }
+
+            // Text search
+            if (!string.IsNullOrWhiteSpace(searchText))
+            {
+                var q = searchText.Trim().ToLowerInvariant();
+                filtered = filtered.Where(r =>
+                    (r.Hostname      ?? "").ToLowerInvariant().Contains(q) ||
+                    (r.Script        ?? "").ToLowerInvariant().Contains(q) ||
+                    (r.Status        ?? "").ToLowerInvariant().Contains(q) ||
+                    (r.Method        ?? "").ToLowerInvariant().Contains(q) ||
+                    (r.OSVersion     ?? "").ToLowerInvariant().Contains(q) ||
+                    (r.LoggedInUser  ?? "").ToLowerInvariant().Contains(q) ||
+                    (r.IPAddress     ?? "").ToLowerInvariant().Contains(q) ||
+                    (r.SerialNumber  ?? "").ToLowerInvariant().Contains(q) ||
+                    (r.BuildNumber   ?? "").ToLowerInvariant().Contains(q) ||
+                    (r.Details       ?? "").ToLowerInvariant().Contains(q)
+                ).ToList();
+            }
+
+            return filtered;
+        }
+
+        /// <summary>
+        /// Recomputes tally stat boxes from the FULL all-runs dataset (unaffected by Latest/search).
+        /// Win11 = SUCCESS + Method is not Win10WU/AlreadyUpToDate/UserPostpone.
+        /// Win10  = SUCCESS + Method == Win10WU.
+        /// </summary>
+        private void UpdateDeploymentTally(System.Collections.Generic.List<DeploymentResult> all)
+        {
+            int win11    = all.Count(r => r.Status == "SUCCESS" &&
+                                          r.Method != "Win10WU" &&
+                                          r.Method != "AlreadyUpToDate" &&
+                                          r.Method != "UserPostpone");
+            int win10    = all.Count(r => r.Status == "SUCCESS" && r.Method == "Win10WU");
+            int compliant = all.Count(r => r.Status == "COMPLIANT" ||
+                                           (r.Status == "SUCCESS" && r.Method == "AlreadyUpToDate"));
+            int hwBlock  = all.Count(r => r.Status == "HW_INCOMPATIBLE");
+            int failed   = all.Count(r => r.Status == "FAILED");
+            int postponed = all.Count(r => r.Status == "POSTPONED");
+
+            TxtTallyWin11.Text     = win11.ToString("N0");
+            TxtTallyWin10.Text     = win10.ToString("N0");
+            TxtTallyCompliant.Text = compliant.ToString("N0");
+            TxtTallyHWBlocked.Text = hwBlock.ToString("N0");
+            TxtTallyFailed.Text    = failed.ToString("N0");
+            TxtTallyPostponed.Text = postponed.ToString("N0");
+            TxtTallyTotal.Text     = all.Count.ToString("N0");
+        }
+
+        private string BuildDeploymentCountText(int visible, int total)
+        {
+            if (_deploymentLatestPerPC)
+                return $"{visible:N0} PC{(visible == 1 ? "" : "s")} (latest run each) of {total:N0} total run{(total == 1 ? "" : "s")}";
+            if (visible == total)
+                return $"{total:N0} run{(total == 1 ? "" : "s")}";
+            return $"{visible:N0} of {total:N0} runs";
+        }
+
+        /// <summary>"Latest per PC" checkbox toggle — re-applies view without re-reading disk.</summary>
+        private void ChkLatestPerPC_Changed(object sender, RoutedEventArgs e)
+        {
+            _deploymentLatestPerPC = ChkLatestPerPC.IsChecked == true;
+            LogManager.LogInfo($"ChkLatestPerPC_Changed() - LatestPerPC={_deploymentLatestPerPC}");
+            if (_allDeploymentResults.Count == 0) return;
+            var display = ApplyDeploymentView(_allDeploymentResults, TxtDeploymentSearch.Text);
+            _deploymentResults.Clear();
+            foreach (var r in display) _deploymentResults.Add(r);
+            TxtDeploymentCount.Text = BuildDeploymentCountText(display.Count, _allDeploymentResults.Count);
+        }
+
+        /// <summary>Archive entries older than 90 days to a yearly archive CSV.</summary>
+        private void BtnArchiveDeploymentLog_Click(object sender, RoutedEventArgs e)
+        {
+            LogManager.LogInfo("BtnArchiveDeploymentLog_Click() - START");
+            try
+            {
+                string csvPath = GetMasterUpdateLogPath();
+                if (!File.Exists(csvPath))
+                {
+                    Managers.UI.ToastManager.ShowWarning("Master_Update_Log.csv not found — nothing to archive.");
+                    return;
+                }
+
+                var confirm = MessageBox.Show(
+                    "Move entries older than 90 days to an archive file?\n\n" +
+                    $"Archive destination: Master_Update_Log_Archive_{DateTime.Now.Year}.csv\n" +
+                    "(created in the same directory as the main log)\n\n" +
+                    "The main log will retain only the last 90 days.",
+                    "Archive Old Deployment Entries",
+                    MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.Yes);
+                if (confirm != MessageBoxResult.Yes) return;
+
+                var cutoff   = DateTime.Now.AddDays(-90);
+                var rawLines = File.ReadAllLines(csvPath, System.Text.Encoding.UTF8);
+                if (rawLines.Length < 2)
+                {
+                    Managers.UI.ToastManager.ShowInfo("Log has no data rows to archive.");
+                    return;
+                }
+
+                string header = rawLines[0];
+                var keep    = new System.Collections.Generic.List<string>();
+                var archive = new System.Collections.Generic.List<string>();
+
+                for (int i = 1; i < rawLines.Length; i++)
+                {
+                    if (string.IsNullOrWhiteSpace(rawLines[i])) continue;
+                    var fields = ParseCsvLine(rawLines[i]);
+                    bool isOld = false;
+                    if (fields != null && fields.Length > 2 &&
+                        DateTime.TryParse(SafeGet(fields, 2), out DateTime ts))
+                        isOld = ts < cutoff;
+                    (isOld ? archive : keep).Add(rawLines[i]);
+                }
+
+                if (archive.Count == 0)
+                {
+                    Managers.UI.ToastManager.ShowInfo($"No entries older than 90 days found ({keep.Count} rows are within the last 90 days).");
+                    return;
+                }
+
+                // Append archived rows to yearly archive file
+                string archivePath = Path.Combine(
+                    Path.GetDirectoryName(csvPath) ?? "",
+                    $"Master_Update_Log_Archive_{DateTime.Now.Year}.csv");
+                bool archiveExisted = File.Exists(archivePath);
+                using (var sw = new StreamWriter(archivePath, append: true, encoding: System.Text.Encoding.UTF8))
+                {
+                    if (!archiveExisted) sw.WriteLine(header);
+                    foreach (var line in archive) sw.WriteLine(line);
+                }
+
+                // Rewrite main log with only recent rows
+                using (var sw = new StreamWriter(csvPath, append: false, encoding: System.Text.Encoding.UTF8))
+                {
+                    sw.WriteLine(header);
+                    foreach (var line in keep) sw.WriteLine(line);
+                }
+
+                LogManager.LogInfo($"BtnArchiveDeploymentLog_Click() - Archived {archive.Count} rows → {archivePath}; kept {keep.Count} rows");
+                Managers.UI.ToastManager.ShowSuccess(
+                    $"Archived {archive.Count} old entries to {Path.GetFileName(archivePath)}\n" +
+                    $"{keep.Count} recent entries remain in the main log.");
+                _ = LoadDeploymentResultsAsync();
+            }
+            catch (Exception ex)
+            {
+                Managers.UI.ToastManager.ShowError($"Archive failed:\n{ex.Message}");
+                LogManager.LogError("BtnArchiveDeploymentLog_Click() - FAILED", ex);
             }
         }
 
@@ -10065,27 +10245,11 @@ if ($rebootPending) {
         {
             try
             {
-                string q = TxtDeploymentSearch.Text.Trim().ToLower();
-                var view = CollectionViewSource.GetDefaultView(_deploymentResults);
-                view.Filter = string.IsNullOrEmpty(q) ? (Predicate<object>)null : obj =>
-                {
-                    var r = (DeploymentResult)obj;
-                    return (r.Hostname      ?? "").ToLower().Contains(q) ||
-                           (r.Status        ?? "").ToLower().Contains(q) ||
-                           (r.OSVersion     ?? "").ToLower().Contains(q) ||
-                           (r.LoggedInUser  ?? "").ToLower().Contains(q) ||
-                           (r.SerialNumber  ?? "").ToLower().Contains(q) ||
-                           (r.Model         ?? "").ToLower().Contains(q) ||
-                           (r.IPAddress     ?? "").ToLower().Contains(q) ||
-                           (r.Script        ?? "").ToLower().Contains(q) ||
-                           (r.Details       ?? "").ToLower().Contains(q);
-                };
-
-                // Update visible count
-                int visible = view.Cast<object>().Count();
-                TxtDeploymentCount.Text = string.IsNullOrEmpty(q)
-                    ? $"{_deploymentResults.Count:N0} record{(_deploymentResults.Count == 1 ? "" : "s")}"
-                    : $"{visible:N0} of {_deploymentResults.Count:N0} records";
+                if (_allDeploymentResults == null || _allDeploymentResults.Count == 0) return;
+                var display = ApplyDeploymentView(_allDeploymentResults, TxtDeploymentSearch.Text);
+                _deploymentResults.Clear();
+                foreach (var r in display) _deploymentResults.Add(r);
+                TxtDeploymentCount.Text = BuildDeploymentCountText(display.Count, _allDeploymentResults.Count);
             }
             catch (Exception ex) { LogManager.LogError("DeploymentSearch filter failed", ex); }
         }
@@ -10182,6 +10346,8 @@ if ($rebootPending) {
 
                 File.Delete(csvPath);
                 _deploymentResults.Clear();
+                _allDeploymentResults.Clear();
+                UpdateDeploymentTally(new System.Collections.Generic.List<DeploymentResult>());
                 TxtDeploymentCount.Text = "0 records — cleared";
                 Managers.UI.ToastManager.ShowSuccess("Master_Update_Log.csv deleted. Grid cleared.");
                 AddLog("local", "CLEAR_DEPLOYMENT_LOG", csvPath, "OK");
