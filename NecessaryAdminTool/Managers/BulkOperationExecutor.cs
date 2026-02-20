@@ -333,6 +333,35 @@ namespace NecessaryAdminTool.Managers
         /// </summary>
         private ComputerOperationResult ExecuteInventoryCollection(string computerName)
         {
+            // Strategy 0: NecessaryAdminAgent — try before WMI.
+            // .GetAwaiter().GetResult() is safe here: called on thread pool (no SynchronizationContext).
+            // TAG: #NAT_AGENT #BULK_OPERATIONS
+            try
+            {
+                var agentInfo = NatAgentClient.GetSystemInfoAsync(computerName).GetAwaiter().GetResult();
+                if (agentInfo != null)
+                {
+                    LogManager.LogDebug($"[BulkInventory] {computerName}: Agent hit");
+                    var agentResult = ComputerOperationResult.Succeeded(computerName, "Inventory collected via Agent");
+                    agentResult.ResultData["OS"]              = agentInfo.OS;
+                    agentResult.ResultData["Version"]         = agentInfo.Build;
+                    agentResult.ResultData["Manufacturer"]    = agentInfo.Manufacturer;
+                    agentResult.ResultData["Model"]           = agentInfo.Model;
+                    agentResult.ResultData["Serial"]          = agentInfo.Serial;
+                    agentResult.ResultData["CPU"]             = agentInfo.Processor;
+                    agentResult.ResultData["RAM_GB"]          = agentInfo.TotalRamGB;
+                    agentResult.ResultData["LoggedInUser"]    = agentInfo.LoggedInUser;
+                    agentResult.ResultData["CollectionMethod"] = "Agent";
+                    return agentResult;
+                }
+                LogManager.LogDebug($"[BulkInventory] {computerName}: Agent null — falling back to WMI");
+            }
+            catch (Exception agentEx)
+            {
+                LogManager.LogDebug($"[BulkInventory] {computerName}: Agent exception — falling back to WMI: {agentEx.Message}");
+            }
+
+            // Strategy 1: WMI fallback
             try
             {
                 var scope = new ManagementScope($"\\\\{computerName}\\root\\cimv2");

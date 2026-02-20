@@ -362,6 +362,43 @@ namespace NecessaryAdminTool
         /// </summary>
         private async Task TryEnrichWithWmiAsync(Data.ComputerInfo info, string hostname)
         {
+            // Strategy 0: NecessaryAdminAgent — no WMI firewall ports required.
+            // NatAgentClient already checks token; returns null if token not configured.
+            // TAG: #NAT_AGENT #AUTO_SCAN
+            try
+            {
+                var agentInfo = await Managers.NatAgentClient.GetSystemInfoAsync(hostname).ConfigureAwait(false);
+                if (agentInfo != null)
+                {
+                    LogManager.LogDebug($"[AutoScan] {info.Hostname}: Agent hit — skipping WMI enrichment");
+                    if (!string.IsNullOrEmpty(agentInfo.OS))           info.OS = agentInfo.OS;
+                    if (!string.IsNullOrEmpty(agentInfo.Build))        info.OSVersion = agentInfo.Build;
+                    if (!string.IsNullOrEmpty(agentInfo.Serial))       info.SerialNumber = agentInfo.Serial;
+                    if (!string.IsNullOrEmpty(agentInfo.Manufacturer)) info.Manufacturer = agentInfo.Manufacturer;
+                    if (!string.IsNullOrEmpty(agentInfo.Model))        info.Model = agentInfo.Model;
+                    if (!string.IsNullOrEmpty(agentInfo.Processor))    info.CPU = agentInfo.Processor;
+                    if (!string.IsNullOrEmpty(agentInfo.LoggedInUser)) info.LastLoggedOnUser = agentInfo.LoggedInUser;
+                    if (double.TryParse(agentInfo.TotalRamGB, out double ramGb))
+                        info.RAM_GB = (int)Math.Round(ramGb);
+                    if (double.TryParse(agentInfo.DiskTotalGB, out double dskGb))
+                        info.DiskSize_GB = (int)Math.Round(dskGb);
+                    if (double.TryParse(agentInfo.DiskFreeGB, out double freeGb))
+                        info.DiskFree_GB = (int)Math.Round(freeGb);
+                    if (!string.IsNullOrEmpty(agentInfo.LastBoot) &&
+                        DateTime.TryParse(agentInfo.LastBoot, out DateTime boot))
+                    {
+                        info.LastBootTime = boot;
+                        info.Uptime = (long)(DateTime.Now - boot).TotalSeconds;
+                    }
+                    return; // enrichment complete — skip WMI
+                }
+                LogManager.LogDebug($"[AutoScan] {info.Hostname}: Agent null — falling back to WMI");
+            }
+            catch (Exception agentEx)
+            {
+                LogManager.LogDebug($"[AutoScan] {info.Hostname}: Agent exception — falling back to WMI: {agentEx.Message}");
+            }
+
             await Task.Run(() =>
             {
                 try
