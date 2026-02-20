@@ -173,12 +173,23 @@
         <File Source="..\NecessaryAdminTool\bin\Release\System.Data.SQLite.dll" />
       </Component>
 
+      <!-- NecessaryAdminAgent executable - for deployment to target machines -->
+      <Component Id="AgentExecutable" Guid="D3E4F5A6-B7C8-4D5E-9F0A-1B2C3D4E5F6A" Win64="yes">
+        <File Id="NecessaryAdminAgent.exe"
+              Source="..\NecessaryAdminAgent\bin\Release\NecessaryAdminAgent.exe" />
+      </Component>
+
+      <Component Id="AgentConfig" Guid="F5A6B7C8-D9E0-4F5A-AB12-3D4E5F6A7B8C" Win64="yes">
+        <File Id="NecessaryAdminAgent.exe.config"
+              Source="..\NecessaryAdminAgent\bin\Release\NecessaryAdminAgent.exe.config" />
+      </Component>
+
     </ComponentGroup>
 
     <!-- SQLite x64 native interop - must install to x64\ subfolder relative to EXE -->
     <ComponentGroup Id="SQLiteInteropComponents" Directory="SQLiteX64Folder">
       <Component Id="SQLiteInterop" Guid="A6B7C8D9-E0F1-4A5B-2C3D-4E5F6A7B8C9D" Win64="yes">
-        <File Source="..\NecessaryAdminTool\bin\Release\x64\SQLite.Interop.dll"
+        <File Source="..\NecessaryAdminTool\bin\Release\libs\x64\SQLite.Interop.dll"
               Name="SQLite.Interop.dll"
               Id="SQLiteInteropDll" />
       </Component>
@@ -244,6 +255,15 @@
 
       <!-- Start Menu shortcut (always install) -->
       <ComponentRef Id="MainExecutable" />
+
+      <!-- Agent for remote deployment -->
+      <Feature Id="AgentFeature"
+               Title="NecessaryAdminAgent"
+               Level="1"
+               Description="Remote agent for fleet data collection (deploy to target machines)">
+        <ComponentRef Id="AgentExecutable" />
+        <ComponentRef Id="AgentConfig" />
+      </Feature>
 
       <!-- Optional features -->
       <Feature Id="DesktopShortcut"
