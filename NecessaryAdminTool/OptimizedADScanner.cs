@@ -210,10 +210,11 @@ namespace NecessaryAdminTool
                         LogManager.LogDebug($"[SCAN] {hostname} - Agent hit");
                         return ConvertAgentInfoToHardwareSpec(agentInfo);
                     }
+                    LogManager.LogDebug($"[SCAN] {hostname} - Agent null response, falling back to CIM/WMI");
                 }
                 catch (Exception agentEx)
                 {
-                    LogManager.LogDebug($"[SCAN] {hostname} - Agent miss: {agentEx.Message}");
+                    LogManager.LogDebug($"[SCAN] {hostname} - Agent exception, falling back to CIM/WMI: {agentEx.Message}");
                 }
             }
 
