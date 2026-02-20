@@ -20,22 +20,43 @@
 # CONFIGURATION (injected by NecessaryAdminTool on download)
 # ============================================================
 $LogDir              = $env:NECESSARYADMINTOOL_LOG_DIR
+$DatabaseType        = ""  # NAT_INJECT_DB_TYPE
+$SqlConnectionString = ""  # NAT_INJECT_SQL_CONN
 
 # ============================================================
 # SETUP
 # ============================================================
 $Hostname       = $env:COMPUTERNAME
 $StartTime      = Get-Date
-$ScriptVer      = "1.1"
+$Timestamp      = Get-Date -Format 'yyyy-MM-dd_HH-mm'
+$ScriptVer      = "1.2"
 $WarningMinutes = 20
 
+# Gather system context early - used in startup banner and all log entries
+$PSVersion   = "$($PSVersionTable.PSVersion.Major).$($PSVersionTable.PSVersion.Minor)"
+$RunningAs   = [Security.Principal.WindowsIdentity]::GetCurrent().Name
+$OSInfo      = Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue
+$OSVersion   = if ($OSInfo) { $OSInfo.Caption } else { "Unknown" }
+$UptimeDays  = if ($OSInfo) { [math]::Round(((Get-Date) - $OSInfo.LastBootUpTime).TotalDays, 2) } else { 0 }
+$SysInfo     = Get-CimInstance Win32_ComputerSystem -ErrorAction SilentlyContinue
+$DomainName  = if ($SysInfo) { $SysInfo.Domain } else { "Unknown" }
+$TotalRAMGB  = if ($SysInfo) { [math]::Round($SysInfo.TotalPhysicalMemory / 1GB, 2) } else { 0 }
+$FreeGB      = try { [math]::Round((Get-PSDrive C -ErrorAction Stop).Free / 1GB, 2) } catch { 0 }
+
 if ([string]::IsNullOrEmpty($LogDir)) {
-    $LogDir = "$env:TEMP\NecessaryAdminTool_Logs\Individual_PC_Logs"
+    $LogDir = "$env:TEMP\NecessaryAdminTool_Logs"
 }
-if (-not (Test-Path $LogDir -ErrorAction SilentlyContinue)) {
-    New-Item -ItemType Directory -Path $LogDir -Force -ErrorAction SilentlyContinue | Out-Null
+$LogDirSrc = if ($env:NECESSARYADMINTOOL_LOG_DIR) { "Configured ($env:NECESSARYADMINTOOL_LOG_DIR)" } else { "LOCAL FALLBACK ($LogDir)" }
+
+$PCLogDir = "$LogDir\Individual_PC_Logs"
+if (-not (Test-Path $PCLogDir -ErrorAction SilentlyContinue)) {
+    New-Item -ItemType Directory -Path $PCLogDir -Force -ErrorAction SilentlyContinue | Out-Null
 }
-$LogFile = Join-Path $LogDir "${Hostname}_Preflight.txt"
+$LogFile        = "$PCLogDir\${Hostname}_Preflight_${Timestamp}.txt"
+$TranscriptPath = "$PCLogDir\${Hostname}_Preflight_${Timestamp}_Transcript.txt"
+
+# Start transcript - captures all console output (same as FeatureUpdate/GeneralUpdate)
+Start-Transcript -Path $TranscriptPath -Append -NoClobber -ErrorAction SilentlyContinue
 
 function Write-Log {
     param([string]$Status, [string]$Detail = "")
@@ -43,6 +64,77 @@ function Write-Log {
     if ($Detail) { $Line += " | $Detail" }
     Write-Host $Line
     try { $Line | Out-File $LogFile -Append -Encoding UTF8 -ErrorAction SilentlyContinue } catch {}
+}
+
+# ============================================================
+# DATABASE WRITE (SQL Server - optional, same table as Feature/General scripts)
+# ============================================================
+function Write-ToDatabase {
+    param(
+        [string]$Status,
+        [string]$Details = ""
+    )
+    # Silently skip unless SQL Server is configured in NecessaryAdminTool
+    if ([string]::IsNullOrEmpty($DatabaseType) -or
+        $DatabaseType -ne "SqlServer" -or
+        [string]::IsNullOrEmpty($SqlConnectionString)) {
+        return
+    }
+
+    $Duration = [math]::Round(((Get-Date) - $StartTime).TotalSeconds, 0)
+    $Conn = $null
+    try {
+        $Conn = New-Object System.Data.SqlClient.SqlConnection($SqlConnectionString)
+        $Conn.Open()
+
+        # Create table if it does not already exist (shared with Feature/General scripts)
+        $CreateCmd = $Conn.CreateCommand()
+        $CreateCmd.CommandText = @"
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'UpdateHistory')
+CREATE TABLE UpdateHistory (
+    Id              INT IDENTITY(1,1) PRIMARY KEY,
+    Hostname        NVARCHAR(255)   NOT NULL,
+    Script          NVARCHAR(50)    NOT NULL,
+    Timestamp       DATETIME        NOT NULL,
+    OSVersion       NVARCHAR(500)   NULL,
+    UptimeDays      DECIMAL(10,2)   NULL,
+    DiskFreeGB      DECIMAL(10,2)   NULL,
+    Status          NVARCHAR(100)   NOT NULL,
+    UpdatesFound    NVARCHAR(500)   NULL,
+    Method          NVARCHAR(200)   NULL,
+    Details         NVARCHAR(MAX)   NULL,
+    DurationSeconds INT             NULL
+)
+"@
+        $CreateCmd.ExecuteNonQuery() | Out-Null
+
+        # Parameterized INSERT - no SQL injection risk
+        $InsertCmd = $Conn.CreateCommand()
+        $InsertCmd.CommandText = @"
+INSERT INTO UpdateHistory
+    (Hostname, Script, Timestamp, OSVersion, UptimeDays, DiskFreeGB,
+     Status, UpdatesFound, Method, Details, DurationSeconds)
+VALUES
+    (@Hostname, @Script, @Timestamp, @OSVersion, @UptimeDays, @DiskFreeGB,
+     @Status, NULL, NULL, @Details, @Duration)
+"@
+        $InsertCmd.Parameters.AddWithValue("@Hostname",   $Hostname)         | Out-Null
+        $InsertCmd.Parameters.AddWithValue("@Script",     "Preflight")       | Out-Null
+        $InsertCmd.Parameters.AddWithValue("@Timestamp",  [DateTime]::Now)   | Out-Null
+        $InsertCmd.Parameters.AddWithValue("@OSVersion",  $OSVersion)        | Out-Null
+        $InsertCmd.Parameters.AddWithValue("@UptimeDays", $UptimeDays)       | Out-Null
+        $InsertCmd.Parameters.AddWithValue("@DiskFreeGB", $FreeGB)           | Out-Null
+        $InsertCmd.Parameters.AddWithValue("@Status",     $Status)           | Out-Null
+        $InsertCmd.Parameters.AddWithValue("@Details",    $Details)          | Out-Null
+        $InsertCmd.Parameters.AddWithValue("@Duration",   $Duration)         | Out-Null
+        $InsertCmd.ExecuteNonQuery() | Out-Null
+
+        Write-Log -Status "DB_WRITE_SUCCESS" -Detail "Status=$Status"
+    } catch {
+        Write-Log -Status "DB_WRITE_FAILED" -Detail $_.Exception.Message
+    } finally {
+        if ($null -ne $Conn) { $Conn.Close() }
+    }
 }
 
 # ============================================================
@@ -164,66 +256,102 @@ function Show-RebootWarningDialog {
 # ============================================================
 # MAIN
 # ============================================================
-Write-Host ""
-Write-Host "--------------------------------------------------------------------------------" -ForegroundColor DarkYellow
-Write-Host "  NECESSARYADMINTOOL | Pre-flight Reboot Check v$ScriptVer" -ForegroundColor DarkYellow
-Write-Host "  Host    : $Hostname" -ForegroundColor Gray
-Write-Host "  Started : $($StartTime.ToString('yyyy-MM-dd HH:mm:ss'))" -ForegroundColor Gray
-Write-Host "  RunAs   : $([System.Security.Principal.WindowsIdentity]::GetCurrent().Name)" -ForegroundColor Gray
-Write-Host "--------------------------------------------------------------------------------" -ForegroundColor DarkYellow
-Write-Host ""
 
-Write-Log -Status "STARTED"
+# --- Comprehensive startup banner (matches FeatureUpdate/GeneralUpdate format) ---
+$StartBanner = @"
+================================================================================
+  PREFLIGHT REBOOT CHECK v$ScriptVer - SCRIPT START
+  Host      : $Hostname
+  Domain    : $DomainName
+  OS        : $OSVersion
+  Uptime    : $UptimeDays days
+  RAM       : $TotalRAMGB GB
+  Disk (C:) : $FreeGB GB free
+  RunningAs : $RunningAs
+  PS Ver    : $PSVersion
+  LogFile   : $LogFile
+  Transcript: $TranscriptPath
+  LogDirSrc : $LogDirSrc
+  Started   : $($StartTime.ToString('yyyy-MM-dd HH:mm:ss'))
+================================================================================
+"@
+Write-Log -Status "SCRIPT_START" -Detail "Host=$Hostname|Domain=$DomainName|OS=$OSVersion|Uptime=${UptimeDays}days|RAM=${TotalRAMGB}GB|Disk=${FreeGB}GB|PS=$PSVersion|RunAs=$RunningAs"
+try { $StartBanner | Out-File $LogFile -Append -Encoding UTF8 -ErrorAction SilentlyContinue } catch {}
+Write-Host $StartBanner -ForegroundColor DarkYellow
 
+# --- Check all three pending reboot registry keys ---
+Write-Log -Status "CHECKING_PENDING_REBOOT_KEYS" -Detail "WU_Key=HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired|CBS_Key=HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending|PFR_Key=HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager"
 $RebootReason = Test-PendingReboot
 
 if ($null -eq $RebootReason) {
+    $Duration = [math]::Round(((Get-Date) - $StartTime).TotalSeconds, 0)
     Write-Host "  No pending reboot detected - machine is ready for Feature Update." -ForegroundColor Green
-    Write-Log -Status "NO_PENDING_REBOOT_MACHINE_READY"
+    Write-Log -Status "NO_PENDING_REBOOT_MACHINE_READY" -Detail "OS=$OSVersion|Uptime=${UptimeDays}days|RAM=${TotalRAMGB}GB|Disk=${FreeGB}GB|Duration=${Duration}s"
+    Write-ToDatabase -Status "NO_REBOOT_NEEDED" -Details "OS=$OSVersion|Uptime=${UptimeDays}days|RAM=${TotalRAMGB}GB|Disk=${FreeGB}GB"
     Write-Host ""
+    Stop-Transcript -ErrorAction SilentlyContinue
     exit 0
 }
 
 Write-Host "  Pending reboot detected ($RebootReason) - restart required before upgrade." -ForegroundColor Yellow
-Write-Log -Status "PENDING_REBOOT_DETECTED" -Detail $RebootReason
+Write-Log -Status "PENDING_REBOOT_DETECTED" -Detail "Reason=$RebootReason|OS=$OSVersion|Uptime=${UptimeDays}days|RAM=${TotalRAMGB}GB|Disk=${FreeGB}GB"
 
-$UserPresent = Test-UserLoggedIn
+# --- Detect active user session ---
+Write-Log -Status "CHECKING_USER_SESSIONS" -Detail "Method=explorer_process_SessionId"
+$UserPresent   = Test-UserLoggedIn
+$LoggedInUser  = try { (Get-CimInstance Win32_ComputerSystem -ErrorAction SilentlyContinue).UserName } catch { "Unknown" }
+$ExplorerCount = @(Get-Process explorer -ErrorAction SilentlyContinue | Where-Object { $_.SessionId -ne 0 }).Count
+
 Write-Host "  Interactive user logged in: $UserPresent" -ForegroundColor Cyan
-Write-Log -Status "USER_SESSION_PRESENT_$UserPresent"
+Write-Log -Status "USER_SESSION_CHECK" -Detail "Present=$UserPresent|ActiveUser=$LoggedInUser|ExplorerCount=$ExplorerCount"
 
 if (!$UserPresent) {
     # ---- UNATTENDED: reboot immediately with a short console countdown ----
     Write-Host ""
     Write-Host "  No user logged in - rebooting in 60 seconds to clear pending state." -ForegroundColor Yellow
     Write-Host "  Push FeatureUpdate.ps1 after this machine comes back online." -ForegroundColor Cyan
-    Write-Log -Status "UNATTENDED_REBOOTING_IN_60S"
+    Write-Log -Status "UNATTENDED_REBOOTING_IN_60S" -Detail "RebootReason=$RebootReason|OS=$OSVersion|Uptime=${UptimeDays}days|Disk=${FreeGB}GB"
 
     shutdown.exe /r /t 60 /c "NecessaryAdminTool: Applying pending updates before Windows 11 upgrade. System restarts in 60 seconds."
+
+    $Duration = [math]::Round(((Get-Date) - $StartTime).TotalSeconds, 0)
+    Write-Log -Status "SHUTDOWN_COMMAND_ISSUED" -Detail "Delay=60s|Duration=${Duration}s|Result=REBOOTING_UNATTENDED"
+    Write-ToDatabase -Status "REBOOTING_UNATTENDED" -Details "RebootReason=$RebootReason|OS=$OSVersion|Uptime=${UptimeDays}days"
+    Stop-Transcript -ErrorAction SilentlyContinue
     exit 0
 
 } else {
     # ---- USER PRESENT: WinForms dialog + per-minute console countdown ----
     Write-Host ""
     Write-Host "  User is logged in - showing $WarningMinutes-minute restart warning dialog..." -ForegroundColor Yellow
-    Write-Log -Status "USER_PRESENT_SHOWING_${WarningMinutes}MIN_REBOOT_DIALOG"
+    Write-Log -Status "USER_PRESENT_SHOWING_DIALOG" -Detail "User=$LoggedInUser|WarningMinutes=$WarningMinutes|RebootReason=$RebootReason"
 
+    $DialogStarted = Get-Date
     Show-RebootWarningDialog -Minutes $WarningMinutes
+    $DialogSeconds = [math]::Round(((Get-Date) - $DialogStarted).TotalSeconds, 0)
 
     Write-Host "  Dialog closed. Starting $WarningMinutes-minute work-save countdown..." -ForegroundColor Yellow
-    Write-Log -Status "REBOOT_COUNTDOWN_STARTED_${WarningMinutes}MIN"
+    Write-Log -Status "DIALOG_CLOSED" -Detail "DialogOpenDuration=${DialogSeconds}s|UserClickedRestart=$($script:Restart)"
+    Write-Log -Status "REBOOT_COUNTDOWN_STARTED" -Detail "TotalMinutes=$WarningMinutes|RebootReason=$RebootReason|User=$LoggedInUser"
 
     # Per-minute console countdown - keeps ME execution log alive and gives visible progress
     for ($Min = $WarningMinutes; $Min -gt 0; $Min--) {
-        $Elapsed = $WarningMinutes - $Min
-        Write-Host "  [$Min min remaining | $Elapsed min elapsed | $(Get-Date -Format 'HH:mm:ss')] Save your work - restart incoming." -ForegroundColor Yellow
-        Write-Log -Status "REBOOT_COUNTDOWN_${Min}MIN_REMAINING"
+        $ElapsedMin = $WarningMinutes - $Min
+        Write-Host "  [$Min min remaining | $ElapsedMin min elapsed | $(Get-Date -Format 'HH:mm:ss')] Save your work - restart incoming." -ForegroundColor Yellow
+        Write-Log -Status "REBOOT_COUNTDOWN_${Min}MIN_REMAINING" -Detail "ElapsedMin=$ElapsedMin|RebootReason=$RebootReason"
         Start-Sleep -Seconds 60
     }
 
     Write-Host ""
     Write-Host "  [COUNTDOWN COMPLETE] $WarningMinutes minutes elapsed. Issuing restart now." -ForegroundColor Green
-    Write-Log -Status "REBOOT_COUNTDOWN_COMPLETE_ISSUING_RESTART"
+
+    $Duration = [math]::Round(((Get-Date) - $StartTime).TotalSeconds, 0)
+    Write-Log -Status "REBOOT_COUNTDOWN_COMPLETE" -Detail "TotalMinutes=$WarningMinutes|RebootReason=$RebootReason|Duration=${Duration}s"
 
     shutdown.exe /r /t 30 /c "NecessaryAdminTool: Restarting to apply pending updates before Windows 11 upgrade."
+
+    Write-Log -Status "SHUTDOWN_COMMAND_ISSUED" -Detail "Delay=30s|Duration=${Duration}s|Result=REBOOTING_AFTER_USER_WARNING"
+    Write-ToDatabase -Status "REBOOTING_AFTER_USER_WARNING" -Details "RebootReason=$RebootReason|User=$LoggedInUser|OS=$OSVersion|Uptime=${UptimeDays}days|WarningMinutes=$WarningMinutes"
+    Stop-Transcript -ErrorAction SilentlyContinue
     exit 0
 }

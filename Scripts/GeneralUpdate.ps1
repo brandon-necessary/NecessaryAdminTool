@@ -25,9 +25,10 @@ if ([string]::IsNullOrEmpty($LogDir) -or !(Test-Path $LogDir -ErrorAction Silent
 }
 
 $MasterLog   = "$LogDir\Master_Update_Log.csv"
+$Timestamp   = Get-Date -Format 'yyyy-MM-dd_HH-mm'
 $PCLogDir    = "$LogDir\Individual_PC_Logs"
 $PCArchive   = "$PCLogDir\Archived_PC_Logs"
-$PCLog       = "$PCLogDir\$($env:COMPUTERNAME)_General.txt"
+$PCLog       = "$PCLogDir\$($env:COMPUTERNAME)_General_$Timestamp.txt"
 $FlagFile    = "C:\Windows\Temp\NecessaryAdminTool_Uptime_Flag.txt"
 $Comp        = $env:COMPUTERNAME
 
@@ -46,7 +47,7 @@ if (!(Test-Path $PCArchive)) {
 
 # Start transcript - captures ALL console output automatically (belt-and-suspenders alongside custom logging)
 # Must specify explicit path: under SYSTEM, $HOME resolves to C:\Windows\System32\config\systemprofile
-$TranscriptPath = "$PCLogDir\$($env:COMPUTERNAME)_General_Transcript.txt"
+$TranscriptPath = "$PCLogDir\$($env:COMPUTERNAME)_General_${Timestamp}_Transcript.txt"
 Start-Transcript -Path $TranscriptPath -Append -NoClobber -ErrorAction SilentlyContinue
 
 # Safe maintenance: Only clean NecessaryAdminTool temp files
@@ -61,6 +62,16 @@ Get-ChildItem -Path $PCLogDir -Filter "*.txt" -ErrorAction SilentlyContinue |
 $ScriptStart = Get-Date
 $OSInfo      = Get-CimInstance Win32_OperatingSystem
 $OSVersion   = $OSInfo.Caption
+
+# Gather system context for startup banner (single query - reused throughout)
+$PSVersion   = "$($PSVersionTable.PSVersion.Major).$($PSVersionTable.PSVersion.Minor)"
+$RunningAs   = [Security.Principal.WindowsIdentity]::GetCurrent().Name
+$SysInfo     = Get-CimInstance Win32_ComputerSystem -ErrorAction SilentlyContinue
+$DomainName  = if ($SysInfo) { $SysInfo.Domain } else { "Unknown" }
+$TotalRAMGB  = if ($SysInfo) { [math]::Round($SysInfo.TotalPhysicalMemory / 1GB, 2) } else { 0 }
+$UptimeDays  = [math]::Round(((Get-Date) - $OSInfo.LastBootUpTime).TotalDays, 2)
+$FreeGB      = try { [math]::Round((Get-PSDrive C -ErrorAction Stop).Free / 1GB, 2) } catch { 0 }
+$LogDirSrc   = if ($env:NECESSARYADMINTOOL_LOG_DIR) { "Configured ($env:NECESSARYADMINTOOL_LOG_DIR)" } else { "LOCAL FALLBACK ($LogDir)" }
 
 # --- 1. LOGGING (Thread-Safe with File Locking) ---
 function Write-NecessaryAdminToolLog {
@@ -232,6 +243,28 @@ function Check-Power {
     }
     return ($OnAC -or $Battery.EstimatedChargeRemaining -ge 20)
 }
+
+# --- 3. SCRIPT START BANNER ---
+# Written as the very first log entry so every run has full context at the top of the file.
+$StartBanner = @"
+================================================================================
+  GENERAL UPDATE SUITE - SCRIPT START
+  Host      : $Comp
+  Domain    : $DomainName
+  OS        : $OSVersion
+  Uptime    : $UptimeDays days
+  RAM       : $TotalRAMGB GB
+  Disk (C:) : $FreeGB GB free
+  RunningAs : $RunningAs
+  PS Ver    : $PSVersion
+  LogDir    : $PCLog
+  LogDirSrc : $LogDirSrc
+  Started   : $($ScriptStart.ToString('yyyy-MM-dd HH:mm:ss'))
+================================================================================
+"@
+Write-NecessaryAdminToolLog -Status "SCRIPT_START_Host=${Comp}_OS=${OSVersion}_Uptime=${UptimeDays}days_RAM=${TotalRAMGB}GB_RunAs=${RunningAs}_PS=${PSVersion}" -ToMaster $false
+try { $StartBanner | Out-File $PCLog -Append -Encoding UTF8 -ErrorAction SilentlyContinue } catch {}
+Write-Host $StartBanner -ForegroundColor DarkYellow
 
 # --- 3. UPTIME CHECK ---
 $UptimeDays = [math]::Round(((Get-Date) - $OSInfo.LastBootUpTime).TotalDays, 2)   # reuse $OSInfo from startup

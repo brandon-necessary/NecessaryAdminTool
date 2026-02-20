@@ -25,8 +25,9 @@ if ([string]::IsNullOrEmpty($LogDir) -or !(Test-Path $LogDir -ErrorAction Silent
     Write-Host "INFO: Using local fallback logging at $LogDir" -ForegroundColor Cyan
 }
 
+$Timestamp  = Get-Date -Format 'yyyy-MM-dd_HH-mm'
 $PCLogDir   = "$LogDir\Individual_PC_Logs"
-$PCLog      = "$PCLogDir\$($env:COMPUTERNAME)_Feature.txt"
+$PCLog      = "$PCLogDir\$($env:COMPUTERNAME)_Feature_$Timestamp.txt"
 $MasterLog  = "$LogDir\Master_Update_Log.csv"
 $Comp       = $env:COMPUTERNAME
 
@@ -42,7 +43,7 @@ if (!(Test-Path $PCLogDir)) {
 
 # Start transcript - captures ALL console output automatically (belt-and-suspenders alongside custom logging)
 # Must specify explicit path: under SYSTEM, $HOME resolves to C:\Windows\System32\config\systemprofile
-$TranscriptPath = "$PCLogDir\$($env:COMPUTERNAME)_Feature_Transcript.txt"
+$TranscriptPath = "$PCLogDir\$($env:COMPUTERNAME)_Feature_${Timestamp}_Transcript.txt"
 Start-Transcript -Path $TranscriptPath -Append -NoClobber -ErrorAction SilentlyContinue
 
 # Capture baseline info early so it's available at all exit points
