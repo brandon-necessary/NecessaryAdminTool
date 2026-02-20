@@ -275,13 +275,16 @@ namespace NecessaryAdminTool
         {
             var scope = GetWmiScope(hostname, username, password);
 
+            // Hardcoded whitelist — logName is never user-supplied, but guard anyway to future-proof
             string[] logNames = { "Application", "System", "Security" };
 
             foreach (var logName in logNames)
             {
                 try
                 {
-                    var query = $"SELECT * FROM Win32_NTEventLogFile WHERE LogfileName='{logName}'";
+                    // Sanitize logName before WQL interpolation (letters only expected)
+                    string safeLogName = logName.Replace("'", "").Replace("\\", "");
+                    var query = $"SELECT * FROM Win32_NTEventLogFile WHERE LogfileName='{safeLogName}'";
                     using (var searcher = new ManagementObjectSearcher(scope, new ObjectQuery(query)))
                     using (var results = searcher.Get())
                     {
@@ -304,45 +307,77 @@ namespace NecessaryAdminTool
 
         /// <summary>
         /// Stop a Windows service via WMI
+        /// TAG: #VERSION_7.1 #REMEDIATION #WQL_INJECTION_PREVENTION
         /// </summary>
         private static void StopService(ManagementScope scope, string serviceName)
         {
-            var query = $"SELECT * FROM Win32_Service WHERE Name='{serviceName}'";
-            using (var searcher = new ManagementObjectSearcher(scope, new ObjectQuery(query)))
-            using (var results = searcher.Get())
+            // Sanitize serviceName before WQL interpolation to prevent injection
+            string safeName = serviceName?.Replace("'", "").Replace("\\", "") ?? string.Empty;
+            if (string.IsNullOrEmpty(safeName))
             {
-                foreach (ManagementObject service in results)
+                LogManager.LogWarning("[Remediation] StopService called with null/empty serviceName - skipping");
+                return;
+            }
+
+            try
+            {
+                var query = $"SELECT * FROM Win32_Service WHERE Name='{safeName}'";
+                using (var searcher = new ManagementObjectSearcher(scope, new ObjectQuery(query)))
+                using (var results = searcher.Get())
                 {
-                    using (service)
+                    foreach (ManagementObject service in results)
                     {
-                        if (service["State"].ToString() == "Running")
+                        using (service)
                         {
-                            service.InvokeMethod("StopService", null);
+                            if (service["State"].ToString() == "Running")
+                            {
+                                service.InvokeMethod("StopService", null);
+                            }
                         }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogWarning($"[Remediation] StopService('{safeName}') failed: {ex.Message}");
             }
         }
 
         /// <summary>
         /// Start a Windows service via WMI
+        /// TAG: #VERSION_7.1 #REMEDIATION #WQL_INJECTION_PREVENTION
         /// </summary>
         private static void StartService(ManagementScope scope, string serviceName)
         {
-            var query = $"SELECT * FROM Win32_Service WHERE Name='{serviceName}'";
-            using (var searcher = new ManagementObjectSearcher(scope, new ObjectQuery(query)))
-            using (var results = searcher.Get())
+            // Sanitize serviceName before WQL interpolation to prevent injection
+            string safeName = serviceName?.Replace("'", "").Replace("\\", "") ?? string.Empty;
+            if (string.IsNullOrEmpty(safeName))
             {
-                foreach (ManagementObject service in results)
+                LogManager.LogWarning("[Remediation] StartService called with null/empty serviceName - skipping");
+                return;
+            }
+
+            try
+            {
+                var query = $"SELECT * FROM Win32_Service WHERE Name='{safeName}'";
+                using (var searcher = new ManagementObjectSearcher(scope, new ObjectQuery(query)))
+                using (var results = searcher.Get())
                 {
-                    using (service)
+                    foreach (ManagementObject service in results)
                     {
-                        if (service["State"].ToString() != "Running")
+                        using (service)
                         {
-                            service.InvokeMethod("StartService", null);
+                            if (service["State"].ToString() != "Running")
+                            {
+                                service.InvokeMethod("StartService", null);
+                            }
                         }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogWarning($"[Remediation] StartService('{safeName}') failed: {ex.Message}");
             }
         }
 

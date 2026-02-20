@@ -86,21 +86,27 @@ namespace NecessaryAdminTool.Security
         }
 
         /// <summary>
-        /// Rotate encryption key (regenerate and migrate data)
+        /// Rotate encryption key — atomically overwrites the existing credential.
+        /// StoreCredential (CredWrite) overwrites in-place, so no delete-then-write gap.
         /// </summary>
         public static string RotateDatabaseKey()
         {
+            LogManager.LogInfo("RotateDatabaseKey() - START");
             try
             {
-                // Delete old key
-                SecureCredentialManager.DeleteCredential(DATABASE_KEY_NAME, "EncryptionKey");
-
-                // Generate new key
-                return GetDatabaseKey();
+                using (var rng = new RNGCryptoServiceProvider())
+                {
+                    byte[] keyBytes = new byte[32];
+                    rng.GetBytes(keyBytes);
+                    var newKey = Convert.ToBase64String(keyBytes);
+                    SecureCredentialManager.StoreCredential(DATABASE_KEY_NAME, "EncryptionKey", newKey);
+                    LogManager.LogInfo("RotateDatabaseKey() - SUCCESS");
+                    return newKey;
+                }
             }
             catch (Exception ex)
             {
-                LogManager.LogError("Failed to rotate database key", ex);
+                LogManager.LogError("RotateDatabaseKey() - FAILED", ex);
                 throw;
             }
         }

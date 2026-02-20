@@ -894,6 +894,8 @@ namespace NecessaryAdminTool.Security
             private readonly int _maxAttempts;
             private readonly TimeSpan _timeWindow;
             private readonly System.Collections.Concurrent.ConcurrentDictionary<string, AttemptInfo> _attempts;
+            // TAG: #SECURITY_CRITICAL #RATE_LIMITING — background cleanup prevents unbounded memory growth
+            private readonly System.Threading.Timer _cleanupTimer;
 
             private class AttemptInfo
             {
@@ -907,6 +909,20 @@ namespace NecessaryAdminTool.Security
                 _maxAttempts = maxAttempts;
                 _timeWindow = timeWindow ?? TimeSpan.FromMinutes(5);
                 _attempts = new System.Collections.Concurrent.ConcurrentDictionary<string, AttemptInfo>();
+
+                // Periodically evict entries whose time window has fully elapsed so that blocked
+                // identifiers that never retry don't accumulate in memory indefinitely.
+                _cleanupTimer = new System.Threading.Timer(state =>
+                {
+                    var now = DateTime.UtcNow;
+                    var expired = _attempts
+                        .Where(kvp => now - kvp.Value.FirstAttempt > _timeWindow)
+                        .Select(kvp => kvp.Key)
+                        .ToList();
+                    AttemptInfo removed;
+                    foreach (var k in expired)
+                        _attempts.TryRemove(k, out removed);
+                }, null, _timeWindow, _timeWindow);
             }
 
             /// <summary>

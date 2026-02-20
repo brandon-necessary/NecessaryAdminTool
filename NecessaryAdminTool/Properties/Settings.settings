@@ -135,5 +135,14 @@
     <Setting Name="CloseMMCConsolesOnExit" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
+    <!-- TAG: #CONFIGURABLE_OPTIONS #NAT_AGENT #FLEET_SCAN -->
+    <!-- Pre-shared token for NecessaryAdminAgent authentication. Set in NAT Options, passed to AgentInstall.ps1. -->
+    <Setting Name="AgentToken" Type="System.String" Scope="User">
+      <Value Profile="(Default)"></Value>
+    </Setting>
+    <!-- TCP port the NecessaryAdminAgent listens on (default: 443, universally allowed). -->
+    <Setting Name="AgentPort" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">443</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

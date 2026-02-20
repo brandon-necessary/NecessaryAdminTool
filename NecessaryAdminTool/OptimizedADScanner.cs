@@ -9,6 +9,7 @@ using Microsoft.Management.Infrastructure;
 using Microsoft.Management.Infrastructure.Options;
 using System.Management;
 using System.Security;
+using NecessaryAdminTool.Managers;
 using NecessaryAdminTool.Security;
 
 namespace NecessaryAdminTool
@@ -193,6 +194,25 @@ namespace NecessaryAdminTool
             {
                 LogManager.LogDebug($"[SCAN] {hostname} in failure cache, skipping");
                 return new HardwareSpec { Protocol = "CACHED_FAILURE" };
+            }
+
+            // Strategy 0: NecessaryAdminAgent (no WMI firewall ports required)
+            if (!string.IsNullOrEmpty(Properties.Settings.Default.AgentToken))
+            {
+                try
+                {
+                    LogManager.LogDebug($"[SCAN] {hostname} - Trying NatAgent");
+                    var agentInfo = await NatAgentClient.GetSystemInfoAsync(hostname);
+                    if (agentInfo != null)
+                    {
+                        LogManager.LogDebug($"[SCAN] {hostname} - Agent hit");
+                        return ConvertAgentInfoToHardwareSpec(agentInfo);
+                    }
+                }
+                catch (Exception agentEx)
+                {
+                    LogManager.LogDebug($"[SCAN] {hostname} - Agent miss: {agentEx.Message}");
+                }
             }
 
             // Strategy 1: Try CIM with WS-MAN (fastest, modern)
@@ -435,26 +455,8 @@ namespace NecessaryAdminTool
 
                 try
                 {
-                    // STEP 1: Connect to WMI scope (MUST be sequential - establishes connection)
-                    var connectionOptions = new ConnectionOptions
-                    {
-                        Timeout = TimeSpan.FromMilliseconds(_wmiTimeoutMs),
-                        EnablePrivileges = true,
-                        Authentication = AuthenticationLevel.PacketPrivacy,
-                        Impersonation = ImpersonationLevel.Impersonate
-                    };
-
-                    if (!string.IsNullOrEmpty(username) && password != null)
-                    {
-                        string passwordText = null;
-                        SecureMemory.UseSecureString(password, pwd => passwordText = pwd);
-                        connectionOptions.Username = username;
-                        connectionOptions.Password = passwordText;
-                        passwordText = null;
-                    }
-
-                    scope = new ManagementScope($"\\\\{hostname}\\root\\cimv2", connectionOptions);
-                    scope.Connect(); // SYNCHRONOUS - must complete before queries
+                    // STEP 1: Connect to WMI scope via connection pool (reuses cached connections)
+                    scope = WmiConnectionPool.GetPooledScope(hostname, username, password);
 
                     // STEP 2: Execute queries IN PARALLEL (OPTIMIZATION #7)
                     // All three queries share the same ManagementScope connection
@@ -560,6 +562,29 @@ namespace NecessaryAdminTool
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Convert NatAgent system info to HardwareSpec for use in scan results.
+        /// TAG: #NAT_AGENT #FLEET_SCAN
+        /// </summary>
+        private HardwareSpec ConvertAgentInfoToHardwareSpec(AgentSystemInfo info)
+        {
+            return new HardwareSpec
+            {
+                Protocol    = "Agent",
+                OS          = info.OS ?? "N/A",
+                WindowsVersion = GetWindowsVersionFromBuild(info.Build, info.OS),
+                Serial      = info.Serial ?? "N/A",
+                Manufacturer = info.Manufacturer ?? "N/A",
+                Model       = info.Model ?? "N/A",
+                User        = info.LoggedInUser ?? "N/A",
+                RAM         = string.IsNullOrEmpty(info.TotalRamGB) ? "N/A" : info.TotalRamGB + " GB",
+                IP          = info.IPAddress ?? "N/A",
+                MAC         = info.MACAddress ?? "N/A",
+                LastBoot    = info.LastBoot ?? "N/A",
+                TPMEnabled  = info.TPMStatus ?? "Unknown",
+            };
         }
 
         // ══════════════════════════════════════════════════════════════

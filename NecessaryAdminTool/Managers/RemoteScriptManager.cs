@@ -93,7 +93,7 @@ namespace NecessaryAdminTool.Managers
 
                     result.Elapsed = sw.Elapsed;
 
-                    if (result.Success || result.Output.Length > 0)
+                    if (result.Success || (result.Output?.Length ?? 0) > 0)
                     {
                         // Got a meaningful response (errors from the remote script are still valid)
                         LogManager.LogInfo($"RemoteScriptManager.ExecuteAsync() - SUCCESS via WinRM API - {sw.ElapsedMilliseconds}ms");
@@ -278,10 +278,15 @@ namespace NecessaryAdminTool.Managers
                     // Safe target for embedding in PS string
                     string safeTarget = targetComputer.Replace("'", "''");
 
-                    // Wrap script in Invoke-Command for remote execution
+                    // Encode scriptContent as base64 to prevent ScriptBlock injection.
+                    // Embedding scriptContent directly inside {{ {scriptContent} }} allows a
+                    // malicious caller to close the ScriptBlock early with '}' and inject commands.
+                    string innerB64 = Convert.ToBase64String(Encoding.Unicode.GetBytes(scriptContent ?? string.Empty));
+
+                    // Wrap script in Invoke-Command; reconstruct ScriptBlock from base64 at runtime
                     string fullScript = $"$ProgressPreference='SilentlyContinue'; " +
-                        $"Invoke-Command -ComputerName '{safeTarget}' " +
-                        $"-ScriptBlock {{ {scriptContent} }} | Out-String";
+                        $"$_sb = [ScriptBlock]::Create([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('{innerB64}'))); " +
+                        $"Invoke-Command -ComputerName '{safeTarget}' -ScriptBlock $_sb | Out-String";
 
                     string b64 = Convert.ToBase64String(Encoding.Unicode.GetBytes(fullScript));
 

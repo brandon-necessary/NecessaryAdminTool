@@ -460,5 +460,31 @@ namespace NecessaryAdminTool.Properties {
                 this["CloseMMCConsolesOnExit"] = value;
             }
         }
+
+        // TAG: #CONFIGURABLE_OPTIONS #NAT_AGENT #FLEET_SCAN
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string AgentToken {
+            get {
+                return ((string)(this["AgentToken"]));
+            }
+            set {
+                this["AgentToken"] = value;
+            }
+        }
+
+        // TAG: #CONFIGURABLE_OPTIONS #NAT_AGENT #FLEET_SCAN
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("443")]
+        public int AgentPort {
+            get {
+                return ((int)(this["AgentPort"]));
+            }
+            set {
+                this["AgentPort"] = value;
+            }
+        }
     }
 }

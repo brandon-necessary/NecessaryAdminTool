@@ -40,7 +40,7 @@ namespace NecessaryAdminTool
                     if (key != null)
                     {
                         var enabled = key.GetValue("EnableAutoUpdates", 1);
-                        if (enabled is int intValue && intValue == 0)
+                        if ((enabled is int i1 && i1 == 0) || (enabled is string s1 && s1 == "0"))
                         {
                             LogManager.LogInfo("Auto-updates disabled via registry (HKLM)");
                             return false;
@@ -54,7 +54,7 @@ namespace NecessaryAdminTool
                     if (key != null)
                     {
                         var enabled = key.GetValue("EnableAutoUpdates", 1);
-                        if (enabled is int intValue && intValue == 0)
+                        if ((enabled is int i2 && i2 == 0) || (enabled is string s2 && s2 == "0"))
                         {
                             LogManager.LogInfo("Auto-updates disabled via registry (HKCU)");
                             return false;

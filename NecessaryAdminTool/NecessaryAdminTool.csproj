@@ -409,6 +409,9 @@
     <Compile Include="Managers\WmiConnectionPool.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Managers\NatAgentClient.cs">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs">

@@ -181,9 +181,18 @@ namespace NecessaryAdminTool
                     }
                 });
             }
-            catch
+            catch (Exception fileEx)
             {
-                // Silently fail if logging fails
+                // File write failed — emit a best-effort entry to Windows Event Log
+                // so there is SOME audit trail of the failure
+                try
+                {
+                    System.Diagnostics.EventLog.WriteEntry(
+                        "NecessaryAdminTool",
+                        $"LogManager file write failed: {fileEx.Message} | Level: {level} | Msg: {message}",
+                        System.Diagnostics.EventLogEntryType.Warning);
+                }
+                catch { /* Event log also unavailable — best effort */ }
             }
         }
 

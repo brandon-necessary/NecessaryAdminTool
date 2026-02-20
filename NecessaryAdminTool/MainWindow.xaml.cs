@@ -2745,6 +2745,7 @@ namespace NecessaryAdminTool
                 {
                     _wmiManager?.Dispose();
                     _cimManager?.Dispose();
+                    Managers.WmiConnectionPool.ClearAll();
                     LogManager.LogInfo("[App Shutdown] WMI/CIM managers disposed");
                 }
                 catch (Exception ex) { LogManager.LogError("[App Shutdown] Manager dispose failed", ex); }
@@ -3830,8 +3831,12 @@ namespace NecessaryAdminTool
             if (psCommand.TrimStart().StartsWith("cmd", StringComparison.OrdinalIgnoreCase))
                 return psCommand;
 
-            // Wrap PowerShell commands in powershell.exe
-            return $"powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"{psCommand.Replace("\"", "`\"")}\"";
+            // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+            // Use -EncodedCommand (base64) instead of -Command "..." with backtick escaping.
+            // Backtick escaping is PS-internal only and does not survive the WMI CommandLine
+            // round-trip; -EncodedCommand is injection-proof regardless of special chars.
+            string b64 = Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(psCommand));
+            return $"powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand {b64}";
         }
 
         // ── Fleet Scanner ──
@@ -4214,6 +4219,28 @@ namespace NecessaryAdminTool
 
         // ── System Specs Scanner (consolidated WMI queries) ──
 
+        /// <summary>
+        /// Convert NatAgent system info to HardwareSpec. TAG: #NAT_AGENT
+        /// </summary>
+        private static HardwareSpec ConvertAgentInfoToHardwareSpec(Managers.AgentSystemInfo info)
+        {
+            return new HardwareSpec
+            {
+                Protocol     = "Agent",
+                OS           = info.OS ?? "N/A",
+                WindowsVersion = info.Build ?? "N/A",
+                Serial       = info.Serial ?? "N/A",
+                Manufacturer = info.Manufacturer ?? "N/A",
+                Model        = info.Model ?? "N/A",
+                User         = info.LoggedInUser ?? "N/A",
+                RAM          = string.IsNullOrEmpty(info.TotalRamGB) ? "N/A" : info.TotalRamGB + " GB",
+                IP           = info.IPAddress ?? "N/A",
+                MAC          = info.MACAddress ?? "N/A",
+                LastBoot     = info.LastBoot ?? "N/A",
+                TPMEnabled   = info.TPMStatus ?? "Unknown",
+            };
+        }
+
         private async Task<HardwareSpec> GetSystemSpecsAsync(string hostname, string username, SecureString password, CancellationToken ct = default)
         {
             var spec = new HardwareSpec { Protocol = "WMI" };
@@ -4228,6 +4255,27 @@ namespace NecessaryAdminTool
                     bool useCim = false;
                     bool connectionFailed = false;
                     string failureReason = "";
+
+                    // Strategy 0: NecessaryAdminAgent (no WMI firewall ports required)
+                    if (!string.IsNullOrEmpty(Properties.Settings.Default.AgentToken))
+                    {
+                        try
+                        {
+                            AppendTerminal($"[AGENT] Attempting {hostname}...");
+                            var agentInfo = await Managers.NatAgentClient.GetSystemInfoAsync(hostname);
+                            if (agentInfo != null)
+                            {
+                                AppendTerminal("[AGENT] Connection SUCCESS");
+                                LogManager.LogDebug($"[AGENT] Hit for {hostname}");
+                                return ConvertAgentInfoToHardwareSpec(agentInfo);
+                            }
+                        }
+                        catch (Exception agentEx)
+                        {
+                            AppendTerminal($"[AGENT] Miss: {agentEx.Message}", true);
+                            LogManager.LogDebug($"[AGENT] Failed for {hostname}: {agentEx.Message}");
+                        }
+                    }
 
                     try
                     {
@@ -5020,10 +5068,17 @@ namespace NecessaryAdminTool
                         SecureMemory.UseSecureString(password, pwd => capturedPassword = pwd);
                     }
 
+                    // TAG: #SECURITY_CRITICAL #COMMAND_INJECTION_PREVENTION
+                    // Sanitize all user-controlled values before embedding in PS string context.
+                    // SanitizePowerShellInput strips dangerous chars and doubles single-quotes.
+                    string safeUsername = NecessaryAdminTool.Security.SecurityValidator.SanitizePowerShellInput(username);
+                    string safePassword = NecessaryAdminTool.Security.SecurityValidator.SanitizePowerShellInput(capturedPassword);
+                    string safeHostname = NecessaryAdminTool.Security.SecurityValidator.SanitizePowerShellInput(hostname);
+
                     // PowerShell script to gather system information remotely
                     string psScript = $@"
-                        $cred = New-Object System.Management.Automation.PSCredential('{username}', (ConvertTo-SecureString '{capturedPassword}' -AsPlainText -Force))
-                        Invoke-Command -ComputerName {hostname} -Credential $cred -ScriptBlock {{
+                        $cred = New-Object System.Management.Automation.PSCredential('{safeUsername}', (ConvertTo-SecureString '{safePassword}' -AsPlainText -Force))
+                        Invoke-Command -ComputerName {safeHostname} -Credential $cred -ScriptBlock {{
                             # Get OS info
                             $os = Get-CimInstance Win32_OperatingSystem
                             $cs = Get-CimInstance Win32_ComputerSystem
@@ -5040,10 +5095,13 @@ namespace NecessaryAdminTool
                         }} -ErrorAction Stop
                     ";
 
+                    // Use -EncodedCommand (base64) to avoid quote-escaping issues in the process args
+                    string psScriptB64 = Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(psScript));
+
                     var psi = new ProcessStartInfo
                     {
                         FileName = PowerShellExe,
-                        Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{psScript.Replace("\"", "`\"")}\"",
+                        Arguments = $"-NoProfile -ExecutionPolicy Bypass -EncodedCommand {psScriptB64}",
                         UseShellExecute = false,
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,

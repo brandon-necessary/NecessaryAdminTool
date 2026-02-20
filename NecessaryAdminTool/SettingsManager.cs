@@ -127,8 +127,10 @@ namespace NecessaryAdminTool
                     {
                         services.Add(new GlobalServiceStatus
                         {
-                            ServiceName = svc["ServiceName"].ToString(),
-                            Endpoint = svc["Endpoint"].ToString(),
+                            ServiceName = svc.ContainsKey("ServiceName") && svc["ServiceName"] != null
+                                ? svc["ServiceName"].ToString() : string.Empty,
+                            Endpoint = svc.ContainsKey("Endpoint") && svc["Endpoint"] != null
+                                ? svc["Endpoint"].ToString() : string.Empty,
                             Status = "Checking..."
                         });
                     }
@@ -138,8 +140,9 @@ namespace NecessaryAdminTool
                     services = GetDefaultGlobalServices();
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                LogManager.LogWarning($"SettingsManager - LoadGlobalServices: JSON parse failed, reverting to defaults: {ex.Message}");
                 services = GetDefaultGlobalServices();
             }
 

@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NecessaryAdminTool", "NecessaryAdminTool\NecessaryAdminTool.csproj", "{5C1271CB-C617-4F6D-BD00-E860D7D03AB7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NecessaryAdminAgent", "NecessaryAdminAgent\NecessaryAdminAgent.csproj", "{B2D4F6A8-C0E2-4D6F-8A0C-E2D4F6A8C0E2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{5C1271CB-C617-4F6D-BD00-E860D7D03AB7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5C1271CB-C617-4F6D-BD00-E860D7D03AB7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5C1271CB-C617-4F6D-BD00-E860D7D03AB7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2D4F6A8-C0E2-4D6F-8A0C-E2D4F6A8C0E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2D4F6A8-C0E2-4D6F-8A0C-E2D4F6A8C0E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2D4F6A8-C0E2-4D6F-8A0C-E2D4F6A8C0E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2D4F6A8-C0E2-4D6F-8A0C-E2D4F6A8C0E2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

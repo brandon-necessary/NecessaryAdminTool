@@ -13,8 +13,6 @@ namespace NecessaryAdminTool.Data
     public class SqlServerDataProvider : IDataProvider
     {
         private readonly string _connectionString;
-        private SqlConnection _connection;
-        private bool _disposed = false;
 
         public SqlServerDataProvider(string connectionString)
         {
@@ -40,16 +38,22 @@ namespace NecessaryAdminTool.Data
             }
         }
 
+        // Returns a fresh open connection; caller must dispose via using()
+        private async Task<SqlConnection> OpenConnectionAsync()
+        {
+            var conn = new SqlConnection(_connectionString);
+            await conn.OpenAsync().ConfigureAwait(false);
+            return conn;
+        }
+
         public async Task InitializeDatabaseAsync()
         {
             try
             {
-                _connection = new SqlConnection(_connectionString);
-                await _connection.OpenAsync();
-
-                // Create schema
-                await CreateSchemaAsync();
-
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
+                {
+                    await CreateSchemaAsync(conn).ConfigureAwait(false);
+                }
                 LogManager.LogInfo("SQL Server database initialized successfully");
             }
             catch (Exception ex)
@@ -59,7 +63,7 @@ namespace NecessaryAdminTool.Data
             }
         }
 
-        private async Task CreateSchemaAsync()
+        private async Task CreateSchemaAsync(SqlConnection conn)
         {
             var schema = @"
                 IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Computers' AND xtype='U')
@@ -130,9 +134,9 @@ namespace NecessaryAdminTool.Data
                     CreatedDate DATETIME DEFAULT GETDATE()
                 );";
 
-            using (var cmd = new SqlCommand(schema, _connection))
+            using (var cmd = new SqlCommand(schema, conn))
             {
-                await cmd.ExecuteNonQueryAsync();
+                await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
         }
 
@@ -142,13 +146,16 @@ namespace NecessaryAdminTool.Data
 
             try
             {
-                var query = "SELECT * FROM Computers ORDER BY Hostname";
-                using (var cmd = new SqlCommand(query, _connection))
-                using (var reader = await cmd.ExecuteReaderAsync())
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
                 {
-                    while (await reader.ReadAsync())
+                    var query = "SELECT * FROM Computers ORDER BY Hostname";
+                    using (var cmd = new SqlCommand(query, conn))
+                    using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
                     {
-                        computers.Add(MapReaderToComputer(reader));
+                        while (await reader.ReadAsync().ConfigureAwait(false))
+                        {
+                            computers.Add(MapReaderToComputer(reader));
+                        }
                     }
                 }
             }
@@ -164,38 +171,41 @@ namespace NecessaryAdminTool.Data
         {
             try
             {
-                var query = @"
-                    MERGE Computers AS target
-                    USING (SELECT @Hostname AS Hostname) AS source
-                    ON target.Hostname = source.Hostname
-                    WHEN MATCHED THEN
-                        UPDATE SET OS=@OS, OSVersion=@OSVersion, Manufacturer=@Manufacturer,
-                                   Model=@Model, SerialNumber=@SerialNumber, AssetTag=@AssetTag,
-                                   IPAddress=@IPAddress, MACAddress=@MACAddress, Domain=@Domain,
-                                   LastLoggedOnUser=@LastLoggedOnUser, RAM_GB=@RAM_GB, CPU=@CPU,
-                                   DiskSize_GB=@DiskSize_GB, DiskFree_GB=@DiskFree_GB,
-                                   LastSeen=@LastSeen, LastBootTime=@LastBootTime,
-                                   InstallDate=@InstallDate, BitLockerStatus=@BitLockerStatus,
-                                   TPMVersion=@TPMVersion, AntivirusProduct=@AntivirusProduct,
-                                   AntivirusStatus=@AntivirusStatus, FirewallStatus=@FirewallStatus,
-                                   PendingRebootCount=@PendingRebootCount, LastPatchDate=@LastPatchDate,
-                                   Notes=@Notes, ModifiedDate=GETDATE()
-                    WHEN NOT MATCHED THEN
-                        INSERT (Hostname, OS, OSVersion, Manufacturer, Model, SerialNumber, AssetTag,
-                                IPAddress, MACAddress, Domain, LastLoggedOnUser, RAM_GB, CPU,
-                                DiskSize_GB, DiskFree_GB, LastSeen, LastBootTime, InstallDate,
-                                BitLockerStatus, TPMVersion, AntivirusProduct, AntivirusStatus,
-                                FirewallStatus, PendingRebootCount, LastPatchDate, Notes)
-                        VALUES (@Hostname, @OS, @OSVersion, @Manufacturer, @Model, @SerialNumber, @AssetTag,
-                                @IPAddress, @MACAddress, @Domain, @LastLoggedOnUser, @RAM_GB, @CPU,
-                                @DiskSize_GB, @DiskFree_GB, @LastSeen, @LastBootTime, @InstallDate,
-                                @BitLockerStatus, @TPMVersion, @AntivirusProduct, @AntivirusStatus,
-                                @FirewallStatus, @PendingRebootCount, @LastPatchDate, @Notes);";
-
-                using (var cmd = new SqlCommand(query, _connection))
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
                 {
-                    AddComputerParameters(cmd, computer);
-                    await cmd.ExecuteNonQueryAsync();
+                    var query = @"
+                        MERGE Computers AS target
+                        USING (SELECT @Hostname AS Hostname) AS source
+                        ON target.Hostname = source.Hostname
+                        WHEN MATCHED THEN
+                            UPDATE SET OS=@OS, OSVersion=@OSVersion, Manufacturer=@Manufacturer,
+                                       Model=@Model, SerialNumber=@SerialNumber, AssetTag=@AssetTag,
+                                       IPAddress=@IPAddress, MACAddress=@MACAddress, Domain=@Domain,
+                                       LastLoggedOnUser=@LastLoggedOnUser, RAM_GB=@RAM_GB, CPU=@CPU,
+                                       DiskSize_GB=@DiskSize_GB, DiskFree_GB=@DiskFree_GB,
+                                       LastSeen=@LastSeen, LastBootTime=@LastBootTime,
+                                       InstallDate=@InstallDate, BitLockerStatus=@BitLockerStatus,
+                                       TPMVersion=@TPMVersion, AntivirusProduct=@AntivirusProduct,
+                                       AntivirusStatus=@AntivirusStatus, FirewallStatus=@FirewallStatus,
+                                       PendingRebootCount=@PendingRebootCount, LastPatchDate=@LastPatchDate,
+                                       Notes=@Notes, ModifiedDate=GETDATE()
+                        WHEN NOT MATCHED THEN
+                            INSERT (Hostname, OS, OSVersion, Manufacturer, Model, SerialNumber, AssetTag,
+                                    IPAddress, MACAddress, Domain, LastLoggedOnUser, RAM_GB, CPU,
+                                    DiskSize_GB, DiskFree_GB, LastSeen, LastBootTime, InstallDate,
+                                    BitLockerStatus, TPMVersion, AntivirusProduct, AntivirusStatus,
+                                    FirewallStatus, PendingRebootCount, LastPatchDate, Notes)
+                            VALUES (@Hostname, @OS, @OSVersion, @Manufacturer, @Model, @SerialNumber, @AssetTag,
+                                    @IPAddress, @MACAddress, @Domain, @LastLoggedOnUser, @RAM_GB, @CPU,
+                                    @DiskSize_GB, @DiskFree_GB, @LastSeen, @LastBootTime, @InstallDate,
+                                    @BitLockerStatus, @TPMVersion, @AntivirusProduct, @AntivirusStatus,
+                                    @FirewallStatus, @PendingRebootCount, @LastPatchDate, @Notes);";
+
+                    using (var cmd = new SqlCommand(query, conn))
+                    {
+                        AddComputerParameters(cmd, computer);
+                        await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+                    }
                 }
             }
             catch (Exception ex)
@@ -209,15 +219,18 @@ namespace NecessaryAdminTool.Data
         {
             try
             {
-                var query = "SELECT * FROM Computers WHERE Hostname = @Hostname";
-                using (var cmd = new SqlCommand(query, _connection))
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
                 {
-                    cmd.Parameters.AddWithValue("@Hostname", hostname);
-                    using (var reader = await cmd.ExecuteReaderAsync())
+                    var query = "SELECT * FROM Computers WHERE Hostname = @Hostname";
+                    using (var cmd = new SqlCommand(query, conn))
                     {
-                        if (await reader.ReadAsync())
+                        cmd.Parameters.AddWithValue("@Hostname", hostname);
+                        using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
                         {
-                            return MapReaderToComputer(reader);
+                            if (await reader.ReadAsync().ConfigureAwait(false))
+                            {
+                                return MapReaderToComputer(reader);
+                            }
                         }
                     }
                 }
@@ -234,11 +247,14 @@ namespace NecessaryAdminTool.Data
         {
             try
             {
-                var query = "DELETE FROM Computers WHERE Hostname = @Hostname";
-                using (var cmd = new SqlCommand(query, _connection))
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
                 {
-                    cmd.Parameters.AddWithValue("@Hostname", hostname);
-                    await cmd.ExecuteNonQueryAsync();
+                    var query = "DELETE FROM Computers WHERE Hostname = @Hostname";
+                    using (var cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@Hostname", hostname);
+                        await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+                    }
                 }
             }
             catch (Exception ex)
@@ -254,21 +270,24 @@ namespace NecessaryAdminTool.Data
 
             try
             {
-                var query = @"SELECT * FROM Computers
-                    WHERE Hostname LIKE @Search OR OS LIKE @Search OR Manufacturer LIKE @Search
-                        OR Model LIKE @Search OR IPAddress LIKE @Search
-                    ORDER BY Hostname";
-
-                var searchPattern = $"%{searchTerm}%";
-
-                using (var cmd = new SqlCommand(query, _connection))
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
                 {
-                    cmd.Parameters.AddWithValue("@Search", searchPattern);
-                    using (var reader = await cmd.ExecuteReaderAsync())
+                    var query = @"SELECT * FROM Computers
+                        WHERE Hostname LIKE @Search OR OS LIKE @Search OR Manufacturer LIKE @Search
+                            OR Model LIKE @Search OR IPAddress LIKE @Search
+                        ORDER BY Hostname";
+
+                    var searchPattern = $"%{searchTerm}%";
+
+                    using (var cmd = new SqlCommand(query, conn))
                     {
-                        while (await reader.ReadAsync())
+                        cmd.Parameters.AddWithValue("@Search", searchPattern);
+                        using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
                         {
-                            computers.Add(MapReaderToComputer(reader));
+                            while (await reader.ReadAsync().ConfigureAwait(false))
+                            {
+                                computers.Add(MapReaderToComputer(reader));
+                            }
                         }
                     }
                 }
@@ -375,31 +394,34 @@ namespace NecessaryAdminTool.Data
         {
             try
             {
-                var query = @"
-                    -- Update statistics
-                    EXEC sp_updatestats;
-
-                    -- Rebuild indexes
-                    DECLARE @TableName NVARCHAR(255)
-                    DECLARE TableCursor CURSOR FOR
-                    SELECT table_name FROM information_schema.tables WHERE table_type = 'BASE TABLE'
-
-                    OPEN TableCursor
-                    FETCH NEXT FROM TableCursor INTO @TableName
-
-                    WHILE @@FETCH_STATUS = 0
-                    BEGIN
-                        EXEC('ALTER INDEX ALL ON ' + @TableName + ' REBUILD')
-                        FETCH NEXT FROM TableCursor INTO @TableName
-                    END
-
-                    CLOSE TableCursor
-                    DEALLOCATE TableCursor";
-
-                using (var cmd = new SqlCommand(query, _connection))
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
                 {
-                    cmd.CommandTimeout = 300; // 5 minutes
-                    await cmd.ExecuteNonQueryAsync();
+                    var query = @"
+                        -- Update statistics
+                        EXEC sp_updatestats;
+
+                        -- Rebuild indexes
+                        DECLARE @TableName NVARCHAR(255)
+                        DECLARE TableCursor CURSOR FOR
+                        SELECT table_name FROM information_schema.tables WHERE table_type = 'BASE TABLE'
+
+                        OPEN TableCursor
+                        FETCH NEXT FROM TableCursor INTO @TableName
+
+                        WHILE @@FETCH_STATUS = 0
+                        BEGIN
+                            EXEC('ALTER INDEX ALL ON ' + @TableName + ' REBUILD')
+                            FETCH NEXT FROM TableCursor INTO @TableName
+                        END
+
+                        CLOSE TableCursor
+                        DEALLOCATE TableCursor";
+
+                    using (var cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.CommandTimeout = 300; // 5 minutes
+                        await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+                    }
                 }
 
                 LogManager.LogInfo("SQL Server database optimized successfully");
@@ -414,11 +436,14 @@ namespace NecessaryAdminTool.Data
         {
             try
             {
-                var query = "DBCC CHECKDB WITH NO_INFOMSGS";
-                using (var cmd = new SqlCommand(query, _connection))
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
                 {
-                    cmd.CommandTimeout = 300; // 5 minutes
-                    await cmd.ExecuteNonQueryAsync();
+                    var query = "DBCC CHECKDB WITH NO_INFOMSGS";
+                    using (var cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.CommandTimeout = 300; // 5 minutes
+                        await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+                    }
                 }
 
                 LogManager.LogInfo("SQL Server database integrity verified");
@@ -435,15 +460,18 @@ namespace NecessaryAdminTool.Data
         {
             try
             {
-                var builder = new SqlConnectionStringBuilder(_connectionString);
-                var databaseName = builder.InitialCatalog;
-
-                var query = $"BACKUP DATABASE [{databaseName}] TO DISK = @BackupPath WITH FORMAT, INIT";
-                using (var cmd = new SqlCommand(query, _connection))
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
                 {
-                    cmd.Parameters.AddWithValue("@BackupPath", backupPath);
-                    cmd.CommandTimeout = 600; // 10 minutes
-                    await cmd.ExecuteNonQueryAsync();
+                    var builder = new SqlConnectionStringBuilder(_connectionString);
+                    var databaseName = builder.InitialCatalog;
+
+                    var query = $"BACKUP DATABASE [{databaseName}] TO DISK = @BackupPath WITH FORMAT, INIT";
+                    using (var cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@BackupPath", backupPath);
+                        cmd.CommandTimeout = 600; // 10 minutes
+                        await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+                    }
                 }
 
                 LogManager.LogInfo($"SQL Server database backed up to: {backupPath}");
@@ -460,20 +488,23 @@ namespace NecessaryAdminTool.Data
         {
             try
             {
-                var builder = new SqlConnectionStringBuilder(_connectionString);
-                var databaseName = builder.InitialCatalog;
-
-                var query = $@"
-                    USE master;
-                    ALTER DATABASE [{databaseName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-                    RESTORE DATABASE [{databaseName}] FROM DISK = @BackupPath WITH REPLACE;
-                    ALTER DATABASE [{databaseName}] SET MULTI_USER;";
-
-                using (var cmd = new SqlCommand(query, _connection))
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
                 {
-                    cmd.Parameters.AddWithValue("@BackupPath", backupPath);
-                    cmd.CommandTimeout = 600; // 10 minutes
-                    await cmd.ExecuteNonQueryAsync();
+                    var builder = new SqlConnectionStringBuilder(_connectionString);
+                    var databaseName = builder.InitialCatalog;
+
+                    var query = $@"
+                        USE master;
+                        ALTER DATABASE [{databaseName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+                        RESTORE DATABASE [{databaseName}] FROM DISK = @BackupPath WITH REPLACE;
+                        ALTER DATABASE [{databaseName}] SET MULTI_USER;";
+
+                    using (var cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@BackupPath", backupPath);
+                        cmd.CommandTimeout = 600; // 10 minutes
+                        await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+                    }
                 }
 
                 LogManager.LogInfo($"SQL Server database restored from: {backupPath}");
@@ -490,26 +521,29 @@ namespace NecessaryAdminTool.Data
         {
             try
             {
-                var query = @"
-                    SELECT
-                        (SELECT COUNT(*) FROM Computers) AS TotalComputers,
-                        (SELECT COUNT(*) FROM ScanHistory) AS TotalScans,
-                        (SELECT COUNT(*) FROM Scripts) AS TotalScripts,
-                        (SELECT COUNT(*) FROM Bookmarks) AS TotalBookmarks";
-
-                using (var cmd = new SqlCommand(query, _connection))
-                using (var reader = await cmd.ExecuteReaderAsync())
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
                 {
-                    if (await reader.ReadAsync())
+                    var query = @"
+                        SELECT
+                            (SELECT COUNT(*) FROM Computers) AS TotalComputers,
+                            (SELECT COUNT(*) FROM ScanHistory) AS TotalScans,
+                            (SELECT COUNT(*) FROM Scripts) AS TotalScripts,
+                            (SELECT COUNT(*) FROM Bookmarks) AS TotalBookmarks";
+
+                    using (var cmd = new SqlCommand(query, conn))
+                    using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
                     {
-                        return new DatabaseStats
+                        if (await reader.ReadAsync().ConfigureAwait(false))
                         {
-                            TotalComputers = reader.GetInt32(0),
-                            TotalScans = reader.GetInt32(1),
-                            TotalScripts = reader.GetInt32(2),
-                            TotalBookmarks = reader.GetInt32(3),
-                            SizeBytes = await GetDatabaseSizeAsync()
-                        };
+                            return new DatabaseStats
+                            {
+                                TotalComputers = reader.GetInt32(0),
+                                TotalScans = reader.GetInt32(1),
+                                TotalScripts = reader.GetInt32(2),
+                                TotalBookmarks = reader.GetInt32(3),
+                                SizeBytes = await GetDatabaseSizeAsync().ConfigureAwait(false)
+                            };
+                        }
                     }
                 }
             }
@@ -525,14 +559,17 @@ namespace NecessaryAdminTool.Data
         {
             try
             {
-                var query = @"
-                    SELECT SUM(size) * 8 * 1024 AS SizeBytes
-                    FROM sys.database_files";
-
-                using (var cmd = new SqlCommand(query, _connection))
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
                 {
-                    var result = await cmd.ExecuteScalarAsync();
-                    return result != null ? Convert.ToInt64(result) : 0;
+                    var query = @"
+                        SELECT SUM(size) * 8 * 1024 AS SizeBytes
+                        FROM sys.database_files";
+
+                    using (var cmd = new SqlCommand(query, conn))
+                    {
+                        var result = await cmd.ExecuteScalarAsync().ConfigureAwait(false);
+                        return result != null ? Convert.ToInt64(result) : 0;
+                    }
                 }
             }
             catch
@@ -556,20 +593,20 @@ namespace NecessaryAdminTool.Data
                 MACAddress = reader["MACAddress"]?.ToString(),
                 Domain = reader["Domain"]?.ToString(),
                 LastLoggedOnUser = reader["LastLoggedOnUser"]?.ToString(),
-                RAM_GB = reader["RAM_GB"] != DBNull.Value ? (int)reader["RAM_GB"] : 0,
+                RAM_GB = reader["RAM_GB"] != System.DBNull.Value ? (int)reader["RAM_GB"] : 0,
                 CPU = reader["CPU"]?.ToString(),
-                DiskSize_GB = reader["DiskSize_GB"] != DBNull.Value ? (int)reader["DiskSize_GB"] : 0,
-                DiskFree_GB = reader["DiskFree_GB"] != DBNull.Value ? (int)reader["DiskFree_GB"] : 0,
-                LastSeen = reader["LastSeen"] != DBNull.Value ? (DateTime)reader["LastSeen"] : DateTime.MinValue,
-                LastBootTime = reader["LastBootTime"] != DBNull.Value ? (DateTime)reader["LastBootTime"] : DateTime.MinValue,
-                InstallDate = reader["InstallDate"] != DBNull.Value ? (DateTime)reader["InstallDate"] : DateTime.MinValue,
+                DiskSize_GB = reader["DiskSize_GB"] != System.DBNull.Value ? (int)reader["DiskSize_GB"] : 0,
+                DiskFree_GB = reader["DiskFree_GB"] != System.DBNull.Value ? (int)reader["DiskFree_GB"] : 0,
+                LastSeen = reader["LastSeen"] != System.DBNull.Value ? (DateTime)reader["LastSeen"] : DateTime.MinValue,
+                LastBootTime = reader["LastBootTime"] != System.DBNull.Value ? (DateTime)reader["LastBootTime"] : DateTime.MinValue,
+                InstallDate = reader["InstallDate"] != System.DBNull.Value ? (DateTime)reader["InstallDate"] : DateTime.MinValue,
                 BitLockerStatus = reader["BitLockerStatus"]?.ToString(),
                 TPMVersion = reader["TPMVersion"]?.ToString(),
                 AntivirusProduct = reader["AntivirusProduct"]?.ToString(),
                 AntivirusStatus = reader["AntivirusStatus"]?.ToString(),
                 FirewallStatus = reader["FirewallStatus"]?.ToString(),
-                PendingRebootCount = reader["PendingRebootCount"] != DBNull.Value ? (int)reader["PendingRebootCount"] : 0,
-                LastPatchDate = reader["LastPatchDate"] != DBNull.Value ? (DateTime)reader["LastPatchDate"] : DateTime.MinValue,
+                PendingRebootCount = reader["PendingRebootCount"] != System.DBNull.Value ? (int)reader["PendingRebootCount"] : 0,
+                LastPatchDate = reader["LastPatchDate"] != System.DBNull.Value ? (DateTime)reader["LastPatchDate"] : DateTime.MinValue,
                 Notes = reader["Notes"]?.ToString()
             };
         }
@@ -606,13 +643,7 @@ namespace NecessaryAdminTool.Data
 
         public void Dispose()
         {
-            if (!_disposed)
-            {
-                _connection?.Close();
-                _connection?.Dispose();
-                _disposed = true;
-                LogManager.LogInfo("SQL Server provider disposed");
-            }
+            LogManager.LogInfo("SQL Server provider disposed");
         }
     }
 }
