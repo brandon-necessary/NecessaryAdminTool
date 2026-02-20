@@ -16,6 +16,7 @@
 #   26 = Cloud (Windows Update) upgrade install failed
 #   27 = ISO file too small — re-download or check UNC path
 #   28 = ISO setup timed out — setup.exe did not complete within the allowed window
+#   29 = Win10 fallback update failed (machine is also Win11-incompatible; see log for details)
 # ==============================================================================
 
 # EARLY HEARTBEAT - first executable line; if ME execution log is blank, script never loaded
@@ -535,12 +536,100 @@ if (!$TPM -or !$SecureBoot -or !$RAMOk -or $FreeGB -lt $MIN_DISK_SPACE_GB) {
     if ($FreeGB -lt $MIN_DISK_SPACE_GB) { $Reasons += "${FreeGB}GB free (need ${MIN_DISK_SPACE_GB}GB)" }
 
     $ReasonText = $Reasons -join "|"
-    Write-NecessaryAdminToolLog -Status "FAILED_HW_COMPATIBILITY_$ReasonText" -ToMaster $false
-    Write-MasterSummary -Status "HW_INCOMPATIBLE" -Method "None" -Details $ReasonText
-    Show-NecessaryAdminToolLogo -Msg "INCOMPATIBLE HARDWARE: $ReasonText" "Red"
-    Write-Host "`nUpgrade cannot proceed due to hardware requirements." -ForegroundColor Red
-    Start-Sleep -Seconds 5
-    exit 23  # Hardware incompatible — TPM/SecureBoot/RAM/Disk
+    Write-NecessaryAdminToolLog -Status "WIN11_HW_INCOMPATIBLE_$ReasonText" -ToMaster $false
+    Show-NecessaryAdminToolLogo -Msg "Win11 incompatible ($ReasonText) — checking Windows 10 status..." "Yellow"
+
+    # --- WIN10 FALLBACK: Machine cannot run Win11 — ensure it is at least on Win10 22H2 (Build 19045) ---
+    # $CurrentBuild is set at line 96 from $OSInfo.BuildNumber — available here before the Section 4b re-assignment.
+    # Windows 10 22H2 (Build 19045) is the final Windows 10 feature update; nothing newer to offer.
+    $WIN10_LATEST_BUILD = 19045
+
+    if ($CurrentBuild -ge $WIN10_LATEST_BUILD) {
+        Write-Host "  Machine is already on Windows 10 22H2 or later (Build $CurrentBuild) — latest Win10." -ForegroundColor Green
+        Write-Host "  Cannot upgrade to Windows 11 until hardware requirements are met." -ForegroundColor Yellow
+        Write-NecessaryAdminToolLog -Status "WIN10_ALREADY_LATEST_BUILD_${CurrentBuild}_NO_FURTHER_UPDATES" -ToMaster $false
+        Write-MasterSummary -Status "HW_INCOMPATIBLE" -Method "None" -Details "Already on Win10 22H2 (Build $CurrentBuild); Win11 blocked: $ReasonText"
+        Show-UserNotification -Title "NecessaryAdminTool — Windows 11 Upgrade Blocked" `
+            -Message "This PC cannot be upgraded to Windows 11 due to hardware requirements:`n$($Reasons -join "`n")`n`nYour IT team has been notified. No further Windows updates are available until hardware is addressed." `
+            -Icon "Warning"
+        Start-Sleep -Seconds 5
+        exit 23  # Hardware incompatible — TPM/SecureBoot/RAM/Disk (already on latest Win10)
+    }
+
+    # Machine is on an older Win10 build — attempt to update it to 22H2 via Windows Update
+    Write-Host "  Machine is on Windows 10 Build $CurrentBuild (below 22H2/Build $WIN10_LATEST_BUILD)." -ForegroundColor Yellow
+    Write-Host "  Attempting to update to Windows 10 22H2 via Windows Update..." -ForegroundColor Cyan
+    Write-NecessaryAdminToolLog -Status "WIN10_FALLBACK_BUILD_${CurrentBuild}_ATTEMPTING_22H2" -ToMaster $false
+
+    # Ensure PSWindowsUpdate module is available — same install path as Run-CloudUpdate
+    if (!(Get-Module -ListAvailable -Name PSWindowsUpdate)) {
+        Write-Host "  Installing PSWindowsUpdate module..." -ForegroundColor Cyan
+        try {
+            if (@(Get-PackageProvider -Name NuGet -ErrorAction SilentlyContinue).Count -eq 0) {
+                Install-PackageProvider -Name NuGet -Force -Scope AllUsers -ErrorAction Stop | Out-Null
+            }
+            Install-Module PSWindowsUpdate -Force -Scope AllUsers -ErrorAction Stop | Out-Null
+            Write-NecessaryAdminToolLog -Status "WIN10_FALLBACK_MODULE_INSTALLED" -ToMaster $false
+        } catch {
+            Write-NecessaryAdminToolLog -Status "WIN10_FALLBACK_MODULE_INSTALL_FAILED_$($_.Exception.Message)" -ToMaster $false
+            Write-MasterSummary -Status "HW_INCOMPATIBLE" -Method "Win10WU" -Details "Win11 blocked ($ReasonText); PSWindowsUpdate install also failed: $($_.Exception.Message)"
+            Show-NecessaryAdminToolLogo -Msg "Win11 blocked (HW) and PSWindowsUpdate install failed" "Red"
+            exit 24  # PSWindowsUpdate module install failed
+        }
+    }
+
+    try {
+        Import-Module PSWindowsUpdate -ErrorAction Stop
+
+        # Scan for Win10 feature updates only — -NotTitle "Windows 11" prevents accidental Win11 offer
+        Write-Host "  Scanning Windows Update for Win10 feature updates (Win11 excluded)..." -ForegroundColor Cyan
+        Write-NecessaryAdminToolLog -Status "WIN10_FALLBACK_WU_SCAN_STARTED" -ToMaster $false
+        $Win10Updates = @(Get-WindowsUpdate -MicrosoftUpdate -Category "Upgrades" -NotTitle "Windows 11" -AcceptAll -ErrorAction Stop)
+
+        if ($Win10Updates.Count -eq 0) {
+            Write-Host "  No Windows 10 feature updates offered via Windows Update for this machine." -ForegroundColor Yellow
+            Write-NecessaryAdminToolLog -Status "WIN10_FALLBACK_NO_UPDATES_OFFERED" -ToMaster $false
+            Write-MasterSummary -Status "HW_INCOMPATIBLE" -Method "Win10WU" -Details "Win11 blocked ($ReasonText); no Win10 feature updates offered via WU"
+            Show-NecessaryAdminToolLogo -Msg "Win11 blocked (HW); no Win10 updates offered via Windows Update" "Yellow"
+            exit 23  # Hardware incompatible — no applicable Win10 updates available either
+        }
+
+        $UpdateTitle = $Win10Updates[0].Title
+        Write-Host "  Win10 update available: $UpdateTitle" -ForegroundColor Green
+        Write-NecessaryAdminToolLog -Status "WIN10_FALLBACK_UPDATE_FOUND_$UpdateTitle" -ToMaster $false
+        Show-NecessaryAdminToolLogo -Msg "Installing Win10 update: $UpdateTitle — Do not turn off this PC" "Yellow"
+
+        # Install synchronously; -IgnoreReboot lets the script exit cleanly and issue shutdown itself
+        $Win10Results = @(Install-WindowsUpdate -MicrosoftUpdate -Category "Upgrades" -NotTitle "Windows 11" -AcceptAll -IgnoreReboot -ErrorAction Stop)
+
+        if ($Win10Results.Count -eq 0) {
+            throw "No results returned from Install-WindowsUpdate"
+        }
+
+        $NonSuccess = @($Win10Results | Where-Object { $_.Result -notin @('Installed', 'Downloaded', 'NotApplicable') })
+        if ($NonSuccess.Count -gt 0) {
+            $FailDetail = ($NonSuccess | ForEach-Object { "$($_.Title): $($_.Result)" }) -join "; "
+            throw "Install reported non-successful results: $FailDetail"
+        }
+
+        Write-NecessaryAdminToolLog -Status "WIN10_FALLBACK_INSTALL_COMPLETE_ISSUING_REBOOT" -ToMaster $false
+        Write-MasterSummary -Status "SUCCESS" -Method "Win10WU" -UpdateCount "1" -Details "Win10 update installed ($UpdateTitle) — Win11 still blocked: $ReasonText"
+        Show-NecessaryAdminToolLogo -Msg "Win10 update installed — restarting to finish..." "Green"
+        Show-UserNotification -Title "NecessaryAdminTool — Windows 10 Updated" `
+            -Message "Windows 10 has been updated ($UpdateTitle).`nYour PC will restart in 5 minutes — please save your work now.`n`nNote: Windows 11 upgrade is not yet available for this device ($($Reasons -join '; '))." `
+            -Icon "Warning"
+
+        $RebootDelay = if (Test-UserLoggedIn) { 300 } else { 60 }
+        Write-NecessaryAdminToolLog -Status "WIN10_FALLBACK_REBOOT_IN_${RebootDelay}s" -ToMaster $false
+        & "$env:SystemRoot\System32\shutdown.exe" /r /t $RebootDelay /c "NecessaryAdminTool: Windows 10 update installed. Restarting to complete."
+        exit 0
+
+    } catch {
+        Write-NecessaryAdminToolLog -Status "WIN10_FALLBACK_FAILED_$($_.Exception.Message)" -ToMaster $false
+        Write-MasterSummary -Status "HW_INCOMPATIBLE" -Method "Win10WU" -Details "Win11 blocked ($ReasonText); Win10 update attempt also failed: $($_.Exception.Message)"
+        Show-NecessaryAdminToolLogo -Msg "Win10 update failed: $($_.Exception.Message)" "Red"
+        exit 29  # Win10 fallback update failed (machine also Win11-incompatible)
+    }
 }
 
 Write-NecessaryAdminToolLog -Status "HW_COMPAT_CHECK_PASSED_TPM2_SECUREBOOT_RAM_${RAMGB}GB_DISK_${FreeGB}GB" -ToMaster $false
