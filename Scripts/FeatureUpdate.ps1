@@ -6,6 +6,10 @@
 # Security Hardened: Admin checks, configurable patterns, resource cleanup, timeouts
 # ==============================================================================
 
+# EARLY HEARTBEAT - first executable line; if ME execution log is blank, script never loaded
+# (most common cause: #Requires -RunAsAdministrator failing in non-elevated agent context)
+Write-Host "  [$(Get-Date -Format 'HH:mm:ss')] FeatureUpdate.ps1 - Script loaded on $env:COMPUTERNAME, starting execution..." -ForegroundColor Cyan
+
 # --- 1. CONFIGURABLE PATHS (Environment Variable Based) ---
 # ALL paths are configured via environment variables or app settings
 # NO hardcoded paths - configured through NecessaryAdminTool Options menu
@@ -395,8 +399,9 @@ if (Test-PendingReboot) {
     Show-NecessaryAdminToolLogo -Msg "Pending reboot - run Preflight script first, then re-push task" "Yellow"
     exit 1
 }
-Write-Host "  Pending reboot: None detected" -ForegroundColor Green
-Write-NecessaryAdminToolLog -Status "PENDING_REBOOT_CHECK_PASSED" -ToMaster $false
+Write-Host "  Pending reboot: None detected - OK to proceed with upgrade." -ForegroundColor Green
+Write-Host "  [PREFLIGHT PASS] No pending reboot (WU/CBS/PFR keys all clear)." -ForegroundColor Green
+Write-NecessaryAdminToolLog -Status "PENDING_REBOOT_CHECK_PASSED - WU_Key=CLEAR CBS_Key=CLEAR PFR_Key=CLEAR" -ToMaster $false
 
 # --- 4. HARDWARE COMPATIBILITY CHECK ---
 Show-NecessaryAdminToolLogo -Msg "Hardware Compatibility Check..."

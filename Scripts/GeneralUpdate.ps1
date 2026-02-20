@@ -6,6 +6,10 @@
 # Security Hardened: Admin checks, module validation, safe cleanup, disk space checks
 # ==============================================================================
 
+# EARLY HEARTBEAT - first executable line; if ME execution log is blank, script never loaded
+# (most common cause: #Requires -RunAsAdministrator failing in non-elevated agent context)
+Write-Host "  [$(Get-Date -Format 'HH:mm:ss')] GeneralUpdate.ps1 - Script loaded on $env:COMPUTERNAME, starting execution..." -ForegroundColor Cyan
+
 # --- 0. CONFIGURABLE PATHS (Environment Variable Based) ---
 # ALL paths are configured via environment variables or app settings
 # NO hardcoded paths - configured through NecessaryAdminTool Options menu
