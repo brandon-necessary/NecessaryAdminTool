@@ -16,11 +16,13 @@ namespace NecessaryAdminTool.Data
     {
         private readonly string _connectionString;
         private readonly string _encryptionKey;
+        private readonly string _dbPath;
         private bool _disposed = false;
 
         public SqliteDataProvider(string dbPath, string encryptionKey)
         {
             _encryptionKey = encryptionKey;
+            _dbPath = dbPath;
 
             // SQLCipher connection string with encryption
             _connectionString = $"Data Source={dbPath};Version=3;Password={encryptionKey};";
@@ -425,7 +427,7 @@ namespace NecessaryAdminTool.Data
 
         public async Task<DatabaseStats> GetDatabaseStatsAsync()
         {
-            var stats = new DatabaseStats { EncryptionStatus = "AES-256 (SQLCipher)" };
+            var stats = new DatabaseStats { EncryptionStatus = "AES-256 (SQLCipher)", DatabaseType = "SQLite" };
 
             #if SQLITE_ENABLED
             using (var conn = new SQLiteConnection(_connectionString))
@@ -435,7 +437,26 @@ namespace NecessaryAdminTool.Data
                 {
                     cmd.CommandText = "SELECT COUNT(*) FROM Computers";
                     stats.TotalComputers = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+
+                    cmd.CommandText = "SELECT COUNT(*) FROM ComputerTags";
+                    stats.TotalTags = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+
+                    cmd.CommandText = "SELECT COUNT(*) FROM ScanHistory";
+                    stats.TotalScans = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+
+                    cmd.CommandText = "SELECT COUNT(*) FROM Scripts";
+                    stats.TotalScripts = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+
+                    cmd.CommandText = "SELECT COUNT(*) FROM Bookmarks";
+                    stats.TotalBookmarks = Convert.ToInt32(await cmd.ExecuteScalarAsync());
                 }
+            }
+
+            if (!string.IsNullOrEmpty(_dbPath) && System.IO.File.Exists(_dbPath))
+            {
+                var fi = new System.IO.FileInfo(_dbPath);
+                stats.SizeBytes = fi.Length;
+                stats.DatabaseSizeMB = fi.Length / (1024 * 1024);
             }
             #else
             await Task.CompletedTask;
@@ -446,16 +467,77 @@ namespace NecessaryAdminTool.Data
 
         public async Task<bool> BackupDatabaseAsync(string backupPath)
         {
-            // Implementation requires file copy with encryption
-            await Task.CompletedTask;
-            return true;
+            LogManager.LogInfo($"SqliteDataProvider.BackupDatabaseAsync() - START - dest: {backupPath}");
+
+            if (string.IsNullOrEmpty(backupPath))
+            {
+                LogManager.LogWarning("SqliteDataProvider.BackupDatabaseAsync() - SKIPPED - empty path");
+                return false;
+            }
+
+            try
+            {
+                var backupDir = System.IO.Path.GetDirectoryName(backupPath);
+                if (!string.IsNullOrEmpty(backupDir) && !System.IO.Directory.Exists(backupDir))
+                    System.IO.Directory.CreateDirectory(backupDir);
+
+                #if SQLITE_ENABLED
+                // SQLite online backup API — safe while DB is in use (WAL mode, per-op connections)
+                using (var sourceConn = new SQLiteConnection(_connectionString))
+                using (var destConn = new SQLiteConnection($"Data Source={backupPath};Version=3;Password={_encryptionKey};"))
+                {
+                    await sourceConn.OpenAsync();
+                    await destConn.OpenAsync();
+                    sourceConn.BackupDatabase(destConn, "main", "main", -1, null, 0);
+                }
+
+                var size = new System.IO.FileInfo(backupPath).Length;
+                LogManager.LogInfo($"SqliteDataProvider.BackupDatabaseAsync() - SUCCESS - {size / 1024} KB written to {backupPath}");
+                return true;
+                #else
+                LogManager.LogWarning("SqliteDataProvider.BackupDatabaseAsync() - SQLite not enabled");
+                return await Task.FromResult(false);
+                #endif
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"SqliteDataProvider.BackupDatabaseAsync() - FAILED - dest: {backupPath}", ex);
+                return false;
+            }
         }
 
         public async Task<bool> RestoreDatabaseAsync(string backupPath)
         {
-            // Implementation requires file copy with decryption
-            await Task.CompletedTask;
-            return true;
+            LogManager.LogInfo($"SqliteDataProvider.RestoreDatabaseAsync() - START - source: {backupPath}");
+
+            if (string.IsNullOrEmpty(backupPath) || !System.IO.File.Exists(backupPath))
+            {
+                LogManager.LogWarning($"SqliteDataProvider.RestoreDatabaseAsync() - SKIPPED - backup not found: {backupPath}");
+                return false;
+            }
+
+            try
+            {
+                #if SQLITE_ENABLED
+                // Per-operation connections are used throughout — no persistent connection to close.
+                // Overwrite the live DB file, then remove stale WAL/SHM sidecars from the old DB.
+                System.IO.File.Copy(backupPath, _dbPath, overwrite: true);
+
+                foreach (var sidecar in new[] { _dbPath + "-wal", _dbPath + "-shm" })
+                    if (System.IO.File.Exists(sidecar)) System.IO.File.Delete(sidecar);
+
+                LogManager.LogInfo($"SqliteDataProvider.RestoreDatabaseAsync() - SUCCESS - restored from {backupPath} to {_dbPath}");
+                return true;
+                #else
+                LogManager.LogWarning("SqliteDataProvider.RestoreDatabaseAsync() - SQLite not enabled");
+                return await Task.FromResult(false);
+                #endif
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"SqliteDataProvider.RestoreDatabaseAsync() - FAILED - source: {backupPath}", ex);
+                return false;
+            }
         }
 
         /// <summary>Runs VACUUM to compact and defragment the SQLite database file.</summary>
