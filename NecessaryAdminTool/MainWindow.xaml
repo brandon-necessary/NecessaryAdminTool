@@ -2920,17 +2920,22 @@
                                 <StackPanel Orientation="Horizontal" Margin="0,0,22,0">
                                     <TextBlock Text="Win11 Installed:" Foreground="#6B7280" FontSize="10" VerticalAlignment="Center" Margin="0,0,5,0"/>
                                     <TextBlock x:Name="TxtTallyWin11" Text="—" Foreground="#10B981" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"
-                                               ToolTip="Machines that had Windows 11 successfully installed (via Windows Update or ISO) in all recorded runs."/>
+                                               ToolTip="FeatureUpdate runs where Windows 11 was successfully installed (via Windows Update or ISO) and a reboot was issued."/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,22,0">
                                     <TextBlock Text="Win10 Updated:" Foreground="#6B7280" FontSize="10" VerticalAlignment="Center" Margin="0,0,5,0"/>
                                     <TextBlock x:Name="TxtTallyWin10" Text="—" Foreground="#3B82F6" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"
-                                               ToolTip="Machines that received a Windows 10 22H2 update via the Win11-incompatible fallback path."/>
+                                               ToolTip="FeatureUpdate runs where Windows 10 22H2 was installed via the Win11-incompatible fallback path."/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,22,0">
+                                    <TextBlock Text="Patches Applied:" Foreground="#6B7280" FontSize="10" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <TextBlock x:Name="TxtTallyPatches" Text="—" Foreground="#A78BFA" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"
+                                               ToolTip="GeneralUpdate runs where Windows cumulative patches were successfully installed."/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,22,0">
                                     <TextBlock Text="Up to Date:" Foreground="#6B7280" FontSize="10" VerticalAlignment="Center" Margin="0,0,5,0"/>
                                     <TextBlock x:Name="TxtTallyCompliant" Text="—" Foreground="#10B981" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"
-                                               ToolTip="Machines already on the target OS version — no upgrade needed."/>
+                                               ToolTip="Machines already on the target OS version — no upgrade or patch action was needed."/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,22,0">
                                     <TextBlock Text="HW Blocked:" Foreground="#6B7280" FontSize="10" VerticalAlignment="Center" Margin="0,0,5,0"/>

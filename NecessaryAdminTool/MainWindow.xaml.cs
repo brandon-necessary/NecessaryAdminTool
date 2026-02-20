@@ -10084,24 +10084,42 @@ if ($rebootPending) {
 
         /// <summary>
         /// Recomputes tally stat boxes from the FULL all-runs dataset (unaffected by Latest/search).
-        /// Win11 = SUCCESS + Method is not Win10WU/AlreadyUpToDate/UserPostpone.
-        /// Win10  = SUCCESS + Method == Win10WU.
+        /// Uses the Script column (Feature/General) to correctly separate OS upgrades from patch runs.
+        /// Win11    = Script=Feature, Status=SUCCESS, Method not Win10WU/AlreadyUpToDate/UserPostpone
+        /// Win10    = Script=Feature, Status=SUCCESS, Method=Win10WU
+        /// Patches  = Script=General, Status=SUCCESS  (cumulative Windows patches)
+        /// Compliant = Status=COMPLIANT, NO_REBOOT_NEEDED, or Method=AlreadyUpToDate
         /// </summary>
         private void UpdateDeploymentTally(System.Collections.Generic.List<DeploymentResult> all)
         {
-            int win11    = all.Count(r => r.Status == "SUCCESS" &&
-                                          r.Method != "Win10WU" &&
-                                          r.Method != "AlreadyUpToDate" &&
-                                          r.Method != "UserPostpone");
-            int win10    = all.Count(r => r.Status == "SUCCESS" && r.Method == "Win10WU");
-            int compliant = all.Count(r => r.Status == "COMPLIANT" ||
-                                           (r.Status == "SUCCESS" && r.Method == "AlreadyUpToDate"));
-            int hwBlock  = all.Count(r => r.Status == "HW_INCOMPATIBLE");
-            int failed   = all.Count(r => r.Status == "FAILED");
+            int win11 = all.Count(r =>
+                r.Status == "SUCCESS" &&
+                string.Equals(r.Script, "Feature", StringComparison.OrdinalIgnoreCase) &&
+                r.Method != "Win10WU" &&
+                r.Method != "AlreadyUpToDate" &&
+                r.Method != "UserPostpone");
+
+            int win10 = all.Count(r =>
+                r.Status == "SUCCESS" &&
+                string.Equals(r.Script, "Feature", StringComparison.OrdinalIgnoreCase) &&
+                r.Method == "Win10WU");
+
+            int patches = all.Count(r =>
+                r.Status == "SUCCESS" &&
+                string.Equals(r.Script, "General", StringComparison.OrdinalIgnoreCase));
+
+            int compliant = all.Count(r =>
+                r.Status == "COMPLIANT" ||
+                r.Status == "NO_REBOOT_NEEDED" ||
+                (r.Status == "SUCCESS" && r.Method == "AlreadyUpToDate"));
+
+            int hwBlock   = all.Count(r => r.Status == "HW_INCOMPATIBLE");
+            int failed    = all.Count(r => r.Status == "FAILED");
             int postponed = all.Count(r => r.Status == "POSTPONED");
 
             TxtTallyWin11.Text     = win11.ToString("N0");
             TxtTallyWin10.Text     = win10.ToString("N0");
+            TxtTallyPatches.Text   = patches.ToString("N0");
             TxtTallyCompliant.Text = compliant.ToString("N0");
             TxtTallyHWBlocked.Text = hwBlock.ToString("N0");
             TxtTallyFailed.Text    = failed.ToString("N0");
