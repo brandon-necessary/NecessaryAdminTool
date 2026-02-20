@@ -202,15 +202,27 @@ if (!$UserPresent) {
     exit 0
 
 } else {
-    # ---- USER PRESENT: 20-minute WinForms warning dialog ----
+    # ---- USER PRESENT: WinForms dialog + per-minute console countdown ----
     Write-Host ""
     Write-Host "  User is logged in - showing $WarningMinutes-minute restart warning dialog..." -ForegroundColor Yellow
     Write-Log -Status "USER_PRESENT_SHOWING_${WarningMinutes}MIN_REBOOT_DIALOG"
 
     Show-RebootWarningDialog -Minutes $WarningMinutes
 
-    Write-Host "  Dialog closed - issuing restart (30-second final countdown)..." -ForegroundColor Yellow
-    Write-Log -Status "REBOOT_DIALOG_COMPLETE_ISSUING_RESTART"
+    Write-Host "  Dialog closed. Starting $WarningMinutes-minute work-save countdown..." -ForegroundColor Yellow
+    Write-Log -Status "REBOOT_COUNTDOWN_STARTED_${WarningMinutes}MIN"
+
+    # Per-minute console countdown - keeps ME execution log alive and gives visible progress
+    for ($Min = $WarningMinutes; $Min -gt 0; $Min--) {
+        $Elapsed = $WarningMinutes - $Min
+        Write-Host "  [$Min min remaining | $Elapsed min elapsed | $(Get-Date -Format 'HH:mm:ss')] Save your work - restart incoming." -ForegroundColor Yellow
+        Write-Log -Status "REBOOT_COUNTDOWN_${Min}MIN_REMAINING"
+        Start-Sleep -Seconds 60
+    }
+
+    Write-Host ""
+    Write-Host "  [COUNTDOWN COMPLETE] $WarningMinutes minutes elapsed. Issuing restart now." -ForegroundColor Green
+    Write-Log -Status "REBOOT_COUNTDOWN_COMPLETE_ISSUING_RESTART"
 
     shutdown.exe /r /t 30 /c "NecessaryAdminTool: Restarting to apply pending updates before Windows 11 upgrade."
     exit 0
