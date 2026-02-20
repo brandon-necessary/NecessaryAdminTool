@@ -896,6 +896,8 @@ namespace NecessaryAdminTool.Security
             private readonly System.Collections.Concurrent.ConcurrentDictionary<string, AttemptInfo> _attempts;
             // TAG: #SECURITY_CRITICAL #RATE_LIMITING — background cleanup prevents unbounded memory growth
             private readonly System.Threading.Timer _cleanupTimer;
+            // Hard cap: prevents DoS via unique-identifier flooding (e.g. 10k+ usernames in rapid succession)
+            private const int MaxTrackedIdentifiers = 10_000;
 
             private class AttemptInfo
             {
@@ -931,6 +933,15 @@ namespace NecessaryAdminTool.Security
             public bool IsAllowed(string identifier)
             {
                 var now = DateTime.UtcNow;
+
+                // Enforce hard cap — reject new identifiers when dictionary is full.
+                // This prevents a DoS attack that floods unique usernames to exhaust memory.
+                if (!_attempts.ContainsKey(identifier) && _attempts.Count >= MaxTrackedIdentifiers)
+                {
+                    LogManager.LogWarning($"[RateLimiter] Hard cap reached ({MaxTrackedIdentifiers}) — rejecting new identifier to prevent memory DoS");
+                    return false;
+                }
+
                 var info = _attempts.GetOrAdd(identifier, _ => new AttemptInfo
                 {
                     Count = 0,

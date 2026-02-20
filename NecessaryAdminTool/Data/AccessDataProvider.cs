@@ -582,11 +582,23 @@ namespace NecessaryAdminTool.Data
             }
         }
 
-        // Called only from within a held _dbLock — do NOT acquire lock here
+        // Called only from within a held _dbLock — do NOT acquire lock here.
+        // tableName is validated against a whitelist to prevent SQL injection
+        // (OleDb does not support parameterized table names).
+        private static readonly HashSet<string> _allowedTables =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            { "Computers", "ScanHistory", "Scripts", "Bookmarks" };
+
         private async Task<int> GetTableCountLockedAsync(string tableName)
         {
+            if (string.IsNullOrEmpty(tableName) || !_allowedTables.Contains(tableName))
+            {
+                LogManager.LogWarning($"AccessDataProvider.GetTableCountLockedAsync - rejected non-whitelisted tableName '{tableName}'");
+                return 0;
+            }
             try
             {
+                // Safe: tableName validated against whitelist above — not user-supplied
                 var query = $"SELECT COUNT(*) FROM {tableName}";
                 using (var cmd = new OleDbCommand(query, _connection))
                 {

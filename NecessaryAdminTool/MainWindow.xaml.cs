@@ -9109,9 +9109,16 @@ if ($rebootPending) {
             {
                 if (!File.Exists(_xmlConfigPath)) return;
                 var xs = new XmlSerializer(typeof(UserConfig));
-                using (var r = new StreamReader(_xmlConfigPath))
+                // TAG: #SECURITY_CRITICAL - Disable DTD and external entity processing to prevent XXE attacks
+                var xmlSettings = new System.Xml.XmlReaderSettings
                 {
-                    var cfg = (UserConfig)xs.Deserialize(r);
+                    DtdProcessing = System.Xml.DtdProcessing.Prohibit,
+                    XmlResolver = null
+                };
+                using (var fileStream = new FileStream(_xmlConfigPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (var xmlReader = System.Xml.XmlReader.Create(fileStream, xmlSettings))
+                {
+                    var cfg = (UserConfig)xs.Deserialize(xmlReader);
                     // Load only last 10 valid hostnames
                     _recentTargets = cfg.TargetHistory
                         .Where(SecurityValidator.IsValidHostname)

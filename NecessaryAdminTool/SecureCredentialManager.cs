@@ -75,6 +75,8 @@ namespace NecessaryAdminTool
                 try
                 {
                     Marshal.Copy(byteArray, 0, unmanagedBlob, byteArray.Length);
+                    // TAG: #SECURITY_CRITICAL — wipe managed byte array immediately after copy to unmanaged
+                    Array.Clear(byteArray, 0, byteArray.Length);
 
                     CREDENTIAL credential = new CREDENTIAL
                     {
@@ -134,8 +136,16 @@ namespace NecessaryAdminTool
                     CREDENTIAL credential = (CREDENTIAL)Marshal.PtrToStructure(credPtr, typeof(CREDENTIAL));
                     byte[] byteArray = new byte[credential.CredentialBlobSize];
                     Marshal.Copy(credential.CredentialBlob, byteArray, 0, (int)credential.CredentialBlobSize);
-
-                    return Encoding.Unicode.GetString(byteArray);
+                    try
+                    {
+                        return Encoding.Unicode.GetString(byteArray);
+                    }
+                    finally
+                    {
+                        // TAG: #SECURITY_CRITICAL — wipe raw credential bytes from managed heap
+                        // immediately after string conversion to minimise exposure window
+                        Array.Clear(byteArray, 0, byteArray.Length);
+                    }
                 }
                 finally
                 {
