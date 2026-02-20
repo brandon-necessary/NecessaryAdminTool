@@ -1,3 +1,8 @@
+// TAG: #AD_FLEET_INVENTORY #PERFORMANCE #SECURITY_CRITICAL #NAT_AGENT #VERSION_1_0
+// FUTURE CLAUDES: This is the FLEET SCAN engine. Strategy order = Agent (0) → CIM/WS-MAN (1) → CIM/DCOM (2) → Legacy WMI (3).
+//                 Add new scan strategies at the top of ScanComputerWithFallbackAsync().
+//                 ConvertAgentInfoToHardwareSpec() must be updated if AgentSystemInfo (NatAgentClient) fields change.
+//                 WmiConnectionPool.GetPooledScope() used in ScanViaLegacyWmiAsync — update if pool API changes.
 using System;
 using System.Collections.Generic;
 using System.DirectoryServices;

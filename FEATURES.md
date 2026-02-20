@@ -1,16 +1,16 @@
 <!-- TAG: #AUTO_UPDATE_FEATURES #FEATURE_COUNT #VERSION_TRACKING -->
 <!-- FUTURE CLAUDES: Update feature count and version with each release -->
 # NecessaryAdminTool - Complete Feature List
-**Last Updated:** February 14, 2026
-**Current Version:** v1.2602.0.0
+**Last Updated:** February 20, 2026
+**Current Version:** v1.2602.0.0 (post-Session 18 hardening)
 **Previous Name:** ArtaznIT Suite (v6.0 - v7.2603.5.0)
 
 ---
 
 ## 🎯 SUMMARY
 
-**Total Implemented Features:** 169
-**Code Base:** ~18,000 lines of C# + XAML
+**Total Implemented Features:** 179
+**Code Base:** ~19,500 lines of C# + XAML + NecessaryAdminAgent
 **Supported OS:** Windows 10/11, Server 2019+
 **.NET Framework:** 4.8.1
 **Database:** SQLite (AES-256), SQL Server, Access, CSV/JSON
@@ -61,11 +61,12 @@
 
 - **Computer Management:**
   - Single and fleet-wide scanning
+  - **NecessaryAdminAgent** (Strategy 0 — bypasses WMI firewall, no port requirements)
   - CIM/WS-MAN (modern PowerShell remoting)
   - CIM/DCOM fallback
-  - Legacy WMI support
+  - Legacy WMI with connection pooling (WmiConnectionPool)
   - Parallel WMI queries (3x faster - 450ms → 150ms)
-  - Triple fallback strategy
+  - Quad fallback strategy (Agent → WS-MAN → DCOM → Legacy WMI)
 
 ### 🖥️ Remote Management Integration (RMM)
 **Supported Tools:**
@@ -177,6 +178,18 @@
 - Confirmation dialogs
 - Audit logging
 - Input validation
+
+### 🤖 NecessaryAdminAgent (Sessions 15-18)
+- Lightweight Windows service deployed to endpoints via ManageEngine
+- Returns hardware spec over raw TCP port 443 (bypasses WMI firewall blocks)
+- Pre-shared token authentication with constant-time comparison
+- Max 20 concurrent connections via SemaphoreSlim
+- 6 query commands: PING, GET_SYSTEM_INFO, GET_PROCESSES, GET_SERVICES, GET_NETWORK, GET_INSTALLED
+- Protocol: line-delimited JSON (no external dependencies, no Newtonsoft)
+- Strategy 0 in fleet scan + single scan — tried before CIM/WMI, falls back gracefully
+- ManageEngine deployment scripts: `WMIEnable.ps1` + `AgentInstall.ps1`
+- Configurable token + port in Options → Agent Configuration
+- Registry config: `HKLM\SOFTWARE\NecessaryAdminTool\Agent`
 
 ### 🚀 Performance Optimizations
 **Startup (v6.0):**

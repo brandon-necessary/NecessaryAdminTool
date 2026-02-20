@@ -1,5 +1,9 @@
 #Requires -Version 5.1
 #Requires -RunAsAdministrator
+# TAG: #NAT_AGENT #DEPLOYMENT_SCRIPT #AGENT_INSTALL #VERSION_1_0 #MANAGEENGINE_COMPATIBLE
+# FUTURE CLAUDES: ManageEngine deployment script — update UNC path help text and token format docs
+#                 if NecessaryAdminAgent auth or install protocol changes.
+#                 Ensure Write-MasterSummary column schema matches GeneralUpdate.ps1 exactly (20 columns).
 # ==============================================================================
 # NECESSARYADMINTOOL IT - AGENT INSTALL SCRIPT (v1.0)
 # Copies NecessaryAdminAgent.exe from UNC share + installs as Windows service

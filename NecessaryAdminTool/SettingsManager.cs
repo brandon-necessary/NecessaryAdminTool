@@ -1,3 +1,6 @@
+// TAG: #SETTINGS_MANAGER #CONFIGURATION #SECURITY_CRITICAL #VERSION_1_0
+// FUTURE CLAUDES: All load methods use ContainsKey() + null guards — do NOT regress to direct dict["Key"].ToString().
+//                 If new setting categories are added, add corresponding Load/Save methods + update CLAUDE.md settings inventory.
 using System;
 using System.Collections.Generic;
 using System.IO;

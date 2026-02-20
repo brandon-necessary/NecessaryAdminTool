@@ -1,5 +1,8 @@
 #Requires -Version 5.1
 #Requires -RunAsAdministrator
+# TAG: #NAT_AGENT #DEPLOYMENT_SCRIPT #WMI_ENABLE #VERSION_1_0 #MANAGEENGINE_COMPATIBLE
+# FUTURE CLAUDES: ManageEngine deployment script — update version header when NecessaryAdminAgent version changes.
+#                 Ensure Write-MasterSummary column schema matches GeneralUpdate.ps1 exactly (20 columns).
 # ==============================================================================
 # NECESSARYADMINTOOL IT - WMI ENABLE SCRIPT (v1.0)
 # Enables WMI firewall rules + WinRM on target clients

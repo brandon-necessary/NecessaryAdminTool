@@ -61,6 +61,16 @@ NecessaryAdminTool is a comprehensive Windows-based IT management application de
 - Short-name cards with domain-suffix badge overlay
 - Uniform card widths auto-sized to widest hostname
 
+### 🤖 **NecessaryAdminAgent — Lightweight Remote Data Collector**
+- Tiny Windows service (`NecessaryAdminAgent.exe`) deployed to endpoints via ManageEngine
+- Returns hardware info (OS, RAM, CPU, disk, serial, IP, TPM, logged-in user) over raw TCP on port 443
+- **Bypasses WMI firewall rules entirely** — works on machines where WMI is blocked
+- Pre-shared token auth with constant-time comparison (timing-attack resistant)
+- Automatically used as **Strategy 0** before CIM/WS-MAN in both fleet and single scans
+- Falls back gracefully to CIM/WMI when agent is unavailable
+- Deployed via two ManageEngine scripts: `WMIEnable.ps1` + `AgentInstall.ps1`
+- Configurable token + port in NAT Options → Agent Configuration
+
 ### ⏱️ **Background Auto-Scan Service**
 - Windows Task Scheduler integration — runs `NecessaryAdminTool.exe /autoscan` on a schedule
 - Fully headless (no GUI) — suitable for overnight or off-hours fleet inventory
@@ -265,13 +275,26 @@ The following configuration files are stored in `%APPDATA%`:
 - ✅ **Performance Optimized** - Multicore parallel processing (3-4x faster scanning)
 - ✅ **Security First** - Windows Credential Manager, SecureString, encrypted storage
 
-**Background Auto-Scan (v2.x):**
+**NecessaryAdminAgent (Sessions 15-18):**
+- ✅ Lightweight Windows service for endpoints where WMI is blocked by firewall
+- ✅ Strategy 0 in fleet + single scan — tried before CIM/WMI, falls back gracefully
+- ✅ ManageEngine deployment: `WMIEnable.ps1` + `AgentInstall.ps1`
+- ✅ Constant-time token auth, per-request auth, max 20 concurrent connections
+- ✅ Protocol: line-delimited JSON over raw TCP (internal LAN trust boundary)
+
+**Enterprise Code Quality (Sessions 15-18):**
+- ✅ Full IDisposable audit — WmiConnectionPool.Shutdown(), SemaphoreSlim disposed, Process disposed
+- ✅ Thread-safety hardening — AccessDataProvider + CsvDataProvider SemaphoreSlim locking
+- ✅ PowerShell script hardening — shutdown.exe full path, token regex, $LASTEXITCODE checks
+- ✅ SQLiteDataProvider backup implemented — uses online backup API (not file copy)
+- ✅ Async CSV load — deployment results no longer block UI thread on large logs
+- ✅ All error catch blocks now log to LogManager (no more silent swallowing)
+
+**Background Auto-Scan:**
 - ✅ Windows Task Scheduler integration (enable via Options → Background Service)
 - ✅ Headless fleet scan: AD query → ping → WMI → database, no UI required
 - ✅ All 4 database types supported (SQLite, SQL Server, Access, CSV)
 - ✅ Integrated Kerberos auth — no passwords stored for scan service
-- ✅ Per-query 5s WMI timeout, `ManagementScope` + `ManagementObject` properly disposed
-- ✅ Truly async `SendPingAsync` — no ThreadPool starvation on large fleets
 - ✅ Scan summary written to Deployment Log Directory after each run
 
 **Prepared for v1.1+ Enhancements:**
