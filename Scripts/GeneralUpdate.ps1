@@ -266,6 +266,123 @@ function Check-Power {
     return ($OnAC -or $Battery.EstimatedChargeRemaining -ge 20)
 }
 
+function Test-UserLoggedIn {
+    $UserSessions = Get-Process -Name explorer -ErrorAction SilentlyContinue |
+        Where-Object { $_.SessionId -ne 0 }
+    return ($null -ne $UserSessions -and @($UserSessions).Count -gt 0)
+}
+
+# User-visible notification — ServiceNotification flag reaches session-1 user from SYSTEM/session-0.
+# Silently skipped when no user is logged in (unattended machines).
+function Show-UserNotification {
+    param(
+        [string]$Title   = "NecessaryAdminTool IT",
+        [string]$Message = "",
+        [string]$Icon    = "Information",
+        [string]$Buttons = "OK"
+    )
+    if ([string]::IsNullOrEmpty($Message)) { return "None" }
+    if (!(Test-UserLoggedIn)) {
+        Write-NecessaryAdminToolLog -Status "USER_NOTIFY_SKIPPED_NO_USER - $Title" -ToMaster $false
+        return "NoUser"
+    }
+    try {
+        Add-Type -AssemblyName System.Windows.Forms
+        $IconEnum    = [System.Windows.Forms.MessageBoxIcon]::$Icon
+        $ButtonsEnum = [System.Windows.Forms.MessageBoxButtons]::$Buttons
+        Write-NecessaryAdminToolLog -Status "USER_NOTIFY_SHOWING - $Title" -ToMaster $false
+        $Result = [System.Windows.Forms.MessageBox]::Show(
+            $Message, $Title,
+            $ButtonsEnum,
+            $IconEnum,
+            [System.Windows.Forms.MessageBoxDefaultButton]::Button1,
+            [System.Windows.Forms.MessageBoxOptions]::ServiceNotification
+        )
+        Write-NecessaryAdminToolLog -Status "USER_NOTIFY_RESULT_${Result} - $Title" -ToMaster $false
+        return $Result.ToString()
+    } catch {
+        Write-NecessaryAdminToolLog -Status "USER_NOTIFY_FAILED - $($_.Exception.Message)" -ToMaster $false
+        return "Error"
+    }
+}
+
+function Invoke-DiskCleanup {
+    # Best-effort disk cleanup for low-space situations.
+    # Targets the largest safe-to-clear locations under SYSTEM context.
+    # Returns the new free space in GB after cleanup.
+    Write-NecessaryAdminToolLog -Status "DISK_CLEANUP_STARTING" -ToMaster $false
+    Write-Host "  [$(Get-Date -Format 'HH:mm:ss')] Low disk space detected - attempting automatic cleanup..." -ForegroundColor Yellow
+
+    $Freed = 0
+
+    # 1. Windows system temp
+    try {
+        $Before = (Get-PSDrive C -ErrorAction Stop).Free
+        Remove-Item -Path "$env:SystemRoot\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
+        $After  = (Get-PSDrive C -ErrorAction Stop).Free
+        $MB = [math]::Round(($After - $Before) / 1MB, 0)
+        Write-NecessaryAdminToolLog -Status "DISK_CLEANUP_WinTemp_Freed${MB}MB" -ToMaster $false
+        Write-Host "  [$(Get-Date -Format 'HH:mm:ss')]   - Windows Temp: freed ${MB} MB" -ForegroundColor Cyan
+        $Freed += $After - $Before
+    } catch { Write-NecessaryAdminToolLog -Status "DISK_CLEANUP_WinTemp_Error_$($_.Exception.Message)" -ToMaster $false }
+
+    # 2. Windows Update download cache (stop service, clear, restart)
+    try {
+        $Before = (Get-PSDrive C -ErrorAction Stop).Free
+        Stop-Service wuauserv -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 2
+        Remove-Item -Path "$env:SystemRoot\SoftwareDistribution\Download\*" -Recurse -Force -ErrorAction SilentlyContinue
+        Start-Service wuauserv -ErrorAction SilentlyContinue
+        $After  = (Get-PSDrive C -ErrorAction Stop).Free
+        $MB = [math]::Round(($After - $Before) / 1MB, 0)
+        Write-NecessaryAdminToolLog -Status "DISK_CLEANUP_WUCache_Freed${MB}MB" -ToMaster $false
+        Write-Host "  [$(Get-Date -Format 'HH:mm:ss')]   - WU Download Cache: freed ${MB} MB" -ForegroundColor Cyan
+        $Freed += $After - $Before
+    } catch { Write-NecessaryAdminToolLog -Status "DISK_CLEANUP_WUCache_Error_$($_.Exception.Message)" -ToMaster $false }
+
+    # 3. All user Temp folders
+    try {
+        $Before = (Get-PSDrive C -ErrorAction Stop).Free
+        Get-ChildItem 'C:\Users' -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+            Remove-Item -Path "$($_.FullName)\AppData\Local\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        $After  = (Get-PSDrive C -ErrorAction Stop).Free
+        $MB = [math]::Round(($After - $Before) / 1MB, 0)
+        Write-NecessaryAdminToolLog -Status "DISK_CLEANUP_UserTemp_Freed${MB}MB" -ToMaster $false
+        Write-Host "  [$(Get-Date -Format 'HH:mm:ss')]   - User Temp folders: freed ${MB} MB" -ForegroundColor Cyan
+        $Freed += $After - $Before
+    } catch { Write-NecessaryAdminToolLog -Status "DISK_CLEANUP_UserTemp_Error_$($_.Exception.Message)" -ToMaster $false }
+
+    # 4. Windows Error Reporting cache
+    try {
+        $Before = (Get-PSDrive C -ErrorAction Stop).Free
+        Remove-Item -Path "$env:ProgramData\Microsoft\Windows\WER\ReportQueue\*" -Recurse -Force -ErrorAction SilentlyContinue
+        Remove-Item -Path "$env:ProgramData\Microsoft\Windows\WER\ReportArchive\*" -Recurse -Force -ErrorAction SilentlyContinue
+        $After  = (Get-PSDrive C -ErrorAction Stop).Free
+        $MB = [math]::Round(($After - $Before) / 1MB, 0)
+        Write-NecessaryAdminToolLog -Status "DISK_CLEANUP_WER_Freed${MB}MB" -ToMaster $false
+        Write-Host "  [$(Get-Date -Format 'HH:mm:ss')]   - WER Cache: freed ${MB} MB" -ForegroundColor Cyan
+        $Freed += $After - $Before
+    } catch { Write-NecessaryAdminToolLog -Status "DISK_CLEANUP_WER_Error_$($_.Exception.Message)" -ToMaster $false }
+
+    # 5. Recycle Bin (all drives)
+    try {
+        $Before = (Get-PSDrive C -ErrorAction Stop).Free
+        Clear-RecycleBin -Force -ErrorAction SilentlyContinue
+        $After  = (Get-PSDrive C -ErrorAction Stop).Free
+        $MB = [math]::Round(($After - $Before) / 1MB, 0)
+        Write-NecessaryAdminToolLog -Status "DISK_CLEANUP_RecycleBin_Freed${MB}MB" -ToMaster $false
+        Write-Host "  [$(Get-Date -Format 'HH:mm:ss')]   - Recycle Bin: freed ${MB} MB" -ForegroundColor Cyan
+        $Freed += $After - $Before
+    } catch { Write-NecessaryAdminToolLog -Status "DISK_CLEANUP_RecycleBin_Error_$($_.Exception.Message)" -ToMaster $false }
+
+    $TotalMB = [math]::Round($Freed / 1MB, 0)
+    $NewFreeGB = [math]::Round((Get-PSDrive C -ErrorAction Stop).Free / 1GB, 2)
+    Write-NecessaryAdminToolLog -Status "DISK_CLEANUP_COMPLETE_Freed${TotalMB}MB_NewFree${NewFreeGB}GB" -ToMaster $false
+    Write-Host "  [$(Get-Date -Format 'HH:mm:ss')] Cleanup complete: freed ${TotalMB} MB total. C: now ${NewFreeGB} GB free." -ForegroundColor Green
+    return $NewFreeGB
+}
+
 # --- 3. SCRIPT START BANNER ---
 # Written as the very first log entry so every run has full context at the top of the file.
 $StartBanner = @"
@@ -305,14 +422,21 @@ if ($UptimeDays -gt 30) {
 
 # --- 4. PRE-EXECUTION CHECKS ---
 
-# Check disk space
+# Check disk space — attempt automatic cleanup if below threshold
 Show-NecessaryAdminToolLogo -Msg "Checking system requirements..."
 $FreeGB = [math]::Round((Get-PSDrive C).Free / 1GB, 2)
 if ($FreeGB -lt $MIN_DISK_SPACE_GB) {
-    Write-NecessaryAdminToolLog -Status "ERROR_DISK_SPACE_LOW_${FreeGB}GB" -ToMaster $true
-    Show-NecessaryAdminToolLogo -Msg "Insufficient disk space: ${FreeGB}GB free (minimum ${MIN_DISK_SPACE_GB}GB required)" "Red"
-    Write-Error "Low disk space. Free up space and try again."
-    exit 1
+    Write-NecessaryAdminToolLog -Status "DISK_SPACE_LOW_${FreeGB}GB_ATTEMPTING_CLEANUP" -ToMaster $false
+    Show-NecessaryAdminToolLogo -Msg "Disk space low (${FreeGB}GB free) — attempting automatic cleanup before updates..." "Yellow"
+    $FreeGB = Invoke-DiskCleanup
+    if ($FreeGB -lt $MIN_DISK_SPACE_GB) {
+        Write-NecessaryAdminToolLog -Status "ERROR_DISK_SPACE_STILL_LOW_${FreeGB}GB_AFTER_CLEANUP" -ToMaster $true
+        Show-NecessaryAdminToolLogo -Msg "Insufficient disk space after cleanup: ${FreeGB}GB free (minimum ${MIN_DISK_SPACE_GB}GB required)" "Red"
+        Write-Error "Low disk space. Cleanup freed some space but ${FreeGB}GB is still below the ${MIN_DISK_SPACE_GB}GB minimum. Manual cleanup required."
+        exit 1
+    }
+    Show-NecessaryAdminToolLogo -Msg "Cleanup successful — ${FreeGB}GB now free. Continuing with updates..." "Green"
+    Write-NecessaryAdminToolLog -Status "DISK_CLEANUP_RESOLVED_${FreeGB}GB_FREE" -ToMaster $false
 }
 
 # Log system baseline info for diagnostics
@@ -396,10 +520,14 @@ Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\P
 # Track success/failure explicitly
 $ScriptSuccess  = $true
 $FailureReason  = ""
+$RebootRequired = $false
 
 try {
     Get-WindowsUpdate -MicrosoftUpdate -AcceptAll -Install -IgnoreReboot -Verbose -ErrorAction Stop
-    Write-NecessaryAdminToolLog -Status "SUCCESS_PENDING_REBOOT" -ToMaster $false
+    # Check WU registry key — -IgnoreReboot defers the physical restart but sets this key
+    $RebootRequired = Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired" -ErrorAction SilentlyContinue
+    $RebootStatus   = if ($RebootRequired) { "REBOOT_REQUIRED" } else { "NO_REBOOT_NEEDED" }
+    Write-NecessaryAdminToolLog -Status "SUCCESS_$RebootStatus" -ToMaster $false
     Write-MasterSummary -Status "SUCCESS" -UpdatesFound "$($Updates.Count)" -Details ($KBList -join "; ")
     Show-NecessaryAdminToolLogo -Msg "Installation Complete." "Green"
     $ScriptSuccess = $true
@@ -413,6 +541,38 @@ try {
 
 # Re-enable fast startup
 Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power" -Name HiberbootEnabled -Value 1 -Force -ErrorAction SilentlyContinue
+
+# --- 5b. RESTART PROMPT (if reboot required after updates) ---
+if ($ScriptSuccess -and $RebootRequired) {
+    Write-NecessaryAdminToolLog -Status "REBOOT_REQUIRED_PROMPTING_USER" -ToMaster $false
+    if (Test-UserLoggedIn) {
+        # User is present — ask them just like Windows Update normally would
+        $Choice = Show-UserNotification `
+            -Title   "NecessaryAdminTool - Restart Required" `
+            -Message "Windows Updates have been installed successfully.`n`nA restart is required to complete the installation. Please save your work.`n`nRestart now?" `
+            -Icon    "Warning" `
+            -Buttons "YesNo"
+        if ($Choice -eq "Yes") {
+            Write-NecessaryAdminToolLog -Status "REBOOT_USER_ACCEPTED_RESTARTING_IN_60s" -ToMaster $true
+            Show-NecessaryAdminToolLogo -Msg "Restarting in 60 seconds to complete updates..." "Yellow"
+            & "$env:SystemRoot\System32\shutdown.exe" /r /t 60 /c "NecessaryAdminTool: Restarting to complete Windows Update installation. Please save your work."
+        } else {
+            Write-NecessaryAdminToolLog -Status "REBOOT_USER_POSTPONED_MANUAL_RESTART_REQUIRED" -ToMaster $true
+            Show-UserNotification `
+                -Title   "NecessaryAdminTool - Restart Reminder" `
+                -Message "Reminder: A restart is still required to finish installing Windows Updates.`n`nPlease restart your computer when you are ready." `
+                -Icon    "Information" `
+                -Buttons "OK"
+        }
+    } else {
+        # No user logged in — restart automatically after 5 minutes (gives ME time to record the result)
+        Write-NecessaryAdminToolLog -Status "REBOOT_NO_USER_AUTO_RESTART_IN_300s" -ToMaster $true
+        Show-NecessaryAdminToolLogo -Msg "No user logged in — restarting in 5 minutes to complete updates." "Yellow"
+        & "$env:SystemRoot\System32\shutdown.exe" /r /t 300 /c "NecessaryAdminTool: Restarting to complete Windows Update installation."
+    }
+} elseif ($ScriptSuccess -and !$RebootRequired) {
+    Write-NecessaryAdminToolLog -Status "NO_REBOOT_REQUIRED_AFTER_UPDATES" -ToMaster $false
+}
 
 # --- 6. MANAGEENGINE INTEGRATION (Exit Code Reporting) ---
 # ManageEngine/RMM platforms read exit codes to determine success/failure

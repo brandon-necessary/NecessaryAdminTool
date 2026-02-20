@@ -507,9 +507,9 @@ Write-Host "  RAM: $RAMGB GB (minimum $MIN_RAM_GB GB)" -ForegroundColor Cyan
 $FreeGB = [math]::Round(((Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='C:'").FreeSpace / 1GB), 2)
 Write-Host "  Disk free: $FreeGB GB (minimum $MIN_DISK_SPACE_GB GB)" -ForegroundColor Cyan
 
-# If disk is low but not critical (between 10 GB and threshold), attempt cleanup first
-if ($FreeGB -lt $MIN_DISK_SPACE_GB -and $FreeGB -ge 10) {
-    Write-Host "  Disk space low - attempting pre-upgrade cleanup to free space..." -ForegroundColor Yellow
+# If disk is below threshold attempt cleanup first (regardless of how low — every GB helps)
+if ($FreeGB -lt $MIN_DISK_SPACE_GB) {
+    Write-Host "  Disk space low (${FreeGB}GB) - attempting pre-upgrade cleanup to free space..." -ForegroundColor Yellow
     Write-NecessaryAdminToolLog -Status "DISK_LOW_${FreeGB}GB_ATTEMPTING_CLEANUP" -ToMaster $false
     $FreeGB = Invoke-PreUpgradeDiskCleanup
 }
