@@ -315,7 +315,7 @@ if (!$UserPresent) {
     Write-Host "  Push FeatureUpdate.ps1 after this machine comes back online." -ForegroundColor Cyan
     Write-Log -Status "UNATTENDED_REBOOTING_IN_60S" -Detail "RebootReason=$RebootReason|OS=$OSVersion|Uptime=${UptimeDays}days|Disk=${FreeGB}GB"
 
-    shutdown.exe /r /t 60 /c "NecessaryAdminTool: Applying pending updates before Windows 11 upgrade. System restarts in 60 seconds."
+    & "$env:SystemRoot\System32\shutdown.exe" /r /t 60 /c "NecessaryAdminTool: Applying pending updates before Windows 11 upgrade. System restarts in 60 seconds."
 
     $Duration = [math]::Round(((Get-Date) - $StartTime).TotalSeconds, 0)
     Write-Log -Status "SHUTDOWN_COMMAND_ISSUED" -Detail "Delay=60s|Duration=${Duration}s|Result=REBOOTING_UNATTENDED"
@@ -351,7 +351,7 @@ if (!$UserPresent) {
     $Duration = [math]::Round(((Get-Date) - $StartTime).TotalSeconds, 0)
     Write-Log -Status "REBOOT_COUNTDOWN_COMPLETE" -Detail "TotalMinutes=$WarningMinutes|RebootReason=$RebootReason|Duration=${Duration}s"
 
-    shutdown.exe /r /t 30 /c "NecessaryAdminTool: Restarting to apply pending updates before Windows 11 upgrade."
+    & "$env:SystemRoot\System32\shutdown.exe" /r /t 30 /c "NecessaryAdminTool: Restarting to apply pending updates before Windows 11 upgrade."
 
     Write-Log -Status "SHUTDOWN_COMMAND_ISSUED" -Detail "Delay=30s|Duration=${Duration}s|Result=REBOOTING_AFTER_USER_WARNING"
     Write-ToDatabase -Status "REBOOTING_AFTER_USER_WARNING" -Details "RebootReason=$RebootReason|User=$LoggedInUser|OS=$OSVersion|Uptime=${UptimeDays}days|WarningMinutes=$WarningMinutes"

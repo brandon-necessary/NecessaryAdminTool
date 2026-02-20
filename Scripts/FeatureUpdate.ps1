@@ -538,8 +538,9 @@ Write-NecessaryAdminToolLog -Status "HW_COMPAT_CHECK_PASSED_TPM2_SECUREBOOT_RAM_
 # Windows 11 build numbers: 21H2=22000, 22H2=22621, 23H2=22631, 24H2=26100, 25H2=26200
 # Update $WIN11_TARGET_BUILD when targeting a newer Windows release.
 $CurrentBuild        = [int]$OSInfo.BuildNumber   # reuse $OSInfo captured at startup - no extra WMI call
-$WIN11_TARGET_BUILD  = 26200   # Windows 11 25H2 (released Sept 2025) - update when new version ships
-$WIN11_TARGET_NAME   = "25H2"
+# Allow env var override so the target build can be updated via NAT settings without re-deploying the script
+$WIN11_TARGET_BUILD  = if ($env:NECESSARYADMINTOOL_WIN11_TARGET_BUILD) { [int]$env:NECESSARYADMINTOOL_WIN11_TARGET_BUILD } else { 26200 }
+$WIN11_TARGET_NAME   = if ($env:NECESSARYADMINTOOL_WIN11_TARGET_NAME)  { $env:NECESSARYADMINTOOL_WIN11_TARGET_NAME }        else { "25H2" }
 
 Write-Host ""
 Write-Host "  --- System State ---" -ForegroundColor DarkYellow
@@ -589,7 +590,8 @@ function Run-CloudUpdate {
         Write-Host "  Installing PSWindowsUpdate module..." -ForegroundColor Cyan
         Write-NecessaryAdminToolLog -Status "CLOUD_MODULE_INSTALL_STARTED" -ToMaster $false
         try {
-            if (!(Get-PackageProvider -Name NuGet -ErrorAction SilentlyContinue)) {
+            # @() cast: Get-PackageProvider returns empty array (not $null) when absent
+            if (@(Get-PackageProvider -Name NuGet -ErrorAction SilentlyContinue).Count -eq 0) {
                 Install-PackageProvider -Name NuGet -Force -Scope AllUsers -ErrorAction Stop | Out-Null
             }
             Install-Module PSWindowsUpdate -Force -Scope AllUsers -ErrorAction Stop | Out-Null
@@ -637,12 +639,18 @@ function Run-CloudUpdate {
         # Install synchronously - PSWindowsUpdate outputs progress natively so ME log stays alive.
         # -IgnoreReboot defers the physical reboot so the script can exit cleanly and log results;
         # Windows will reboot on its own schedule (or ME can trigger it after task completion).
-        $Results = Install-WindowsUpdate -MicrosoftUpdate -Category "Upgrades" -AcceptAll -IgnoreReboot -ErrorAction Stop
+        # @() cast — $Results may be $null if WU returns nothing
+        $Results = @(Install-WindowsUpdate -MicrosoftUpdate -Category "Upgrades" -AcceptAll -IgnoreReboot -ErrorAction Stop)
 
-        $Failed = @($Results | Where-Object { $_.Result -eq 'Failed' })
-        if ($Failed.Count -gt 0) {
-            $FailDetail = ($Failed | ForEach-Object { "$($_.Title): $($_.Result)" }) -join "; "
-            throw "Install reported failures: $FailDetail"
+        if ($Results.Count -eq 0) {
+            throw "No results returned from PSWindowsUpdate - upgrade may not have been offered to this device"
+        }
+
+        # Check for any non-successful result (Failed, Aborted, Rejected, etc.)
+        $NonSuccess = @($Results | Where-Object { $_.Result -notin @('Installed', 'Downloaded', 'NotApplicable') })
+        if ($NonSuccess.Count -gt 0) {
+            $FailDetail = ($NonSuccess | ForEach-Object { "$($_.Title): $($_.Result)" }) -join "; "
+            throw "Install reported non-successful results: $FailDetail"
         }
 
         Write-NecessaryAdminToolLog -Status "CLOUD_WU_COMPLETE_ISSUING_FORCED_REBOOT" -ToMaster $false
@@ -655,7 +663,7 @@ function Run-CloudUpdate {
         $RebootDelay = if (Test-UserLoggedIn) { 300 } else { 60 }
         Write-Host "  Issuing restart in $RebootDelay seconds (user present: $(Test-UserLoggedIn))..." -ForegroundColor Yellow
         Write-NecessaryAdminToolLog -Status "CLOUD_WU_REBOOT_DELAY_${RebootDelay}s" -ToMaster $false
-        shutdown.exe /r /t $RebootDelay /c "NecessaryAdminTool: Windows 11 upgrade installed. Restarting to complete installation."
+        & "$env:SystemRoot\System32\shutdown.exe" /r /t $RebootDelay /c "NecessaryAdminTool: Windows 11 upgrade installed. Restarting to complete installation."
         exit 0
 
     } catch {
@@ -809,7 +817,16 @@ if (Test-Path $PendingFlag) {
     # Read how many times the user has already postponed
     $PostponeCount = 0
     if (Test-Path $PostponeFlag) {
-        try { $PostponeCount = [int](Get-Content $PostponeFlag -Raw -ErrorAction Stop).Trim() } catch { $PostponeCount = 0 }
+        try {
+            $RawCount = (Get-Content $PostponeFlag -Raw -ErrorAction Stop).Trim()
+            # Validate numeric format before casting to prevent silent misparse
+            if ($RawCount -match '^\d+$') {
+                $PostponeCount = [int]$RawCount
+            } else {
+                Write-NecessaryAdminToolLog -Status "WARNING_POSTPONE_FLAG_INVALID_CONTENT_RESET_TO_0" -ToMaster $false
+                $PostponeCount = 0
+            }
+        } catch { $PostponeCount = 0 }
     }
     $PostponesLeft = $MaxPostpones - $PostponeCount
 
@@ -1061,10 +1078,14 @@ if ($HostnameMatch -and $ISOExists) {
             # Detect phase from Windows Setup Panther log (same as cloud branch)
             $ISOPhase = "Upgrading..."
             if (Test-Path $PantherLog -ErrorAction SilentlyContinue) {
-                $Recent  = Get-Content $PantherLog -Tail 50 -ErrorAction SilentlyContinue
+                # Specify UTF8 — Panther log is ASCII-compatible but may vary; avoids garbage on UTF-16 systems
+                $Recent  = Get-Content $PantherLog -Tail 50 -Encoding UTF8 -ErrorAction SilentlyContinue
                 $PctLine = $Recent | Select-String 'Percentage complete: (\d+)' | Select-Object -Last 1
-                if ($PctLine) {
-                    $ISOPhase = "Upgrading ($($PctLine.Matches.Groups[1].Value)% complete)"
+                if ($PctLine -and $PctLine.Matches.Count -gt 0) {
+                    $Pct = [int]$PctLine.Matches.Groups[1].Value
+                    if ($Pct -ge 0 -and $Pct -le 100) {
+                        $ISOPhase = "Upgrading (${Pct}% complete)"
+                    }
                 }
             } elseif (Test-Path "C:\`$WINDOWS.~BT" -ErrorAction SilentlyContinue) {
                 $ISOPhase = "Downloading / Preparing..."

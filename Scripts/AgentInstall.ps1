@@ -120,6 +120,16 @@ if ([string]::IsNullOrEmpty($AgentToken)) {
     exit 2
 }
 
+# Validate token format: alphanumeric only, 32-256 chars — prevents injection if token is ever
+# interpolated into a log/CSV field, and ensures it was actually set rather than left as a stub
+if ($AgentToken -notmatch '^[a-zA-Z0-9\-_]{32,256}$') {
+    Write-Log "ERROR: AgentToken format invalid - must be 32-256 alphanumeric/hyphen/underscore characters"
+    Write-Host "  [ERROR] AgentToken format invalid. Re-generate the token in NAT Options." -ForegroundColor Red
+    Write-MasterSummary -Status "AGENT_INSTALL_FAILED_BAD_TOKEN" -Details "AgentToken failed format validation"
+    Stop-Transcript -ErrorAction SilentlyContinue
+    exit 2
+}
+
 if ([string]::IsNullOrEmpty($AgentExeUNCPath)) {
     Write-Log "ERROR: AgentExeUNCPath parameter is empty - no source EXE specified"
     Write-Host "  [ERROR] AgentExeUNCPath is required. Set it in ME script parameters." -ForegroundColor Red
@@ -128,10 +138,10 @@ if ([string]::IsNullOrEmpty($AgentExeUNCPath)) {
     exit 2
 }
 
-if (!(Test-Path $AgentExeUNCPath -ErrorAction SilentlyContinue)) {
-    Write-Log "ERROR: Agent EXE not accessible at: $AgentExeUNCPath"
-    Write-Host "  [ERROR] Cannot reach: $AgentExeUNCPath" -ForegroundColor Red
-    Write-MasterSummary -Status "AGENT_INSTALL_FAILED_NO_SOURCE" -Details "Cannot reach UNC path"
+if (!(Test-Path $AgentExeUNCPath -PathType Leaf -ErrorAction SilentlyContinue)) {
+    Write-Log "ERROR: Agent EXE not found or is not a file: $AgentExeUNCPath"
+    Write-Host "  [ERROR] Cannot reach EXE (or path is a directory): $AgentExeUNCPath" -ForegroundColor Red
+    Write-MasterSummary -Status "AGENT_INSTALL_FAILED_NO_SOURCE" -Details "Agent EXE not found at UNC path"
     Stop-Transcript -ErrorAction SilentlyContinue
     exit 2
 }

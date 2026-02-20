@@ -367,9 +367,10 @@ try {
 
 # Check for updates
 Show-NecessaryAdminToolLogo -Msg "Scanning for updates..."
-$Updates = Get-WindowsUpdate -MicrosoftUpdate -Criteria "IsInstalled=0" -ErrorAction SilentlyContinue
+# @() cast ensures $Updates is always an array — prevents .Count throwing on null in PS 5.x
+$Updates = @(Get-WindowsUpdate -MicrosoftUpdate -Criteria "IsInstalled=0" -ErrorAction SilentlyContinue)
 
-if ($null -eq $Updates -or $Updates.Count -eq 0) {
+if ($Updates.Count -eq 0) {
     Write-NecessaryAdminToolLog -Status "COMPLIANT_NO_UPDATES_FOUND" -ToMaster $false
     Write-MasterSummary -Status "COMPLIANT" -UpdatesFound "0" -Details "No updates required"
     Show-NecessaryAdminToolLogo -Msg "System is Up-to-Date." "Green"

@@ -107,8 +107,14 @@ Write-Log "STEP: Enabling WMI firewall rule group"
 
 try {
     $result = netsh advfirewall firewall set rule group="Windows Management Instrumentation (WMI-In)" new enable=yes 2>&1
-    Write-Log "WMI firewall rule: $result"
-    Write-Host "  [OK] WMI firewall rules enabled" -ForegroundColor Green
+    # Native commands don't throw — check $LASTEXITCODE explicitly
+    if ($LASTEXITCODE -ne 0) {
+        Write-Log "WARNING: netsh firewall command exited $LASTEXITCODE - output: $result"
+        Write-Host "  [WARN] WMI firewall group rule may not exist by that name (exit $LASTEXITCODE) - individual rules attempted below" -ForegroundColor Yellow
+    } else {
+        Write-Log "WMI firewall rule: $result"
+        Write-Host "  [OK] WMI firewall rules enabled" -ForegroundColor Green
+    }
 } catch {
     Write-Log "WARNING: WMI firewall rule set failed - $($_.Exception.Message)"
     Write-Host "  [WARN] WMI firewall rule may already be set or group name differs" -ForegroundColor Yellow
