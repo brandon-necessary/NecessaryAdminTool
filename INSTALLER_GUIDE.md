@@ -1,7 +1,7 @@
 # WiX Installer & Update Control Guide
-<!-- TAG: #AUTO_UPDATE_INSTALLER #WIX #ENTERPRISE #VERSION_2_0 -->
-**Version:** 2.0 (2.2602.0.0)
-**Last Updated:** February 15, 2026
+<!-- TAG: #AUTO_UPDATE_INSTALLER #WIX #ENTERPRISE #VERSION_3_0 -->
+**Version:** 3.0 (3.2602.0.0)
+**Last Updated:** February 20, 2026
 
 ---
 

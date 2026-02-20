@@ -1,6 +1,6 @@
 <!-- TAG: #AUTO_UPDATE_VERSION #ABOUT_WINDOW #VERSION_DISPLAY -->
 <!-- FUTURE CLAUDES: Update version and build date in this file with each release -->
-<!-- Current Version: 1.0 (1.2602.0.0) | Build Date: February 14, 2026 -->
+<!-- Current Version: 3.0 (3.2602.0.0) | Build Date: February 20, 2026 -->
 <Window x:Class="NecessaryAdminTool.AboutWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"

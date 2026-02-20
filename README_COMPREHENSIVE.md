@@ -1,11 +1,11 @@
 # NecessaryAdminTool Suite
-<!-- TAG: #AUTO_UPDATE_README #VERSION_1_0 #COMPREHENSIVE_DOCS -->
+<!-- TAG: #AUTO_UPDATE_README #VERSION_3_0 #COMPREHENSIVE_DOCS -->
 <!-- FUTURE CLAUDES: This README should be updated with each major version release -->
-<!-- Last Updated: 2026-02-14 | Version: 1.0 (1.2602.0.0) -->
+<!-- Last Updated: 2026-02-20 | Version: 3.0 (3.2602.0.0) -->
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-1.0_(1.2602.0.0)-orange)
+![Version](https://img.shields.io/badge/version-3.0_(3.2602.0.0)-orange)
 ![Platform](https://img.shields.io/badge/platform-Windows_10/11-blue)
 ![.NET](https://img.shields.io/badge/.NET-Framework_4.8.1-purple)
 ![License](https://img.shields.io/badge/license-Proprietary-red)

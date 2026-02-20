@@ -144,5 +144,9 @@
     <Setting Name="AgentPort" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">443</Value>
     </Setting>
+    <!-- TAG: #CONFIGURABLE_OPTIONS #UI_PREFERENCES #DISPLAY_DENSITY -->
+    <Setting Name="DisplayDensity" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Normal</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

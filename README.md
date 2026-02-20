@@ -3,7 +3,7 @@
 <!-- For COMPREHENSIVE docs, see README_COMPREHENSIVE.md -->
 # NecessaryAdminTool Suite
 
-**Version 1.0** (1.2602.0.0) - Enterprise IT Management Suite by Brandon Necessary
+**Version 3.0** (3.2602.0.0) - Enterprise IT Management Suite by Brandon Necessary
 
 **📘 For complete documentation, see [README_COMPREHENSIVE.md](README_COMPREHENSIVE.md)**
 

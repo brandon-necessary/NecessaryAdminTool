@@ -502,8 +502,27 @@ try {
 Show-NecessaryAdminToolLogo -Msg "Scanning for updates..."
 # Pipe through Write-Output to flatten — Get-WindowsUpdate can return Object[] as a single pipeline item
 # which @() would nest instead of flattening (PS 5.1 behaviour with COM-backed cmdlets)
-[array]$Updates = Get-WindowsUpdate -MicrosoftUpdate -Criteria "IsInstalled=0" -ErrorAction SilentlyContinue |
-    Write-Output
+# Wrap in try/catch: Get-WindowsUpdate throws terminating ArgumentException when WU agent is
+# in a dirty state (mid-install, pending reboot, corrupted cache). -ErrorAction SilentlyContinue
+# does NOT catch terminating errors from the COM-backed API.
+try {
+    [array]$Updates = Get-WindowsUpdate -MicrosoftUpdate -Criteria "IsInstalled=0" -ErrorAction Stop |
+        Write-Output
+} catch {
+    Write-NecessaryAdminToolLog -Status "WU_SCAN_ERROR: $($_.Exception.Message)" -ToMaster $false
+    Write-Host "  WARNING: Windows Update scan failed: $($_.Exception.Message)" -ForegroundColor Yellow
+    Write-Host "  This usually means WU is mid-install or pending reboot. Retrying in 30s..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 30
+    try {
+        [array]$Updates = Get-WindowsUpdate -MicrosoftUpdate -Criteria "IsInstalled=0" -ErrorAction Stop |
+            Write-Output
+    } catch {
+        Write-NecessaryAdminToolLog -Status "WU_SCAN_RETRY_FAILED: $($_.Exception.Message)" -ToMaster $false
+        Write-MasterSummary -Status "WU_ERROR" -UpdatesFound "0" -Details "Get-WindowsUpdate failed: $($_.Exception.Message)"
+        Write-Host "  ERROR: Windows Update scan failed after retry. Exiting." -ForegroundColor Red
+        exit 3
+    }
+}
 if (-not $Updates) { $Updates = @() }
 
 if ($Updates.Count -eq 0) {
@@ -535,14 +554,47 @@ $FailureReason  = ""
 $RebootRequired = $false
 
 try {
-    Get-WindowsUpdate -MicrosoftUpdate -AcceptAll -Install -IgnoreReboot -Verbose -ErrorAction Stop
+    # Use -ErrorAction SilentlyContinue so partial failures (1 bad driver out of 14) don't abort the batch.
+    # Then inspect results to determine success vs partial vs total failure.
+    $InstallResults = Get-WindowsUpdate -MicrosoftUpdate -AcceptAll -Install -IgnoreReboot -Verbose -ErrorAction SilentlyContinue
+
+    # Count installed vs failed from results
+    $InstalledCount = 0
+    $FailedCount    = 0
+    $FailedTitles   = @()
+    if ($InstallResults) {
+        foreach ($r in $InstallResults) {
+            if ($r.Result -eq 'Installed') { $InstalledCount++ }
+            else { $FailedCount++; $FailedTitles += $r.Title }
+        }
+    }
+
     # Check WU registry key -- -IgnoreReboot defers the physical restart but sets this key
     $RebootRequired = Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired" -ErrorAction SilentlyContinue
     $RebootStatus   = if ($RebootRequired) { "REBOOT_REQUIRED" } else { "NO_REBOOT_NEEDED" }
-    Write-NecessaryAdminToolLog -Status "SUCCESS_$RebootStatus" -ToMaster $false
-    Write-MasterSummary -Status "SUCCESS" -UpdatesFound "$($Updates.Count)" -Details ($KBList -join "; ")
-    Show-NecessaryAdminToolLogo -Msg "Installation Complete." "Green"
-    $ScriptSuccess = $true
+
+    if ($FailedCount -eq 0) {
+        # All updates installed successfully
+        Write-NecessaryAdminToolLog -Status "SUCCESS_$RebootStatus" -ToMaster $false
+        Write-MasterSummary -Status "SUCCESS" -UpdatesFound "$($Updates.Count)" -Details ($KBList -join "; ")
+        Show-NecessaryAdminToolLogo -Msg "Installation Complete." "Green"
+        $ScriptSuccess = $true
+    } elseif ($InstalledCount -gt 0) {
+        # Partial success — some installed, some failed. Report as SUCCESS so ME doesn't retry
+        # and re-install the ones that already succeeded.
+        $partialMsg = "$InstalledCount installed, $FailedCount failed"
+        Write-NecessaryAdminToolLog -Status "PARTIAL_SUCCESS_${InstalledCount}_OK_${FailedCount}_FAILED_$RebootStatus" -ToMaster $false
+        Write-NecessaryAdminToolLog -Status "FAILED_UPDATES: $($FailedTitles -join '; ')" -ToMaster $false
+        Write-MasterSummary -Status "PARTIAL" -UpdatesFound "$($Updates.Count)" -Details "$partialMsg - Failed: $($FailedTitles -join '; ')"
+        Show-NecessaryAdminToolLogo -Msg "Partial: $partialMsg" "Yellow"
+        $ScriptSuccess = $true  # Exit 0 so ME won't retry (successful updates would re-scan as "not needed")
+    } else {
+        # Total failure — nothing installed
+        Write-NecessaryAdminToolLog -Status "FAILED_ALL_UPDATES" -ToMaster $false
+        Write-MasterSummary -Status "FAILED" -UpdatesFound "$($Updates.Count)" -Details "All $($Updates.Count) updates failed to install"
+        Show-NecessaryAdminToolLogo -Msg "Installation Failed: all updates failed" "Red"
+        $ScriptSuccess = $false
+    }
 } catch {
     $FailureReason = $_.Exception.Message
     Write-NecessaryAdminToolLog -Status "FAILED_INSTALLATION_$FailureReason" -ToMaster $false

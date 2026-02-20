@@ -1,7 +1,7 @@
 # Frequently Asked Questions (FAQ)
-<!-- TAG: #AUTO_UPDATE_FAQ #VERSION_1_0 #HELP_DOCUMENTATION -->
+<!-- TAG: #AUTO_UPDATE_FAQ #VERSION_3_0 #HELP_DOCUMENTATION -->
 <!-- FUTURE CLAUDES: Update this FAQ with new common questions and solutions -->
-<!-- Last Updated: 2026-02-14 | Version: 1.0 (1.2602.0.0) -->
+<!-- Last Updated: 2026-02-20 | Version: 3.0 (3.2602.0.0) -->
 
 ---
 

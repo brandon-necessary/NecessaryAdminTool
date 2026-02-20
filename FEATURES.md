@@ -2,7 +2,7 @@
 <!-- FUTURE CLAUDES: Update feature count and version with each release -->
 # NecessaryAdminTool - Complete Feature List
 **Last Updated:** February 20, 2026
-**Current Version:** v1.2602.0.0 (post-Session 18 hardening)
+**Current Version:** v3.2602.0.0 (v3.0 "Enhanced Dashboard")
 **Previous Name:** ArtaznIT Suite (v6.0 - v7.2603.5.0)
 
 ---
@@ -254,7 +254,15 @@
 
 ## 📈 VERSION HISTORY
 
-### v1.2602.0.0 - "Foundation" (Feb 2026) ⭐ CURRENT
+### v3.2602.0.0 - "Enhanced Dashboard" (Feb 2026) ⭐ CURRENT
+- KPI Cards with sparklines + animated value transitions
+- Device health heatmap, Status bar with live fleet summary
+- Global filter bar, Contextual detail drawer, Breadcrumb navigation
+- Row hover actions, Activity feed, Display density toggle
+- Deployment results auto-load on login
+- GeneralUpdate.ps1: partial-success handling + WU scan retry
+
+### v1.2602.0.0 - "Foundation" (Feb 2026)
 - Complete rebrand from ArtaznIT Suite to NecessaryAdminTool
 - All v7.x features included (152 features)
 - CalVer versioning: Major.YYMM.Minor.Build

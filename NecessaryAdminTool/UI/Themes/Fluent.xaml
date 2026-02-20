@@ -255,4 +255,56 @@
         </Setter>
     </Style>
 
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- DISPLAY DENSITY STYLES (TAG: #AUTO_UPDATE_UI_ENGINE #DENSITY)     -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- Compact: 22px row height, 10pt text -->
+    <Style x:Key="DensityCompact" TargetType="DataGridRow">
+        <Setter Property="Height" Value="22"/>
+        <Setter Property="FontSize" Value="10"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Style.Triggers>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="#44FF8533"/>
+            </Trigger>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="#22FFFFFF"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Normal: 28px row height, 11pt text -->
+    <Style x:Key="DensityNormal" TargetType="DataGridRow">
+        <Setter Property="Height" Value="28"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Style.Triggers>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="#44FF8533"/>
+            </Trigger>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="#22FFFFFF"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Comfortable: 36px row height, 12pt text -->
+    <Style x:Key="DensityComfortable" TargetType="DataGridRow">
+        <Setter Property="Height" Value="36"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Style.Triggers>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="#44FF8533"/>
+            </Trigger>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="#22FFFFFF"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
 </ResourceDictionary>

@@ -171,6 +171,30 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="UI\Components\SparklineControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Components\KpiCard.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Components\DeviceHeatmap.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Components\FilterBar.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Components\ActivityFeed.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Components\BreadcrumbBar.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="UI\Dialogs\FilterPresetDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -330,6 +354,12 @@
     <Compile Include="Models\UI\ToastNotification.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Models\UI\KpiCardData.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Models\UI\ActivityEvent.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Managers\UI\ToastManager.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -348,6 +378,30 @@
       <DependentUpon>CommandPalette.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="UI\Components\SparklineControl.xaml.cs">
+      <DependentUpon>SparklineControl.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="UI\Components\KpiCard.xaml.cs">
+      <DependentUpon>KpiCard.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="UI\Components\DeviceHeatmap.xaml.cs">
+      <DependentUpon>DeviceHeatmap.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="UI\Components\FilterBar.xaml.cs">
+      <DependentUpon>FilterBar.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="UI\Components\ActivityFeed.xaml.cs">
+      <DependentUpon>ActivityFeed.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="UI\Components\BreadcrumbBar.xaml.cs">
+      <DependentUpon>BreadcrumbBar.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="UI\Components\MMCHostControl.xaml.cs">
       <DependentUpon>MMCHostControl.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -359,6 +413,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Helpers\DnsHelper.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Helpers\GridLengthAnimation.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="UI\Dialogs\FilterPresetDialog.xaml.cs">

@@ -1,7 +1,7 @@
 # Database Setup Wizard - Quick Start Guide
 <!-- TAG: #AUTO_UPDATE_DATABASE_INSTALLER #QUICK_START #USER_GUIDE -->
-**Version:** 1.0 (1.2602.0.0)
-**Last Updated:** February 14, 2026
+**Version:** 3.0 (3.2602.0.0)
+**Last Updated:** February 20, 2026
 
 ---
 

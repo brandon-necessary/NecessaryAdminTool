@@ -39,7 +39,7 @@ One-click MSI installer builder that automates the entire build process.
 .\build-installer.ps1
 
 # Specify version
-.\build-installer.ps1 -Version "1.2602.1.0"
+.\build-installer.ps1 -Version "3.2602.0.0"
 
 # Skip app rebuild (use existing binaries)
 .\build-installer.ps1 -SkipBuild
@@ -55,7 +55,7 @@ One-click MSI installer builder that automates the entire build process.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `-Version` | String | "1.2602.0.0" | Version number for MSI |
+| `-Version` | String | "3.2602.0.0" | Version number for MSI |
 | `-SkipBuild` | Switch | False | Skip compiling app, use existing binaries |
 | `-Verbose` | Switch | False | Show detailed WiX output |
 
@@ -70,7 +70,7 @@ Installer\Output\NecessaryAdminTool-{Version}-Setup.msi
 ```
 ========================================
   NecessaryAdminTool Installer Builder
-  Version: 1.2602.0.0
+  Version: 3.2602.0.0
 ========================================
 
 [1/6] Checking prerequisites...
@@ -92,7 +92,7 @@ Installer\Output\NecessaryAdminTool-{Version}-Setup.msi
 ========================================
 
 Output:
-  File: Installer\Output\NecessaryAdminTool-1.2602.0.0-Setup.msi
+  File: Installer\Output\NecessaryAdminTool-3.2602.0.0-Setup.msi
   Size: 48.73 MB
 
 Next Steps:
@@ -224,7 +224,7 @@ exit  # Close and reopen
 
 ```powershell
 # Increment version and rebuild
-.\build-installer.ps1 -Version "1.2602.1.0"
+.\build-installer.ps1 -Version "3.2602.1.0"
 
 # Quick rebuild without recompiling app
 .\build-installer.ps1 -SkipBuild

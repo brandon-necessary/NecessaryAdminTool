@@ -85,5 +85,18 @@ using System.Windows;
 // - Complete rebrand from ArtaznIT to NecessaryAdminTool
 // - All v7.x features (169 total) - see docs/archive for details
 //
-[assembly: AssemblyVersion("2.2602.5.0")]
-[assembly: AssemblyFileVersion("2.2602.5.0")]
+// VERSION 3.0 (3.2602.0.0) - "Enhanced Dashboard" (February 20, 2026)
+// - KPI Cards with sparklines + animated value transitions
+// - Device health heatmap (fleet overview)
+// - Status bar with live fleet summary
+// - Global filter bar (Ctrl+F)
+// - Contextual detail drawer (slide-in panel)
+// - Row hover actions (RDP, PS, C$, Pin)
+// - Breadcrumb navigation
+// - Activity feed / event timeline
+// - Display density toggle (Compact/Normal/Comfortable)
+// - Deployment results auto-load on login
+// - GeneralUpdate.ps1: partial-success handling + WU scan retry
+//
+[assembly: AssemblyVersion("3.2602.0.0")]
+[assembly: AssemblyFileVersion("3.2602.0.0")]

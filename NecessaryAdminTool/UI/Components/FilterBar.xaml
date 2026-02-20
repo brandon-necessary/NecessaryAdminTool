@@ -1,0 +1,73 @@
+<UserControl x:Class="NecessaryAdminTool.UI.Components.FilterBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- TAG: #AUTO_UPDATE_UI_ENGINE #FILTER_BAR #GLOBAL_FILTER -->
+    <Border Background="#FF1A1A1A" BorderBrush="#FF3C3C3C" BorderThickness="0,0,0,1" Padding="16,6">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Filter icon label -->
+            <TextBlock Grid.Column="0" Text="FILTERS" FontSize="10" FontWeight="Bold"
+                       Foreground="#FFA1A1AA" VerticalAlignment="Center" Margin="0,0,12,0"/>
+
+            <!-- OS Version -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,12,0">
+                <TextBlock Text="OS:" FontSize="10" Foreground="#FF6B7280" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <ComboBox x:Name="ComboOsFilter" Width="130" FontSize="10"
+                          Background="#FF2A2A2A" Foreground="White" BorderBrush="#FF444444"
+                          SelectionChanged="Filter_Changed"
+                          ToolTip="Filter by operating system version">
+                    <ComboBoxItem Content="All OS" IsSelected="True"/>
+                    <ComboBoxItem Content="Windows 11"/>
+                    <ComboBoxItem Content="Windows 10"/>
+                    <ComboBoxItem Content="Windows 7"/>
+                    <ComboBoxItem Content="Server"/>
+                    <ComboBoxItem Content="Legacy"/>
+                </ComboBox>
+            </StackPanel>
+
+            <!-- Status -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,0,12,0">
+                <TextBlock Text="Status:" FontSize="10" Foreground="#FF6B7280" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <ComboBox x:Name="ComboStatusFilter" Width="100" FontSize="10"
+                          Background="#FF2A2A2A" Foreground="White" BorderBrush="#FF444444"
+                          SelectionChanged="Filter_Changed"
+                          ToolTip="Filter by device online/offline status">
+                    <ComboBoxItem Content="All" IsSelected="True"/>
+                    <ComboBoxItem Content="Online"/>
+                    <ComboBoxItem Content="Offline"/>
+                </ComboBox>
+            </StackPanel>
+
+            <!-- Last Scan Period -->
+            <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="0,0,12,0">
+                <TextBlock Text="Scanned:" FontSize="10" Foreground="#FF6B7280" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <ComboBox x:Name="ComboScanPeriod" Width="120" FontSize="10"
+                          Background="#FF2A2A2A" Foreground="White" BorderBrush="#FF444444"
+                          SelectionChanged="Filter_Changed"
+                          ToolTip="Filter by last scan time period">
+                    <ComboBoxItem Content="Any Time" IsSelected="True"/>
+                    <ComboBoxItem Content="Today"/>
+                    <ComboBoxItem Content="Last 7 Days"/>
+                    <ComboBoxItem Content="Last 30 Days"/>
+                    <ComboBoxItem Content="Stale (90+ Days)"/>
+                </ComboBox>
+            </StackPanel>
+
+            <!-- Clear Filters -->
+            <Button Grid.Column="5" x:Name="BtnClearFilters" Content="Clear Filters"
+                    FontSize="10" Padding="10,4"
+                    Background="Transparent" Foreground="#FFA1A1AA"
+                    BorderBrush="#FF444444" BorderThickness="1"
+                    Cursor="Hand" Click="BtnClearFilters_Click"
+                    ToolTip="Reset all filters to default"/>
+        </Grid>
+    </Border>
+</UserControl>

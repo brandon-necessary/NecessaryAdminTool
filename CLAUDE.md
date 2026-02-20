@@ -1,7 +1,7 @@
 # NecessaryAdminTool - Claude Code Instructions
-<!-- TAG: #PROJECT_INSTRUCTIONS #CLAUDE_AI #VERSION_1_0 #AUTO_UPDATE_VERSION -->
-**Version:** 1.0 (1.2602.0.0)
-**Last Updated:** February 15, 2026
+<!-- TAG: #PROJECT_INSTRUCTIONS #CLAUDE_AI #VERSION_3_0 #AUTO_UPDATE_VERSION -->
+**Version:** 3.0 (3.2602.0.0)
+**Last Updated:** February 20, 2026
 
 ---
 
@@ -236,14 +236,14 @@ When updating installer or update system:
 When creating new installer/update features:
 
 **Required tags in file header (top 5 lines):**
-- WiX files: `<!-- TAG: #AUTO_UPDATE_INSTALLER #WIX_INSTALLER #VERSION_1_0 -->`
+- WiX files: `<!-- TAG: #AUTO_UPDATE_INSTALLER #WIX_INSTALLER #VERSION_3_0 -->`
 - PowerShell: `# TAG: #AUTO_UPDATE_INSTALLER #BUILD_AUTOMATION #POWERSHELL`
 - C# files: `// TAG: #AUTO_UPDATE_INSTALLER #UPDATE_CONTROL`
 - Documentation: `<!-- TAG: #AUTO_UPDATE_INSTALLER #GUIDE -->`
 
 ### Version-Specific Information
 
-**Current Version:** 1.0 (1.2602.0.0)
+**Current Version:** 3.0 (3.2602.0.0)
 **Versioning:** CalVer - Major.YYMM.Minor.Build
 
 **When updating version numbers, update in:**
@@ -273,9 +273,9 @@ MainWindow  SetupWizard  AboutWindow  All Displays
 ### **LogoConfig Properties (MainWindow.xaml.cs, lines 12861+):**
 ```csharp
 // Version Numbers (pulled from AssemblyInfo.cs at runtime)
-LogoConfig.VERSION          // "v1.2602.0" (CalVer: Major.YYMM.Minor)
-LogoConfig.FULL_VERSION     // "v1.2602.0.0" (includes build/revision)
-LogoConfig.USER_AGENT_VERSION // "1.2602.0" (no 'v' prefix for HTTP headers)
+LogoConfig.VERSION          // "v3.2602.0" (CalVer: Major.YYMM.Minor)
+LogoConfig.FULL_VERSION     // "v3.2602.0.0" (includes build/revision)
+LogoConfig.USER_AGENT_VERSION // "3.2602.0" (no 'v' prefix for HTTP headers)
 
 // Compile Date (from assembly file timestamp)
 LogoConfig.COMPILED_DATE       // "2026-02-15 14:32:15"
@@ -293,7 +293,7 @@ LogoConfig.COPYRIGHT           // Full copyright string with year
 
 **Version Badge (MainWindow.xaml.cs, line 2146):**
 ```csharp
-TxtVersionBadge.Text = LogoConfig.VERSION; // "v1.2602.0"
+TxtVersionBadge.Text = LogoConfig.VERSION; // "v3.2602.0"
 ```
 
 **Version Badge with Build Date (SetupWizardWindow.xaml.cs, line 32):**
@@ -304,7 +304,7 @@ TxtBuildDate.Text = $"Built: {LogoConfig.COMPILED_DATE_SHORT}";
 
 **About Window (AboutWindow.xaml.cs, line 33):**
 ```csharp
-TxtVersion.Text = LogoConfig.FULL_VERSION.TrimStart('v'); // "1.2602.0.0"
+TxtVersion.Text = LogoConfig.FULL_VERSION.TrimStart('v'); // "3.2602.0.0"
 TxtBuildDate.Text = $"{LogoConfig.COMPILED_DATE_SHORT} {fileInfo.LastWriteTime:HH:mm}";
 TxtCopyright.Text = LogoConfig.COPYRIGHT;
 ```
@@ -316,9 +316,9 @@ client.DefaultRequestHeaders.Add("User-Agent",
 ```
 
 ### **Updating Version Numbers:**
-1. **Edit AssemblyInfo.cs (line 79):** Change `[assembly: AssemblyVersion("1.2602.0.0")]`
+1. **Edit AssemblyInfo.cs:** Change `[assembly: AssemblyVersion("3.2602.0.0")]`
 2. **That's it!** All windows, dialogs, headers, and about screens update automatically
-3. **CalVer Format:** `Major.YYMM.Minor.Build` (e.g., 1.2602.0.0 = v1.0, February 2026)
+3. **CalVer Format:** `Major.YYMM.Minor.Build` (e.g., 3.2602.0.0 = v3.0, February 2026)
 
 ### **Benefits:**
 - ✅ Single source of truth (AssemblyInfo.cs)
@@ -814,9 +814,9 @@ dotnet build -c Debug
 
 **Auto-Update Tags:**
 ```markdown
-<!-- TAG: #DATABASE_SETUP #INITIAL_SETUP #USER_GUIDE #VERSION_1_0 #AUTO_UPDATE_VERSION -->
-**Version:** 1.0 (1.2602.0.0)
-**Last Updated:** February 15, 2026
+<!-- TAG: #DATABASE_SETUP #INITIAL_SETUP #USER_GUIDE #VERSION_3_0 #AUTO_UPDATE_VERSION -->
+**Version:** 3.0 (3.2602.0.0)
+**Last Updated:** February 20, 2026
 ```
 
 **When to Update:**
@@ -1054,7 +1054,7 @@ Grep pattern="1\.2602\.0\.0|Version 1\.0" glob="*.{wxs,cs,md,xaml}"
 4. Add logging: `LogManager.LogInfo("Operation started")`
 5. Add error handling: Try-catch with LogManager
 6. Add async methods: `public static async Task DoWorkAsync()`
-7. Tag file: `// TAG: #VERSION_1_0 #YOUR_MANAGER`
+7. Tag file: `// TAG: #VERSION_3_0 #YOUR_MANAGER`
 
 **Reference existing managers:**
 - `LogManager.cs` - Static singleton pattern
@@ -1069,7 +1069,7 @@ Grep pattern="1\.2602\.0\.0|Version 1\.0" glob="*.{wxs,cs,md,xaml}"
 4. Add connection string handling
 5. Implement async CRUD operations
 6. Add proper error handling
-7. Tag file: `// TAG: #DATABASE #DATA_PROVIDER #VERSION_1_0`
+7. Tag file: `// TAG: #DATABASE #DATA_PROVIDER #VERSION_3_0`
 
 **Reference existing providers:**
 - `AccessDataProvider.cs` - OleDb pattern
@@ -1582,8 +1582,8 @@ Test a few critical tools (requires target computer):
 - [ ] Click "Check for Updates" button
 - [ ] Verify update check works (or shows appropriate message)
 - [ ] Click About button (ℹ️)
-- [ ] Verify version shows: 1.0 (1.2602.0.0)
-- [ ] Verify build date: February 14, 2026
+- [ ] Verify version shows: 3.0 (3.2602.0.0)
+- [ ] Verify build date: February 20, 2026
 - [ ] Check close button tooltip
 
 #### **12. Logging:**

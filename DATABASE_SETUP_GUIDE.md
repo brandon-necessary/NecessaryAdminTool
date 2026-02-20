@@ -1,7 +1,7 @@
 # NecessaryAdminTool - Database Setup Guide
-<!-- TAG: #DATABASE_SETUP #INITIAL_SETUP #USER_GUIDE #VERSION_1_0 -->
-**Version:** 1.0 (1.2602.0.0)
-**Last Updated:** February 15, 2026
+<!-- TAG: #DATABASE_SETUP #INITIAL_SETUP #USER_GUIDE #VERSION_3_0 -->
+**Version:** 3.0 (3.2602.0.0)
+**Last Updated:** February 20, 2026
 
 ---
 

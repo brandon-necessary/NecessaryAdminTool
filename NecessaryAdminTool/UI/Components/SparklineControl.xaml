@@ -1,0 +1,10 @@
+<UserControl x:Class="NecessaryAdminTool.UI.Components.SparklineControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Height="40" MinWidth="60">
+    <!-- TAG: #AUTO_UPDATE_UI_ENGINE #SPARKLINE #DASHBOARD -->
+    <Canvas x:Name="SparkCanvas" ClipToBounds="True">
+        <Polygon x:Name="FillArea" Opacity="0.15"/>
+        <Polyline x:Name="SparkLine" StrokeThickness="1.5" StrokeLineJoin="Round"/>
+    </Canvas>
+</UserControl>

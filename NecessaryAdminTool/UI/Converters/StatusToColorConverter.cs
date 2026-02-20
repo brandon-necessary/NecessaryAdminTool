@@ -87,6 +87,34 @@ namespace NecessaryAdminTool.UI.Converters
     }
 
     /// <summary>
+    /// Converts device health status to semantic color for heatmap tiles.
+    /// TAG: #VALUE_CONVERTER #HEALTH_HEATMAP #DASHBOARD
+    /// </summary>
+    public class HealthToColorConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null)
+                return new SolidColorBrush(Color.FromRgb(107, 114, 128)); // Gray
+
+            string status = value.ToString().ToUpper();
+
+            return status switch
+            {
+                "ONLINE" => new SolidColorBrush(Color.FromRgb(16, 185, 129)),   // Green
+                "OFFLINE" => new SolidColorBrush(Color.FromRgb(239, 68, 68)),    // Red
+                "WARNING" => new SolidColorBrush(Color.FromRgb(245, 158, 11)),   // Amber
+                _ => new SolidColorBrush(Color.FromRgb(107, 114, 128))           // Gray
+            };
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
     /// Inverts boolean to Visibility
     /// TAG: #VALUE_CONVERTER #VISIBILITY #INVERTED
     /// </summary>

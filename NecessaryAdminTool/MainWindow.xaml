@@ -22,6 +22,7 @@
     <Window.Resources>
         <!-- TAG: #AUTO_UPDATE_UI_ENGINE #VALUE_CONVERTERS -->
         <converters:StatusToColorConverter x:Key="StatusToColorConverter"/>
+        <converters:HealthToColorConverter x:Key="HealthToColorConverter"/>
     </Window.Resources>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
@@ -29,8 +30,10 @@
     <!-- ═══════════════════════════════════════════════════════════ -->
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>  <!-- Header -->
-            <RowDefinition Height="*"/>     <!-- Main Content -->
+            <RowDefinition Height="Auto"/>  <!-- Row 0: Header -->
+            <RowDefinition Height="Auto"/>  <!-- Row 1: FilterBar (collapsible) -->
+            <RowDefinition Height="*"/>     <!-- Row 2: Main Content -->
+            <RowDefinition Height="Auto"/>  <!-- Row 3: StatusBar -->
         </Grid.RowDefinitions>
 
         <!-- ══════════════════════════════════════ -->
@@ -54,6 +57,8 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/> <!-- Bulk Operations -->
+                    <ColumnDefinition Width="Auto"/> <!-- Filter Toggle -->
+                    <ColumnDefinition Width="Auto"/> <!-- Density -->
                 </Grid.ColumnDefinitions>
 
                 <!-- ══════════════════════════════════════════════════════════════ -->
@@ -315,13 +320,37 @@
                         Style="{StaticResource BtnGhost}" Click="BtnBulkOperations_Click"
                         Padding="8,6" FontSize="10"
                         ToolTip="Opens Bulk Operations window for executing commands on multiple computers simultaneously. Supports restart, PowerShell scripts, service control, inventory collection, and more. Execute operations in parallel with configurable thread count and retry logic."/>
+
+                <!-- TAG: #AUTO_UPDATE_UI_ENGINE #FILTER_BAR -->
+                <Button x:Name="BtnToggleFilterBar" Grid.Column="13" Content="🔍 FILTER"
+                        Style="{StaticResource BtnGhost}" Click="BtnToggleFilterBar_Click"
+                        Padding="8,6" FontSize="10"
+                        ToolTip="Toggle the global filter bar for filtering fleet by OS, status, and scan period. (Ctrl+F)"/>
+
+                <!-- TAG: #AUTO_UPDATE_UI_ENGINE #DENSITY -->
+                <ComboBox x:Name="ComboDensity" Grid.Column="14" Width="90" FontSize="9"
+                          Background="#FF2A2A2A" Foreground="White" BorderBrush="#FF444444"
+                          Padding="4,4" Margin="4,0,0,0" VerticalAlignment="Center"
+                          SelectionChanged="ComboDensity_SelectionChanged"
+                          ToolTip="Change display density for data grids: Compact (small rows), Normal (default), Comfortable (large rows)">
+                    <ComboBoxItem Content="Compact"/>
+                    <ComboBoxItem Content="Normal" IsSelected="True"/>
+                    <ComboBoxItem Content="Comfortable"/>
+                </ComboBox>
             </Grid>
         </Border>
+
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- GLOBAL FILTER BAR (Row 1) - TAG: #AUTO_UPDATE_UI_ENGINE #FILTER_BAR -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <components:FilterBar x:Name="GlobalFilterBar" Grid.Row="1"
+                              Visibility="Collapsed"
+                              FilterChanged="GlobalFilterBar_FilterChanged"/>
 
         <!-- ══════════════════════════════════════ -->
         <!-- MAIN CONTENT GRID WITH BOTTOM DOCKING  -->
         <!-- ══════════════════════════════════════ -->
-        <DockPanel Grid.Row="1">
+        <DockPanel Grid.Row="2">
 
         <!-- ══════════════════════════════════════ -->
         <!-- COLLAPSIBLE TERMINAL (BOTTOM)          -->
@@ -975,10 +1004,12 @@
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <Grid Margin="20">
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>   <!-- Row 0: Header -->
+                                <RowDefinition Height="Auto"/>   <!-- Row 1: KPI Cards -->
+                                <RowDefinition Height="Auto"/>   <!-- Row 2: OS/DC/Alerts -->
+                                <RowDefinition Height="Auto"/>   <!-- Row 3: Top Computers -->
+                                <RowDefinition Height="Auto"/>   <!-- Row 4: Device Heatmap -->
+                                <RowDefinition Height="Auto"/>   <!-- Row 5: Activity Feed -->
                             </Grid.RowDefinitions>
 
                             <!-- Header -->
@@ -1007,7 +1038,7 @@
                                 </Grid>
                             </Border>
 
-                            <!-- Quick Statistics Cards -->
+                            <!-- Enhanced KPI Cards - TAG: #AUTO_UPDATE_UI_ENGINE #KPI_CARD #DASHBOARD -->
                             <Grid Grid.Row="1" Margin="0,0,0,20">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -1015,58 +1046,21 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
 
-                                <!-- Total Computers Card -->
-                                <Border Grid.Column="0" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
-                                        BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,0,8,0">
-                                    <StackPanel>
-                                        <TextBlock Text="🖥️ TOTAL COMPUTERS" Foreground="{StaticResource TextMutedBrush}"
-                                                   FontSize="10" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                                        <TextBlock x:Name="TxtTotalComputers" Text="0" Foreground="White"
-                                                   FontSize="36" FontWeight="Bold" Margin="0,0,0,4"/>
-                                        <TextBlock Text="In inventory" Foreground="{StaticResource TextMutedBrush}"
-                                                   FontSize="9"/>
-                                    </StackPanel>
-                                </Border>
+                                <!-- Row 1: Total, Online, Offline, Health -->
+                                <components:KpiCard x:Name="KpiTotal" Grid.Column="0" Grid.Row="0"/>
+                                <components:KpiCard x:Name="KpiOnline" Grid.Column="1" Grid.Row="0"/>
+                                <components:KpiCard x:Name="KpiOffline" Grid.Column="2" Grid.Row="0"/>
+                                <components:KpiCard x:Name="KpiHealth" Grid.Column="3" Grid.Row="0"/>
 
-                                <!-- Online Computers Card -->
-                                <Border Grid.Column="1" Background="#FF1E1E1E" BorderBrush="LimeGreen"
-                                        BorderThickness="2" CornerRadius="8" Padding="20" Margin="4,0">
-                                    <StackPanel>
-                                        <TextBlock Text="✅ ONLINE" Foreground="LimeGreen"
-                                                   FontSize="10" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                                        <TextBlock x:Name="TxtOnlineComputers" Text="0" Foreground="LimeGreen"
-                                                   FontSize="36" FontWeight="Bold" Margin="0,0,0,4"/>
-                                        <TextBlock x:Name="TxtOnlinePercentage" Text="0%" Foreground="{StaticResource TextMutedBrush}"
-                                                   FontSize="12" FontWeight="SemiBold"/>
-                                    </StackPanel>
-                                </Border>
-
-                                <!-- Offline Computers Card -->
-                                <Border Grid.Column="2" Background="#FF1E1E1E" BorderBrush="#FFFF6B6B"
-                                        BorderThickness="2" CornerRadius="8" Padding="20" Margin="4,0">
-                                    <StackPanel>
-                                        <TextBlock Text="❌ OFFLINE" Foreground="#FFFF6B6B"
-                                                   FontSize="10" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                                        <TextBlock x:Name="TxtOfflineComputers" Text="0" Foreground="#FFFF6B6B"
-                                                   FontSize="36" FontWeight="Bold" Margin="0,0,0,4"/>
-                                        <TextBlock x:Name="TxtOfflinePercentage" Text="0%" Foreground="{StaticResource TextMutedBrush}"
-                                                   FontSize="12" FontWeight="SemiBold"/>
-                                    </StackPanel>
-                                </Border>
-
-                                <!-- Health Score Card -->
-                                <Border Grid.Column="3" Background="#FF1E1E1E" BorderBrush="{StaticResource AccentOrangeBrush}"
-                                        BorderThickness="2" CornerRadius="8" Padding="20" Margin="8,0,0,0">
-                                    <StackPanel>
-                                        <TextBlock Text="💚 HEALTH SCORE" Foreground="{StaticResource AccentOrangeBrush}"
-                                                   FontSize="10" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                                        <TextBlock x:Name="TxtHealthScore" Text="0%" Foreground="{StaticResource AccentOrangeBrush}"
-                                                   FontSize="36" FontWeight="Bold" Margin="0,0,0,4"/>
-                                        <TextBlock x:Name="TxtHealthStatus" Text="No Data" Foreground="{StaticResource TextMutedBrush}"
-                                                   FontSize="11" FontWeight="SemiBold"/>
-                                    </StackPanel>
-                                </Border>
+                                <!-- Row 2: Compliance, Last Scan, DB Size (span last col) -->
+                                <components:KpiCard x:Name="KpiCompliance" Grid.Column="0" Grid.Row="1"/>
+                                <components:KpiCard x:Name="KpiLastScan" Grid.Column="1" Grid.Row="1"/>
+                                <components:KpiCard x:Name="KpiDbSize" Grid.Column="2" Grid.Row="1" Grid.ColumnSpan="2"/>
                             </Grid>
 
                             <!-- OS Distribution, DC Health & Critical Alerts -->
@@ -1312,9 +1306,9 @@
                                 </Border>
                             </Grid>
 
-                            <!-- Recent Activity / Top Issues -->
+                            <!-- Top Computers by Uptime -->
                             <Border Grid.Row="3" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
-                                    BorderThickness="1" CornerRadius="8" Padding="20">
+                                    BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,0,0,20">
                                 <StackPanel>
                                     <TextBlock Text="🔝 TOP COMPUTERS BY UPTIME" Foreground="{StaticResource AccentOrangeBrush}"
                                                FontSize="12" FontWeight="Bold" Margin="0,0,0,12"/>
@@ -1343,6 +1337,19 @@
                                         </DataGrid.Columns>
                                     </DataGrid>
                                 </StackPanel>
+                            </Border>
+
+                            <!-- Device Health Heatmap - TAG: #AUTO_UPDATE_UI_ENGINE #DEVICE_HEATMAP -->
+                            <Border Grid.Row="4" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
+                                    BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,0,0,20">
+                                <components:DeviceHeatmap x:Name="FleetHeatmap"
+                                                          DeviceClicked="FleetHeatmap_DeviceClicked"/>
+                            </Border>
+
+                            <!-- Activity Feed - TAG: #AUTO_UPDATE_UI_ENGINE #ACTIVITY_FEED -->
+                            <Border Grid.Row="5" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
+                                    BorderThickness="1" CornerRadius="8" Padding="20">
+                                <components:ActivityFeed x:Name="DashboardActivityFeed"/>
                             </Border>
                         </Grid>
                     </ScrollViewer>
@@ -1777,7 +1784,19 @@
                 <!-- TAB 2: AD FLEET INVENTORY      -->
                 <!-- ══════════════════════════════ -->
                 <TabItem Header="AD FLEET INVENTORY">
-                    <DockPanel Margin="15">
+                    <!-- TAG: #AUTO_UPDATE_UI_ENGINE #DETAIL_DRAWER - 2-column layout for slide-in detail panel -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition x:Name="DetailDrawerColumn" Width="0"/>
+                        </Grid.ColumnDefinitions>
+
+                    <!-- Main fleet content -->
+                    <DockPanel Grid.Column="0" Margin="15">
+                        <!-- Breadcrumb Navigation - TAG: #AUTO_UPDATE_UI_ENGINE #BREADCRUMB -->
+                        <components:BreadcrumbBar x:Name="FleetBreadcrumb" DockPanel.Dock="Top"
+                                                   SegmentClicked="FleetBreadcrumb_SegmentClicked"/>
+
                         <!-- DC Selection Section -->
                         <Border DockPanel.Dock="Top" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
                                 BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,15">
@@ -2114,6 +2133,46 @@
 
                                 <DataGridTextColumn Header="Chassis" Binding="{Binding Chassis}" Width="80"/>
                                 <DataGridTextColumn Header="BitLocker" Binding="{Binding BitLockerStatus}" Width="80"/>
+
+                                <!-- TAG: #AUTO_UPDATE_UI_ENGINE #HOVER_ACTIONS - Quick action buttons on row hover -->
+                                <DataGridTemplateColumn Header="" Width="120" CanUserResize="False" CanUserSort="False">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"
+                                                        Visibility="Hidden">
+                                                <StackPanel.Style>
+                                                    <Style TargetType="StackPanel">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=DataGridRow}}" Value="True">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </StackPanel.Style>
+                                                <Button Content="RDP" FontSize="8" Padding="4,2" Margin="1,0"
+                                                        Background="#FF2A2A2A" Foreground="White" BorderThickness="1"
+                                                        BorderBrush="#FF444444" Cursor="Hand"
+                                                        Tag="{Binding Hostname}" Click="BtnHoverRDP_Click"
+                                                        ToolTip="Remote Desktop to this computer"/>
+                                                <Button Content="PS" FontSize="8" Padding="4,2" Margin="1,0"
+                                                        Background="#FF2A2A2A" Foreground="#FF4FC3F7" BorderThickness="1"
+                                                        BorderBrush="#FF444444" Cursor="Hand"
+                                                        Tag="{Binding Hostname}" Click="BtnHoverPowerShell_Click"
+                                                        ToolTip="PowerShell remote to this computer"/>
+                                                <Button Content="C$" FontSize="8" Padding="4,2" Margin="1,0"
+                                                        Background="#FF2A2A2A" Foreground="#FFFFA726" BorderThickness="1"
+                                                        BorderBrush="#FF444444" Cursor="Hand"
+                                                        Tag="{Binding Hostname}" Click="BtnHoverBrowse_Click"
+                                                        ToolTip="Browse C$ admin share"/>
+                                                <Button Content="Pin" FontSize="8" Padding="4,2" Margin="1,0"
+                                                        Background="#FF2A2A2A" Foreground="#FF10B981" BorderThickness="1"
+                                                        BorderBrush="#FF444444" Cursor="Hand"
+                                                        Tag="{Binding Hostname}" Click="BtnHoverPin_Click"
+                                                        ToolTip="Pin this device"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
                             </DataGrid.Columns>
                             <DataGrid.ContextMenu>
                                 <ContextMenu x:Name="GridInventoryContextMenu" Opened="GridInventoryContextMenu_Opened">
@@ -2314,6 +2373,81 @@
                             </Border>
                         </Grid>
                     </DockPanel>
+
+                    <!-- Detail Drawer (Slide-in Panel) - TAG: #AUTO_UPDATE_UI_ENGINE #DETAIL_DRAWER -->
+                    <Border x:Name="DetailDrawer" Grid.Column="1" Background="#FF1A1A1A"
+                            BorderBrush="#FF3C3C3C" BorderThickness="1,0,0,0">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Header -->
+                            <Border Grid.Row="0" Background="#FF252525" Padding="12,8"
+                                    BorderBrush="#FF3C3C3C" BorderThickness="0,0,0,1">
+                                <Grid>
+                                    <TextBlock x:Name="TxtDetailHostname" Text="DEVICE DETAILS"
+                                               FontSize="13" FontWeight="Bold" Foreground="{StaticResource AccentOrangeBrush}"
+                                               VerticalAlignment="Center"/>
+                                    <Button x:Name="BtnCloseDetailDrawer" Content="✕" HorizontalAlignment="Right"
+                                            FontSize="14" Padding="6,2" Background="Transparent"
+                                            Foreground="#FFA1A1AA" BorderThickness="0" Cursor="Hand"
+                                            Click="BtnCloseDetailDrawer_Click"
+                                            ToolTip="Close detail panel"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Details content -->
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="12">
+                                <StackPanel x:Name="DetailContent">
+                                    <!-- OS Section -->
+                                    <TextBlock Text="OPERATING SYSTEM" FontSize="9" FontWeight="Bold"
+                                               Foreground="#FF6B7280" Margin="0,0,0,4"/>
+                                    <TextBlock x:Name="TxtDetailOS" Text="--" FontSize="11" Foreground="White"
+                                               TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                                    <!-- Hardware Section -->
+                                    <TextBlock Text="HARDWARE" FontSize="9" FontWeight="Bold"
+                                               Foreground="#FF6B7280" Margin="0,0,0,4"/>
+                                    <TextBlock x:Name="TxtDetailHardware" Text="--" FontSize="11" Foreground="White"
+                                               TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                                    <!-- Network Section -->
+                                    <TextBlock Text="NETWORK" FontSize="9" FontWeight="Bold"
+                                               Foreground="#FF6B7280" Margin="0,0,0,4"/>
+                                    <TextBlock x:Name="TxtDetailNetwork" Text="--" FontSize="11" Foreground="White"
+                                               TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                                    <!-- User Section -->
+                                    <TextBlock Text="CURRENT USER" FontSize="9" FontWeight="Bold"
+                                               Foreground="#FF6B7280" Margin="0,0,0,4"/>
+                                    <TextBlock x:Name="TxtDetailUser" Text="--" FontSize="11" Foreground="White"
+                                               TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                                    <!-- Disk Section -->
+                                    <TextBlock Text="DISK" FontSize="9" FontWeight="Bold"
+                                               Foreground="#FF6B7280" Margin="0,0,0,4"/>
+                                    <TextBlock x:Name="TxtDetailDisk" Text="--" FontSize="11" Foreground="White"
+                                               TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                                    <!-- Status Section -->
+                                    <TextBlock Text="STATUS" FontSize="9" FontWeight="Bold"
+                                               Foreground="#FF6B7280" Margin="0,0,0,4"/>
+                                    <TextBlock x:Name="TxtDetailStatus" Text="--" FontSize="11" Foreground="White"
+                                               TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                                    <!-- Last Boot -->
+                                    <TextBlock Text="LAST BOOT" FontSize="9" FontWeight="Bold"
+                                               Foreground="#FF6B7280" Margin="0,0,0,4"/>
+                                    <TextBlock x:Name="TxtDetailLastBoot" Text="--" FontSize="11" Foreground="White"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Grid>
+                    </Border>
+
+                    </Grid>
                 </TabItem>
 
                 <!-- ══════════════════════════════ -->
@@ -3310,11 +3444,78 @@
         </DockPanel>
 
         <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- STATUS BAR (Row 3) - TAG: #AUTO_UPDATE_UI_ENGINE #STATUS_BAR  -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <Border Grid.Row="3" Background="#FF1A1A1A" BorderBrush="#FF3C3C3C"
+                BorderThickness="0,1,0,0" Padding="12,4">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Live indicator -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="0,0,12,0">
+                    <Ellipse x:Name="LivePulse" Width="8" Height="8" Fill="#FF10B981" Margin="0,0,4,0">
+                        <Ellipse.Triggers>
+                            <EventTrigger RoutedEvent="Loaded">
+                                <BeginStoryboard>
+                                    <Storyboard RepeatBehavior="Forever">
+                                        <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                         From="1" To="0.3" Duration="0:0:1.2"
+                                                         AutoReverse="True"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Ellipse.Triggers>
+                    </Ellipse>
+                    <TextBlock x:Name="TxtStatusFreshness" Text="Live" FontSize="9" Foreground="#FF10B981"
+                               FontWeight="SemiBold" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Device count -->
+                <TextBlock Grid.Column="1" x:Name="TxtStatusDevices" Text="0 devices"
+                           FontSize="9" Foreground="#FFA1A1AA" VerticalAlignment="Center" Margin="0,0,12,0"/>
+
+                <!-- Online count -->
+                <TextBlock Grid.Column="2" x:Name="TxtStatusOnline" Text="0 online"
+                           FontSize="9" Foreground="#FF10B981" VerticalAlignment="Center" Margin="0,0,12,0"/>
+
+                <!-- Critical count -->
+                <TextBlock Grid.Column="3" x:Name="TxtStatusCritical" Text="0 critical"
+                           FontSize="9" Foreground="#FFEF4444" VerticalAlignment="Center" Margin="0,0,12,0"/>
+
+                <!-- Separator -->
+                <Border Grid.Column="4" Width="1" Background="#FF3C3C3C" Margin="0,2,12,2"/>
+
+                <!-- Last scan -->
+                <TextBlock Grid.Column="5" x:Name="TxtStatusLastScan" Text="Last scan: Never"
+                           FontSize="9" Foreground="#FF6B7280" VerticalAlignment="Center"/>
+
+                <!-- DB info -->
+                <TextBlock Grid.Column="6" x:Name="TxtStatusDb" Text=""
+                           FontSize="9" Foreground="#FF6B7280" VerticalAlignment="Center" Margin="0,0,8,0"/>
+
+                <!-- Refresh button -->
+                <Button Grid.Column="7" Content="🔄" FontSize="10" Padding="4,2"
+                        Background="Transparent" Foreground="#FF6B7280" BorderThickness="0"
+                        Cursor="Hand" Click="BtnRefreshDashboard_Click"
+                        ToolTip="Refresh dashboard statistics"/>
+            </Grid>
+        </Border>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
         <!-- TOAST NOTIFICATION CONTAINER - TAG: #AUTO_UPDATE_UI_ENGINE    -->
         <!-- Overlay panel for toast notifications                          -->
         <!-- ═══════════════════════════════════════════════════════════════ -->
         <StackPanel x:Name="ToastContainer"
-                    Grid.RowSpan="2"
+                    Grid.RowSpan="4"
                     VerticalAlignment="Top"
                     HorizontalAlignment="Right"
                     Margin="0,80,20,0"
@@ -3326,7 +3527,7 @@
         <!-- Keyboard-driven command launcher (Ctrl+K)                       -->
         <!-- ═══════════════════════════════════════════════════════════════ -->
         <Border x:Name="CommandPaletteOverlay"
-                Grid.RowSpan="2"
+                Grid.RowSpan="4"
                 Background="#AA000000"
                 Visibility="Collapsed"
                 Panel.ZIndex="15000"

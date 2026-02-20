@@ -38,6 +38,8 @@ using System.Windows.Threading;
 using NecessaryAdminTool.Security;
 using NecessaryAdminTool.Helpers;
 using NecessaryAdminTool.Managers;
+using NecessaryAdminTool.Models.UI;
+using NecessaryAdminTool.UI.Components;
 
 namespace NecessaryAdminTool
 {
@@ -1991,6 +1993,15 @@ namespace NecessaryAdminTool
         private System.Threading.Timer _globalServicesTimer = null;
 
         private string _currentTarget = "";
+
+        // TAG: #AUTO_UPDATE_UI_ENGINE #KPI_CARD #STATUS_BAR - Previous values for animated delta
+        private double _previousTotal;
+        private double _previousOnline;
+        private double _previousOffline;
+        private double _previousHealth;
+        private double _previousCompliance;
+        private bool _kpiCardsInitialized;
+        private DispatcherTimer _statusBarTimer;
         private string _currentServiceTag = "";
         private string _authUser = Environment.UserName;
         private SecureString _authPass = null;
@@ -8307,6 +8318,9 @@ if ($rebootPending) {
                 // Apply restrictions based on domain admin status and elevation
                 ApplyRoleRestrictions();
 
+                // Auto-load deployment results on login
+                Dispatcher.Invoke(() => { _ = LoadDeploymentResultsAsync(); });
+
                 // TAG: #UX_FEEDBACK - Step 4: Show final access level
                 string accessLevel = _isDomainAdmin && _isElevated ? "Domain Admin (Elevated)" :
                                     _isDomainAdmin && !_isElevated ? "Domain Admin" :
@@ -11641,16 +11655,8 @@ if ($rebootPending) {
                     int online = _inventory.Count(c => c.Status == "ONLINE");
                     int offline = total - online;
 
-                    // Update statistics cards
-                    TxtTotalComputers.Text = total.ToString();
-                    TxtOnlineComputers.Text = online.ToString();
-                    TxtOfflineComputers.Text = offline.ToString();
-
                     double onlinePercent = total > 0 ? (double)online / total * 100 : 0;
                     double offlinePercent = total > 0 ? (double)offline / total * 100 : 0;
-
-                    TxtOnlinePercentage.Text = $"{onlinePercent:F1}%";
-                    TxtOfflinePercentage.Text = $"{offlinePercent:F1}%";
 
                     // Health Score (based on online percentage + OS modernity)
                     int win11 = _inventory.Count(c => c.WindowsVersion == "Win11");
@@ -11662,10 +11668,48 @@ if ($rebootPending) {
                         ? (onlinePercent * 0.6) + ((win11 + win10) / (double)total * 100 * 0.4)
                         : 0;
 
-                    TxtHealthScore.Text = $"{healthScore:F0}%";
-                    TxtHealthStatus.Text = healthScore >= 90 ? "Excellent" :
-                                          healthScore >= 75 ? "Good" :
-                                          healthScore >= 50 ? "Fair" : "Poor";
+                    double compliancePercent = total > 0 ? (double)(win11 + win10) / total * 100 : 0;
+
+                    // Update KPI Cards - TAG: #AUTO_UPDATE_UI_ENGINE #KPI_CARD
+                    InitializeKpiCards();
+
+                    KpiTotal.SetValue(total, _previousTotal);
+                    KpiTotal.Subtitle = "In inventory";
+
+                    KpiOnline.SetValue(online, _previousOnline);
+                    KpiOnline.Subtitle = $"{onlinePercent:F1}% of fleet";
+
+                    KpiOffline.SetValue(offline, _previousOffline);
+                    KpiOffline.Subtitle = $"{offlinePercent:F1}% of fleet";
+
+                    KpiHealth.FormatString = "F0";
+                    KpiHealth.SetValue(healthScore, _previousHealth);
+                    KpiHealth.Subtitle = healthScore >= 90 ? "Excellent" :
+                                         healthScore >= 75 ? "Good" :
+                                         healthScore >= 50 ? "Fair" : "Poor";
+
+                    KpiCompliance.FormatString = "F1";
+                    KpiCompliance.SetValue(compliancePercent, _previousCompliance);
+                    KpiCompliance.Subtitle = $"{win11 + win10} modern OS devices";
+
+                    KpiLastScan.FormatString = "F0";
+                    KpiLastScan.SetValue(total > 0 ? 1 : 0);
+                    KpiLastScan.Subtitle = $"Updated {DateTime.Now:HH:mm}";
+
+                    KpiDbSize.FormatString = "F1";
+                    KpiDbSize.Subtitle = Properties.Settings.Default.DatabaseType ?? "SQLite";
+
+                    _previousTotal = total;
+                    _previousOnline = online;
+                    _previousOffline = offline;
+                    _previousHealth = healthScore;
+                    _previousCompliance = compliancePercent;
+
+                    // Update status bar - TAG: #AUTO_UPDATE_UI_ENGINE #STATUS_BAR
+                    UpdateStatusBar(total, online, offline, win7 + legacy);
+
+                    // Update device heatmap - TAG: #AUTO_UPDATE_UI_ENGINE #DEVICE_HEATMAP
+                    FleetHeatmap.SetDevices(_inventory);
 
                     // OS Distribution
                     double win11Percent = total > 0 ? (double)win11 / total * 100 : 0;
@@ -17574,6 +17618,413 @@ if ($rebootPending) {
                 BtnBulkOperations_Click(null, null);
                 e.Handled = true;
             }
+
+            // TAG: #AUTO_UPDATE_UI_ENGINE #FILTER_BAR
+            // Ctrl+F - Toggle Filter Bar
+            if (e.Key == Key.F && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                BtnToggleFilterBar_Click(null, null);
+                e.Handled = true;
+            }
+        }
+
+        // ############################################################################
+        // REGION: MODERN UI ENHANCEMENTS - TAG: #AUTO_UPDATE_UI_ENGINE #DASHBOARD_OVERHAUL
+        // ############################################################################
+
+        /// <summary>
+        /// Initialize KPI card labels and accent colors (called once).
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #KPI_CARD
+        /// </summary>
+        private void InitializeKpiCards()
+        {
+            if (_kpiCardsInitialized) return;
+            _kpiCardsInitialized = true;
+
+            KpiTotal.Label = "TOTAL DEVICES";
+            KpiTotal.AccentColor = new SolidColorBrush(Color.FromRgb(161, 161, 170)); // Zinc
+
+            KpiOnline.Label = "ONLINE";
+            KpiOnline.AccentColor = new SolidColorBrush(Color.FromRgb(16, 185, 129)); // Green
+
+            KpiOffline.Label = "OFFLINE";
+            KpiOffline.AccentColor = new SolidColorBrush(Color.FromRgb(239, 68, 68)); // Red
+
+            KpiHealth.Label = "HEALTH SCORE";
+            KpiHealth.AccentColor = (Brush)FindResource("AccentOrangeBrush");
+
+            KpiCompliance.Label = "COMPLIANCE %";
+            KpiCompliance.AccentColor = new SolidColorBrush(Color.FromRgb(59, 130, 246)); // Blue
+
+            KpiLastScan.Label = "LAST SCAN";
+            KpiLastScan.AccentColor = new SolidColorBrush(Color.FromRgb(139, 92, 246)); // Purple
+
+            KpiDbSize.Label = "DATABASE";
+            KpiDbSize.AccentColor = new SolidColorBrush(Color.FromRgb(245, 158, 11)); // Amber
+        }
+
+        /// <summary>
+        /// Update the status bar with fleet summary.
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #STATUS_BAR
+        /// </summary>
+        private void UpdateStatusBar(int total, int online, int offline, int critical)
+        {
+            try
+            {
+                TxtStatusDevices.Text = $"{total} devices";
+                TxtStatusOnline.Text = $"{online} online";
+                TxtStatusCritical.Text = $"{critical} critical";
+                TxtStatusLastScan.Text = $"Last scan: {DateTime.Now:MMM dd HH:mm}";
+
+                string dbType = Properties.Settings.Default.DatabaseType ?? "SQLite";
+                TxtStatusDb.Text = $"DB: {dbType}";
+
+                // Start 60s auto-refresh timer if not already running
+                if (_statusBarTimer == null)
+                {
+                    _statusBarTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(60) };
+                    _statusBarTimer.Tick += (s, e) =>
+                    {
+                        TxtStatusFreshness.Text = "Live";
+                    };
+                    _statusBarTimer.Start();
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("[StatusBar] Update failed", ex);
+            }
+        }
+
+        /// <summary>
+        /// Toggle the global filter bar visibility.
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #FILTER_BAR
+        /// </summary>
+        private void BtnToggleFilterBar_Click(object sender, RoutedEventArgs e)
+        {
+            GlobalFilterBar.Visibility = GlobalFilterBar.Visibility == Visibility.Visible
+                ? Visibility.Collapsed
+                : Visibility.Visible;
+        }
+
+        /// <summary>
+        /// Handle global filter bar changes.
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #FILTER_BAR
+        /// </summary>
+        private void GlobalFilterBar_FilterChanged(object sender, UI.Components.FilterCriteria criteria)
+        {
+            try
+            {
+                LogManager.LogInfo($"[FilterBar] Filter changed: OS={criteria.OsFilter}, Status={criteria.StatusFilter}, Period={criteria.ScanPeriod}");
+
+                lock (_inventoryLock)
+                {
+                    var filtered = _inventory.AsEnumerable();
+
+                    // OS filter
+                    if (criteria.OsFilter != "All OS")
+                    {
+                        filtered = criteria.OsFilter switch
+                        {
+                            "Windows 11" => filtered.Where(c => c.WindowsVersion == "Win11" || (c.DisplayOS?.Contains("Windows 11") == true)),
+                            "Windows 10" => filtered.Where(c => c.WindowsVersion == "Win10" || (c.DisplayOS?.Contains("Windows 10") == true)),
+                            "Windows 7" => filtered.Where(c => c.WindowsVersion == "Win7" || (c.DisplayOS?.Contains("Windows 7") == true)),
+                            "Server" => filtered.Where(c => c.WindowsVersion?.StartsWith("Server") == true || (c.DisplayOS?.Contains("Server") == true)),
+                            "Legacy" => filtered.Where(c => c.WindowsVersion == "Legacy" || c.WindowsVersion == "WinXP" || c.WindowsVersion == "Vista"),
+                            _ => filtered
+                        };
+                    }
+
+                    // Status filter
+                    if (criteria.StatusFilter != "All")
+                    {
+                        filtered = criteria.StatusFilter switch
+                        {
+                            "Online" => filtered.Where(c => c.Status == "ONLINE"),
+                            "Offline" => filtered.Where(c => c.Status != "ONLINE"),
+                            _ => filtered
+                        };
+                    }
+
+                    var result = filtered.ToList();
+                    GridInventory.ItemsSource = result;
+
+                    // Update breadcrumb
+                    UpdateFleetBreadcrumb(criteria);
+
+                    // Add activity event
+                    if (!criteria.IsDefault)
+                        AddActivityEvent(ActivitySeverity.Info, $"Filter applied: {criteria.OsFilter}, {criteria.StatusFilter}", "Filter");
+                }
+
+                RefreshDashboard();
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("[FilterBar] Filter application failed", ex);
+            }
+        }
+
+        /// <summary>
+        /// Handle device click on heatmap — select in fleet grid.
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #DEVICE_HEATMAP
+        /// </summary>
+        private void FleetHeatmap_DeviceClicked(object sender, string hostname)
+        {
+            try
+            {
+                // Switch to fleet tab
+                MainTabs.SelectedIndex = 2; // AD FLEET INVENTORY tab
+
+                // Find and select the device in the grid
+                foreach (var item in GridInventory.Items)
+                {
+                    if (item is PCInventory pc && pc.Hostname == hostname)
+                    {
+                        GridInventory.SelectedItem = pc;
+                        GridInventory.ScrollIntoView(pc);
+                        ShowDetailDrawer(pc);
+                        break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"[Heatmap] DeviceClicked failed for {hostname}", ex);
+            }
+        }
+
+        /// <summary>
+        /// Show the detail drawer for a selected device.
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #DETAIL_DRAWER
+        /// </summary>
+        private void ShowDetailDrawer(PCInventory pc)
+        {
+            if (pc == null) return;
+
+            try
+            {
+                TxtDetailHostname.Text = pc.Hostname ?? "Unknown";
+                TxtDetailOS.Text = pc.DisplayOS ?? pc.OS ?? "--";
+                TxtDetailHardware.Text = pc.Chassis ?? "--";
+                TxtDetailNetwork.Text = "--";
+                TxtDetailUser.Text = pc.CurrentUser ?? "--";
+                TxtDetailDisk.Text = pc.Disk ?? "--";
+                TxtDetailStatus.Text = pc.Status ?? "--";
+                TxtDetailLastBoot.Text = pc.LastBoot ?? "--";
+
+                // Animate drawer open
+                var animation = new GridLengthAnimation
+                {
+                    From = new GridLength(0, GridUnitType.Pixel),
+                    To = new GridLength(350, GridUnitType.Pixel),
+                    Duration = new Duration(TimeSpan.FromMilliseconds(300))
+                };
+
+                DetailDrawerColumn.BeginAnimation(ColumnDefinition.WidthProperty, animation);
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"[DetailDrawer] ShowDetailDrawer failed for {pc?.Hostname}", ex);
+            }
+        }
+
+        /// <summary>
+        /// Close the detail drawer.
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #DETAIL_DRAWER
+        /// </summary>
+        private void BtnCloseDetailDrawer_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var animation = new GridLengthAnimation
+                {
+                    From = new GridLength(350, GridUnitType.Pixel),
+                    To = new GridLength(0, GridUnitType.Pixel),
+                    Duration = new Duration(TimeSpan.FromMilliseconds(250))
+                };
+
+                DetailDrawerColumn.BeginAnimation(ColumnDefinition.WidthProperty, animation);
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("[DetailDrawer] Close failed", ex);
+            }
+        }
+
+        /// <summary>
+        /// Hover action: RDP to device.
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #HOVER_ACTIONS
+        /// </summary>
+        private void BtnHoverRDP_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement fe && fe.Tag is string hostname)
+            {
+                try
+                {
+                    if (!SecurityValidator.IsValidHostname(hostname) && !SecurityValidator.IsValidIPAddress(hostname))
+                    {
+                        Managers.UI.ToastManager.ShowError($"Invalid hostname: {hostname}");
+                        return;
+                    }
+                    string sanitized = SecurityValidator.SanitizeHostname(hostname);
+                    Process.Start(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "mstsc.exe"), $"/v:{sanitized}");
+                    AddActivityEvent(ActivitySeverity.Info, $"RDP to {hostname}", "Remote");
+                }
+                catch (Exception ex) { Managers.UI.ToastManager.ShowError($"RDP failed: {ex.Message}"); }
+            }
+        }
+
+        /// <summary>
+        /// Hover action: PowerShell to device.
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #HOVER_ACTIONS
+        /// </summary>
+        private void BtnHoverPowerShell_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement fe && fe.Tag is string hostname)
+            {
+                try
+                {
+                    if (!SecurityValidator.IsValidHostname(hostname)) return;
+                    string sanitized = SecurityValidator.SanitizeHostname(hostname);
+                    Process.Start("powershell.exe", $"-NoExit -Command \"Enter-PSSession -ComputerName {sanitized}\"");
+                    AddActivityEvent(ActivitySeverity.Info, $"PowerShell to {hostname}", "Remote");
+                }
+                catch (Exception ex) { Managers.UI.ToastManager.ShowError($"PS failed: {ex.Message}"); }
+            }
+        }
+
+        /// <summary>
+        /// Hover action: Browse C$ share.
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #HOVER_ACTIONS
+        /// </summary>
+        private void BtnHoverBrowse_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement fe && fe.Tag is string hostname)
+            {
+                try
+                {
+                    if (!SecurityValidator.IsValidHostname(hostname)) return;
+                    string sanitized = SecurityValidator.SanitizeHostname(hostname);
+                    Process.Start("explorer.exe", $@"\\{sanitized}\c$");
+                    AddActivityEvent(ActivitySeverity.Info, $"Browse C$ on {hostname}", "Remote");
+                }
+                catch (Exception ex) { Managers.UI.ToastManager.ShowError($"Browse failed: {ex.Message}"); }
+            }
+        }
+
+        /// <summary>
+        /// Hover action: Pin device.
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #HOVER_ACTIONS
+        /// </summary>
+        private void BtnHoverPin_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement fe && fe.Tag is string hostname)
+            {
+                // Delegate to existing pin logic by temporarily selecting the item
+                foreach (var item in GridInventory.Items)
+                {
+                    if (item is PCInventory pc && pc.Hostname == hostname)
+                    {
+                        GridInventory.SelectedItem = pc;
+                        Ctx_PinDevice_Click(sender, e);
+                        break;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Display density toggle handler.
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #DENSITY
+        /// </summary>
+        private void ComboDensity_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ComboDensity.SelectedItem is ComboBoxItem item)
+            {
+                string density = item.Content?.ToString() ?? "Normal";
+                try
+                {
+                    string styleKey = density switch
+                    {
+                        "Compact" => "DensityCompact",
+                        "Comfortable" => "DensityComfortable",
+                        _ => "DensityNormal"
+                    };
+
+                    var style = (Style)FindResource(styleKey);
+                    if (GridInventory != null)
+                        GridInventory.RowStyle = style;
+
+                    Properties.Settings.Default.DisplayDensity = density;
+                    Properties.Settings.Default.Save();
+
+                    LogManager.LogInfo($"[Density] Changed to {density}");
+                }
+                catch (Exception ex)
+                {
+                    LogManager.LogError($"[Density] Failed to apply {density}", ex);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Update fleet breadcrumb navigation.
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #BREADCRUMB
+        /// </summary>
+        private void UpdateFleetBreadcrumb(UI.Components.FilterCriteria criteria = null)
+        {
+            try
+            {
+                var segments = new List<BreadcrumbSegment>
+                {
+                    new BreadcrumbSegment { Label = "Fleet", OnClick = () => { GlobalFilterBar_FilterChanged(this, new UI.Components.FilterCriteria()); } }
+                };
+
+                if (criteria != null && !criteria.IsDefault)
+                {
+                    if (criteria.OsFilter != "All OS")
+                        segments.Add(new BreadcrumbSegment { Label = criteria.OsFilter });
+                    if (criteria.StatusFilter != "All")
+                        segments.Add(new BreadcrumbSegment { Label = criteria.StatusFilter });
+                    if (criteria.ScanPeriod != "Any Time")
+                        segments.Add(new BreadcrumbSegment { Label = criteria.ScanPeriod });
+                }
+
+                if (segments.Count > 0)
+                    segments[segments.Count - 1].IsActive = true;
+
+                FleetBreadcrumb.SetPath(segments);
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("[Breadcrumb] Update failed", ex);
+            }
+        }
+
+        /// <summary>
+        /// Handle breadcrumb segment click.
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #BREADCRUMB
+        /// </summary>
+        private void FleetBreadcrumb_SegmentClicked(object sender, BreadcrumbSegment segment)
+        {
+            LogManager.LogInfo($"[Breadcrumb] Clicked: {segment.Label}");
+        }
+
+        /// <summary>
+        /// Add an activity event to the dashboard feed.
+        /// TAG: #AUTO_UPDATE_UI_ENGINE #ACTIVITY_FEED
+        /// </summary>
+        private void AddActivityEvent(ActivitySeverity severity, string message, string source = "System")
+        {
+            try
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    DashboardActivityFeed?.AddEvent(severity, message, source);
+                });
+            }
+            catch { /* Swallow — activity feed is non-critical */ }
         }
     }
 }

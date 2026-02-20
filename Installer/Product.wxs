@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- TAG: #AUTO_UPDATE_INSTALLER #WIX_INSTALLER #VERSION_1_0 -->
+<!-- TAG: #AUTO_UPDATE_INSTALLER #WIX_INSTALLER #VERSION_3_0 -->
 <!-- FUTURE CLAUDES: Update version numbers, bundle paths, and registry keys -->
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
      xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
 
   <?define ProductName = "NecessaryAdminTool" ?>
-  <?define ProductVersion = "2.5.0" ?>
+  <?define ProductVersion = "3.0.0" ?>
   <?define ProductManufacturer = "Brandon Necessary" ?>
   <?define ProductUpgradeCode = "A1B2C3D4-E5F6-4A5B-8C9D-0E1F2A3B4C5D" ?>
 
@@ -21,7 +21,7 @@
              InstallScope="perMachine"
              Platform="x64"
              Description="Enterprise IT Management Suite"
-             Comments="NecessaryAdminTool v1.0 Installer" />
+             Comments="NecessaryAdminTool v3.0 Installer" />
 
     <!-- Upgrade logic - allow major upgrades -->
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed."

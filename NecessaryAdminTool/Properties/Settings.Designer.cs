@@ -486,5 +486,18 @@ namespace NecessaryAdminTool.Properties {
                 this["AgentPort"] = value;
             }
         }
+
+        // TAG: #CONFIGURABLE_OPTIONS #UI_PREFERENCES #DISPLAY_DENSITY
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Normal")]
+        public string DisplayDensity {
+            get {
+                return ((string)(this["DisplayDensity"]));
+            }
+            set {
+                this["DisplayDensity"] = value;
+            }
+        }
     }
 }
