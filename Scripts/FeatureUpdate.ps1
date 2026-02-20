@@ -584,9 +584,16 @@ function Run-CloudUpdate {
             throw "Install reported failures: $FailDetail"
         }
 
-        Write-NecessaryAdminToolLog -Status "CLOUD_WU_COMPLETE_REBOOT_PENDING" -ToMaster $false
-        Write-MasterSummary -Status "SUCCESS" -Method $Method -Details "Windows Update feature upgrade complete - reboot pending to finish installation"
-        Show-NecessaryAdminToolLogo -Msg "Windows Update upgrade complete - machine will reboot to finish installation" "Green"
+        Write-NecessaryAdminToolLog -Status "CLOUD_WU_COMPLETE_ISSUING_FORCED_REBOOT" -ToMaster $false
+        Write-MasterSummary -Status "SUCCESS" -Method $Method -Details "Windows Update feature upgrade complete - forced reboot issued to finish installation"
+        Show-NecessaryAdminToolLogo -Msg "Windows Update upgrade complete - restarting to finish installation..." "Green"
+
+        # Always force reboot - feature upgrades require it and WU policies may defer auto-restart
+        # indefinitely (WUfB active hours, WU restart policies, etc.).
+        $RebootDelay = if (Test-UserLoggedIn) { 300 } else { 60 }
+        Write-Host "  Issuing restart in $RebootDelay seconds (user present: $(Test-UserLoggedIn))..." -ForegroundColor Yellow
+        Write-NecessaryAdminToolLog -Status "CLOUD_WU_REBOOT_DELAY_${RebootDelay}s" -ToMaster $false
+        shutdown.exe /r /t $RebootDelay /c "NecessaryAdminTool: Windows 11 upgrade installed. Restarting to complete installation."
         exit 0
 
     } catch {
