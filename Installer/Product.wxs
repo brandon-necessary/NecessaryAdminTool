@@ -253,9 +253,6 @@
       <ComponentGroupRef Id="SQLiteInteropComponents" />
       <ComponentRef Id="AppDataDirectory" />
 
-      <!-- Start Menu shortcut (always install) -->
-      <ComponentRef Id="MainExecutable" />
-
       <!-- Agent for remote deployment -->
       <Feature Id="AgentFeature"
                Title="NecessaryAdminAgent"

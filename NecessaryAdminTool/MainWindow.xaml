@@ -2317,6 +2317,8 @@
                                                                 FontSize="9" Padding="6,3" Margin="0,0,4,0"
                                                                 Background="{StaticResource AccentOrangeBrush}"
                                                                 Foreground="White" BorderThickness="0"
+                                                                Tag="{Binding Hostname}"
+                                                                Click="BtnHoverRDP_Click"
                                                                 ToolTip="Remote Desktop"/>
                                                         <Button Content="PS"
                                                                 FontSize="9" Padding="6,3"
@@ -2324,6 +2326,8 @@
                                                                 Foreground="{StaticResource AccentOrangeBrush}"
                                                                 BorderThickness="1"
                                                                 BorderBrush="{StaticResource AccentOrangeBrush}"
+                                                                Tag="{Binding Hostname}"
+                                                                Click="BtnHoverPowerShell_Click"
                                                                 ToolTip="PowerShell"/>
                                                     </StackPanel>
                                                 </Grid>
@@ -2461,7 +2465,7 @@
                                         Click="Menu_RefreshLogs_Click" Padding="14,6" FontSize="11"
                                         ToolTip="Reload audit log entries from AuditLogs folder (last 7 days)"/>
                                 <TextBox x:Name="TxtAuditSearch" Width="250" Margin="10,0,0,0"
-                                         Background="{StaticResource BgMid}" Foreground="White" FontSize="11"
+                                         Background="{StaticResource BgMediumBrush}" Foreground="White" FontSize="11"
                                          VerticalContentAlignment="Center" Padding="6,4"
                                          TextChanged="TxtAuditSearch_TextChanged"
                                          Tag="Search audit logs..."/>

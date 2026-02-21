@@ -3,7 +3,7 @@
 # Run this script to build the MSI installer
 
 param(
-    [string]$Version = "3.2602.0.0",
+    [string]$Version = "3.0.2",
     [switch]$SkipBuild,
     [switch]$Verbose
 )
@@ -28,11 +28,16 @@ $ReleaseDir = Join-Path $RootDir "NecessaryAdminTool\bin\Release"
 Write-Host "[1/6] Checking prerequisites..." -ForegroundColor Yellow
 
 # Check for MSBuild
-$MSBuildPath = "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe"
+$MSBuildPath = "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
 if (-not (Test-Path $MSBuildPath)) {
-    Write-Host "ERROR: MSBuild not found at: $MSBuildPath" -ForegroundColor Red
-    Write-Host "Please install Visual Studio 2022" -ForegroundColor Red
-    exit 1
+    # Fallback: search for MSBuild in common VS install locations
+    $MSBuildPath = Get-ChildItem 'C:\Program Files\Microsoft Visual Studio' -Recurse -Filter 'MSBuild.exe' -ErrorAction SilentlyContinue |
+                   Where-Object { $_.FullName -match 'Current' } | Select-Object -First 1 -ExpandProperty FullName
+    if (-not $MSBuildPath) {
+        Write-Host "ERROR: MSBuild not found!" -ForegroundColor Red
+        Write-Host "Please install Visual Studio 2022 or newer" -ForegroundColor Red
+        exit 1
+    }
 }
 Write-Host "  ✓ MSBuild found" -ForegroundColor Green
 
@@ -120,6 +125,8 @@ Push-Location $InstallerDir
 $candleArgs = @(
     "Product.wxs",
     "-dVersion=$Version",
+    "-ext", "WixUtilExtension",
+    "-ext", "WixNetFxExtension",
     "-out", "obj\Product.wixobj"
 )
 
@@ -146,6 +153,8 @@ $msiOutput = Join-Path $OutputDir "NecessaryAdminTool-$Version-Setup.msi"
 $lightArgs = @(
     "obj\Product.wixobj",
     "-ext", "WixUIExtension",
+    "-ext", "WixUtilExtension",
+    "-ext", "WixNetFxExtension",
     "-out", $msiOutput,
     "-sval"  # Suppress ICE validation for faster builds
 )

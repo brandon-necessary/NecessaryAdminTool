@@ -103,5 +103,14 @@ using System.Windows;
 // - Unified database/deployment path fallbacks (fixes CSV not detected)
 // - Script download injects configured DeploymentLogDirectory
 //
-[assembly: AssemblyVersion("3.2602.1.0")]
-[assembly: AssemblyFileVersion("3.2602.1.0")]
+// VERSION 3.0.2 (3.2602.2.0) - Audit Fixes (February 20, 2026)
+// - Fix 5 missing XAML resources in DatabaseSetupWizard (runtime crash)
+// - Fix missing AccentButton style in SuperAdminWindow
+// - Wire GridInventory_SelectionChanged to detail drawer
+// - BtnSyncDB now saves inventory to database (was fake stub)
+// - Fix build-installer.ps1 MSBuild path + WiX extensions
+// - Fix duplicate ComponentRef in Product.wxs
+// - Card view RDP/PS buttons wired with click handlers
+//
+[assembly: AssemblyVersion("3.2602.2.0")]
+[assembly: AssemblyFileVersion("3.2602.2.0")]

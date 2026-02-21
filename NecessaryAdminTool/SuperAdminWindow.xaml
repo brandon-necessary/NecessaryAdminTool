@@ -516,7 +516,7 @@
                                             ToolTip="Launch the first-run setup wizard for testing database configuration"/>
 
                                     <Button Content="📦 Build MSI Installer"
-                                            Style="{StaticResource AccentButton}"
+                                            Style="{StaticResource ModernButton}"
                                             Click="BtnBuildInstaller_Click"
                                             Height="45"
                                             ToolTip="Run build-installer.ps1 to create MSI package (requires WiX Toolset)"/>

@@ -10074,7 +10074,57 @@ if ($rebootPending) {
                 LogManager.LogError("Failed to reload global services config", ex);
             }
         }
-        private void BtnSyncDB_Click(object sender, RoutedEventArgs e) { try { if (File.Exists(SecureConfig.InventoryDbPath)) Managers.UI.ToastManager.ShowSuccess($"Synced to:\n{SecureConfig.InventoryDbPath}"); else Managers.UI.ToastManager.ShowWarning("DB not accessible"); } catch (Exception ex) { Managers.UI.ToastManager.ShowError(ex.Message); } }
+        private async void BtnSyncDB_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                List<PCInventory> inventoryCopy;
+                lock (_inventoryLock)
+                    inventoryCopy = _inventory.ToList();
+
+                if (inventoryCopy.Count == 0)
+                {
+                    Managers.UI.ToastManager.ShowWarning("No inventory data to sync");
+                    return;
+                }
+
+                Managers.UI.ToastManager.ShowInfo($"Syncing {inventoryCopy.Count} devices to database...");
+
+                using (var provider = await Data.DataProviderFactory.CreateProviderAsync())
+                {
+                    int saved = 0;
+                    foreach (var pc in inventoryCopy)
+                    {
+                        try
+                        {
+                            var ci = new Data.ComputerInfo
+                            {
+                                Hostname = pc.Hostname,
+                                Status = pc.Status,
+                                OS = pc.DisplayOS ?? pc.OS,
+                                LastLoggedOnUser = pc.CurrentUser,
+                                ChassisType = pc.Chassis,
+                                BitLockerStatus = pc.BitLockerStatus,
+                                LastSeen = DateTime.Now
+                            };
+                            await provider.SaveComputerAsync(ci).ConfigureAwait(false);
+                            saved++;
+                        }
+                        catch (Exception ex)
+                        {
+                            LogManager.LogDebug($"BtnSyncDB - Skip {pc.Hostname}: {ex.Message}");
+                        }
+                    }
+                    await Dispatcher.InvokeAsync(() =>
+                        Managers.UI.ToastManager.ShowSuccess($"Synced {saved}/{inventoryCopy.Count} devices to database"));
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("BtnSyncDB_Click - FAILED", ex);
+                Managers.UI.ToastManager.ShowError($"Sync failed: {ex.Message}");
+            }
+        }
         private void BtnWarranty_Click(object sender, RoutedEventArgs e) { if (!string.IsNullOrEmpty(_currentServiceTag) && _currentServiceTag != "N/A") try { Process.Start(new ProcessStartInfo($"https://www.dell.com/support/home/en-us/product-support/servicetag/{_currentServiceTag}/overview") { UseShellExecute = true }); } catch { } }
         private void BtnWOL_Click(object sender, RoutedEventArgs e) => Managers.UI.ToastManager.ShowInfo("WOL � implement Magic Packet logic");
         private void BtnOpenLog_Click(object sender, RoutedEventArgs e) { if (File.Exists(LogManager.GetDebugLogPath())) Process.Start("notepad.exe", LogManager.GetDebugLogPath()); }
@@ -10181,7 +10231,13 @@ if ($rebootPending) {
                 }
             }
         }
-        private void GridInventory_SelectionChanged(object sender, SelectionChangedEventArgs e) { }
+        private void GridInventory_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (GridInventory.SelectedItem is PCInventory pc)
+            {
+                ShowDetailDrawer(pc);
+            }
+        }
         private void BtnExportInventory_Click(object sender, RoutedEventArgs e)
         {
             try
