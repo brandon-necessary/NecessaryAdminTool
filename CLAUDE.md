@@ -1,6 +1,6 @@
 # NecessaryAdminTool - Claude Code Instructions
 <!-- TAG: #PROJECT_INSTRUCTIONS #CLAUDE_AI #VERSION_3_0 #AUTO_UPDATE_VERSION -->
-**Version:** 3.0 (3.2602.0.0)
+**Version:** 3.0.1 (3.2602.1.0)
 **Last Updated:** February 20, 2026
 
 ---
@@ -35,7 +35,7 @@ Layer 5: Logging         → LogManager (file + in-memory, thread-safe, 30-day r
 Layer 6: Presentation    → Fluent theme (35+ resources), 5 windows, 11 UI components
 ```
 
-**Architecture Docs:** `MODULAR_ARCHITECTURE_VERIFICATION.md`, `THEME_ENGINE_ARCHITECTURE.md`
+**Architecture Docs:** See `CLAUDE.md` sections below + `MODULAR_UI_ENGINE.md` in `UI/`
 
 ---
 
@@ -342,7 +342,7 @@ TextOptions.SetTextRenderingMode(this, TextRenderingMode.ClearType);
 
 ---
 
-**Project Status:** Production (v3.0) | **Architecture Score:** 89/100
+**Project Status:** Production (v3.0.1) | **Architecture Score:** 89/100
 **Last Updated:** February 20, 2026
 
 **Built with Claude Code**
