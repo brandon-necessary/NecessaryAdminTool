@@ -507,10 +507,10 @@ namespace NecessaryAdminTool
             {
                 LogManager.LogWarning("DEBUG MODE: Setup wizard bypassed via 5 rapid clicks - marking setup as complete");
 
-                // Set minimal default configuration
+                // Set minimal default configuration (path must match SetupWizard XAML default)
                 Properties.Settings.Default.DatabaseType = "CSV";
                 Properties.Settings.Default.DatabasePath = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
                     "NecessaryAdminTool");
                 Properties.Settings.Default.ServiceEnabled = false;
                 Properties.Settings.Default.ScanIntervalHours = 2;

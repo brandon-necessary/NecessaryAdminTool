@@ -2257,7 +2257,13 @@ namespace NecessaryAdminTool
                 // TAG: #EDR_FALLBACK #CREDENTIALS - Show credential prompt when Cortex XDR blocks CreateProcessWithLogonW
                 ExternalToolManager.OnCredentialRequired = (toolName) =>
                 {
-                    return System.Threading.Tasks.Task.FromResult(ShowEdrCredentialPrompt(toolName));
+                    // Must dispatch to UI thread since this callback is invoked from async/background context
+                    var tcs = new System.Threading.Tasks.TaskCompletionSource<(string domain, string username, string password)?>();
+                    Dispatcher.Invoke(() =>
+                    {
+                        tcs.SetResult(ShowEdrCredentialPrompt(toolName));
+                    });
+                    return tcs.Task;
                 };
 
                 // TAG: #VERSION_7 #AD_MANAGEMENT - Wire up tab selection changed for AD Object Browser initialization
@@ -9688,7 +9694,9 @@ if ($rebootPending) {
                                 // Only replaces a placeholder when the setting has an actual value �
                                 // leaving it blank preserves the env-var default so the script still
                                 // works without hardcoded paths (useful for resetting to defaults).
-                                string dbPath   = NecessaryAdminTool.Properties.Settings.Default.DatabasePath ?? @"C:\ProgramData\NecessaryAdminTool";
+                                string dbPath   = NecessaryAdminTool.Properties.Settings.Default.DatabasePath;
+                                if (string.IsNullOrWhiteSpace(dbPath))
+                                    dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "NecessaryAdminTool");
                                 string logDir   = NecessaryAdminTool.Properties.Settings.Default.DeploymentLogDirectory;
                                 string isoPath  = NecessaryAdminTool.Properties.Settings.Default.WindowsUpdateISOPath ?? "";
                                 string pattern  = NecessaryAdminTool.Properties.Settings.Default.LocalISOHostnamePattern ?? "";
@@ -9799,7 +9807,9 @@ if ($rebootPending) {
                         int injectedCount = 0;
 
                         // Inject log directory (same placeholder as the other scripts)
-                        string dbPath  = NecessaryAdminTool.Properties.Settings.Default.DatabasePath ?? @"C:\ProgramData\NecessaryAdminTool";
+                        string dbPath  = NecessaryAdminTool.Properties.Settings.Default.DatabasePath;
+                        if (string.IsNullOrWhiteSpace(dbPath))
+                            dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "NecessaryAdminTool");
                         string logDir  = NecessaryAdminTool.Properties.Settings.Default.DeploymentLogDirectory;
                         string effectiveLogDir = !string.IsNullOrEmpty(logDir)
                             ? logDir
@@ -10036,7 +10046,13 @@ if ($rebootPending) {
         {
             string dir = NecessaryAdminTool.Properties.Settings.Default.DeploymentLogDirectory;
             if (string.IsNullOrWhiteSpace(dir))
-                dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "NecessaryAdminTool");
+            {
+                // Fall back to DatabasePath\DeploymentLogs (matches OptionsWindow default)
+                string dbPath = NecessaryAdminTool.Properties.Settings.Default.DatabasePath;
+                if (string.IsNullOrWhiteSpace(dbPath))
+                    dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "NecessaryAdminTool");
+                dir = Path.Combine(dbPath, "DeploymentLogs");
+            }
             return Path.Combine(dir, "Master_Update_Log.csv");
         }
 
@@ -13243,6 +13259,8 @@ if ($rebootPending) {
                 WindowStartupLocation = System.Windows.WindowStartupLocation.CenterOwner,
                 Owner = this,
                 ResizeMode = System.Windows.ResizeMode.NoResize,
+                Topmost = true,
+                ShowInTaskbar = true,
                 Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x1A, 0x1A, 0x1A)),
                 UseLayoutRounding = true,
                 SnapsToDevicePixels = true
@@ -13361,9 +13379,11 @@ if ($rebootPending) {
 
             dlg.Content = root;
 
-            // Focus username or password on open
+            // Force to foreground and focus input on open
             dlg.Loaded += (s, ev) =>
             {
+                dlg.Activate();
+                dlg.Focus();
                 if (!string.IsNullOrEmpty(userBox.Text)) passBox.Focus();
                 else userBox.Focus();
             };

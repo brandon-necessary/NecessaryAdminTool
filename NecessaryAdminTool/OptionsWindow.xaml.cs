@@ -2377,9 +2377,11 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         {
             try
             {
-                // Load database type and path
+                // Load database type and path (fallback matches SetupWizard XAML default)
                 var dbType = Properties.Settings.Default.DatabaseType ?? "SQLite";
-                var dbPath = Properties.Settings.Default.DatabasePath ?? "C:\\ProgramData\\NecessaryAdminTool";
+                var dbPath = Properties.Settings.Default.DatabasePath;
+                if (string.IsNullOrWhiteSpace(dbPath))
+                    dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "NecessaryAdminTool");
 
                 if (TxtDbType != null)
                     TxtDbType.Text = Data.DataProviderFactory.GetDatabaseTypeDescription(dbType);
@@ -2410,9 +2412,11 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     string logDir = Properties.Settings.Default.DeploymentLogDirectory;
                     if (string.IsNullOrEmpty(logDir))
                     {
-                        // Default to database directory + Logs subfolder
-                        string dbPath = Properties.Settings.Default.DatabasePath ?? "C:\\ProgramData\\NecessaryAdminTool";
-                        logDir = Path.Combine(dbPath, "DeploymentLogs");
+                        // Default to database directory + DeploymentLogs subfolder
+                        string dbPath2 = Properties.Settings.Default.DatabasePath;
+                        if (string.IsNullOrWhiteSpace(dbPath2))
+                            dbPath2 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "NecessaryAdminTool");
+                        logDir = Path.Combine(dbPath2, "DeploymentLogs");
                     }
                     TxtLogDirectory.Text = logDir;
                 }

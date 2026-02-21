@@ -20,6 +20,15 @@ namespace NecessaryAdminTool.Data
             var databaseType = Properties.Settings.Default.DatabaseType;
             var databasePath = Properties.Settings.Default.DatabasePath;
 
+            // Guard: if path is null/empty, use the same default as SetupWizard XAML
+            if (string.IsNullOrWhiteSpace(databasePath))
+            {
+                databasePath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                    "NecessaryAdminTool");
+                LogManager.LogWarning($"DatabasePath was empty — using default: {databasePath}");
+            }
+
             LogManager.LogInfo($"Creating data provider: {databaseType} at {databasePath}");
 
             IDataProvider provider = null;
@@ -146,8 +155,11 @@ namespace NecessaryAdminTool.Data
 
                 if (string.IsNullOrWhiteSpace(databasePath))
                 {
-                    LogManager.LogWarning("Database path not configured");
-                    return false;
+                    // Use default path instead of failing
+                    databasePath = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                        "NecessaryAdminTool");
+                    LogManager.LogWarning($"Database path not configured — using default: {databasePath}");
                 }
 
                 // Type-specific validation
