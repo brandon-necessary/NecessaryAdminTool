@@ -98,5 +98,10 @@ using System.Windows;
 // - Deployment results auto-load on login
 // - GeneralUpdate.ps1: partial-success handling + WU scan retry
 //
-[assembly: AssemblyVersion("3.2602.0.0")]
-[assembly: AssemblyFileVersion("3.2602.0.0")]
+// VERSION 3.0.1 (3.2602.1.0) - Patch (February 20, 2026)
+// - Credential prompt forced to foreground on EDR fallback
+// - Unified database/deployment path fallbacks (fixes CSV not detected)
+// - Script download injects configured DeploymentLogDirectory
+//
+[assembly: AssemblyVersion("3.2602.1.0")]
+[assembly: AssemblyFileVersion("3.2602.1.0")]
