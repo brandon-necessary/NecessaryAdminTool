@@ -7,7 +7,7 @@
         ResizeMode="CanResize"
         MinHeight="500" MinWidth="600"
         WindowStyle="None"
-        Background="{StaticResource MicaBrush}"
+        Background="{DynamicResource MicaBrush}"
         FontFamily="{StaticResource FluentFont}"
         UseLayoutRounding="True"
         SnapsToDevicePixels="True"
@@ -18,7 +18,7 @@
 
     <!-- Theme resources inherited from App.xaml -->
 
-    <Border BorderBrush="{StaticResource AccentOrangeBrush}" BorderThickness="2"
+    <Border BorderBrush="{DynamicResource AccentOrangeBrush}" BorderThickness="2"
             CornerRadius="{StaticResource FluentCornerRadius}"
             Effect="{StaticResource Elevation4dp}">
         <Grid>
@@ -29,7 +29,7 @@
             </Grid.RowDefinitions>
 
             <!-- Header -->
-            <Border Grid.Row="0" Background="{StaticResource AccentOrangeBrush}" Padding="30,20"
+            <Border Grid.Row="0" Background="{DynamicResource AccentOrangeBrush}" Padding="30,20"
                     Effect="{StaticResource Elevation4dp}">
                 <StackPanel>
                     <TextBlock Text="🚀 Welcome to NecessaryAdminTool"
@@ -48,25 +48,25 @@
 
                     <RadioButton x:Name="RbSqlite" Content="SQLite (Recommended)" IsChecked="True"
                                  Foreground="White" FontSize="15" FontWeight="SemiBold" Margin="0,8"/>
-                    <TextBlock Text="   • Fast, reliable, zero configuration" Foreground="{StaticResource AccentZincBrush}" Margin="25,0,0,5"/>
-                    <TextBlock Text="   • AES-256 encrypted with SQLCipher" Foreground="{StaticResource AccentZincBrush}" Margin="25,0,0,5"/>
-                    <TextBlock Text="   • Best for single-user or small teams (100,000+ computers)" Foreground="{StaticResource AccentZincBrush}" Margin="25,0,0,15"/>
+                    <TextBlock Text="   • Fast, reliable, zero configuration" Foreground="{DynamicResource AccentZincBrush}" Margin="25,0,0,5"/>
+                    <TextBlock Text="   • AES-256 encrypted with SQLCipher" Foreground="{DynamicResource AccentZincBrush}" Margin="25,0,0,5"/>
+                    <TextBlock Text="   • Best for single-user or small teams (100,000+ computers)" Foreground="{DynamicResource AccentZincBrush}" Margin="25,0,0,15"/>
 
                     <RadioButton x:Name="RbSqlServer" Content="SQL Server"
                                  Foreground="White" FontSize="15" Margin="0,8"/>
-                    <TextBlock Text="   • Enterprise-grade, multi-user support" Foreground="{StaticResource AccentZincBrush}" Margin="25,0,0,5"/>
-                    <TextBlock Text="   • Requires SQL Server installation" Foreground="{StaticResource AccentZincBrush}" Margin="25,0,0,5"/>
-                    <TextBlock Text="   • Unlimited capacity" Foreground="{StaticResource AccentZincBrush}" Margin="25,0,0,15"/>
+                    <TextBlock Text="   • Enterprise-grade, multi-user support" Foreground="{DynamicResource AccentZincBrush}" Margin="25,0,0,5"/>
+                    <TextBlock Text="   • Requires SQL Server installation" Foreground="{DynamicResource AccentZincBrush}" Margin="25,0,0,5"/>
+                    <TextBlock Text="   • Unlimited capacity" Foreground="{DynamicResource AccentZincBrush}" Margin="25,0,0,15"/>
 
                     <RadioButton x:Name="RbAccess" Content="Microsoft Access"
                                  Foreground="White" FontSize="15" Margin="0,8"/>
-                    <TextBlock Text="   • Excel integration, familiar interface" Foreground="{StaticResource AccentZincBrush}" Margin="25,0,0,5"/>
-                    <TextBlock Text="   • 2GB database limit (~50,000 computers)" Foreground="{StaticResource AccentZincBrush}" Margin="25,0,0,15"/>
+                    <TextBlock Text="   • Excel integration, familiar interface" Foreground="{DynamicResource AccentZincBrush}" Margin="25,0,0,5"/>
+                    <TextBlock Text="   • 2GB database limit (~50,000 computers)" Foreground="{DynamicResource AccentZincBrush}" Margin="25,0,0,15"/>
 
                     <RadioButton x:Name="RbCsv" Content="CSV/JSON (Fallback)"
                                  Foreground="White" FontSize="15" Margin="0,8"/>
-                    <TextBlock Text="   • Human-readable, portable" Foreground="{StaticResource AccentZincBrush}" Margin="25,0,0,5"/>
-                    <TextBlock Text="   • Limited performance (~10,000 computers)" Foreground="{StaticResource AccentZincBrush}" Margin="25,0,0,20"/>
+                    <TextBlock Text="   • Human-readable, portable" Foreground="{DynamicResource AccentZincBrush}" Margin="25,0,0,5"/>
+                    <TextBlock Text="   • Limited performance (~10,000 computers)" Foreground="{DynamicResource AccentZincBrush}" Margin="25,0,0,20"/>
 
                     <!-- Database Location -->
                     <TextBlock Text="2. Database Location:" FontSize="18" FontWeight="SemiBold"
@@ -81,11 +81,11 @@
 
                         <TextBox x:Name="TxtDatabasePath" Grid.Column="0"
                                  Text="C:\ProgramData\NecessaryAdminTool"
-                                 Background="{StaticResource BgDarkBrush}" Foreground="White"
-                                 Padding="12" FontSize="14" BorderBrush="{StaticResource AccentZincBrush}"/>
+                                 Background="{DynamicResource BgDarkBrush}" Foreground="White"
+                                 Padding="12" FontSize="14" BorderBrush="{DynamicResource AccentZincBrush}"/>
                         <Button Grid.Column="1" Content="📁 Browse..." Click="BtnBrowse_Click"
                                 Width="120" Margin="10,0,0,0"
-                                Background="{StaticResource AccentOrangeBrush}" Foreground="White"
+                                Background="{DynamicResource AccentOrangeBrush}" Foreground="White"
                                 Padding="12" FontSize="14" FontWeight="SemiBold" Cursor="Hand"/>
                         <Button Grid.Column="2" Content="💾 Export Template" Click="BtnExportTemplate_Click"
                                 Width="150" Margin="10,0,0,0"
@@ -95,11 +95,11 @@
                     </Grid>
 
                     <!-- Service Installation - TAG: #BACKGROUND_SERVICE #SCHEDULED_TASK #SETUP_WIZARD -->
-                    <Border Background="#22FF8533" BorderBrush="{StaticResource AccentOrangeBrush}"
+                    <Border Background="#22FF8533" BorderBrush="{DynamicResource AccentOrangeBrush}"
                             BorderThickness="1" CornerRadius="8" Padding="20,15" Margin="0,25,0,0">
                         <StackPanel>
                             <TextBlock Text="3. Background Service (Recommended):" FontSize="18" FontWeight="SemiBold"
-                                       Foreground="{StaticResource AccentOrangeBrush}" Margin="0,0,0,10"/>
+                                       Foreground="{DynamicResource AccentOrangeBrush}" Margin="0,0,0,10"/>
 
                             <CheckBox x:Name="ChkInstallService"
                                       Content="✅ Enable automatic domain scanning (Recommended)"
@@ -121,7 +121,7 @@
                             </TextBlock>
 
                             <TextBlock Text="💡 Recommended for: IT teams managing 50+ computers"
-                                       Foreground="{StaticResource AccentOrangeBrush}" FontSize="11" FontStyle="Italic" Margin="0,5,0,0"/>
+                                       Foreground="{DynamicResource AccentOrangeBrush}" FontSize="11" FontStyle="Italic" Margin="0,5,0,0"/>
                         </StackPanel>
                     </Border>
 
@@ -130,11 +130,11 @@
                                Foreground="White" Margin="0,20,0,10"/>
 
                     <TextBlock Text="How often should the background service scan your domain?"
-                               Foreground="{StaticResource AccentZincBrush}" FontSize="12" Margin="0,0,0,10"/>
+                               Foreground="{DynamicResource AccentZincBrush}" FontSize="12" Margin="0,0,0,10"/>
 
                     <ComboBox x:Name="CmbScanInterval" SelectedIndex="1"
-                              Background="{StaticResource BgDarkBrush}" Foreground="White"
-                              FontSize="14" Padding="12" BorderBrush="{StaticResource AccentOrangeBrush}">
+                              Background="{DynamicResource BgDarkBrush}" Foreground="White"
+                              FontSize="14" Padding="12" BorderBrush="{DynamicResource AccentOrangeBrush}">
                         <ComboBoxItem Content="⚡ Every hour - High-frequency monitoring"/>
                         <ComboBoxItem Content="✅ Every 2 hours - Recommended for most environments"/>
                         <ComboBoxItem Content="⏱️ Every 4 hours - Lower frequency, less resource usage"/>
@@ -143,13 +143,13 @@
                     </ComboBox>
 
                     <TextBlock Text="💡 Tip: You can change this anytime in Options → Background Service"
-                               Foreground="{StaticResource AccentZincBrush}" FontSize="11" FontStyle="Italic" Margin="0,10,0,0"/>
+                               Foreground="{DynamicResource AccentZincBrush}" FontSize="11" FontStyle="Italic" Margin="0,10,0,0"/>
                 </StackPanel>
             </ScrollViewer>
 
             <!-- Footer Buttons -->
-            <Border Grid.Row="2" Background="{StaticResource MicaAltBrush}" Padding="30,20"
-                    BorderBrush="{StaticResource BorderDimBrush}" BorderThickness="0,1,0,0">
+            <Border Grid.Row="2" Background="{DynamicResource MicaAltBrush}" Padding="30,20"
+                    BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="0,1,0,0">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -181,10 +181,10 @@
                         <!-- Right side - Cancel and Finish buttons -->
                         <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
                             <Button Content="Cancel" Click="BtnCancel_Click" Width="120" Margin="0,0,15,0"
-                                    Background="{StaticResource AccentZincBrush}" Foreground="White"
+                                    Background="{DynamicResource AccentZincBrush}" Foreground="White"
                                     Padding="12" FontSize="14" Cursor="Hand"/>
                             <Button Content="✓ Finish Setup" Click="BtnFinish_Click" Width="150"
-                                    Background="{StaticResource AccentOrangeBrush}" Foreground="White"
+                                    Background="{DynamicResource AccentOrangeBrush}" Foreground="White"
                                     FontWeight="Bold" Padding="12" FontSize="14" Cursor="Hand"/>
                         </StackPanel>
                     </Grid>
@@ -198,23 +198,17 @@
                                 Padding="6,2"
                                 VerticalAlignment="Center">
                             <Border.BorderBrush>
-                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                    <GradientStop Color="#FF8533" Offset="0"/>
-                                    <GradientStop Color="#A1A1AA" Offset="1"/>
-                                </LinearGradientBrush>
+                                <SolidColorBrush Color="{DynamicResource AccentOrange}"/>
                             </Border.BorderBrush>
                             <Grid>
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock x:Name="TxtVersionBadge" FontSize="10" FontWeight="Bold" Margin="0,0,8,0">
                                         <TextBlock.Foreground>
-                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                <GradientStop Color="#FF8533" Offset="0"/>
-                                                <GradientStop Color="#A1A1AA" Offset="1"/>
-                                            </LinearGradientBrush>
+                                            <SolidColorBrush Color="{DynamicResource AccentOrange}"/>
                                         </TextBlock.Foreground>
                                     </TextBlock>
                                     <TextBlock x:Name="TxtBuildDate" Text="Built: February 15, 2026"
-                                               FontSize="9" Foreground="#A1A1AA" VerticalAlignment="Center"/>
+                                               FontSize="9" Foreground="{DynamicResource AccentZincBrush}" VerticalAlignment="Center"/>
                                 </StackPanel>
 
                                 <!-- TAG: #DEBUG_BYPASS #SUPERADMIN - Invisible button overlay - Click 5x rapidly to bypass setup (DEBUG builds only) -->

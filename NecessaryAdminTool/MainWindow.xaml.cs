@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Concurrent;
@@ -380,10 +380,10 @@ namespace NecessaryAdminTool
     /// </summary>
     public static class ThemedDialog
     {
-        // TAG: #THEME_COLORS - Color scheme definitions
-        public static readonly Color OrangePrimary = Color.FromRgb(255, 133, 51);   // #FF8533
-        public static readonly Color OrangeDark = Color.FromRgb(204, 107, 41);      // #CC6B29
-        public static readonly Color ZincColor = Color.FromRgb(161, 161, 170);      // #A1A1AA
+        // TAG: #THEME_COLORS - Color scheme definitions (via ThemeHelper)
+        public static Color OrangePrimary => ThemeHelper.PrimaryColor;
+        public static Color OrangeDark => ThemeHelper.PrimaryPressed;
+        public static Color ZincColor => ThemeHelper.SecondaryColor;
         public static readonly Color BgDark = Color.FromRgb(26, 26, 26);            // #1A1A1A
         public static readonly Color BgMedium = Color.FromRgb(45, 45, 45);          // #2D2D2D
 
@@ -1356,7 +1356,7 @@ namespace NecessaryAdminTool
             Border hdr = new Border
             {
                 Background = new SolidColorBrush(Color.FromRgb(37, 37, 38)), // #252526 - medium dark
-                BorderBrush = new SolidColorBrush(Color.FromRgb(255, 133, 51)), // #FF8533 - orange accent
+                BorderBrush = new SolidColorBrush(ThemeHelper.PrimaryColor), // #FF8533 - orange accent
                 BorderThickness = new Thickness(0, 0, 0, 2), // Thicker bottom border with orange
                 Padding = new Thickness(15, 12, 15, 12)
             };
@@ -1369,7 +1369,7 @@ namespace NecessaryAdminTool
             var toolNameText = new TextBlock
             {
                 Text = toolName,
-                Foreground = new SolidColorBrush(Color.FromRgb(255, 133, 51)), // #FF8533 - orange
+                Foreground = new SolidColorBrush(ThemeHelper.PrimaryColor), // #FF8533 - orange
                 FontSize = 17,
                 FontWeight = FontWeights.Bold
             };
@@ -1378,7 +1378,7 @@ namespace NecessaryAdminTool
             var hostnameText = new TextBlock
             {
                 Text = $"Target: {hostname}",
-                Foreground = new SolidColorBrush(Color.FromRgb(161, 161, 170)), // #A1A1AA - zinc
+                Foreground = new SolidColorBrush(ThemeHelper.SecondaryColor), // #A1A1AA - zinc
                 FontSize = 12,
                 Margin = new Thickness(0, 4, 0, 0)
             };
@@ -1392,7 +1392,7 @@ namespace NecessaryAdminTool
                 Content = "🔄 REFRESH",
                 Width = 110,
                 Height = 34,
-                Background = new SolidColorBrush(Color.FromRgb(255, 133, 51)), // #FF8533 - orange
+                Background = new SolidColorBrush(ThemeHelper.PrimaryColor), // #FF8533 - orange
                 Foreground = Brushes.White,
                 BorderThickness = new Thickness(0),
                 FontWeight = FontWeights.Bold,
@@ -1401,8 +1401,8 @@ namespace NecessaryAdminTool
             };
 
             // Hover effect for refresh button
-            btnRefresh.MouseEnter += (s, e) => { btnRefresh.Background = new SolidColorBrush(Color.FromRgb(255, 170, 102)); }; // Lighter orange
-            btnRefresh.MouseLeave += (s, e) => { btnRefresh.Background = new SolidColorBrush(Color.FromRgb(255, 133, 51)); }; // Original orange
+            btnRefresh.MouseEnter += (s, e) => { btnRefresh.Background = new SolidColorBrush(ThemeHelper.PrimaryHover); }; // Lighter orange
+            btnRefresh.MouseLeave += (s, e) => { btnRefresh.Background = new SolidColorBrush(ThemeHelper.PrimaryColor); }; // Original orange
 
             btnRefresh.Click += async (s, e) => { try { if (_refreshAction != null) await _refreshAction(); } catch (Exception ex) { LogManager.LogError("Refresh failed", ex); } };
             Grid.SetColumn(hs, 0); Grid.SetColumn(btnRefresh, 1);
@@ -1465,7 +1465,7 @@ namespace NecessaryAdminTool
             btnCopy.MouseEnter += (s, e) =>
             {
                 btnCopy.Background = new SolidColorBrush(Color.FromRgb(51, 51, 51));
-                btnCopy.BorderBrush = new SolidColorBrush(Color.FromRgb(255, 133, 51)); // Orange border on hover
+                btnCopy.BorderBrush = new SolidColorBrush(ThemeHelper.PrimaryColor); // Orange border on hover
             };
             btnCopy.MouseLeave += (s, e) =>
             {
@@ -1480,7 +1480,7 @@ namespace NecessaryAdminTool
                     string allText = new TextRange(_output.Document.ContentStart, _output.Document.ContentEnd).Text;
                     Clipboard.SetText(allText);
                     _txtStatus.Text = "Copied to clipboard!";
-                    _txtStatus.Foreground = new SolidColorBrush(Color.FromRgb(255, 133, 51)); // Orange for success feedback
+                    _txtStatus.Foreground = new SolidColorBrush(ThemeHelper.PrimaryColor); // Orange for success feedback
                     var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
                     timer.Tick += (ts, te) =>
                     {
@@ -1517,7 +1517,7 @@ namespace NecessaryAdminTool
             btnClose.MouseEnter += (s, e) =>
             {
                 btnClose.Background = new SolidColorBrush(Color.FromRgb(51, 51, 51));
-                btnClose.BorderBrush = new SolidColorBrush(Color.FromRgb(161, 161, 170)); // Zinc border
+                btnClose.BorderBrush = new SolidColorBrush(ThemeHelper.SecondaryColor); // Zinc border
             };
             btnClose.MouseLeave += (s, e) =>
             {
@@ -1913,44 +1913,67 @@ namespace NecessaryAdminTool
         {
             private static bool _isDarkMode = true;
 
+            public static bool IsDarkMode => _isDarkMode;
+
+            /// <summary>Toggle between dark and light mode, persist, and re-apply accent colors</summary>
             public static void ToggleTheme(Window window)
             {
-                _isDarkMode = !_isDarkMode;
+                SetTheme(!_isDarkMode, window);
+            }
+
+            /// <summary>Apply a specific theme mode</summary>
+            public static void SetTheme(bool isDark, Window window = null)
+            {
+                _isDarkMode = isDark;
 
                 var resources = Application.Current.Resources;
 
                 if (_isDarkMode)
                 {
-                    // Dark theme (current)
-                    resources["BgDarkest"] = new SolidColorBrush(Color.FromRgb(13, 13, 13));
-                    resources["BgDark"] = new SolidColorBrush(Color.FromRgb(26, 26, 26));
-                    resources["BgMedium"] = new SolidColorBrush(Color.FromRgb(37, 37, 38));
-                    resources["BgLight"] = new SolidColorBrush(Color.FromRgb(45, 45, 45));
-                    resources["BgCard"] = new SolidColorBrush(Color.FromRgb(30, 30, 30));
-                    resources["BorderDim"] = new SolidColorBrush(Color.FromRgb(60, 60, 60));
-                    resources["BorderBright"] = new SolidColorBrush(Color.FromRgb(85, 85, 85));
-                    resources["TextPrimary"] = new SolidColorBrush(Color.FromRgb(255, 255, 255));
-                    resources["TextSecondary"] = new SolidColorBrush(Color.FromRgb(200, 200, 200));
-                    resources["TextMuted"] = new SolidColorBrush(Color.FromRgb(161, 161, 170));
+                    // Dark theme (default)
+                    resources["BgDarkestBrush"] = new SolidColorBrush(Color.FromRgb(13, 13, 13));       // #0D0D0D
+                    resources["BgDarkBrush"] = new SolidColorBrush(Color.FromRgb(26, 26, 26));          // #1A1A1A
+                    resources["BgMediumBrush"] = new SolidColorBrush(Color.FromRgb(37, 37, 38));        // #252526
+                    resources["BgLightBrush"] = new SolidColorBrush(Color.FromRgb(45, 45, 45));         // #2D2D2D
+                    resources["BgCardBrush"] = new SolidColorBrush(Color.FromRgb(30, 30, 30));          // #1E1E1E
+                    resources["MicaAltBrush"] = new SolidColorBrush(Color.FromRgb(30, 30, 30));         // #1E1E1E
+                    resources["BorderDimBrush"] = new SolidColorBrush(Color.FromRgb(60, 60, 60));       // #3C3C3C
+                    resources["BorderBrightBrush"] = new SolidColorBrush(Color.FromRgb(85, 85, 85));    // #555555
+                    resources["TextPrimaryBrush"] = new SolidColorBrush(Color.FromRgb(255, 255, 255));  // #FFFFFF
+                    resources["TextSecondaryBrush"] = new SolidColorBrush(Color.FromRgb(200, 200, 200));// #C8C8C8
+                    resources["TextMutedBrush"] = new SolidColorBrush(ThemeHelper.SecondaryColor);
+                    resources["MicaBrush"] = new SolidColorBrush(Color.FromRgb(13, 13, 13));            // #0D0D0D
                 }
                 else
                 {
-                    // Light theme (Aero-inspired)
-                    resources["BgDarkest"] = new SolidColorBrush(Color.FromRgb(240, 240, 240));
-                    resources["BgDark"] = new SolidColorBrush(Color.FromRgb(250, 250, 250));
-                    resources["BgMedium"] = new SolidColorBrush(Color.FromRgb(230, 230, 230));
-                    resources["BgLight"] = new SolidColorBrush(Color.FromRgb(245, 245, 245));
-                    resources["BgCard"] = new SolidColorBrush(Color.FromRgb(255, 255, 255));
-                    resources["BorderDim"] = new SolidColorBrush(Color.FromRgb(200, 200, 200));
-                    resources["BorderBright"] = new SolidColorBrush(Color.FromRgb(170, 170, 170));
-                    resources["TextPrimary"] = new SolidColorBrush(Color.FromRgb(0, 0, 0));
-                    resources["TextSecondary"] = new SolidColorBrush(Color.FromRgb(60, 60, 60));
-                    resources["TextMuted"] = new SolidColorBrush(Color.FromRgb(100, 100, 100));
+                    // Light theme — zinc/steel grey palette (no pure white)
+                    resources["BgDarkestBrush"] = new SolidColorBrush(Color.FromRgb(195, 199, 205));    // #C3C7CD — darkest surface
+                    resources["BgDarkBrush"] = new SolidColorBrush(Color.FromRgb(212, 215, 220));       // #D4D7DC — main panels
+                    resources["BgMediumBrush"] = new SolidColorBrush(Color.FromRgb(200, 204, 210));     // #C8CCD2 — inputs, recessed
+                    resources["BgLightBrush"] = new SolidColorBrush(Color.FromRgb(222, 225, 230));      // #DEE1E6 — elevated surfaces
+                    resources["BgCardBrush"] = new SolidColorBrush(Color.FromRgb(232, 234, 238));       // #E8EAEE — cards (lightest)
+                    resources["MicaAltBrush"] = new SolidColorBrush(Color.FromRgb(225, 228, 232));      // #E1E4E8 — alt panels
+                    resources["BorderDimBrush"] = new SolidColorBrush(Color.FromRgb(168, 173, 181));    // #A8ADB5 — steel border
+                    resources["BorderBrightBrush"] = new SolidColorBrush(Color.FromRgb(138, 144, 154)); // #8A909A — accent border
+                    resources["TextPrimaryBrush"] = new SolidColorBrush(Color.FromRgb(28, 31, 36));     // #1C1F24 — near-black
+                    resources["TextSecondaryBrush"] = new SolidColorBrush(Color.FromRgb(58, 63, 71));   // #3A3F47 — dark steel
+                    resources["TextMutedBrush"] = new SolidColorBrush(Color.FromRgb(90, 97, 112));      // #5A6170 — muted steel
+                    resources["MicaBrush"] = new SolidColorBrush(Color.FromRgb(205, 209, 214));         // #CDD1D6 — window bg
                 }
 
-                // Force UI refresh by triggering resource change notifications
-                window.InvalidateVisual();
-                window.UpdateLayout();
+                // Re-apply accent colors so derivative brushes recalculate for light/dark context
+                Helpers.ThemeHelper.ApplyAccentColors(Helpers.ThemeHelper.PrimaryColor, Helpers.ThemeHelper.SecondaryColor);
+
+                // Persist
+                Properties.Settings.Default.IsDarkMode = _isDarkMode;
+                Properties.Settings.Default.Save();
+
+                // Force UI refresh
+                if (window != null)
+                {
+                    window.InvalidateVisual();
+                    window.UpdateLayout();
+                }
             }
 
             private static IEnumerable<DependencyObject> GetLogicalChildren(DependencyObject parent)
@@ -1970,7 +1993,7 @@ namespace NecessaryAdminTool
         private ObservableCollection<PCInventory> _inventory = new ObservableCollection<PCInventory>();
         // TAG: #DEPLOYMENT_RESULTS
         private ObservableCollection<DeploymentResult> _deploymentResults = new ObservableCollection<DeploymentResult>();
-        // Full unfiltered set � kept so the "Latest per PC" toggle and search can re-apply without re-reading disk
+        // Full unfiltered set → kept so the "Latest per PC" toggle and search can re-apply without re-reading disk
         private System.Collections.Generic.List<DeploymentResult> _allDeploymentResults = new System.Collections.Generic.List<DeploymentResult>();
         // When true: DataGrid shows only the most recent run per hostname; tally counts ALL runs regardless
         private bool _deploymentLatestPerPC = true;
@@ -2326,6 +2349,10 @@ namespace NecessaryAdminTool
                 // TAG: #VERSION_7 #THEME_COLORS - Apply saved accent colors
                 ApplySavedAccentColors();
 
+                // Load persisted dark/light mode
+                if (!Properties.Settings.Default.IsDarkMode)
+                    ThemeManager.SetTheme(false, this);
+
                 // Load recent targets
                 LoadRecentTargets();
 
@@ -2596,7 +2623,7 @@ namespace NecessaryAdminTool
                     if (string.IsNullOrEmpty(domainName))
                     {
                         TxtDomainName.Text = "DOMAIN: UNAVAILABLE";
-                        TxtDomainName.Foreground = new SolidColorBrush(Color.FromRgb(128, 128, 128)); // Gray
+                        TxtDomainName.Foreground = (Brush)Application.Current.Resources["TextMutedBrush"];
                         DomainBadge.Opacity = 0.6;
                         DomainBadge.ToolTip = "No domain detected - not connected to Active Directory";
                     }
@@ -2608,8 +2635,8 @@ namespace NecessaryAdminTool
                             StartPoint = new Point(0, 0),
                             EndPoint = new Point(1, 0)
                         };
-                        gradientBrush.GradientStops.Add(new GradientStop(Color.FromRgb(255, 133, 51), 0));
-                        gradientBrush.GradientStops.Add(new GradientStop(Color.FromRgb(161, 161, 170), 1));
+                        gradientBrush.GradientStops.Add(new GradientStop(ThemeHelper.PrimaryColor, 0));
+                        gradientBrush.GradientStops.Add(new GradientStop(ThemeHelper.SecondaryColor, 1));
                         TxtDomainName.Foreground = gradientBrush;
                         DomainBadge.Opacity = 1.0;
                         DomainBadge.ToolTip = $"Connected to Active Directory domain: {domainName}";
@@ -2685,7 +2712,7 @@ namespace NecessaryAdminTool
                     _isLoggedIn = false;
                     _isDomainAdmin = false;
                     TxtAuthStatus.Text = "GUEST (READ-ONLY)";
-                    TxtAuthStatus.Foreground = new SolidColorBrush(Color.FromRgb(255, 200, 100)); // Orange/yellow
+                    TxtAuthStatus.Foreground = ThemeHelper.PrimaryBrush;
                     BtnAuth.Content = "LOGIN";
                     BtnAuth.IsEnabled = false; // Disable login button - no domain available
                     BtnAuth.ToolTip = "Login unavailable - no domain connection";
@@ -2694,13 +2721,13 @@ namespace NecessaryAdminTool
                     if (TxtRoleBadge != null)
                     {
                         TxtRoleBadge.Text = "READ-ONLY";
-                        TxtRoleBadge.Foreground = new SolidColorBrush(Color.FromRgb(255, 200, 100));
+                        TxtRoleBadge.Foreground = ThemeHelper.PrimaryBrush;
                     }
 
                     // Update role badge border to indicate read-only
                     if (RoleBadgeBorder != null)
                     {
-                        RoleBadgeBorder.BorderBrush = new SolidColorBrush(Color.FromRgb(255, 200, 100));
+                        RoleBadgeBorder.BorderBrush = ThemeHelper.PrimaryBrush;
                         RoleBadgeBorder.BorderThickness = new Thickness(1);
                     }
 
@@ -2809,10 +2836,10 @@ namespace NecessaryAdminTool
                     bool killProcesses = Properties.Settings.Default.CloseMMCConsolesOnExit;
                     int processedCount = 0;
 
-                    if (TabControlDomainDirectory != null)
+                    if (TabControlActiveDirectory != null)
                     {
                         var tabsToProcess = new List<TabItem>();
-                        foreach (TabItem tab in TabControlDomainDirectory.Items)
+                        foreach (TabItem tab in TabControlActiveDirectory.Items)
                         {
                             if (tab.Content is UI.Components.MMCHostControl)
                                 tabsToProcess.Add(tab);
@@ -2835,7 +2862,7 @@ namespace NecessaryAdminTool
                 // Ensures no background threads or orphaned dispatcher work keeps the process alive.
                 // Application.Current.Shutdown() signals WPF to terminate gracefully;
                 // Environment.Exit(0) is the backstop if WPF's shutdown stalls.
-                LogManager.LogInfo("[App Shutdown] ------ Shutdown complete � exiting process ------");
+                LogManager.LogInfo("[App Shutdown] ------ Shutdown complete → exiting process ------");
                 // Brief wait to allow async log writes to flush before process exit
                 System.Threading.Thread.Sleep(150);
 
@@ -3285,14 +3312,14 @@ namespace NecessaryAdminTool
                     // Domain Admin with cached credentials - Full access
                     // Elevation NOT required: credentials are passed to remote targets directly
                     TxtRoleBadge.Text = "DOMAIN ADMIN";
-                    TxtRoleBadge.Foreground = Brushes.LimeGreen;
+                    TxtRoleBadge.Foreground = (Brush)Application.Current.Resources["AccentGreenBrush"];
 
                     PanelDeployment.Visibility = Visibility.Visible;
                     PanelDeployment.IsEnabled = true;
                     BtnKillFirewall.IsEnabled = true;
                     BtnKillFirewall.Visibility = Visibility.Visible;
 
-                    // Deployment log destructive actions � domain admin only
+                    // Deployment log destructive actions → domain admin only
                     BtnClearDeploymentLog.IsEnabled = true;
                     BtnClearDeploymentLog.ToolTip = "Delete Master_Update_Log.csv. You will be prompted to save a backup first.";
                     BtnArchiveDeploymentLog.IsEnabled = true;
@@ -3302,7 +3329,7 @@ namespace NecessaryAdminTool
                 {
                     // Authenticated but not Domain Admin - read-only access
                     TxtRoleBadge.Text = "AUTHENTICATED (READ-ONLY)";
-                    TxtRoleBadge.Foreground = Brushes.Gray;
+                    TxtRoleBadge.Foreground = (Brush)Application.Current.Resources["TextMutedBrush"];
 
                     PanelDeployment.Visibility = Visibility.Visible;
                     PanelDeployment.IsEnabled = false;
@@ -3816,7 +3843,7 @@ namespace NecessaryAdminTool
             string host = _currentTarget;
             if (string.IsNullOrEmpty(host) || !SecurityValidator.IsValidHostname(host)) { AppendTerminal("ERROR: Invalid hostname", true); return; }
             if (MessageBox.Show($"Reboot {host}?", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
-            AppendTerminal($"\n>>> REBOOT ? {host}...");
+            AppendTerminal($"\n>>> REBOOT → {host}...");
             await Task.Run(() =>
             {
                 try
@@ -3883,7 +3910,7 @@ namespace NecessaryAdminTool
             //   2. WMI Win32_Process.Create (no WinRM, no output capture - fire-and-forget)
             // PsExec removed: uploads binary to ADMIN$, plaintext credentials in process args,
             // flagged by all enterprise EDR products (Cortex XDR, CrowdStrike, Defender for Endpoint).
-            AppendTerminal($"\n>>> EXEC: {actionName} ? {targetHost}...");
+            AppendTerminal($"\n>>> EXEC: {actionName} → {targetHost}...");
             _ = Task.Run(async () =>
             {
                 bool success = false;
@@ -3916,13 +3943,13 @@ namespace NecessaryAdminTool
                     }
                     else
                     {
-                        AppendTerminal($"[Method 1] ? RemoteScriptManager: {string.Join("; ", result.Errors)}", true);
+                        AppendTerminal($"[Method 1] ✖ RemoteScriptManager: {string.Join("; ", result.Errors)}", true);
                         LogManager.LogWarning($"[RunHybridExecutor] RemoteScriptManager failed for {actionName} on {targetHost}");
                     }
                 }
                 catch (Exception ex1)
                 {
-                    AppendTerminal($"[Method 1] ? Unexpected error: {ex1.Message}", true);
+                    AppendTerminal($"[Method 1] ✖ Unexpected error: {ex1.Message}", true);
                     LogManager.LogWarning($"[RunHybridExecutor] Method 1 exception for {actionName}: {ex1.Message}");
                 }
 
@@ -4206,6 +4233,7 @@ namespace NecessaryAdminTool
                                                 pc.BitLockerStatus = spec.BitLocker;
                                                 pc.LastBoot = spec.LastBoot;
                                                 pc.Disk = spec.Drives != null && spec.Drives.Count > 0 ? string.Join(", ", spec.Drives) : "N/A";
+                                                pc.LastUpdate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                                                 UpdateMasterInventoryFile(pc);
                                             }
 
@@ -4421,13 +4449,13 @@ namespace NecessaryAdminTool
                                 LogManager.LogDebug($"[AGENT] Hit for {hostname}");
                                 return ConvertAgentInfoToHardwareSpec(agentInfo);
                             }
-                            // Agent reachable but returned null (host offline or no data) � fall through to CIM/WMI
-                            AppendTerminal("[AGENT] Returned null � falling back to CIM/WMI");
+                            // Agent reachable but returned null (host offline or no data) → fall through to CIM/WMI
+                            AppendTerminal("[AGENT] Returned null → falling back to CIM/WMI");
                             LogManager.LogDebug($"[AGENT] Null response for {hostname} - falling back to CIM/WMI");
                         }
                         catch (Exception agentEx)
                         {
-                            AppendTerminal($"[AGENT] Exception: {agentEx.Message} � falling back to CIM/WMI", true);
+                            AppendTerminal($"[AGENT] Exception: {agentEx.Message} → falling back to CIM/WMI", true);
                             LogManager.LogDebug($"[AGENT] Exception for {hostname}: {agentEx.Message}");
                         }
                     }
@@ -4522,7 +4550,7 @@ namespace NecessaryAdminTool
                                 {
                                     // Query starting - show animated progress bar
                                     StatusProgressBar.Visibility = Visibility.Visible;
-                                    StatusDot.Fill = new SolidColorBrush(Color.FromRgb(255, 133, 51)); // Orange
+                                    StatusDot.Fill = new SolidColorBrush(ThemeHelper.PrimaryColor); // Orange
                                 }
                                 else if (message.EndsWith("?"))
                                 {
@@ -5420,7 +5448,7 @@ namespace NecessaryAdminTool
                             AddLog(hostname, "PROBE_SUCCESS", specs.Protocol, "OK");
                             UpdateBottomProgress(100, $"Scan Complete");
                             await Task.Delay(1000); // Show completion briefly
-                            HideBottomProgress($"Ready � {hostname.ToUpper()}");
+                            HideBottomProgress($"Ready → {hostname.ToUpper()}");
                         });
                     });
                 }
@@ -5503,7 +5531,7 @@ namespace NecessaryAdminTool
                 // Launch RDP with admin mode
                 string sanitized = SecurityValidator.SanitizeHostname(_currentTarget);
                 using (Process.Start(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "mstsc.exe"), $"/v:{sanitized} /admin")) { }
-                AppendTerminal($"RDP launched ? {sanitized} (admin mode)");
+                AppendTerminal($"RDP launched → {sanitized} (admin mode)");
                 AddLog(_currentTarget, "RDP", "Session launched", "OK");
             }
             catch (Exception ex)
@@ -5537,7 +5565,7 @@ namespace NecessaryAdminTool
                 Mouse.OverrideCursor = Cursors.Wait;
                 string sanitized = SecurityValidator.SanitizeHostname(_currentTarget);
                 using (Process.Start("msra.exe", $"/offerRA {sanitized}")) { }
-                AppendTerminal($"Remote Assist ? {_currentTarget}");
+                AppendTerminal($"Remote Assist → {_currentTarget}");
                 AddLog(_currentTarget, "REMOTE_ASSIST", "Launched", "OK");
             }
             catch (Exception ex)
@@ -6196,7 +6224,7 @@ if ($connection) {{
                 // Re-verify elevation status in case it changed
                 if (!actuallyElevated)
                 {
-                    AppendTerminal($"[LAUNCH] ? MMC tools require Administrator elevation", true);
+                    AppendTerminal($"[LAUNCH] ⚠ MMC tools require Administrator elevation", true);
 
                     var elevationDialog = new ElevationDialog();
                     var result = elevationDialog.ShowDialog();
@@ -6227,7 +6255,7 @@ if ($connection) {{
                     return;
                 }
 
-                AppendTerminal($"[LAUNCH] ? Running with Administrator privileges", false);
+                AppendTerminal($"[LAUNCH] ✔ Running with Administrator privileges", false);
 
                 // Check if the tool exists (RSAT check)
                 if (executable == "mmc" && args.Contains(".msc"))
@@ -6386,16 +6414,16 @@ if ($connection) {{
 
                                 if (foundGroups.Any())
                                 {
-                                    AppendTerminal($"[DIAG] ? Required groups found for {toolName}:");
+                                    AppendTerminal($"[DIAG] ✔ Required groups found for {toolName}:");
                                     foreach (var g in foundGroups)
                                         AppendTerminal($"  {g.Trim()}");
                                 }
                                 else
                                 {
-                                    AppendTerminal($"[DIAG] ? WARNING: No required groups found for {toolName}!", true);
+                                    AppendTerminal($"[DIAG] ⚠ WARNING: No required groups found for {toolName}!", true);
                                     AppendTerminal($"[DIAG] Your account needs one of these groups:", true);
                                     foreach (var reqGroup in requiredGroups)
-                                        AppendTerminal($"  � {reqGroup}", true);
+                                        AppendTerminal($"  → {reqGroup}", true);
                                     AppendTerminal($"[DIAG] Add your account to one of these groups and re-login to NecessaryAdminTool Suite.", true);
                                 }
                             }
@@ -6435,11 +6463,11 @@ if ($connection) {{
 
                                     if (result.Contains("True"))
                                     {
-                                        AppendTerminal($"[DIAG] ? RPC port 135 is accessible on {targetDc}");
+                                        AppendTerminal($"[DIAG] ✔ RPC port 135 is accessible on {targetDc}");
                                     }
                                     else
                                     {
-                                        AppendTerminal($"[DIAG] ? RPC port 135 NOT accessible on {targetDc}!", true);
+                                        AppendTerminal($"[DIAG] ⚠ RPC port 135 NOT accessible on {targetDc}!", true);
                                         AppendTerminal($"[DIAG] This could indicate firewall blocking or network issues.", true);
                                     }
                                 }
@@ -6512,11 +6540,11 @@ if ($connection) {{
                             };
 
                             proc = Process.Start(psi);
-                            AppendTerminal($"[LAUNCH] ? Process started with domain credentials (PID: {proc?.Id})");
+                            AppendTerminal($"[LAUNCH] ✔ Process started with domain credentials (PID: {proc?.Id})");
                         }
                         catch (Exception credEx)
                         {
-                            AppendTerminal($"[LAUNCH] ? Failed with credentials: {credEx.Message}", true);
+                            AppendTerminal($"[LAUNCH] ✖ Failed with credentials: {credEx.Message}", true);
                             LogManager.LogError("Failed to start process with credentials", credEx);
 
                             // Fallback to current user
@@ -6597,7 +6625,7 @@ if ($connection) {{
                     var psi = new ProcessStartInfo { FileName = "cmd.exe", Arguments = $"/c net use \"{unc}\" /user:{_authUser} \"{password}\" && explorer \"{unc}\"", UseShellExecute = false, CreateNoWindow = true };
                     using (var proc = Process.Start(psi)) { proc?.WaitForExit(3000); }
                 });
-                AppendTerminal($"C$ share ? {_currentTarget}");
+                AppendTerminal($"C$ share → {_currentTarget}");
             }
             else { try { using (Process.Start("explorer.exe", unc)) { } } catch (Exception ex) { Managers.UI.ToastManager.ShowError(ex.Message); } }
         }
@@ -6991,7 +7019,7 @@ if ($connection) {{
                 if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target"); return; }
                 if (MessageBox.Show("Run SFC + DISM repair? (15-30 min)", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
                 ShowBottomProgress($"Starting OS repair on {_currentTarget}...");
-                AppendTerminal($"OS Repair ? {_currentTarget}...");
+                AppendTerminal($"OS Repair → {_currentTarget}...");
                 await Task.Run(async () =>
                 {
                     try
@@ -7007,7 +7035,7 @@ if ($connection) {{
                             _ = Dispatcher.InvokeAsync(() => UpdateBottomProgress(80, "DISM repair started..."));
                             AppendTerminal("DISM started"); AddLog(_currentTarget, "OS_REPAIR", "SFC+DISM launched", "OK");
                             await Task.Delay(2000);
-                            _ = Dispatcher.InvokeAsync(() => HideBottomProgress("Ready � Repair running"));
+                            _ = Dispatcher.InvokeAsync(() => HideBottomProgress("Ready → Repair running"));
                         }
                     }
                     catch (Exception ex)
@@ -7251,7 +7279,8 @@ if ($connection) {{
         {
             if (GridInventory.SelectedItem is PCInventory pc)
             {
-                MainTabs.SelectedIndex = 1; // Tab 1 = Single System Inspector (was 0 = Dashboard � bug)
+                MainTabs.SelectedIndex = 1; // System Management tab
+                TabControlSystemMgmt.SelectedIndex = 0; // Single System Inspector sub-tab
                 ComboTarget.Text = pc.Hostname;
                 AddToRecentTargets(pc.Hostname); // Track recent machines
                 BtnScan_Click(sender, e);
@@ -8258,14 +8287,14 @@ if ($rebootPending) {
                 SecureMemory.ForceCleanup();
                 string logoutUser = _authUser;
                 _authUser = Environment.UserName; _isLoggedIn = false; _isDomainAdmin = false;
-                BtnAuth.Content = "LOGIN"; TxtAuthStatus.Text = "NOT AUTHENTICATED"; TxtAuthStatus.Foreground = Brushes.Gray;
+                BtnAuth.Content = "LOGIN"; TxtAuthStatus.Text = "NOT AUTHENTICATED"; TxtAuthStatus.Foreground = (Brush)Application.Current.Resources["TextMutedBrush"];
 
                 // Clear admin status cache
                 _adminCheckCache.Clear();
 
                 ApplyRoleRestrictions();
                 AddLog("local", "USER_LOGOUT", logoutUser, "OK");
-                LogManager.LogInfo("User logged out � credentials wiped");
+                LogManager.LogInfo("User logged out → credentials wiped");
             }
             else await ShowLoginDialog();
         }
@@ -8304,7 +8333,7 @@ if ($rebootPending) {
                     // Validate username format
                     if (!Security.SecurityValidator.ValidateUsername(lw.Username))
                     {
-                        Managers.UI.ToastManager.ShowWarning("Invalid username. Enter just your username (e.g. john.smith) � domain is added automatically.");
+                        Managers.UI.ToastManager.ShowWarning("Invalid username. Enter just your username (e.g. john.smith) → domain is added automatically.");
                         LogManager.LogWarning($"[AUTH] Invalid username format: {lw.Username}");
                         attempt++;
                         continue;
@@ -8417,7 +8446,7 @@ if ($rebootPending) {
 
                 // TAG: #ASYNC_OPTIMIZATION - Await async Domain Admin check to prevent UI lag
                 _isDomainAdmin = await CheckDomainAdminMembership(user);
-                TxtAuthStatus.Text = user.ToUpper(); TxtAuthStatus.Foreground = Brushes.LimeGreen;
+                TxtAuthStatus.Text = user.ToUpper(); TxtAuthStatus.Foreground = (Brush)Application.Current.Resources["AccentGreenBrush"];
                 BtnAuth.Content = "LOGOUT";
 
                 // TAG: #SECURITY_CRITICAL #AUDIT_LOG
@@ -8429,6 +8458,9 @@ if ($rebootPending) {
 
                 // Auto-load deployment results on login
                 Dispatcher.Invoke(() => { _ = LoadDeploymentResultsAsync(); });
+
+                // Auto-load inventory from database on login
+                Dispatcher.Invoke(() => { _ = LoadInventoryFromDatabaseAsync(); });
 
                 // TAG: #UX_FEEDBACK - Step 4: Show final access level
                 string accessLevel = _isDomainAdmin && _isElevated ? "Domain Admin (Elevated)" :
@@ -8929,7 +8961,7 @@ if ($rebootPending) {
                 await Application.Current.Dispatcher.InvokeAsync(() =>
                 {
                     int dcCount = ComboDC.Items.Count - 1; // -1 for "Auto" item
-                    HideBottomProgress($"Ready � {dcCount} DCs found");
+                    HideBottomProgress($"Ready \u2022 {dcCount} DCs found");
                 });
             });
 
@@ -9009,7 +9041,7 @@ if ($rebootPending) {
                     if (TxtTerminalStatus != null)
                     {
                         string statusText = text.Length > 60 ? text.Substring(0, 57) + "..." : text;
-                        TxtTerminalStatus.Text = $"� {statusText}";
+                        TxtTerminalStatus.Text = $"→ {statusText}";
                         TxtTerminalStatus.Foreground = isError
                             ? new SolidColorBrush(Color.FromRgb(255, 100, 100))
                             : (SolidColorBrush)FindResource("AccentOrangeBrush");
@@ -9754,7 +9786,7 @@ if ($rebootPending) {
             }
         }
 
-        private void BtnSync_Click(object sender, RoutedEventArgs e) => Managers.UI.ToastManager.ShowInfo("Script sync � implement per deployment");
+        private void BtnSync_Click(object sender, RoutedEventArgs e) => Managers.UI.ToastManager.ShowInfo("Script sync → implement per deployment");
 
         private void BtnDownloadScripts_Click(object sender, RoutedEventArgs e)
         {
@@ -9794,7 +9826,7 @@ if ($rebootPending) {
                                 string content = reader.ReadToEnd();
 
                                 // Inject configured settings from Options ? Deployment Configuration.
-                                // Only replaces a placeholder when the setting has an actual value �
+                                // Only replaces a placeholder when the setting has an actual value →
                                 // leaving it blank preserves the env-var default so the script still
                                 // works without hardcoded paths (useful for resetting to defaults).
                                 string dbPath   = NecessaryAdminTool.Properties.Settings.Default.DatabasePath;
@@ -9824,7 +9856,7 @@ if ($rebootPending) {
                                     injectedCount++;
                                 }
 
-                                // HostnamePattern � only inject if configured
+                                // HostnamePattern → only inject if configured
                                 if (!string.IsNullOrEmpty(pattern))
                                 {
                                     content = content.Replace(
@@ -9833,7 +9865,7 @@ if ($rebootPending) {
                                     injectedCount++;
                                 }
 
-                                // SQL Server database � inject type + connection string when configured
+                                // SQL Server database → inject type + connection string when configured
                                 string dbType = NecessaryAdminTool.Properties.Settings.Default.DatabaseType ?? "";
                                 string connStr = NecessaryAdminTool.Properties.Settings.Default.DatabasePath ?? "";
                                 if (dbType.Equals("SqlServer", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(connStr))
@@ -9862,7 +9894,7 @@ if ($rebootPending) {
 
                     if (filesWritten > 0)
                     {
-                        Managers.UI.ToastManager.ShowSuccess($"Successfully downloaded {filesWritten} PowerShell script(s) to:\n{targetFolder}\n\n" +"Scripts included:\n" +"� NecessaryAdminTool_GeneralUpdate.ps1 (Windows Updates + Firmware)\n" +"� NecessaryAdminTool_FeatureUpdate.ps1 (Major OS Upgrades)\n\n" +"These scripts are compatible with ManageEngine Endpoint Central.");
+                        Managers.UI.ToastManager.ShowSuccess($"Successfully downloaded {filesWritten} PowerShell script(s) to:\n{targetFolder}\n\n" +"Scripts included:\n" +"→ NecessaryAdminTool_GeneralUpdate.ps1 (Windows Updates + Firmware)\n" +"→ NecessaryAdminTool_FeatureUpdate.ps1 (Major OS Upgrades)\n\n" +"These scripts are compatible with ManageEngine Endpoint Central.");
 
                         // Open folder
                         Process.Start("explorer.exe", targetFolder);
@@ -9950,7 +9982,12 @@ if ($rebootPending) {
             try
             {
                 ThemeManager.ToggleTheme(this);
-                LogManager.LogInfo("Theme toggled");
+
+                // Update button icon to reflect current mode
+                if (sender is Button btn)
+                    btn.Content = ThemeManager.IsDarkMode ? "\U0001F3A8" : "\u2600\uFE0F";
+
+                LogManager.LogInfo($"Theme toggled to {(ThemeManager.IsDarkMode ? "dark" : "light")} mode");
             }
             catch (Exception ex)
             {
@@ -10126,7 +10163,54 @@ if ($rebootPending) {
             }
         }
         private void BtnWarranty_Click(object sender, RoutedEventArgs e) { if (!string.IsNullOrEmpty(_currentServiceTag) && _currentServiceTag != "N/A") try { Process.Start(new ProcessStartInfo($"https://www.dell.com/support/home/en-us/product-support/servicetag/{_currentServiceTag}/overview") { UseShellExecute = true }); } catch { } }
-        private void BtnWOL_Click(object sender, RoutedEventArgs e) => Managers.UI.ToastManager.ShowInfo("WOL � implement Magic Packet logic");
+        private void BtnWOL_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Read MAC from the current scan detail panel
+                var macText = TxtMAC?.Text?.Trim();
+                if (string.IsNullOrEmpty(macText) || macText == "N/A" || macText == "--")
+                {
+                    Managers.UI.ToastManager.ShowWarning("No MAC address available. Scan the computer first.");
+                    return;
+                }
+
+                // Clean MAC: remove colons, dashes, dots
+                var cleanMac = macText.Replace(":", "").Replace("-", "").Replace(".", "").Trim();
+                if (cleanMac.Length != 12 || !System.Text.RegularExpressions.Regex.IsMatch(cleanMac, "^[0-9A-Fa-f]{12}$"))
+                {
+                    Managers.UI.ToastManager.ShowWarning($"Invalid MAC address format: {macText}");
+                    return;
+                }
+
+                // Parse MAC bytes
+                var macBytes = new byte[6];
+                for (int i = 0; i < 6; i++)
+                    macBytes[i] = Convert.ToByte(cleanMac.Substring(i * 2, 2), 16);
+
+                // Build 102-byte magic packet: 6 bytes of 0xFF + 16 repetitions of MAC
+                var packet = new byte[102];
+                for (int i = 0; i < 6; i++)
+                    packet[i] = 0xFF;
+                for (int i = 0; i < 16; i++)
+                    Buffer.BlockCopy(macBytes, 0, packet, 6 + (i * 6), 6);
+
+                // Send via UDP broadcast on port 9
+                using (var client = new UdpClient())
+                {
+                    client.EnableBroadcast = true;
+                    client.Send(packet, packet.Length, new System.Net.IPEndPoint(System.Net.IPAddress.Broadcast, 9));
+                }
+
+                Managers.UI.ToastManager.ShowSuccess($"Wake-on-LAN packet sent to {macText}");
+                LogManager.LogInfo($"BtnWOL_Click() - Magic packet sent to {macText}");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("BtnWOL_Click() - FAILED", ex);
+                Managers.UI.ToastManager.ShowError($"WOL failed: {ex.Message}");
+            }
+        }
         private void BtnOpenLog_Click(object sender, RoutedEventArgs e) { if (File.Exists(LogManager.GetDebugLogPath())) Process.Start("notepad.exe", LogManager.GetDebugLogPath()); }
 
         // TAG: #FEATURE_BULK_OPERATIONS #WINDOW_LAUNCH
@@ -10325,7 +10409,7 @@ if ($rebootPending) {
 
                 if (!File.Exists(csvPath))
                 {
-                    TxtDeploymentCount.Text = "0 records � log not found";
+                    TxtDeploymentCount.Text = "0 records → log not found";
                     Managers.UI.ToastManager.ShowWarning($"Master_Update_Log.csv not found at:\n{csvPath}\n\nCheck Options ? Deployment Configuration.");
                     LogManager.LogWarning($"LoadDeploymentResultsAsync() - File not found: {csvPath}");
                     return;
@@ -10380,7 +10464,7 @@ if ($rebootPending) {
                     if (lines.Count > 1)
                     {
                         var firstDataFields = ParseCsvLine(lines[1]);
-                        LogManager.LogDebug($"LoadDeploymentResultsAsync() - First data line: {firstDataFields?.Length ?? 0} fields � '{lines[1].Substring(0, Math.Min(120, lines[1].Length))}'");
+                        LogManager.LogDebug($"LoadDeploymentResultsAsync() - First data line: {firstDataFields?.Length ?? 0} fields → '{lines[1].Substring(0, Math.Min(120, lines[1].Length))}'");
                     }
 
                     // Step 3: Parse data rows (skip header)
@@ -10426,7 +10510,7 @@ if ($rebootPending) {
                             UpdateCount     = SafeGet(fields, 17),
                             Details         = SafeGet(fields, 18),
                             DurationSeconds = SafeGet(fields, 19),
-                            // v2 columns (24-col schema) � SafeGet returns "" if column not present (backward compat with old 20-col CSVs)
+                            // v2 columns (24-col schema) → SafeGet returns "" if column not present (backward compat with old 20-col CSVs)
                             DomainName      = SafeGet(fields, 20),
                             ScriptVersion   = SafeGet(fields, 21),
                             RunAsUser       = SafeGet(fields, 22),
@@ -10465,15 +10549,74 @@ if ($rebootPending) {
         }
 
         /// <summary>
+        /// Load previously saved inventory from database on login.
+        /// TAG: #DATABASE #LOGIN_AUTOLOAD
+        /// </summary>
+        private async Task LoadInventoryFromDatabaseAsync()
+        {
+            LogManager.LogInfo("LoadInventoryFromDatabaseAsync() - START");
+            try
+            {
+                using (var provider = await Data.DataProviderFactory.CreateProviderAsync().ConfigureAwait(false))
+                {
+                    await provider.InitializeDatabaseAsync().ConfigureAwait(false);
+                    var computers = await provider.GetAllComputersAsync().ConfigureAwait(false);
+
+                    if (computers == null || computers.Count == 0)
+                    {
+                        LogManager.LogInfo("LoadInventoryFromDatabaseAsync() - No computers in database");
+                        return;
+                    }
+
+                    Dispatcher.Invoke(() =>
+                    {
+                        lock (_inventoryLock)
+                        {
+                            if (_inventory.Count > 0)
+                            {
+                                LogManager.LogInfo("LoadInventoryFromDatabaseAsync() - Skipped: inventory already populated from scan");
+                                return;
+                            }
+
+                            foreach (var c in computers)
+                            {
+                                _inventory.Add(new PCInventory
+                                {
+                                    Hostname = c.Hostname ?? "Unknown",
+                                    Status = c.Status ?? "OFFLINE",
+                                    DisplayOS = c.OS ?? "N/A",
+                                    OS = c.OS ?? "N/A",
+                                    WindowsVersion = c.OSVersion ?? "N/A",
+                                    CurrentUser = c.LastLoggedOnUser ?? "N/A",
+                                    BitLockerStatus = c.BitLockerStatus ?? "?",
+                                    LastUpdate = c.LastSeen != DateTime.MinValue ? c.LastSeen.ToString("yyyy-MM-dd HH:mm:ss") : null
+                                });
+                            }
+
+                            GridInventory.ItemsSource = _inventory;
+                        }
+                        RefreshDashboard();
+                    });
+
+                    LogManager.LogInfo($"LoadInventoryFromDatabaseAsync() - SUCCESS - {computers.Count} computers loaded");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("LoadInventoryFromDatabaseAsync() - FAILED", ex);
+            }
+        }
+
+        /// <summary>
         /// Applies "Latest per PC" grouping (if enabled) then text search filter.
-        /// Always returns a new list � caller populates _deploymentResults from it.
+        /// Always returns a new list → caller populates _deploymentResults from it.
         /// </summary>
         private System.Collections.Generic.List<DeploymentResult> ApplyDeploymentView(
             System.Collections.Generic.List<DeploymentResult> source, string searchText)
         {
             var filtered = source;
 
-            // "Latest per PC" � keep only the most recent run per hostname, sorted newest first
+            // "Latest per PC" → keep only the most recent run per hostname, sorted newest first
             if (_deploymentLatestPerPC)
             {
                 filtered = filtered
@@ -10558,7 +10701,7 @@ if ($rebootPending) {
             return $"{visible:N0} of {total:N0} runs";
         }
 
-        /// <summary>"Latest per PC" checkbox toggle � re-applies view without re-reading disk.</summary>
+        /// <summary>"Latest per PC" checkbox toggle → re-applies view without re-reading disk.</summary>
         private void ChkLatestPerPC_Changed(object sender, RoutedEventArgs e)
         {
             _deploymentLatestPerPC = ChkLatestPerPC.IsChecked == true;
@@ -10584,7 +10727,7 @@ if ($rebootPending) {
 
                 if (!File.Exists(csvPath))
                 {
-                    Managers.UI.ToastManager.ShowWarning("Master_Update_Log.csv not found � nothing to archive.");
+                    Managers.UI.ToastManager.ShowWarning("Master_Update_Log.csv not found → nothing to archive.");
                     return;
                 }
 
@@ -10757,7 +10900,7 @@ if ($rebootPending) {
                     };
                 }
                 _deploymentAutoRefreshTimer.Start();
-                Managers.UI.ToastManager.ShowInfo("Auto-refresh enabled � deployment log will reload every 60 seconds.");
+                Managers.UI.ToastManager.ShowInfo("Auto-refresh enabled → deployment log will reload every 60 seconds.");
             }
             else
             {
@@ -10773,7 +10916,8 @@ if ($rebootPending) {
             {
                 if (GridDeploymentResults.SelectedItem is DeploymentResult dr && !string.IsNullOrWhiteSpace(dr.Hostname))
                 {
-                    MainTabs.SelectedIndex = 1; // Single System Inspector
+                    MainTabs.SelectedIndex = 1; // System Management tab
+                    TabControlSystemMgmt.SelectedIndex = 0; // Single System Inspector sub-tab
                     ComboTarget.Text = dr.Hostname;
                     AddToRecentTargets(dr.Hostname);
                     BtnScan_Click(sender, new RoutedEventArgs());
@@ -10847,7 +10991,7 @@ if ($rebootPending) {
                     "Archives");
                 if (!Directory.Exists(archiveDir))
                 {
-                    Managers.UI.ToastManager.ShowInfo("No Archives folder found � nothing to load.");
+                    Managers.UI.ToastManager.ShowInfo("No Archives folder found → nothing to load.");
                     return;
                 }
 
@@ -10995,7 +11139,7 @@ if ($rebootPending) {
                 string csvPath = GetMasterUpdateLogPath();
                 if (!File.Exists(csvPath))
                 {
-                    Managers.UI.ToastManager.ShowWarning($"Nothing to clear � log not found:\n{csvPath}");
+                    Managers.UI.ToastManager.ShowWarning($"Nothing to clear → log not found:\n{csvPath}");
                     return;
                 }
 
@@ -11028,7 +11172,7 @@ if ($rebootPending) {
                     if (dlg.ShowDialog() != true)
                     {
                         LogManager.LogInfo("BtnClearDeploymentLog_Click() - Backup save dialog cancelled");
-                        return; // User cancelled the save dialog � abort the whole operation
+                        return; // User cancelled the save dialog → abort the whole operation
                     }
 
                     File.Copy(csvPath, dlg.FileName, overwrite: true);
@@ -11054,7 +11198,7 @@ if ($rebootPending) {
                 _deploymentResults.Clear();
                 _allDeploymentResults.Clear();
                 UpdateDeploymentTally(new System.Collections.Generic.List<DeploymentResult>());
-                TxtDeploymentCount.Text = "0 records � cleared";
+                TxtDeploymentCount.Text = "0 records → cleared";
                 Managers.UI.ToastManager.ShowSuccess("Master_Update_Log.csv deleted. Grid cleared.");
                 AddLog("local", "CLEAR_DEPLOYMENT_LOG", csvPath, "OK");
                 LogManager.LogInfo($"BtnClearDeploymentLog_Click() - SUCCESS - Deleted {csvPath}");
@@ -11080,7 +11224,7 @@ if ($rebootPending) {
         private void BtnConsole_Click(object sender, RoutedEventArgs e)
         {
             string cmd = TxtConsoleInput.Text; if (string.IsNullOrWhiteSpace(cmd)) return;
-            if (SecurityValidator.ContainsDangerousPatterns(cmd)) { Managers.UI.ToastManager.ShowWarning("Blocked � dangerous patterns"); return; }
+            if (SecurityValidator.ContainsDangerousPatterns(cmd)) { Managers.UI.ToastManager.ShowWarning("Blocked → dangerous patterns"); return; }
             RunHybridExecutor(cmd, "", "CONSOLE_CMD"); TxtConsoleInput.Text = "";
         }
         private void BtnUninstall_Click(object sender, RoutedEventArgs e) { Managers.UI.ToastManager.ShowInfo("Use standard Windows uninstall."); }
@@ -11233,11 +11377,9 @@ if ($rebootPending) {
         {
             try
             {
-                // Switch to Remote Control tab (Tab 5, index 4)
-                if (MainTabs.Items.Count > 4)
-                {
-                    MainTabs.SelectedIndex = 4;
-                }
+                // Switch to Remote Control tab (System Management > Remote Control)
+                MainTabs.SelectedIndex = 1; // System Management tab
+                TabControlSystemMgmt.SelectedIndex = 1; // Remote Control sub-tab
             }
             catch (Exception ex)
             {
@@ -11485,25 +11627,13 @@ if ($rebootPending) {
                 string primaryColor = Properties.Settings.Default.PrimaryAccentColor;
                 string secondaryColor = Properties.Settings.Default.SecondaryAccentColor;
 
-                // Use defaults if not set
                 if (string.IsNullOrEmpty(primaryColor)) primaryColor = "#FFFF8533";
                 if (string.IsNullOrEmpty(secondaryColor)) secondaryColor = "#FFA1A1AA";
 
-                // Apply to application resources
                 var primaryColorObj = (Color)ColorConverter.ConvertFromString(primaryColor);
                 var secondaryColorObj = (Color)ColorConverter.ConvertFromString(secondaryColor);
 
-                Application.Current.Resources["AccentOrangeBrush"] = new SolidColorBrush(primaryColorObj);
-                Application.Current.Resources["AccentZincBrush"] = new SolidColorBrush(secondaryColorObj);
-                Application.Current.Resources["AccentColor"] = new SolidColorBrush(primaryColorObj);
-
-                // Update gradient brushes
-                var gradientBrush = new LinearGradientBrush();
-                gradientBrush.StartPoint = new Point(0, 0);
-                gradientBrush.EndPoint = new Point(1, 0);
-                gradientBrush.GradientStops.Add(new GradientStop(primaryColorObj, 0));
-                gradientBrush.GradientStops.Add(new GradientStop(secondaryColorObj, 1));
-                Application.Current.Resources["AccentGradientBrush"] = gradientBrush;
+                Helpers.ThemeHelper.ApplyAccentColors(primaryColorObj, secondaryColorObj);
 
                 LogManager.LogInfo($"Applied accent colors: Primary={primaryColor}, Secondary={secondaryColor}");
             }
@@ -11685,11 +11815,11 @@ if ($rebootPending) {
                 // Re-initialize the AD Object Browser with current credentials
                 await ADObjectBrowserDomainTab.InitializeAsync(dc, _authUser, password);
 
-                AppendTerminal($"[AD Management] ? AD Object Browser refreshed successfully");
+                AppendTerminal($"[AD Management] ✔ AD Object Browser refreshed successfully");
             }
             catch (Exception ex)
             {
-                AppendTerminal($"[AD Management] ? Failed to refresh: {ex.Message}", isError: true);
+                AppendTerminal($"[AD Management] ✖ Failed to refresh: {ex.Message}", isError: true);
                 LogManager.LogError("Failed to refresh AD Object Browser", ex);
                 Managers.UI.ToastManager.ShowError($"Failed to refresh AD Object Browser:\n\n{ex.Message}");
             }
@@ -11747,7 +11877,7 @@ if ($rebootPending) {
             }
             catch (Exception ex)
             {
-                AppendTerminal($"[AD Management] ? Failed to create object: {ex.Message}", isError: true);
+                AppendTerminal($"[AD Management] ✖ Failed to create object: {ex.Message}", isError: true);
                 LogManager.LogError("Failed to create AD object", ex);
                 Managers.UI.ToastManager.ShowError($"Failed to create AD object:\n\n{ex.Message}");
             }
@@ -11805,7 +11935,7 @@ if ($rebootPending) {
             }
             catch (Exception ex)
             {
-                AppendTerminal($"[AD Management] ? Failed to edit object: {ex.Message}", isError: true);
+                AppendTerminal($"[AD Management] ✖ Failed to edit object: {ex.Message}", isError: true);
                 LogManager.LogError("Failed to edit AD object", ex);
                 Managers.UI.ToastManager.ShowError($"Failed to edit AD object:\n\n{ex.Message}");
             }
@@ -11864,7 +11994,7 @@ if ($rebootPending) {
             }
             catch (Exception ex)
             {
-                AppendTerminal($"[AD Management] ? Failed to delete object: {ex.Message}", isError: true);
+                AppendTerminal($"[AD Management] ✖ Failed to delete object: {ex.Message}", isError: true);
                 LogManager.LogError("Failed to delete AD object", ex);
                 Managers.UI.ToastManager.ShowError($"Failed to delete AD object:\n\n{ex.Message}");
             }
@@ -11979,7 +12109,7 @@ if ($rebootPending) {
                     var lowDiskComputers = _inventory.Count(c => c.Disk?.Contains("<10%") == true || c.Disk?.Contains("< 10%") == true);
                     if (lowDiskComputers > 0) alerts.Add($"⚠️ {lowDiskComputers} computers with low disk space (<10%)");
 
-                    // Deployment Results integration � surface recent failures in dashboard alerts
+                    // Deployment Results integration → surface recent failures in dashboard alerts
                     if (_allDeploymentResults != null && _allDeploymentResults.Count > 0)
                     {
                         // Count recent deployment failures (last 7 days)
@@ -12520,12 +12650,12 @@ if ($rebootPending) {
                     // Notify user to login with profile credentials
                     Managers.UI.ToastManager.ShowInfo($"Connection profile \'{profile.Name}\' loaded.\n\n" +$"Domain Controller: {profile.DomainController}\n" +$"Username: {profile.Username}\n\n" +"Please login using the credentials for this profile.");
 
-                    AppendTerminal($"[Connection Profile] ? Profile loaded successfully");
+                    AppendTerminal($"[Connection Profile] ✔ Profile loaded successfully");
                 }
             }
             catch (Exception ex)
             {
-                AppendTerminal($"[Connection Profile] ? Failed to manage profiles: {ex.Message}", isError: true);
+                AppendTerminal($"[Connection Profile] ✖ Failed to manage profiles: {ex.Message}", isError: true);
                 LogManager.LogError("Failed to manage connection profiles", ex);
                 Managers.UI.ToastManager.ShowError($"Failed to manage connection profiles:\n\n{ex.Message}");
             }
@@ -12583,8 +12713,8 @@ if ($rebootPending) {
                     LogManager.LogDebug("[Dashboard] Auto-loading DC Health widget on tab selection");
                 }
 
-                // Check if Domain & Directory tab is selected
-                if (tabHeader.Contains("DOMAIN") && tabHeader.Contains("DIRECTORY"))
+                // Check if Active Directory tab is selected
+                if (tabHeader.Contains("ACTIVE DIRECTORY"))
                 {
                     // Only initialize once per session, or if credentials changed
                     if (!_adObjectBrowserInitialized || !_isLoggedIn)
@@ -12616,11 +12746,11 @@ if ($rebootPending) {
                                 ADObjectBrowserDomainTab.ObjectSelectionChanged += ADObjectBrowser_SelectionChanged;
 
                                 _adObjectBrowserInitialized = true;
-                                AppendTerminal($"[AD Management] ? AD Object Browser initialized successfully");
+                                AppendTerminal($"[AD Management] ✔ AD Object Browser initialized successfully");
                             }
                             else
                             {
-                                AppendTerminal($"[AD Management] ? Please login to use AD Object Browser", isError: false);
+                                AppendTerminal($"[AD Management] ⚠ Please login to use AD Object Browser", isError: false);
                             }
                         }
                     }
@@ -12664,7 +12794,7 @@ if ($rebootPending) {
 
             // Uses LaunchMMCWithCreds which handles credential passing via runas /netonly
             _ = LaunchMMCWithCredsAsync("mmc", $"{mmc} {args}", "ADMIN_TOOL");
-            AppendTerminal($"Launched: {tool} ? {dc}");
+            AppendTerminal($"Launched: {tool} → {dc}");
             AddLog(dc, "ADMIN_TOOL", tool, "OK");
         }
 
@@ -12793,13 +12923,13 @@ if ($rebootPending) {
                         anyMethodSucceeded = true;
                         Dispatcher.Invoke(() =>
                         {
-                            AppendTerminal($"[Method 1] ? EventLogReader succeeded - read {lockouts.Count} lockout events");
+                            AppendTerminal($"[Method 1] ✔ EventLogReader succeeded - read {lockouts.Count} lockout events");
                         });
                     }
                     catch (Exception ex1)
                     {
                         LogManager.LogWarning($"Method 1 (EventLogReader) failed: {ex1.Message}");
-                        Dispatcher.Invoke(() => AppendTerminal($"[Method 1] ? Failed: {ex1.Message}"));
+                        Dispatcher.Invoke(() => AppendTerminal($"[Method 1] ✖ Failed: {ex1.Message}"));
 
                         // ---------------------------------------------------------------
                         // METHOD 2: Traditional RPC/DCOM EventLog - No WinRM required
@@ -12856,13 +12986,13 @@ if ($rebootPending) {
                             anyMethodSucceeded = true;
                             Dispatcher.Invoke(() =>
                             {
-                                AppendTerminal($"[Method 2] ? RPC/DCOM succeeded - read {lockouts.Count} lockout events");
+                                AppendTerminal($"[Method 2] ✔ RPC/DCOM succeeded - read {lockouts.Count} lockout events");
                             });
                         }
                         catch (Exception ex2)
                         {
                             LogManager.LogWarning($"Method 2 (RPC/DCOM) failed: {ex2.Message}");
-                            Dispatcher.Invoke(() => AppendTerminal($"[Method 2] ? Failed: {ex2.Message}"));
+                            Dispatcher.Invoke(() => AppendTerminal($"[Method 2] ✖ Failed: {ex2.Message}"));
 
                             // ---------------------------------------------------------------
                             // METHOD 3: Direct EVTX file access via admin$ share
@@ -12918,7 +13048,7 @@ if ($rebootPending) {
                                         anyMethodSucceeded = true;
                                         Dispatcher.Invoke(() =>
                                         {
-                                            AppendTerminal($"[Method 3] ? Direct EVTX access succeeded - read {lockouts.Count} lockout events");
+                                            AppendTerminal($"[Method 3] ✔ Direct EVTX access succeeded - read {lockouts.Count} lockout events");
                                         });
                                     }
                                     finally
@@ -12932,7 +13062,7 @@ if ($rebootPending) {
                             catch (Exception ex3)
                             {
                                 LogManager.LogError($"Method 3 (Direct EVTX) failed", ex3);
-                                Dispatcher.Invoke(() => AppendTerminal($"[Method 3] ? Failed: {ex3.Message}"));
+                                Dispatcher.Invoke(() => AppendTerminal($"[Method 3] ✖ Failed: {ex3.Message}"));
 
                                 // All methods failed - show comprehensive error
                                 Dispatcher.Invoke(() =>
@@ -12950,11 +13080,11 @@ if ($rebootPending) {
                                         $"2. RPC/DCOM: {ex2.Message}\n\n" +
                                         $"3. Direct EVTX: {ex3.Message}\n\n" +
                                         $"Possible causes:\n" +
-                                        $"� Insufficient permissions (need Domain Admin)\n" +
-                                        $"� All remote access methods blocked by firewall\n" +
-                                        $"� DC hardening policies preventing remote event log access\n" +
-                                        $"� DC authentication issues (check Event Viewer on DC)\n" +
-                                        $"� Cisco Duo or other security software blocking RPC/DCOM\n\n" +
+                                        $"→ Insufficient permissions (need Domain Admin)\n" +
+                                        $"→ All remote access methods blocked by firewall\n" +
+                                        $"→ DC hardening policies preventing remote event log access\n" +
+                                        $"→ DC authentication issues (check Event Viewer on DC)\n" +
+                                        $"→ Cisco Duo or other security software blocking RPC/DCOM\n\n" +
                                         $"FALLBACK OPTION:\n" +
                                         $"Click YES to open Event Viewer manually (like ADUC).\n" +
                                         $"Click NO to cancel.";
@@ -13037,7 +13167,7 @@ if ($rebootPending) {
                 else
                 {
                     AppendTerminal($"Found {lockouts.Count} lockout events on {dc}");
-                    HideBottomProgress($"Ready � {lockouts.Count} lockouts found");
+                    HideBottomProgress($"Ready → {lockouts.Count} lockouts found");
                     ShowLockoutWindow(lockouts.OrderByDescending(l => l.Timestamp).ToList());
                     return;
                 }
@@ -13091,7 +13221,7 @@ if ($rebootPending) {
                 string mmcFile = _mmcConsoles[selectedConsole];
                 string toolKey = $"MMC_{selectedConsole}";
 
-                // Full paths � mmc.exe lives in System32; .msc snap-ins may be in System32 or AdminTools
+                // Full paths → mmc.exe lives in System32; .msc snap-ins may be in System32 or AdminTools
                 string mmcExe = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "mmc.exe");
                 string[] mscSearchPaths = {
                     Environment.GetFolderPath(Environment.SpecialFolder.System),                      // C:\Windows\System32
@@ -13106,7 +13236,7 @@ if ($rebootPending) {
                 // TAG: #MMC_EMBEDDING - Check mmc.exe exists (should always be there on Windows)
                 if (!File.Exists(mmcExe))
                 {
-                    Managers.UI.ToastManager.ShowError("mmc.exe not found � MMC is not available on this Windows installation.");
+                    Managers.UI.ToastManager.ShowError("mmc.exe not found → MMC is not available on this Windows installation.");
                     LogManager.LogError($"[MMC] mmc.exe not found at: {mmcExe}", null);
                     return;
                 }
@@ -13182,7 +13312,7 @@ if ($rebootPending) {
                 }
                 catch (Exception ex)
                 {
-                    LogManager.LogWarning($"[MMC] Credential launch failed ({ex.GetType().Name}): {ex.Message} � offering manual credential fallback");
+                    LogManager.LogWarning($"[MMC] Credential launch failed ({ex.GetType().Name}): {ex.Message} → offering manual credential fallback");
                     success = false;
                 }
 
@@ -13218,12 +13348,12 @@ if ($rebootPending) {
                 LogManager.LogInfo($"[MMC] Creating tab for {consoleName} ({mmcFile})");
 
                 // Check if tab already exists
-                foreach (TabItem existingTab in TabControlDomainDirectory.Items)
+                foreach (TabItem existingTab in TabControlActiveDirectory.Items)
                 {
                     if (existingTab.Header is Grid grid &&
                         grid.Children.OfType<TextBlock>().Any(tb => tb.Text == consoleName))
                     {
-                        TabControlDomainDirectory.SelectedItem = existingTab;
+                        TabControlActiveDirectory.SelectedItem = existingTab;
                         Managers.UI.ToastManager.ShowInfo($"{consoleName} is already open");
                         LogManager.LogInfo($"[MMC] Tab for {consoleName} already exists, switching to it");
                         return;
@@ -13249,7 +13379,7 @@ if ($rebootPending) {
                 {
                     Dispatcher.Invoke(() =>
                     {
-                        TabControlDomainDirectory.Items.Remove(newTab);
+                        TabControlActiveDirectory.Items.Remove(newTab);
                         LogManager.LogInfo($"[MMC] Removed tab for {consoleName} (console closed)");
                     });
                 };
@@ -13259,13 +13389,13 @@ if ($rebootPending) {
                 {
                     Dispatcher.Invoke(() =>
                     {
-                        TabControlDomainDirectory.SelectedItem = newTab;
+                        TabControlActiveDirectory.SelectedItem = newTab;
                         LogManager.LogInfo($"[MMC] Console loaded - selected tab for {consoleName}");
                     });
                 };
 
                 // Add tab (but don't select it yet - wait for ConsoleLoaded event)
-                TabControlDomainDirectory.Items.Add(newTab);
+                TabControlActiveDirectory.Items.Add(newTab);
 
                 // Get cached domain credentials for Kerberos passthrough
                 // TAG: #KERBEROS #CREDENTIAL_PASSTHROUGH #MMC_EMBEDDING #ELEVATION_WARNING
@@ -13316,13 +13446,13 @@ if ($rebootPending) {
                         $"Windows security prevents elevated apps from using your domain admin credentials ({domain}\\{username}) to launch MMC.\n\n" +
                         $"MMC will run with your Windows login credentials ({Environment.UserName}@{Environment.UserDomainName}), which may have limited permissions.\n\n" +
                         $"⚠️ You may get 'Access Denied' errors when:\n" +
-                        $"   � Deleting computers\n" +
-                        $"   � Modifying group policies\n" +
-                        $"   � Changing AD objects\n\n" +
+                        $"   → Deleting computers\n" +
+                        $"   → Modifying group policies\n" +
+                        $"   → Changing AD objects\n\n" +
                         $"Options:\n" +
-                        $"   � Click YES to launch MMC anyway (embedded, limited permissions)\n" +
-                        $"   � Click NO to cancel\n" +
-                        $"   � To use domain admin credentials: Restart NecessaryAdminTool as a normal user (not Administrator)\n\n" +
+                        $"   → Click YES to launch MMC anyway (embedded, limited permissions)\n" +
+                        $"   → Click NO to cancel\n" +
+                        $"   → To use domain admin credentials: Restart NecessaryAdminTool as a normal user (not Administrator)\n\n" +
                         $"Continue with limited permissions?",
                         "MMC Credential Warning",
                         MessageBoxButton.YesNo,
@@ -13450,7 +13580,7 @@ if ($rebootPending) {
                 {
                     LogManager.LogInfo($"[MMC UI] Force closing {consoleName} via tab close button");
                     mmcHost.CloseConsole(killProcess: true);
-                    TabControlDomainDirectory.Items.Remove(parentTab);
+                    TabControlActiveDirectory.Items.Remove(parentTab);
                     Managers.UI.ToastManager.ShowInfo($"Closed {consoleName}");
                 }
             };
@@ -13479,7 +13609,7 @@ if ($rebootPending) {
             // Build credential dialog inline
             var dlg = new System.Windows.Window
             {
-                Title = $"Credentials Required � {toolName}",
+                Title = $"Credentials Required → {toolName}",
                 Width = 430,
                 SizeToContent = System.Windows.SizeToContent.Height,
                 WindowStartupLocation = System.Windows.WindowStartupLocation.CenterOwner,
@@ -13648,7 +13778,7 @@ if ($rebootPending) {
         }
 
         /// <summary>
-        /// Fallback MMC launch via runas /netonly � Windows will prompt the user for credentials.
+        /// Fallback MMC launch via runas /netonly → Windows will prompt the user for credentials.
         /// Used when CreateProcessWithLogonW is blocked (EDR) or credential passing fails.
         /// TAG: #MMC_EMBEDDING #CREDENTIALS #FALLBACK
         /// </summary>
@@ -14007,7 +14137,7 @@ if ($rebootPending) {
                 ResolvedName = "...",
                 ResolvedIP = "...",
                 LastChecked = DateTime.Now.ToString("h:mm tt"),
-                ResponseTimeColor = new SolidColorBrush(Color.FromRgb(161, 161, 170))
+                ResponseTimeColor = new SolidColorBrush(ThemeHelper.SecondaryColor)
             };
 
             lock (_pinnedDevicesLock)
@@ -14062,7 +14192,7 @@ if ($rebootPending) {
 
             BtnRefreshPinnedDevices.Content = "🔄 REFRESH ALL";
             BtnRefreshPinnedDevices.IsEnabled = true;
-            HideBottomProgress($"Ready � {_pinnedDevices.Count} devices refreshed");
+            HideBottomProgress($"Ready → {_pinnedDevices.Count} devices refreshed");
         }
 
         /// <summary>
@@ -14153,13 +14283,13 @@ if ($rebootPending) {
                             else if (responseTime < 100)
                                 device.ResponseTimeColor = new SolidColorBrush(Color.FromRgb(255, 215, 0)); // Gold
                             else if (responseTime < 200)
-                                device.ResponseTimeColor = new SolidColorBrush(Color.FromRgb(255, 133, 51)); // Orange
+                                device.ResponseTimeColor = new SolidColorBrush(ThemeHelper.PrimaryColor); // Orange
                             else
                                 device.ResponseTimeColor = new SolidColorBrush(Color.FromRgb(255, 68, 68)); // Red
                         }
                         else
                         {
-                            device.ResponseTimeColor = new SolidColorBrush(Color.FromRgb(161, 161, 170)); // Zinc/Gray
+                            device.ResponseTimeColor = new SolidColorBrush(ThemeHelper.SecondaryColor); // Zinc/Gray
                         }
 
                         device.LastChecked = DateTime.Now.ToString("h:mm tt");
@@ -14184,7 +14314,7 @@ if ($rebootPending) {
                         device.StatusColor = Brushes.Orange;
                         device.ResolvedName = "Error";
                         device.ResolvedIP = "Error";
-                        device.ResponseTimeColor = new SolidColorBrush(Color.FromRgb(161, 161, 170)); // Zinc/Gray
+                        device.ResponseTimeColor = new SolidColorBrush(ThemeHelper.SecondaryColor); // Zinc/Gray
                         device.LastChecked = DateTime.Now.ToString("h:mm tt");
                     });
                 }
@@ -14851,7 +14981,7 @@ if ($rebootPending) {
         {
             var mainBorder = new Border
             {
-                BorderBrush = new SolidColorBrush(Color.FromRgb(255, 133, 51)), // Orange
+                BorderBrush = new SolidColorBrush(ThemeHelper.PrimaryColor), // Orange
                 BorderThickness = new Thickness(2),
                 CornerRadius = new CornerRadius(8)
             };
@@ -14876,7 +15006,7 @@ if ($rebootPending) {
             var titleText = new TextBlock
             {
                 Text = "Device Monitor",
-                Foreground = new SolidColorBrush(Color.FromRgb(255, 133, 51)), // Orange
+                Foreground = new SolidColorBrush(ThemeHelper.PrimaryColor), // Orange
                 FontSize = 14,
                 FontWeight = FontWeights.Bold,
                 VerticalAlignment = VerticalAlignment.Center
@@ -14954,14 +15084,14 @@ if ($rebootPending) {
             headerStack.Children.Add(new TextBlock
             {
                 Text = "PINNED DEVICES",
-                Foreground = new SolidColorBrush(Color.FromRgb(255, 133, 51)), // Orange
+                Foreground = new SolidColorBrush(ThemeHelper.PrimaryColor), // Orange
                 FontSize = 12,
                 FontWeight = FontWeights.Bold
             });
             headerStack.Children.Add(new TextBlock
             {
                 Text = $"{_devices.Count} device(s) monitored",
-                Foreground = new SolidColorBrush(Color.FromRgb(161, 161, 170)), // Zinc
+                Foreground = new SolidColorBrush(ThemeHelper.SecondaryColor), // Zinc
                 FontSize = 9,
                 Margin = new Thickness(0, 4, 0, 0)
             });
@@ -15008,8 +15138,8 @@ if ($rebootPending) {
             itemStyle.Setters.Add(new Setter(ListBoxItem.BorderThicknessProperty, new Thickness(0)));
 
             var trigger = new Trigger { Property = ListBoxItem.IsSelectedProperty, Value = true };
-            trigger.Setters.Add(new Setter(ListBoxItem.BackgroundProperty, new SolidColorBrush(Color.FromArgb(40, 255, 133, 51))));
-            trigger.Setters.Add(new Setter(ListBoxItem.BorderBrushProperty, new SolidColorBrush(Color.FromRgb(255, 133, 51))));
+            trigger.Setters.Add(new Setter(ListBoxItem.BackgroundProperty, new SolidColorBrush(Color.FromArgb(40, ThemeHelper.PrimaryColor.R, ThemeHelper.PrimaryColor.G, ThemeHelper.PrimaryColor.B))));
+            trigger.Setters.Add(new Setter(ListBoxItem.BorderBrushProperty, new SolidColorBrush(ThemeHelper.PrimaryColor)));
             trigger.Setters.Add(new Setter(ListBoxItem.BorderThicknessProperty, new Thickness(2, 0, 0, 0)));
             itemStyle.Triggers.Add(trigger);
 
@@ -15071,7 +15201,7 @@ if ($rebootPending) {
             _txtHostname = new TextBlock
             {
                 Text = _currentDevice?.Input ?? "No Device Selected",
-                Foreground = new SolidColorBrush(Color.FromRgb(255, 133, 51)), // Orange
+                Foreground = new SolidColorBrush(ThemeHelper.PrimaryColor), // Orange
                 FontSize = 18,
                 FontWeight = FontWeights.Bold
             };
@@ -15109,7 +15239,7 @@ if ($rebootPending) {
             var tab = new TabItem
             {
                 Header = "Overview",
-                Foreground = new SolidColorBrush(Color.FromRgb(161, 161, 170)), // Zinc
+                Foreground = new SolidColorBrush(ThemeHelper.SecondaryColor), // Zinc
                 FontSize = 11,
                 FontWeight = FontWeights.SemiBold
             };
@@ -15121,10 +15251,10 @@ if ($rebootPending) {
             var uptimeBorder = new Border
             {
                 Background = new LinearGradientBrush(
-                    Color.FromArgb(60, 255, 133, 51),
-                    Color.FromArgb(20, 255, 133, 51),
+                    Color.FromArgb(60, ThemeHelper.PrimaryColor.R, ThemeHelper.PrimaryColor.G, ThemeHelper.PrimaryColor.B),
+                    Color.FromArgb(20, ThemeHelper.PrimaryColor.R, ThemeHelper.PrimaryColor.G, ThemeHelper.PrimaryColor.B),
                     0),
-                BorderBrush = new SolidColorBrush(Color.FromRgb(255, 133, 51)),
+                BorderBrush = new SolidColorBrush(ThemeHelper.PrimaryColor),
                 BorderThickness = new Thickness(2),
                 CornerRadius = new CornerRadius(8),
                 Padding = new Thickness(20, 15, 20, 15),
@@ -15135,7 +15265,7 @@ if ($rebootPending) {
             uptimeStack.Children.Add(new TextBlock
             {
                 Text = "⏱️ SYSTEM UPTIME",
-                Foreground = new SolidColorBrush(Color.FromRgb(255, 133, 51)),
+                Foreground = new SolidColorBrush(ThemeHelper.PrimaryColor),
                 FontSize = 11,
                 FontWeight = FontWeights.Bold,
                 Margin = new Thickness(0, 0, 0, 8)
@@ -15227,7 +15357,7 @@ if ($rebootPending) {
             _stkDrives.Children.Add(new TextBlock
             {
                 Text = "Loading...",
-                Foreground = new SolidColorBrush(Color.FromRgb(161, 161, 170)),
+                Foreground = new SolidColorBrush(ThemeHelper.SecondaryColor),
                 FontSize = 12
             });
             stack.Children.Add(_stkDrives);
@@ -15245,7 +15375,7 @@ if ($rebootPending) {
             var lblText = new TextBlock
             {
                 Text = label,
-                Foreground = new SolidColorBrush(Color.FromRgb(161, 161, 170)), // Zinc
+                Foreground = new SolidColorBrush(ThemeHelper.SecondaryColor), // Zinc
                 FontSize = 12,
                 Margin = new Thickness(0, 8, 10, 8),
                 VerticalAlignment = VerticalAlignment.Top
@@ -15279,7 +15409,7 @@ if ($rebootPending) {
             var tab = new TabItem
             {
                 Header = "Performance",
-                Foreground = new SolidColorBrush(Color.FromRgb(161, 161, 170)),
+                Foreground = new SolidColorBrush(ThemeHelper.SecondaryColor),
                 FontSize = 11,
                 FontWeight = FontWeights.SemiBold
             };
@@ -15290,7 +15420,7 @@ if ($rebootPending) {
             stack.Children.Add(new TextBlock
             {
                 Text = "RESOURCE USAGE",
-                Foreground = new SolidColorBrush(Color.FromRgb(255, 133, 51)),
+                Foreground = new SolidColorBrush(ThemeHelper.PrimaryColor),
                 FontSize = 13,
                 FontWeight = FontWeights.Bold,
                 Margin = new Thickness(0, 0, 0, 15)
@@ -15342,7 +15472,7 @@ if ($rebootPending) {
             valueText = new TextBlock
             {
                 Text = "0%",
-                Foreground = new SolidColorBrush(Color.FromRgb(255, 133, 51)),
+                Foreground = new SolidColorBrush(ThemeHelper.PrimaryColor),
                 FontSize = 11,
                 FontWeight = FontWeights.Bold
             };
@@ -15364,8 +15494,8 @@ if ($rebootPending) {
             bar = new System.Windows.Shapes.Rectangle
             {
                 Fill = new LinearGradientBrush(
-                    Color.FromRgb(255, 133, 51),
-                    Color.FromRgb(255, 170, 102),
+                    ThemeHelper.PrimaryColor,
+                    ThemeHelper.PrimaryHover,
                     0),
                 HorizontalAlignment = HorizontalAlignment.Left,
                 Width = 0,
@@ -15388,7 +15518,7 @@ if ($rebootPending) {
             var tab = new TabItem
             {
                 Header = "Network",
-                Foreground = new SolidColorBrush(Color.FromRgb(161, 161, 170)),
+                Foreground = new SolidColorBrush(ThemeHelper.SecondaryColor),
                 FontSize = 13,
                 FontWeight = FontWeights.SemiBold
             };
@@ -15421,7 +15551,7 @@ if ($rebootPending) {
             stack.Children.Add(new TextBlock
             {
                 Text = "ADAPTERS",
-                Foreground = new SolidColorBrush(Color.FromRgb(161, 161, 170)),
+                Foreground = new SolidColorBrush(ThemeHelper.SecondaryColor),
                 FontSize = 12,
                 FontWeight = FontWeights.Bold,
                 Margin = new Thickness(0, 0, 0, 8)
@@ -15441,7 +15571,7 @@ if ($rebootPending) {
             stack.Children.Add(new TextBlock
             {
                 Text = "PING HISTORY (LAST 4 HOURS)",
-                Foreground = new SolidColorBrush(Color.FromRgb(255, 133, 51)),
+                Foreground = new SolidColorBrush(ThemeHelper.PrimaryColor),
                 FontSize = 13,
                 FontWeight = FontWeights.Bold,
                 Margin = new Thickness(0, 10, 0, 10)
@@ -15480,7 +15610,7 @@ if ($rebootPending) {
                 var noData = new TextBlock
                 {
                     Text = "No ping history data available",
-                    Foreground = new SolidColorBrush(Color.FromRgb(161, 161, 170)),
+                    Foreground = new SolidColorBrush(ThemeHelper.SecondaryColor),
                     FontSize = 12,
                     VerticalAlignment = VerticalAlignment.Center,
                     HorizontalAlignment = HorizontalAlignment.Center
@@ -15518,7 +15648,7 @@ if ($rebootPending) {
                     Y1 = y1,
                     X2 = x2,
                     Y2 = y2,
-                    Stroke = new SolidColorBrush(Color.FromRgb(255, 133, 51)),
+                    Stroke = new SolidColorBrush(ThemeHelper.PrimaryColor),
                     StrokeThickness = 2
                 };
 
@@ -15533,7 +15663,7 @@ if ($rebootPending) {
             var tab = new TabItem
             {
                 Header = "System Events",
-                Foreground = new SolidColorBrush(Color.FromRgb(161, 161, 170)),
+                Foreground = new SolidColorBrush(ThemeHelper.SecondaryColor),
                 FontSize = 13,
                 FontWeight = FontWeights.SemiBold
             };
@@ -15543,7 +15673,7 @@ if ($rebootPending) {
             stack.Children.Add(new TextBlock
             {
                 Text = "STARTUP & SHUTDOWN HISTORY (LAST 60 DAYS)",
-                Foreground = new SolidColorBrush(Color.FromRgb(255, 133, 51)),
+                Foreground = new SolidColorBrush(ThemeHelper.PrimaryColor),
                 FontSize = 13,
                 FontWeight = FontWeights.Bold,
                 Margin = new Thickness(0, 0, 0, 15)
@@ -15593,7 +15723,7 @@ if ($rebootPending) {
                 Width = new System.Windows.Controls.DataGridLength(1, System.Windows.Controls.DataGridLengthUnitType.Star)
             };
             colMessage.ElementStyle = new Style(typeof(TextBlock));
-            colMessage.ElementStyle.Setters.Add(new Setter(TextBlock.ForegroundProperty, new SolidColorBrush(Color.FromRgb(161, 161, 170))));
+            colMessage.ElementStyle.Setters.Add(new Setter(TextBlock.ForegroundProperty, new SolidColorBrush(ThemeHelper.SecondaryColor)));
             colMessage.ElementStyle.Setters.Add(new Setter(TextBlock.TextWrappingProperty, TextWrapping.Wrap));
             colMessage.ElementStyle.Setters.Add(new Setter(TextBlock.FontSizeProperty, 11.0));
 
@@ -15603,7 +15733,7 @@ if ($rebootPending) {
 
             var columnHeaderStyle = new Style(typeof(System.Windows.Controls.Primitives.DataGridColumnHeader));
             columnHeaderStyle.Setters.Add(new Setter(System.Windows.Controls.Primitives.DataGridColumnHeader.BackgroundProperty, new SolidColorBrush(Color.FromRgb(20, 20, 20))));
-            columnHeaderStyle.Setters.Add(new Setter(System.Windows.Controls.Primitives.DataGridColumnHeader.ForegroundProperty, new SolidColorBrush(Color.FromRgb(255, 133, 51))));
+            columnHeaderStyle.Setters.Add(new Setter(System.Windows.Controls.Primitives.DataGridColumnHeader.ForegroundProperty, new SolidColorBrush(ThemeHelper.PrimaryColor)));
             columnHeaderStyle.Setters.Add(new Setter(System.Windows.Controls.Primitives.DataGridColumnHeader.FontWeightProperty, FontWeights.Bold));
             columnHeaderStyle.Setters.Add(new Setter(System.Windows.Controls.Primitives.DataGridColumnHeader.FontSizeProperty, 12.0));
             columnHeaderStyle.Setters.Add(new Setter(System.Windows.Controls.Primitives.DataGridColumnHeader.PaddingProperty, new Thickness(10, 8, 10, 8)));
@@ -15869,7 +15999,7 @@ if ($rebootPending) {
                                 double total = Convert.ToDouble(sizeVal) / (1024.0 * 1024 * 1024);
                                 double free = Convert.ToDouble(freeVal) / (1024.0 * 1024 * 1024);
                                 double used = total - free;
-                                drives.Add($"{deviceID} � {used:F0} GB used / {total:F0} GB total");
+                                drives.Add($"{deviceID} → {used:F0} GB used / {total:F0} GB total");
                             }
                         }
                     }
@@ -15886,7 +16016,7 @@ if ($rebootPending) {
                                     double total = Convert.ToDouble(obj["Size"]) / (1024.0 * 1024 * 1024);
                                     double free = Convert.ToDouble(obj["FreeSpace"]) / (1024.0 * 1024 * 1024);
                                     double used = total - free;
-                                    drives.Add($"{deviceID} � {used:F0} GB used / {total:F0} GB total");
+                                    drives.Add($"{deviceID} → {used:F0} GB used / {total:F0} GB total");
                                 }
                             }
                         }
@@ -16235,7 +16365,7 @@ if ($rebootPending) {
                             _stkDrives.Children.Add(new TextBlock
                             {
                                 Text = "No data available",
-                                Foreground = new SolidColorBrush(Color.FromRgb(161, 161, 170)),
+                                Foreground = new SolidColorBrush(ThemeHelper.SecondaryColor),
                                 FontSize = 12
                             });
                         }
@@ -16377,7 +16507,7 @@ if ($rebootPending) {
         {
             get
             {
-                return $"Copyright � {COPYRIGHT_HOLDER} {DateTime.Now.Year}";
+                return $"Copyright → {COPYRIGHT_HOLDER} {DateTime.Now.Year}";
             }
         }
 
@@ -16426,10 +16556,10 @@ if ($rebootPending) {
             }
         }
 
-        // Colors (Orange/Zinc Theme)
-        public static readonly Color ORANGE_PRIMARY = Color.FromRgb(255, 133, 51);    // #FFFF8533
-        public static readonly Color ORANGE_DARK = Color.FromRgb(204, 107, 41);       // #FFCC6B29
-        public static readonly Color ZINC_COLOR = Color.FromRgb(161, 161, 170);       // #FFA1A1AA
+        // Colors (Orange/Zinc Theme - via ThemeHelper)
+        public static Color ORANGE_PRIMARY => ThemeHelper.PrimaryColor;
+        public static Color ORANGE_DARK => ThemeHelper.PrimaryPressed;
+        public static Color ZINC_COLOR => ThemeHelper.SecondaryColor;
         public static readonly Color BG_DARK = Color.FromRgb(26, 26, 26);             // #FF1A1A1A
 
         // Logo Sizes
@@ -16608,7 +16738,7 @@ if ($rebootPending) {
 
             var border = new Border
             {
-                BorderBrush = new SolidColorBrush(Color.FromRgb(255, 133, 51)), // Orange #FFFF8533
+                BorderBrush = new SolidColorBrush(ThemeHelper.PrimaryColor), // Orange #FFFF8533
                 BorderThickness = new Thickness(2)
             };
 
@@ -16660,7 +16790,7 @@ if ($rebootPending) {
             textPanel.Children.Add(new TextBlock
             {
                 Text = "Would you like to restart NecessaryAdminTool Suite as Administrator?",
-                Foreground = new SolidColorBrush(Color.FromRgb(161, 161, 170)), // Zinc #FFA1A1AA
+                Foreground = new SolidColorBrush(ThemeHelper.SecondaryColor), // Zinc #FFA1A1AA
                 FontSize = 11,
                 TextWrapping = TextWrapping.Wrap,
                 Margin = new Thickness(0, 0, 0, 10)
@@ -16707,7 +16837,7 @@ if ($rebootPending) {
                 Content = "Yes",
                 Width = 100,
                 Height = 36,
-                Background = new SolidColorBrush(Color.FromRgb(255, 133, 51)), // Orange #FFFF8533
+                Background = new SolidColorBrush(ThemeHelper.PrimaryColor), // Orange #FFFF8533
                 Foreground = Brushes.White,
                 BorderThickness = new Thickness(0),
                 FontWeight = FontWeights.Bold,
@@ -16767,7 +16897,7 @@ if ($rebootPending) {
 
             var border = new Border
             {
-                BorderBrush = new SolidColorBrush(Color.FromRgb(255, 133, 51)), // Orange #FFFF8533
+                BorderBrush = new SolidColorBrush(ThemeHelper.PrimaryColor), // Orange #FFFF8533
                 BorderThickness = new Thickness(2)
             };
 
@@ -16808,7 +16938,7 @@ if ($rebootPending) {
             headerStack.Children.Add(new TextBlock
             {
                 Text = "Enter your domain credentials",
-                Foreground = new SolidColorBrush(Color.FromRgb(161, 161, 170)), // Zinc
+                Foreground = new SolidColorBrush(ThemeHelper.SecondaryColor), // Zinc
                 FontSize = 10,
                 Margin = new Thickness(0, 3, 0, 0)
             });
@@ -16830,8 +16960,8 @@ if ($rebootPending) {
                 StartPoint = new Point(0, 0),
                 EndPoint = new Point(1, 0)
             };
-            domainGradientBorder.GradientStops.Add(new GradientStop(Color.FromRgb(255, 133, 51), 0));
-            domainGradientBorder.GradientStops.Add(new GradientStop(Color.FromRgb(161, 161, 170), 1));
+            domainGradientBorder.GradientStops.Add(new GradientStop(ThemeHelper.PrimaryColor, 0));
+            domainGradientBorder.GradientStops.Add(new GradientStop(ThemeHelper.SecondaryColor, 1));
             _domainBadge.BorderBrush = domainGradientBorder;
             _domainBadge.BorderThickness = new Thickness(1);
 
@@ -16883,7 +17013,7 @@ if ($rebootPending) {
             panel.Children.Add(new TextBlock
             {
                 Text = "Username:",
-                Foreground = new SolidColorBrush(Color.FromRgb(161, 161, 170)),
+                Foreground = new SolidColorBrush(ThemeHelper.SecondaryColor),
                 FontSize = 11,
                 Margin = new Thickness(0, 0, 0, 5)
             });
@@ -16917,7 +17047,7 @@ if ($rebootPending) {
                 Width = 28,
                 Height = 28,
                 Background = Brushes.Transparent,
-                Foreground = new SolidColorBrush(Color.FromRgb(161, 161, 170)),
+                Foreground = new SolidColorBrush(ThemeHelper.SecondaryColor),
                 BorderThickness = new Thickness(0),
                 FontSize = 16,
                 FontWeight = FontWeights.Bold,
@@ -16935,8 +17065,8 @@ if ($rebootPending) {
                 _txtUser.Text = "";
                 _txtUser.Focus();
             };
-            clearBtn.MouseEnter += (s, ev) => clearBtn.Foreground = new SolidColorBrush(Color.FromRgb(255, 133, 51));
-            clearBtn.MouseLeave += (s, ev) => clearBtn.Foreground = new SolidColorBrush(Color.FromRgb(161, 161, 170));
+            clearBtn.MouseEnter += (s, ev) => clearBtn.Foreground = new SolidColorBrush(ThemeHelper.PrimaryColor);
+            clearBtn.MouseLeave += (s, ev) => clearBtn.Foreground = new SolidColorBrush(ThemeHelper.SecondaryColor);
             Grid.SetColumn(clearBtn, 1);
             usernameGrid.Children.Add(clearBtn);
             panel.Children.Add(usernameGrid);
@@ -16962,7 +17092,7 @@ if ($rebootPending) {
             _domainDisplayBlock = new TextBlock
             {
                 Text = _activeDomain,
-                Foreground = new SolidColorBrush(Color.FromRgb(255, 133, 51)),
+                Foreground = new SolidColorBrush(ThemeHelper.PrimaryColor),
                 FontSize = 10,
                 FontWeight = FontWeights.SemiBold,
                 VerticalAlignment = VerticalAlignment.Center
@@ -17002,7 +17132,7 @@ if ($rebootPending) {
                 Foreground = Brushes.White,
                 Padding = new Thickness(8, 5, 8, 5),
                 FontSize = 12,
-                BorderBrush = new SolidColorBrush(Color.FromRgb(255, 133, 51)),
+                BorderBrush = new SolidColorBrush(ThemeHelper.PrimaryColor),
                 BorderThickness = new Thickness(1),
                 ToolTip = "Enter domain NetBIOS name (e.g. MYDOMAIN) or machine name for local"
             };
@@ -17016,7 +17146,7 @@ if ($rebootPending) {
                 Padding = new Thickness(8, 5, 8, 5),
                 Margin = new Thickness(4, 0, 0, 0),
                 Background = new SolidColorBrush(Color.FromRgb(40, 40, 40)),
-                Foreground = new SolidColorBrush(Color.FromRgb(161, 161, 170)),
+                Foreground = new SolidColorBrush(ThemeHelper.SecondaryColor),
                 BorderBrush = new SolidColorBrush(Color.FromRgb(60, 60, 60)),
                 BorderThickness = new Thickness(1),
                 Cursor = Cursors.Hand,
@@ -17032,7 +17162,7 @@ if ($rebootPending) {
                 FontSize = 12,
                 Padding = new Thickness(8, 5, 8, 5),
                 Margin = new Thickness(4, 0, 0, 0),
-                Background = new SolidColorBrush(Color.FromRgb(255, 133, 51)),
+                Background = new SolidColorBrush(ThemeHelper.PrimaryColor),
                 Foreground = Brushes.White,
                 BorderThickness = new Thickness(0),
                 Cursor = Cursors.Hand,
@@ -17068,7 +17198,7 @@ if ($rebootPending) {
             panel.Children.Add(new TextBlock
             {
                 Text = "Password:",
-                Foreground = new SolidColorBrush(Color.FromRgb(161, 161, 170)),
+                Foreground = new SolidColorBrush(ThemeHelper.SecondaryColor),
                 FontSize = 11,
                 Margin = new Thickness(0, 15, 0, 5)
             });
@@ -17126,7 +17256,7 @@ if ($rebootPending) {
                 Content = "LOGIN",
                 Width = 90,
                 Height = 36,
-                Background = new SolidColorBrush(Color.FromRgb(255, 133, 51)), // Orange #FFFF8533
+                Background = new SolidColorBrush(ThemeHelper.PrimaryColor), // Orange #FFFF8533
                 Foreground = Brushes.White,
                 BorderThickness = new Thickness(0),
                 FontWeight = FontWeights.Bold,
@@ -17165,14 +17295,14 @@ if ($rebootPending) {
             var versionText = new TextBlock
             {
                 Text = $"{LogoConfig.VERSION}",
-                Foreground = new SolidColorBrush(Color.FromRgb(161, 161, 170)),
+                Foreground = new SolidColorBrush(ThemeHelper.SecondaryColor),
                 FontSize = 9,
                 Margin = new Thickness(0, 0, 8, 0)
             };
 
             var separatorText = new TextBlock
             {
-                Text = "�",
+                Text = "→",
                 Foreground = new SolidColorBrush(Color.FromRgb(80, 80, 80)),
                 FontSize = 9,
                 Margin = new Thickness(0, 0, 8, 0)
@@ -17181,7 +17311,7 @@ if ($rebootPending) {
             var compiledText = new TextBlock
             {
                 Text = $"Compiled: {LogoConfig.COMPILED_DATE_SHORT}",
-                Foreground = new SolidColorBrush(Color.FromRgb(161, 161, 170)),
+                Foreground = new SolidColorBrush(ThemeHelper.SecondaryColor),
                 FontSize = 9
             };
 
@@ -17289,15 +17419,15 @@ if ($rebootPending) {
                     StartPoint = new Point(0, 0),
                     EndPoint = new Point(1, 0)
                 };
-                textGradient.GradientStops.Add(new GradientStop(Color.FromRgb(255, 133, 51), 0));
-                textGradient.GradientStops.Add(new GradientStop(Color.FromRgb(161, 161, 170), 1));
+                textGradient.GradientStops.Add(new GradientStop(ThemeHelper.PrimaryColor, 0));
+                textGradient.GradientStops.Add(new GradientStop(ThemeHelper.SecondaryColor, 1));
                 _domainTextBlock.Foreground = textGradient;
                 _domainBadge.Opacity = 1.0;
             }
             else
             {
                 _domainTextBlock.Text = "NO DOMAIN";
-                _domainTextBlock.Foreground = new SolidColorBrush(Color.FromRgb(128, 128, 128));
+                _domainTextBlock.Foreground = (Brush)Application.Current.Resources["TextMutedBrush"];
                 _domainBadge.Opacity = 0.7;
             }
 
@@ -17451,8 +17581,8 @@ if ($rebootPending) {
                 StartPoint = new Point(0, 0),
                 EndPoint = new Point(1, 1)
             };
-            gradientBrush.GradientStops.Add(new GradientStop(Color.FromRgb(255, 133, 51), 0));
-            gradientBrush.GradientStops.Add(new GradientStop(Color.FromRgb(161, 161, 170), 1));
+            gradientBrush.GradientStops.Add(new GradientStop(ThemeHelper.PrimaryColor, 0));
+            gradientBrush.GradientStops.Add(new GradientStop(ThemeHelper.SecondaryColor, 1));
             headerBorder.Background = gradientBrush;
 
             var logoContainer = new StackPanel
@@ -17475,7 +17605,7 @@ if ($rebootPending) {
             contentPanel.Children.Add(new TextBlock
             {
                 Text = "⚠️ DOMAIN CONTROLLERS UNAVAILABLE",
-                Foreground = new SolidColorBrush(Color.FromRgb(255, 133, 51)),
+                Foreground = new SolidColorBrush(ThemeHelper.PrimaryColor),
                 FontSize = 16,
                 FontWeight = FontWeights.Bold,
                 TextAlignment = TextAlignment.Center,
@@ -17493,11 +17623,11 @@ if ($rebootPending) {
 
             var reasonsPanel = new StackPanel { Margin = new Thickness(20, 0, 0, 20) };
             var reasons = new[] {
-                "� Not connected to corporate VPN",
-                "� Network connectivity issues",
-                "� Not joined to the domain",
-                "� Firewall blocking domain traffic",
-                "� DNS configuration problems"
+                "→ Not connected to corporate VPN",
+                "→ Network connectivity issues",
+                "→ Not joined to the domain",
+                "→ Firewall blocking domain traffic",
+                "→ DNS configuration problems"
             };
 
             foreach (var reason in reasons)
@@ -17505,7 +17635,7 @@ if ($rebootPending) {
                 reasonsPanel.Children.Add(new TextBlock
                 {
                     Text = reason,
-                    Foreground = new SolidColorBrush(Color.FromRgb(161, 161, 170)),
+                    Foreground = new SolidColorBrush(ThemeHelper.SecondaryColor),
                     FontSize = 11,
                     Margin = new Thickness(0, 0, 0, 5)
                 });
@@ -17514,13 +17644,13 @@ if ($rebootPending) {
 
             contentPanel.Children.Add(new Border
             {
-                Background = new SolidColorBrush(Color.FromArgb(30, 255, 133, 51)),
+                Background = new SolidColorBrush(Color.FromArgb(30, ThemeHelper.PrimaryColor.R, ThemeHelper.PrimaryColor.G, ThemeHelper.PrimaryColor.B)),
                 CornerRadius = new CornerRadius(6),
                 Padding = new Thickness(15, 12, 15, 12),
                 Child = new TextBlock
                 {
                     Text = "You can continue in read-only mode (limited functionality) or restart the application after resolving connectivity.",
-                    Foreground = new SolidColorBrush(Color.FromRgb(255, 200, 100)),
+                    Foreground = ThemeHelper.PrimaryBrush,
                     FontSize = 11,
                     TextWrapping = TextWrapping.Wrap
                 }
@@ -17541,7 +17671,7 @@ if ($rebootPending) {
             var continueBtn = CreateStyledButton(
                 "📖 CONTINUE READ-ONLY",
                 Color.FromRgb(60, 60, 60),
-                Color.FromRgb(161, 161, 170));
+                ThemeHelper.SecondaryColor);
             continueBtn.Click += (s, e) =>
             {
                 ShouldContinueReadOnly = true;
@@ -17553,7 +17683,7 @@ if ($rebootPending) {
             // Restart Button
             var restartBtn = CreateStyledButton(
                 "🔄 RESTART APPLICATION",
-                Color.FromRgb(255, 133, 51),
+                ThemeHelper.PrimaryColor,
                 Colors.White);
             restartBtn.Margin = new Thickness(15, 0, 0, 0);
             restartBtn.Click += (s, e) =>
@@ -17570,7 +17700,7 @@ if ($rebootPending) {
             // Border wrapper
             var border = new Border
             {
-                BorderBrush = new SolidColorBrush(Color.FromRgb(255, 133, 51)),
+                BorderBrush = new SolidColorBrush(ThemeHelper.PrimaryColor),
                 BorderThickness = new Thickness(2),
                 Child = mainGrid
             };
@@ -17888,7 +18018,7 @@ if ($rebootPending) {
             _kpiCardsInitialized = true;
 
             KpiTotal.Label = "TOTAL DEVICES";
-            KpiTotal.AccentColor = new SolidColorBrush(Color.FromRgb(161, 161, 170)); // Zinc
+            KpiTotal.AccentColor = new SolidColorBrush(ThemeHelper.SecondaryColor); // Zinc
 
             KpiOnline.Label = "ONLINE";
             KpiOnline.AccentColor = new SolidColorBrush(Color.FromRgb(16, 185, 129)); // Green
@@ -17992,6 +18122,20 @@ if ($rebootPending) {
                         };
                     }
 
+                    // Scan period filter
+                    if (criteria.ScanPeriod != "Any Time")
+                    {
+                        var now = DateTime.Now;
+                        filtered = criteria.ScanPeriod switch
+                        {
+                            "Today" => filtered.Where(c => DateTime.TryParse(c.LastUpdate, out var dt) && dt.Date == now.Date),
+                            "Last 7 Days" => filtered.Where(c => DateTime.TryParse(c.LastUpdate, out var dt) && dt >= now.AddDays(-7)),
+                            "Last 30 Days" => filtered.Where(c => DateTime.TryParse(c.LastUpdate, out var dt) && dt >= now.AddDays(-30)),
+                            "Stale (90+ Days)" => filtered.Where(c => !DateTime.TryParse(c.LastUpdate, out var dt) || dt < now.AddDays(-90)),
+                            _ => filtered
+                        };
+                    }
+
                     var result = filtered.ToList();
                     GridInventory.ItemsSource = result;
 
@@ -18019,8 +18163,9 @@ if ($rebootPending) {
         {
             try
             {
-                // Switch to fleet tab
-                MainTabs.SelectedIndex = 2; // AD FLEET INVENTORY tab
+                // Switch to fleet tab (Active Directory > Fleet Inventory)
+                MainTabs.SelectedIndex = 2; // Active Directory tab
+                TabControlActiveDirectory.SelectedIndex = 0; // Fleet Inventory sub-tab
 
                 // Find and select the device in the grid
                 foreach (var item in GridInventory.Items)
@@ -18230,11 +18375,35 @@ if ($rebootPending) {
                 if (criteria != null && !criteria.IsDefault)
                 {
                     if (criteria.OsFilter != "All OS")
-                        segments.Add(new BreadcrumbSegment { Label = criteria.OsFilter });
+                    {
+                        var osFilter = criteria.OsFilter;
+                        segments.Add(new BreadcrumbSegment
+                        {
+                            Label = osFilter,
+                            OnClick = () => GlobalFilterBar_FilterChanged(this, new UI.Components.FilterCriteria { OsFilter = osFilter })
+                        });
+                    }
                     if (criteria.StatusFilter != "All")
-                        segments.Add(new BreadcrumbSegment { Label = criteria.StatusFilter });
+                    {
+                        var statusFilter = criteria.StatusFilter;
+                        var osFilter = criteria.OsFilter;
+                        segments.Add(new BreadcrumbSegment
+                        {
+                            Label = statusFilter,
+                            OnClick = () => GlobalFilterBar_FilterChanged(this, new UI.Components.FilterCriteria { OsFilter = osFilter, StatusFilter = statusFilter })
+                        });
+                    }
                     if (criteria.ScanPeriod != "Any Time")
-                        segments.Add(new BreadcrumbSegment { Label = criteria.ScanPeriod });
+                    {
+                        var periodFilter = criteria.ScanPeriod;
+                        var osFilter = criteria.OsFilter;
+                        var statusFilter = criteria.StatusFilter;
+                        segments.Add(new BreadcrumbSegment
+                        {
+                            Label = periodFilter,
+                            OnClick = () => GlobalFilterBar_FilterChanged(this, new UI.Components.FilterCriteria { OsFilter = osFilter, StatusFilter = statusFilter, ScanPeriod = periodFilter })
+                        });
+                    }
                 }
 
                 if (segments.Count > 0)

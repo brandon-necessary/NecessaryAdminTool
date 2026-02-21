@@ -20,13 +20,13 @@
         <SolidColorBrush x:Key="BgMediumBrush" Color="#FF1E1E1E"/>
         <SolidColorBrush x:Key="BgLightBrush" Color="#FF2D2D2D"/>
         <SolidColorBrush x:Key="BorderDimBrush" Color="#FF3C3C3C"/>
-        <SolidColorBrush x:Key="AccentOrangeBrush" Color="#FFFF8533"/>
+        <!-- AccentOrangeBrush removed — uses app-level via DynamicResource -->
         <SolidColorBrush x:Key="AccentBlueBrush" Color="#FF3B82F6"/>
         <SolidColorBrush x:Key="SuccessGreenBrush" Color="#FF10B981"/>
         <SolidColorBrush x:Key="ErrorRedBrush" Color="#FFEF4444"/>
         <SolidColorBrush x:Key="WarningAmberBrush" Color="#FFF59E0B"/>
         <SolidColorBrush x:Key="TextPrimaryBrush" Color="White"/>
-        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#FFA1A1AA"/>
+        <!-- TextSecondaryBrush shadow removed — uses app-level resource -->
 
         <!-- Fluent Corner Radius -->
         <CornerRadius x:Key="FluentCornerRadius">6</CornerRadius>
@@ -43,21 +43,21 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Border Grid.Row="0" Background="{StaticResource BgMediumBrush}"
-                BorderBrush="{StaticResource BorderDimBrush}" BorderThickness="1"
+        <Border Grid.Row="0" Background="{DynamicResource BgMediumBrush}"
+                BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1"
                 CornerRadius="{StaticResource FluentCornerRadius}"
                 Padding="20" Margin="0,0,0,20">
             <StackPanel>
                 <TextBlock Text="Bulk Computer Operations" FontSize="24" FontWeight="Bold"
-                          Foreground="{StaticResource AccentOrangeBrush}"/>
+                          Foreground="{DynamicResource AccentOrangeBrush}"/>
                 <TextBlock Text="Execute operations on multiple computers in parallel" FontSize="12"
-                          Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0"/>
+                          Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0"/>
             </StackPanel>
         </Border>
 
         <!-- Operation Selection -->
-        <Border Grid.Row="1" Background="{StaticResource BgMediumBrush}"
-                BorderBrush="{StaticResource BorderDimBrush}" BorderThickness="1"
+        <Border Grid.Row="1" Background="{DynamicResource BgMediumBrush}"
+                BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1"
                 CornerRadius="{StaticResource FluentCornerRadius}"
                 Padding="20" Margin="0,0,0,20">
             <Grid>
@@ -67,14 +67,14 @@
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Grid.Column="0" Text="Operation Type:" FontSize="14" FontWeight="SemiBold"
-                          Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center"
+                          Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"
                           Margin="0,0,20,0"/>
 
                 <ComboBox Grid.Column="1" x:Name="CmbOperationType"
                          Height="36" FontSize="14"
-                         Background="{StaticResource BgLightBrush}"
-                         Foreground="{StaticResource TextPrimaryBrush}"
-                         BorderBrush="{StaticResource BorderDimBrush}"
+                         Background="{DynamicResource BgLightBrush}"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         BorderBrush="{DynamicResource BorderDimBrush}"
                          SelectionChanged="CmbOperationType_SelectionChanged">
                     <ComboBoxItem Content="Ping Test" Tag="PingTest"/>
                     <ComboBoxItem Content="Restart Computers" Tag="RestartComputers"/>
@@ -89,13 +89,13 @@
         </Border>
 
         <!-- Target Selection -->
-        <Border Grid.Row="2" Background="{StaticResource BgMediumBrush}"
-                BorderBrush="{StaticResource BorderDimBrush}" BorderThickness="1"
+        <Border Grid.Row="2" Background="{DynamicResource BgMediumBrush}"
+                BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1"
                 CornerRadius="{StaticResource FluentCornerRadius}"
                 Padding="20" Margin="0,0,0,20">
             <StackPanel>
                 <TextBlock Text="Target Computers" FontSize="14" FontWeight="SemiBold"
-                          Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,10"/>
+                          Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10"/>
 
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -105,9 +105,9 @@
 
                     <TextBox Grid.Column="0" x:Name="TxtTargets"
                             Height="100" TextWrapping="Wrap" AcceptsReturn="True"
-                            Background="{StaticResource BgLightBrush}"
-                            Foreground="{StaticResource TextPrimaryBrush}"
-                            BorderBrush="{StaticResource BorderDimBrush}"
+                            Background="{DynamicResource BgLightBrush}"
+                            Foreground="{DynamicResource TextPrimaryBrush}"
+                            BorderBrush="{DynamicResource BorderDimBrush}"
                             Padding="10"
                             VerticalScrollBarVisibility="Auto"
                             Text="Enter computer names (one per line)"/>
@@ -121,13 +121,13 @@
                 </Grid>
 
                 <TextBlock x:Name="TxtTargetCount" Text="0 targets" FontSize="12"
-                          Foreground="{StaticResource TextSecondaryBrush}" Margin="0,10,0,0"/>
+                          Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,10,0,0"/>
             </StackPanel>
         </Border>
 
         <!-- Execution Options -->
-        <Border Grid.Row="3" Background="{StaticResource BgMediumBrush}"
-                BorderBrush="{StaticResource BorderDimBrush}" BorderThickness="1"
+        <Border Grid.Row="3" Background="{DynamicResource BgMediumBrush}"
+                BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1"
                 CornerRadius="{StaticResource FluentCornerRadius}"
                 Padding="20" Margin="0,0,0,20">
             <Grid>
@@ -139,7 +139,7 @@
 
                 <!-- Thread Count -->
                 <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                    <TextBlock Text="Parallel Threads:" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                    <TextBlock Text="Parallel Threads:" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
                     <Grid Margin="0,5,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -149,36 +149,36 @@
                                TickFrequency="1" IsSnapToTickEnabled="True"
                                VerticalAlignment="Center"/>
                         <TextBlock Grid.Column="1" x:Name="TxtThreadCount" Text="10" FontSize="14"
-                                  Foreground="{StaticResource TextPrimaryBrush}" Margin="10,0,0,0"
+                                  Foreground="{DynamicResource TextPrimaryBrush}" Margin="10,0,0,0"
                                   VerticalAlignment="Center" Width="30"/>
                     </Grid>
                 </StackPanel>
 
                 <!-- Timeout -->
                 <StackPanel Grid.Column="1" Margin="10,0,10,0">
-                    <TextBlock Text="Timeout (seconds):" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                    <TextBlock Text="Timeout (seconds):" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
                     <TextBox x:Name="TxtTimeout" Height="32" Text="300" Margin="0,5,0,0"
-                            Background="{StaticResource BgLightBrush}"
-                            Foreground="{StaticResource TextPrimaryBrush}"
-                            BorderBrush="{StaticResource BorderDimBrush}"
+                            Background="{DynamicResource BgLightBrush}"
+                            Foreground="{DynamicResource TextPrimaryBrush}"
+                            BorderBrush="{DynamicResource BorderDimBrush}"
                             Padding="8,0"/>
                 </StackPanel>
 
                 <!-- Retry Attempts -->
                 <StackPanel Grid.Column="2" Margin="10,0,0,0">
-                    <TextBlock Text="Retry Attempts:" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                    <TextBlock Text="Retry Attempts:" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
                     <TextBox x:Name="TxtRetryAttempts" Height="32" Text="3" Margin="0,5,0,0"
-                            Background="{StaticResource BgLightBrush}"
-                            Foreground="{StaticResource TextPrimaryBrush}"
-                            BorderBrush="{StaticResource BorderDimBrush}"
+                            Background="{DynamicResource BgLightBrush}"
+                            Foreground="{DynamicResource TextPrimaryBrush}"
+                            BorderBrush="{DynamicResource BorderDimBrush}"
                             Padding="8,0"/>
                 </StackPanel>
             </Grid>
         </Border>
 
         <!-- Progress/Results -->
-        <Border Grid.Row="4" Background="{StaticResource BgMediumBrush}"
-                BorderBrush="{StaticResource BorderDimBrush}" BorderThickness="1"
+        <Border Grid.Row="4" Background="{DynamicResource BgMediumBrush}"
+                BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1"
                 CornerRadius="{StaticResource FluentCornerRadius}"
                 Padding="20">
             <Grid>
@@ -191,7 +191,7 @@
 
                 <!-- Progress Header -->
                 <TextBlock Grid.Row="0" Text="Progress" FontSize="14" FontWeight="SemiBold"
-                          Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,10"/>
+                          Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10"/>
 
                 <!-- Progress Bar -->
                 <Grid Grid.Row="1" Margin="0,0,0,10">
@@ -201,12 +201,12 @@
                     </Grid.ColumnDefinitions>
 
                     <ProgressBar Grid.Column="0" x:Name="ProgressOverall" Height="24"
-                                Background="{StaticResource BgLightBrush}"
-                                Foreground="{StaticResource AccentOrangeBrush}"
-                                BorderBrush="{StaticResource BorderDimBrush}" BorderThickness="1"/>
+                                Background="{DynamicResource BgLightBrush}"
+                                Foreground="{DynamicResource AccentOrangeBrush}"
+                                BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1"/>
 
                     <TextBlock Grid.Column="1" x:Name="TxtProgress" Text="0%" FontSize="12"
-                              Foreground="{StaticResource TextPrimaryBrush}"
+                              Foreground="{DynamicResource TextPrimaryBrush}"
                               VerticalAlignment="Center" Margin="10,0,0,0" Width="60" TextAlignment="Right"/>
                 </Grid>
 
@@ -214,14 +214,14 @@
                 <DataGrid Grid.Row="2" x:Name="ResultsGrid"
                          AutoGenerateColumns="False"
                          IsReadOnly="True"
-                         Background="{StaticResource BgLightBrush}"
-                         Foreground="{StaticResource TextPrimaryBrush}"
-                         BorderBrush="{StaticResource BorderDimBrush}"
+                         Background="{DynamicResource BgLightBrush}"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         BorderBrush="{DynamicResource BorderDimBrush}"
                          BorderThickness="1"
                          GridLinesVisibility="Horizontal"
                          HeadersVisibility="Column"
-                         RowBackground="{StaticResource BgLightBrush}"
-                         AlternatingRowBackground="{StaticResource BgMediumBrush}"
+                         RowBackground="{DynamicResource BgLightBrush}"
+                         AlternatingRowBackground="{DynamicResource BgMediumBrush}"
                          CanUserResizeRows="False">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Computer" Binding="{Binding ComputerName}" Width="200"/>
@@ -242,7 +242,7 @@
                     </Grid.ColumnDefinitions>
 
                     <TextBlock Grid.Column="0" x:Name="TxtTotal" Text="Total: 0" FontSize="12"
-                              Foreground="{StaticResource TextSecondaryBrush}"/>
+                              Foreground="{DynamicResource TextSecondaryBrush}"/>
                     <TextBlock Grid.Column="1" x:Name="TxtSuccess" Text="Success: 0" FontSize="12"
                               Foreground="{StaticResource SuccessGreenBrush}"/>
                     <TextBlock Grid.Column="2" x:Name="TxtFailed" Text="Failed: 0" FontSize="12"
@@ -265,7 +265,7 @@
 
             <Button Grid.Column="1" x:Name="BtnExecute" Content="Execute Operation" Width="160" Height="40"
                    FontSize="14" FontWeight="SemiBold"
-                   Background="{StaticResource AccentOrangeBrush}"
+                   Background="{DynamicResource AccentOrangeBrush}"
                    Foreground="White"
                    BorderThickness="0"
                    Click="BtnExecute_Click"
@@ -273,27 +273,27 @@
 
             <Button Grid.Column="2" x:Name="BtnCancel" Content="Cancel" Width="120" Height="40"
                    FontSize="14"
-                   Background="{StaticResource BgLightBrush}"
-                   Foreground="{StaticResource TextPrimaryBrush}"
-                   BorderBrush="{StaticResource BorderDimBrush}"
+                   Background="{DynamicResource BgLightBrush}"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   BorderBrush="{DynamicResource BorderDimBrush}"
                    Click="BtnCancel_Click"
                    IsEnabled="False"
                    Margin="0,0,10,0"/>
 
             <Button Grid.Column="3" x:Name="BtnExportCsv" Content="Export CSV" Width="120" Height="40"
                    FontSize="14"
-                   Background="{StaticResource BgLightBrush}"
-                   Foreground="{StaticResource TextPrimaryBrush}"
-                   BorderBrush="{StaticResource BorderDimBrush}"
+                   Background="{DynamicResource BgLightBrush}"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   BorderBrush="{DynamicResource BorderDimBrush}"
                    Click="BtnExportCsv_Click"
                    IsEnabled="False"
                    Margin="0,0,10,0"/>
 
             <Button Grid.Column="4" x:Name="BtnClose" Content="Close" Width="120" Height="40"
                    FontSize="14"
-                   Background="{StaticResource BgLightBrush}"
-                   Foreground="{StaticResource TextPrimaryBrush}"
-                   BorderBrush="{StaticResource BorderDimBrush}"
+                   Background="{DynamicResource BgLightBrush}"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   BorderBrush="{DynamicResource BorderDimBrush}"
                    Click="BtnClose_Click"/>
         </Grid>
     </Grid>

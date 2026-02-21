@@ -21,10 +21,10 @@
         <Border Grid.Column="0" Background="#FF1A1A1A" BorderBrush="#FF3C3C3C" BorderThickness="0,0,1,0">
             <DockPanel>
                 <!-- Header -->
-                <Border DockPanel.Dock="Top" Background="#FF252525" Padding="12,10" BorderBrush="#FFFF8533" BorderThickness="0,0,0,2">
+                <Border DockPanel.Dock="Top" Background="#FF252525" Padding="12,10" BorderBrush="{DynamicResource AccentOrangeBrush}" BorderThickness="0,0,0,2">
                     <StackPanel>
-                        <TextBlock Text="🌳 ACTIVE DIRECTORY" Foreground="#FFFF8533" FontSize="11" FontWeight="Bold"/>
-                        <TextBlock x:Name="TxtDomainName" Text="Loading..." Foreground="#FFA1A1AA" FontSize="9" Margin="0,4,0,0"/>
+                        <TextBlock Text="🌳 ACTIVE DIRECTORY" Foreground="{DynamicResource AccentOrangeBrush}" FontSize="11" FontWeight="Bold"/>
+                        <TextBlock x:Name="TxtDomainName" Text="Loading..." Foreground="{DynamicResource AccentZincBrush}" FontSize="9" Margin="0,4,0,0"/>
                     </StackPanel>
                 </Border>
 
@@ -48,7 +48,8 @@
                                                 </Grid.RowDefinitions>
 
                                                 <!-- Header -->
-                                                <Border x:Name="Bd" Grid.Row="0" Background="{TemplateBinding Background}"
+                                                <Grid Grid.Row="0">
+                                                <Border x:Name="Bd" Background="{TemplateBinding Background}"
                                                         BorderBrush="{TemplateBinding BorderBrush}"
                                                         BorderThickness="{TemplateBinding BorderThickness}"
                                                         Padding="{TemplateBinding Padding}"
@@ -69,7 +70,7 @@
                                                                 <ControlTemplate TargetType="ToggleButton">
                                                                     <Border Background="Transparent" Width="16" Height="16">
                                                                         <TextBlock x:Name="ExpanderIcon" Text="▶"
-                                                                                   Foreground="#FFA1A1AA" FontSize="8"
+                                                                                   Foreground="{DynamicResource AccentZincBrush}" FontSize="8"
                                                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                                     </Border>
                                                                     <ControlTemplate.Triggers>
@@ -88,6 +89,11 @@
                                                                           HorizontalAlignment="Left"/>
                                                     </Grid>
                                                 </Border>
+                                                <Border x:Name="selectionOverlay" CornerRadius="3" Margin="0,1" Opacity="0"
+                                                        Background="{DynamicResource AccentGradientBrush}"/>
+                                                <Border x:Name="hoverOverlay" CornerRadius="3" Margin="0,1" Opacity="0"
+                                                        Background="#FF2A2A2A"/>
+                                                </Grid>
 
                                                 <!-- Children -->
                                                 <ItemsPresenter x:Name="ItemsHost" Grid.Row="1" Margin="16,0,0,0"/>
@@ -101,18 +107,11 @@
                                                     <Setter TargetName="Expander" Property="Visibility" Value="Hidden"/>
                                                 </Trigger>
                                                 <Trigger Property="IsSelected" Value="True">
-                                                    <Setter TargetName="Bd" Property="Background">
-                                                        <Setter.Value>
-                                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                                <GradientStop Color="#FFFF8533" Offset="0"/>
-                                                                <GradientStop Color="#FFA1A1AA" Offset="1"/>
-                                                            </LinearGradientBrush>
-                                                        </Setter.Value>
-                                                    </Setter>
+                                                    <Setter TargetName="selectionOverlay" Property="Opacity" Value="1"/>
                                                     <Setter Property="FontWeight" Value="Bold"/>
                                                 </Trigger>
                                                 <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter TargetName="Bd" Property="Background" Value="#FF2A2A2A"/>
+                                                    <Setter TargetName="hoverOverlay" Property="Opacity" Value="1"/>
                                                 </Trigger>
                                             </ControlTemplate.Triggers>
                                         </ControlTemplate>
@@ -153,7 +152,7 @@
                                        Foreground="White" FontSize="11" FontWeight="SemiBold"
                                        VerticalAlignment="Center"/>
                             <TextBlock x:Name="TxtObjectCount" Text="(0 objects)"
-                                       Foreground="#FFA1A1AA" FontSize="10" Margin="8,0,0,0"
+                                       Foreground="{DynamicResource AccentZincBrush}" FontSize="10" Margin="8,0,0,0"
                                        VerticalAlignment="Center"/>
                         </StackPanel>
 
@@ -164,13 +163,8 @@
                                     Margin="0,0,6,0">
                                 <Button.Template>
                                     <ControlTemplate TargetType="Button">
-                                        <Border x:Name="border" CornerRadius="4" Padding="{TemplateBinding Padding}">
-                                            <Border.Background>
-                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                    <GradientStop Color="#FFFF8533" Offset="0"/>
-                                                    <GradientStop Color="#FFCC6B29" Offset="1"/>
-                                                </LinearGradientBrush>
-                                            </Border.Background>
+                                        <Border x:Name="border" CornerRadius="4" Padding="{TemplateBinding Padding}"
+                                                Background="{DynamicResource AccentGradientBrush}">
                                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                         </Border>
                                         <ControlTemplate.Triggers>
@@ -205,7 +199,7 @@
                     <DataGrid.ColumnHeaderStyle>
                         <Style TargetType="DataGridColumnHeader">
                             <Setter Property="Background" Value="#FF2A2A2A"/>
-                            <Setter Property="Foreground" Value="#FFFF8533"/>
+                            <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                             <Setter Property="FontWeight" Value="Bold"/>
                             <Setter Property="FontSize" Value="10"/>
                             <Setter Property="Padding" Value="10,8"/>
@@ -223,14 +217,7 @@
                                     <Setter Property="Background" Value="#FF252525"/>
                                 </Trigger>
                                 <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background">
-                                        <Setter.Value>
-                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0" Opacity="0.3">
-                                                <GradientStop Color="#FFFF8533" Offset="0"/>
-                                                <GradientStop Color="#FFA1A1AA" Offset="1"/>
-                                            </LinearGradientBrush>
-                                        </Setter.Value>
-                                    </Setter>
+                                    <Setter Property="Background" Value="{DynamicResource AccentGradientBrush}"/>
                                 </Trigger>
                             </Style.Triggers>
                         </Style>
@@ -270,17 +257,17 @@
                         </Grid.ColumnDefinitions>
 
                         <TextBlock x:Name="TxtStatusMessage" Grid.Column="0"
-                                   Text="Ready" Foreground="#FFA1A1AA" FontSize="9"/>
+                                   Text="Ready" Foreground="{DynamicResource AccentZincBrush}" FontSize="9"/>
 
                         <StackPanel Grid.Column="1" Orientation="Horizontal">
-                            <TextBlock Text="Computers: " Foreground="#FFA1A1AA" FontSize="9"/>
-                            <TextBlock x:Name="TxtComputerCount" Text="0" Foreground="#FFFF8533" FontSize="9" FontWeight="Bold" Margin="0,0,12,0"/>
+                            <TextBlock Text="Computers: " Foreground="{DynamicResource AccentZincBrush}" FontSize="9"/>
+                            <TextBlock x:Name="TxtComputerCount" Text="0" Foreground="{DynamicResource AccentOrangeBrush}" FontSize="9" FontWeight="Bold" Margin="0,0,12,0"/>
 
-                            <TextBlock Text="Users: " Foreground="#FFA1A1AA" FontSize="9"/>
-                            <TextBlock x:Name="TxtUserCount" Text="0" Foreground="#FFFF8533" FontSize="9" FontWeight="Bold" Margin="0,0,12,0"/>
+                            <TextBlock Text="Users: " Foreground="{DynamicResource AccentZincBrush}" FontSize="9"/>
+                            <TextBlock x:Name="TxtUserCount" Text="0" Foreground="{DynamicResource AccentOrangeBrush}" FontSize="9" FontWeight="Bold" Margin="0,0,12,0"/>
 
-                            <TextBlock Text="Groups: " Foreground="#FFA1A1AA" FontSize="9"/>
-                            <TextBlock x:Name="TxtGroupCount" Text="0" Foreground="#FFFF8533" FontSize="9" FontWeight="Bold"/>
+                            <TextBlock Text="Groups: " Foreground="{DynamicResource AccentZincBrush}" FontSize="9"/>
+                            <TextBlock x:Name="TxtGroupCount" Text="0" Foreground="{DynamicResource AccentOrangeBrush}" FontSize="9" FontWeight="Bold"/>
                         </StackPanel>
                     </Grid>
                 </Border>

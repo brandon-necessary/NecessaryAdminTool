@@ -169,6 +169,28 @@ namespace NecessaryAdminTool.Data
                         )";
                     await ExecuteNonQueryAsync(createBookmarksTable);
                 }
+
+                if (!tables.Contains("ComputerTags"))
+                {
+                    var createTagsTable = @"
+                        CREATE TABLE ComputerTags (
+                            Hostname TEXT(255),
+                            TagName TEXT(100),
+                            CONSTRAINT PK_ComputerTags PRIMARY KEY (Hostname, TagName)
+                        )";
+                    await ExecuteNonQueryAsync(createTagsTable);
+                }
+
+                if (!tables.Contains("Settings"))
+                {
+                    var createSettingsTable = @"
+                        CREATE TABLE Settings (
+                            SettingKey TEXT(255) PRIMARY KEY,
+                            SettingValue MEMO,
+                            UpdatedAt DATETIME
+                        )";
+                    await ExecuteNonQueryAsync(createSettingsTable);
+                }
             }
             catch (Exception ex)
             {
@@ -407,106 +429,527 @@ namespace NecessaryAdminTool.Data
             return computers;
         }
 
+        // TAG MANAGEMENT
         public async Task<List<string>> GetComputerTagsAsync(string hostname)
         {
-            LogManager.LogWarning($"GetComputerTagsAsync not yet implemented in {GetType().Name}");
-            return await Task.FromResult(new List<string>());
+            var tags = new List<string>();
+            await _dbLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                using (var cmd = new OleDbCommand("SELECT TagName FROM ComputerTags WHERE Hostname = ? ORDER BY TagName", _connection))
+                {
+                    cmd.Parameters.AddWithValue("?", hostname);
+                    await Task.Run(() =>
+                    {
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                                tags.Add(reader.GetString(0));
+                        }
+                    }).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to get tags for {hostname}", ex);
+            }
+            finally { _dbLock.Release(); }
+            return tags;
         }
 
         public async Task AddTagAsync(string hostname, string tagName)
         {
-            LogManager.LogWarning($"AddTagAsync not yet implemented in {GetType().Name}");
-            await Task.CompletedTask;
+            await _dbLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                // Check if tag exists first (Access doesn't support INSERT OR IGNORE)
+                using (var checkCmd = new OleDbCommand("SELECT COUNT(*) FROM ComputerTags WHERE Hostname = ? AND TagName = ?", _connection))
+                {
+                    checkCmd.Parameters.AddWithValue("?", hostname);
+                    checkCmd.Parameters.AddWithValue("?", tagName);
+                    var count = await Task.Run(() => (int)checkCmd.ExecuteScalar()).ConfigureAwait(false);
+                    if (count > 0) return;
+                }
+                using (var cmd = new OleDbCommand("INSERT INTO ComputerTags (Hostname, TagName) VALUES (?, ?)", _connection))
+                {
+                    cmd.Parameters.AddWithValue("?", hostname);
+                    cmd.Parameters.AddWithValue("?", tagName);
+                    await Task.Run(() => cmd.ExecuteNonQuery()).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to add tag '{tagName}' to {hostname}", ex);
+            }
+            finally { _dbLock.Release(); }
         }
 
         public async Task RemoveTagAsync(string hostname, string tagName)
         {
-            LogManager.LogWarning($"RemoveTagAsync not yet implemented in {GetType().Name}");
-            await Task.CompletedTask;
+            await _dbLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                using (var cmd = new OleDbCommand("DELETE FROM ComputerTags WHERE Hostname = ? AND TagName = ?", _connection))
+                {
+                    cmd.Parameters.AddWithValue("?", hostname);
+                    cmd.Parameters.AddWithValue("?", tagName);
+                    await Task.Run(() => cmd.ExecuteNonQuery()).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to remove tag '{tagName}' from {hostname}", ex);
+            }
+            finally { _dbLock.Release(); }
         }
 
         public async Task<List<string>> GetAllTagsAsync()
         {
-            LogManager.LogWarning($"GetAllTagsAsync not yet implemented in {GetType().Name}");
-            return await Task.FromResult(new List<string>());
+            var tags = new List<string>();
+            await _dbLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                using (var cmd = new OleDbCommand("SELECT DISTINCT TagName FROM ComputerTags ORDER BY TagName", _connection))
+                {
+                    await Task.Run(() =>
+                    {
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                                tags.Add(reader.GetString(0));
+                        }
+                    }).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to get all tags", ex);
+            }
+            finally { _dbLock.Release(); }
+            return tags;
         }
 
+        // SCAN HISTORY
         public async Task<ScanHistory> GetLastScanAsync()
         {
-            LogManager.LogWarning($"GetLastScanAsync not yet implemented in {GetType().Name}");
-            return await Task.FromResult<ScanHistory>(null);
+            await _dbLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                // Access doesn't support LIMIT — use TOP 1 + ORDER BY DESC
+                using (var cmd = new OleDbCommand("SELECT TOP 1 Id, ScanDate, ComputersFound, ErrorCount, DurationSeconds FROM ScanHistory ORDER BY Id DESC", _connection))
+                {
+                    return await Task.Run(() =>
+                    {
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                return new ScanHistory
+                                {
+                                    ScanId = (int)reader["Id"],
+                                    StartTime = reader["ScanDate"] != DBNull.Value ? (DateTime)reader["ScanDate"] : DateTime.MinValue,
+                                    ComputersScanned = reader["ComputersFound"] != DBNull.Value ? (int)reader["ComputersFound"] : 0,
+                                    FailureCount = reader["ErrorCount"] != DBNull.Value ? (int)reader["ErrorCount"] : 0,
+                                    DurationSeconds = reader["DurationSeconds"] != DBNull.Value ? Convert.ToDouble(reader["DurationSeconds"]) : 0
+                                };
+                            }
+                            return null;
+                        }
+                    }).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to get last scan", ex);
+                return null;
+            }
+            finally { _dbLock.Release(); }
         }
 
         public async Task SaveScanHistoryAsync(ScanHistory scan)
         {
-            LogManager.LogWarning($"SaveScanHistoryAsync not yet implemented in {GetType().Name}");
-            await Task.CompletedTask;
+            await _dbLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                using (var cmd = new OleDbCommand("INSERT INTO ScanHistory (ScanDate, ScanType, ComputersFound, ErrorCount, DurationSeconds, Notes) VALUES (?, ?, ?, ?, ?, ?)", _connection))
+                {
+                    cmd.Parameters.AddWithValue("?", scan.StartTime);
+                    cmd.Parameters.AddWithValue("?", "Fleet Scan");
+                    cmd.Parameters.AddWithValue("?", scan.ComputersScanned);
+                    cmd.Parameters.AddWithValue("?", scan.FailureCount);
+                    cmd.Parameters.AddWithValue("?", (int)scan.DurationSeconds);
+                    cmd.Parameters.AddWithValue("?", $"Success: {scan.SuccessCount}, Failed: {scan.FailureCount}");
+                    await Task.Run(() => cmd.ExecuteNonQuery()).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to save scan history", ex);
+            }
+            finally { _dbLock.Release(); }
         }
 
         public async Task<List<ScanHistory>> GetScanHistoryAsync(int limit = 10)
         {
-            LogManager.LogWarning($"GetScanHistoryAsync not yet implemented in {GetType().Name}");
-            return await Task.FromResult(new List<ScanHistory>());
+            var history = new List<ScanHistory>();
+            await _dbLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                // Access TOP requires literal, but parameterised TOP doesn't work — use TOP 100 as safe upper bound
+                var topN = Math.Min(limit, 100);
+                using (var cmd = new OleDbCommand($"SELECT TOP {topN} Id, ScanDate, ComputersFound, ErrorCount, DurationSeconds FROM ScanHistory ORDER BY Id DESC", _connection))
+                {
+                    await Task.Run(() =>
+                    {
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                history.Add(new ScanHistory
+                                {
+                                    ScanId = (int)reader["Id"],
+                                    StartTime = reader["ScanDate"] != DBNull.Value ? (DateTime)reader["ScanDate"] : DateTime.MinValue,
+                                    ComputersScanned = reader["ComputersFound"] != DBNull.Value ? (int)reader["ComputersFound"] : 0,
+                                    FailureCount = reader["ErrorCount"] != DBNull.Value ? (int)reader["ErrorCount"] : 0,
+                                    DurationSeconds = reader["DurationSeconds"] != DBNull.Value ? Convert.ToDouble(reader["DurationSeconds"]) : 0
+                                });
+                            }
+                        }
+                    }).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to get scan history", ex);
+            }
+            finally { _dbLock.Release(); }
+            return history;
         }
 
+        // SETTINGS
         public async Task<string> GetSettingAsync(string key, string defaultValue = null)
         {
-            LogManager.LogWarning($"GetSettingAsync not yet implemented in {GetType().Name}");
-            return await Task.FromResult(defaultValue);
+            await _dbLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                using (var cmd = new OleDbCommand("SELECT SettingValue FROM Settings WHERE SettingKey = ?", _connection))
+                {
+                    cmd.Parameters.AddWithValue("?", key);
+                    var result = await Task.Run(() => cmd.ExecuteScalar()).ConfigureAwait(false);
+                    if (result != null && result != DBNull.Value)
+                        return result.ToString();
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to get setting '{key}'", ex);
+            }
+            finally { _dbLock.Release(); }
+            return defaultValue;
         }
 
         public async Task SaveSettingAsync(string key, string value)
         {
-            LogManager.LogWarning($"SaveSettingAsync not yet implemented in {GetType().Name}");
-            await Task.CompletedTask;
+            await _dbLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                // Check if key exists (Access doesn't support MERGE)
+                using (var checkCmd = new OleDbCommand("SELECT COUNT(*) FROM Settings WHERE SettingKey = ?", _connection))
+                {
+                    checkCmd.Parameters.AddWithValue("?", key);
+                    var count = await Task.Run(() => (int)checkCmd.ExecuteScalar()).ConfigureAwait(false);
+                    if (count > 0)
+                    {
+                        using (var cmd = new OleDbCommand("UPDATE Settings SET SettingValue = ?, UpdatedAt = ? WHERE SettingKey = ?", _connection))
+                        {
+                            cmd.Parameters.AddWithValue("?", value ?? string.Empty);
+                            cmd.Parameters.AddWithValue("?", DateTime.Now);
+                            cmd.Parameters.AddWithValue("?", key);
+                            await Task.Run(() => cmd.ExecuteNonQuery()).ConfigureAwait(false);
+                        }
+                    }
+                    else
+                    {
+                        using (var cmd = new OleDbCommand("INSERT INTO Settings (SettingKey, SettingValue, UpdatedAt) VALUES (?, ?, ?)", _connection))
+                        {
+                            cmd.Parameters.AddWithValue("?", key);
+                            cmd.Parameters.AddWithValue("?", value ?? string.Empty);
+                            cmd.Parameters.AddWithValue("?", DateTime.Now);
+                            await Task.Run(() => cmd.ExecuteNonQuery()).ConfigureAwait(false);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to save setting '{key}'", ex);
+            }
+            finally { _dbLock.Release(); }
         }
 
+        // SCRIPTS
         public async Task<List<ScriptInfo>> GetAllScriptsAsync()
         {
-            LogManager.LogWarning($"GetAllScriptsAsync not yet implemented in {GetType().Name}");
-            return await Task.FromResult(new List<ScriptInfo>());
+            var scripts = new List<ScriptInfo>();
+            await _dbLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                using (var cmd = new OleDbCommand("SELECT Id, Name, Description, ScriptContent, Category, CreatedDate FROM Scripts ORDER BY Name", _connection))
+                {
+                    await Task.Run(() =>
+                    {
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                scripts.Add(new ScriptInfo
+                                {
+                                    ScriptId = (int)reader["Id"],
+                                    Name = reader["Name"]?.ToString(),
+                                    Description = reader["Description"]?.ToString(),
+                                    Content = reader["ScriptContent"]?.ToString(),
+                                    Category = reader["Category"]?.ToString(),
+                                    CreatedAt = reader["CreatedDate"] != DBNull.Value ? (DateTime)reader["CreatedDate"] : DateTime.MinValue
+                                });
+                            }
+                        }
+                    }).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to get scripts", ex);
+            }
+            finally { _dbLock.Release(); }
+            return scripts;
         }
 
         public async Task SaveScriptAsync(ScriptInfo script)
         {
-            LogManager.LogWarning($"SaveScriptAsync not yet implemented in {GetType().Name}");
-            await Task.CompletedTask;
+            await _dbLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                // Check if script with same name exists
+                using (var checkCmd = new OleDbCommand("SELECT COUNT(*) FROM Scripts WHERE Name = ?", _connection))
+                {
+                    checkCmd.Parameters.AddWithValue("?", script.Name ?? string.Empty);
+                    var count = await Task.Run(() => (int)checkCmd.ExecuteScalar()).ConfigureAwait(false);
+                    if (count > 0)
+                    {
+                        using (var cmd = new OleDbCommand("UPDATE Scripts SET Description = ?, ScriptContent = ?, Category = ?, ModifiedDate = ? WHERE Name = ?", _connection))
+                        {
+                            cmd.Parameters.AddWithValue("?", script.Description ?? string.Empty);
+                            cmd.Parameters.AddWithValue("?", script.Content ?? string.Empty);
+                            cmd.Parameters.AddWithValue("?", script.Category ?? string.Empty);
+                            cmd.Parameters.AddWithValue("?", DateTime.Now);
+                            cmd.Parameters.AddWithValue("?", script.Name ?? string.Empty);
+                            await Task.Run(() => cmd.ExecuteNonQuery()).ConfigureAwait(false);
+                        }
+                    }
+                    else
+                    {
+                        using (var cmd = new OleDbCommand("INSERT INTO Scripts (Name, Description, ScriptContent, Category, CreatedDate, ModifiedDate) VALUES (?, ?, ?, ?, ?, ?)", _connection))
+                        {
+                            cmd.Parameters.AddWithValue("?", script.Name ?? string.Empty);
+                            cmd.Parameters.AddWithValue("?", script.Description ?? string.Empty);
+                            cmd.Parameters.AddWithValue("?", script.Content ?? string.Empty);
+                            cmd.Parameters.AddWithValue("?", script.Category ?? string.Empty);
+                            cmd.Parameters.AddWithValue("?", DateTime.Now);
+                            cmd.Parameters.AddWithValue("?", DateTime.Now);
+                            await Task.Run(() => cmd.ExecuteNonQuery()).ConfigureAwait(false);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to save script '{script.Name}'", ex);
+            }
+            finally { _dbLock.Release(); }
         }
 
         public async Task DeleteScriptAsync(int scriptId)
         {
-            LogManager.LogWarning($"DeleteScriptAsync not yet implemented in {GetType().Name}");
-            await Task.CompletedTask;
+            await _dbLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                using (var cmd = new OleDbCommand("DELETE FROM Scripts WHERE Id = ?", _connection))
+                {
+                    cmd.Parameters.AddWithValue("?", scriptId);
+                    await Task.Run(() => cmd.ExecuteNonQuery()).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to delete script {scriptId}", ex);
+            }
+            finally { _dbLock.Release(); }
         }
 
+        // BOOKMARKS
         public async Task<List<BookmarkInfo>> GetAllBookmarksAsync()
         {
-            LogManager.LogWarning($"GetAllBookmarksAsync not yet implemented in {GetType().Name}");
-            return await Task.FromResult(new List<BookmarkInfo>());
+            var bookmarks = new List<BookmarkInfo>();
+            await _dbLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                using (var cmd = new OleDbCommand("SELECT Hostname, Category, Notes FROM Bookmarks ORDER BY Hostname", _connection))
+                {
+                    await Task.Run(() =>
+                    {
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                bookmarks.Add(new BookmarkInfo
+                                {
+                                    Hostname = reader["Hostname"]?.ToString(),
+                                    Category = reader["Category"]?.ToString(),
+                                    Notes = reader["Notes"]?.ToString()
+                                });
+                            }
+                        }
+                    }).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to get bookmarks", ex);
+            }
+            finally { _dbLock.Release(); }
+            return bookmarks;
         }
 
         public async Task SaveBookmarkAsync(BookmarkInfo bookmark)
         {
-            LogManager.LogWarning($"SaveBookmarkAsync not yet implemented in {GetType().Name}");
-            await Task.CompletedTask;
+            await _dbLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                using (var checkCmd = new OleDbCommand("SELECT COUNT(*) FROM Bookmarks WHERE Hostname = ?", _connection))
+                {
+                    checkCmd.Parameters.AddWithValue("?", bookmark.Hostname ?? string.Empty);
+                    var count = await Task.Run(() => (int)checkCmd.ExecuteScalar()).ConfigureAwait(false);
+                    if (count > 0)
+                    {
+                        using (var cmd = new OleDbCommand("UPDATE Bookmarks SET Category = ?, Notes = ? WHERE Hostname = ?", _connection))
+                        {
+                            cmd.Parameters.AddWithValue("?", bookmark.Category ?? string.Empty);
+                            cmd.Parameters.AddWithValue("?", bookmark.Notes ?? string.Empty);
+                            cmd.Parameters.AddWithValue("?", bookmark.Hostname ?? string.Empty);
+                            await Task.Run(() => cmd.ExecuteNonQuery()).ConfigureAwait(false);
+                        }
+                    }
+                    else
+                    {
+                        using (var cmd = new OleDbCommand("INSERT INTO Bookmarks (Name, Hostname, Category, Notes, CreatedDate) VALUES (?, ?, ?, ?, ?)", _connection))
+                        {
+                            cmd.Parameters.AddWithValue("?", bookmark.Hostname ?? string.Empty);
+                            cmd.Parameters.AddWithValue("?", bookmark.Hostname ?? string.Empty);
+                            cmd.Parameters.AddWithValue("?", bookmark.Category ?? string.Empty);
+                            cmd.Parameters.AddWithValue("?", bookmark.Notes ?? string.Empty);
+                            cmd.Parameters.AddWithValue("?", DateTime.Now);
+                            await Task.Run(() => cmd.ExecuteNonQuery()).ConfigureAwait(false);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to save bookmark for {bookmark.Hostname}", ex);
+            }
+            finally { _dbLock.Release(); }
         }
 
         public async Task DeleteBookmarkAsync(string hostname)
         {
-            LogManager.LogWarning($"DeleteBookmarkAsync not yet implemented in {GetType().Name}");
-            await Task.CompletedTask;
+            await _dbLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                using (var cmd = new OleDbCommand("DELETE FROM Bookmarks WHERE Hostname = ?", _connection))
+                {
+                    cmd.Parameters.AddWithValue("?", hostname);
+                    await Task.Run(() => cmd.ExecuteNonQuery()).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to delete bookmark for {hostname}", ex);
+            }
+            finally { _dbLock.Release(); }
         }
 
+        // DATABASE OPERATIONS
         public async Task OptimizeDatabaseAsync()
         {
-            LogManager.LogWarning($"OptimizeDatabaseAsync not yet implemented in {GetType().Name}");
-            await Task.CompletedTask;
+            // Access compact/repair requires the DB to be closed, then re-opened
+            // Use JRO (Jet Replication Objects) for compacting
+            try
+            {
+                LogManager.LogInfo("AccessDataProvider.OptimizeDatabaseAsync() - START");
+                _connection?.Close();
+
+                var tempPath = _databasePath + ".compact.tmp";
+                var connStr = $"Provider=Microsoft.ACE.OLEDB.12.0;Data Source={_databasePath};";
+                var tempConnStr = $"Provider=Microsoft.ACE.OLEDB.12.0;Data Source={tempPath};";
+
+                await Task.Run(() =>
+                {
+                    var jro = Activator.CreateInstance(Type.GetTypeFromProgID("JRO.JetEngine"));
+                    jro.GetType().InvokeMember("CompactDatabase",
+                        System.Reflection.BindingFlags.InvokeMethod, null, jro,
+                        new object[] { connStr, tempConnStr });
+
+                    // Replace original with compacted
+                    File.Delete(_databasePath);
+                    File.Move(tempPath, _databasePath);
+                }).ConfigureAwait(false);
+
+                // Re-open connection
+                var connectionString = $"Provider=Microsoft.ACE.OLEDB.12.0;Data Source={_databasePath};Persist Security Info=False;";
+                _connection = new OleDbConnection(connectionString);
+                await Task.Run(() => _connection.Open());
+
+                LogManager.LogInfo("AccessDataProvider.OptimizeDatabaseAsync() - SUCCESS");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("AccessDataProvider.OptimizeDatabaseAsync() - FAILED", ex);
+                // Try to re-open connection even on failure
+                try
+                {
+                    var connectionString = $"Provider=Microsoft.ACE.OLEDB.12.0;Data Source={_databasePath};Persist Security Info=False;";
+                    _connection = new OleDbConnection(connectionString);
+                    await Task.Run(() => _connection.Open());
+                }
+                catch (Exception reopenEx)
+                {
+                    LogManager.LogError("Failed to re-open Access database after optimize failure", reopenEx);
+                }
+            }
         }
 
         public async Task<bool> VerifyIntegrityAsync()
         {
-            LogManager.LogWarning($"VerifyIntegrityAsync not yet implemented in {GetType().Name} - returning true (pass-through)");
-            return await Task.FromResult(true);
+            await _dbLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                // Verify we can read from each table
+                var tables = new[] { "Computers", "ScanHistory", "Scripts", "Bookmarks" };
+                foreach (var table in tables)
+                {
+                    using (var cmd = new OleDbCommand($"SELECT COUNT(*) FROM {table}", _connection))
+                    {
+                        await Task.Run(() => cmd.ExecuteScalar()).ConfigureAwait(false);
+                    }
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Access database integrity check failed", ex);
+                return false;
+            }
+            finally { _dbLock.Release(); }
         }
 
         public async Task<bool> BackupDatabaseAsync(string backupPath)
@@ -587,7 +1030,7 @@ namespace NecessaryAdminTool.Data
         // (OleDb does not support parameterized table names).
         private static readonly HashSet<string> _allowedTables =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-            { "Computers", "ScanHistory", "Scripts", "Bookmarks" };
+            { "Computers", "ScanHistory", "Scripts", "Bookmarks", "ComputerTags", "Settings" };
 
         private async Task<int> GetTableCountLockedAsync(string tableName)
         {

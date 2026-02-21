@@ -6,7 +6,7 @@
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanResize"
         MinHeight="550" MinWidth="750"
-        Background="{StaticResource MicaBrush}"
+        Background="{DynamicResource MicaBrush}"
         FontFamily="{StaticResource FluentFont}"
         UseLayoutRounding="True"
         SnapsToDevicePixels="True"
@@ -26,7 +26,7 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Border Grid.Row="0" Background="{StaticResource AccentOrangeBrush}" Padding="20"
+        <Border Grid.Row="0" Background="{DynamicResource AccentOrangeBrush}" Padding="20"
                 Effect="{StaticResource Elevation4dp}">
             <StackPanel>
                 <TextBlock Text="🗄️ Database Setup Wizard" FontSize="24" FontWeight="Bold" Foreground="White"/>
@@ -40,20 +40,20 @@
             <StackPanel Margin="20">
 
                 <!-- Step 1: Database Type Selection -->
-                <Border x:Name="PanelStep1" Background="{StaticResource MicaAltBrush}"
-                        BorderBrush="{StaticResource BorderDimBrush}" BorderThickness="1"
+                <Border x:Name="PanelStep1" Background="{DynamicResource MicaAltBrush}"
+                        BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1"
                         CornerRadius="{StaticResource FluentCornerRadius}" Padding="20" Margin="0,0,0,15"
                         Effect="{StaticResource Elevation2dp}">
                     <StackPanel>
                         <TextBlock Text="Step 1: Select Database Type" FontSize="18" FontWeight="Bold"
-                                   Foreground="{StaticResource AccentOrangeBrush}" Margin="0,0,0,15"/>
+                                   Foreground="{DynamicResource AccentOrangeBrush}" Margin="0,0,0,15"/>
 
                         <TextBlock Text="Choose the database backend that best fits your environment:"
-                                   Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,10"/>
+                                   Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10"/>
 
                         <!-- SQLite Option -->
                         <RadioButton x:Name="RadioSQLite" GroupName="DatabaseType"
-                                     Foreground="{StaticResource TextPrimaryBrush}" Margin="0,10,0,5"
+                                     Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,10,0,5"
                                      Checked="RadioDatabaseType_Checked">
                             <StackPanel>
                                 <TextBlock Text="✅ SQLite (Recommended for Most Users)" FontWeight="Bold" FontSize="14"/>
@@ -66,177 +66,177 @@
 
                         <!-- SQL Server Option -->
                         <RadioButton x:Name="RadioSqlServer" GroupName="DatabaseType"
-                                     Foreground="{StaticResource TextPrimaryBrush}" Margin="0,15,0,5"
+                                     Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,15,0,5"
                                      Checked="RadioDatabaseType_Checked">
                             <StackPanel>
                                 <TextBlock Text="🏢 SQL Server (Enterprise)" FontWeight="Bold" FontSize="14"/>
                                 <TextBlock Text="• Best for multi-user environments" Margin="20,5,0,0" FontSize="11"/>
                                 <TextBlock Text="• Centralized database with backup/HA support" Margin="20,2,0,0" FontSize="11"/>
                                 <TextBlock Text="• Supports unlimited computers" Margin="20,2,0,0" FontSize="11"/>
-                                <TextBlock Text="• Requires SQL Server installation" Margin="20,2,0,0" FontSize="11" Foreground="#FFFF8533"/>
+                                <TextBlock Text="• Requires SQL Server installation" Margin="20,2,0,0" FontSize="11" Foreground="{DynamicResource AccentOrangeBrush}"/>
                             </StackPanel>
                         </RadioButton>
 
                         <!-- Access Option -->
                         <RadioButton x:Name="RadioAccess" GroupName="DatabaseType"
-                                     Foreground="{StaticResource TextPrimaryBrush}" Margin="0,15,0,5"
+                                     Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,15,0,5"
                                      Checked="RadioDatabaseType_Checked">
                             <StackPanel>
                                 <TextBlock Text="📊 Microsoft Access" FontWeight="Bold" FontSize="14"/>
                                 <TextBlock Text="• Familiar Microsoft Office interface" Margin="20,5,0,0" FontSize="11"/>
                                 <TextBlock Text="• Easy Excel integration" Margin="20,2,0,0" FontSize="11"/>
                                 <TextBlock Text="• Capacity: Up to 50,000 computers" Margin="20,2,0,0" FontSize="11"/>
-                                <TextBlock Text="• Requires Access Database Engine (ACE)" Margin="20,2,0,0" FontSize="11" Foreground="#FFFF8533"/>
+                                <TextBlock Text="• Requires Access Database Engine (ACE)" Margin="20,2,0,0" FontSize="11" Foreground="{DynamicResource AccentOrangeBrush}"/>
                             </StackPanel>
                         </RadioButton>
 
                         <!-- CSV/JSON Option -->
                         <RadioButton x:Name="RadioCsv" GroupName="DatabaseType"
-                                     Foreground="{StaticResource TextPrimaryBrush}" Margin="0,15,0,5"
+                                     Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,15,0,5"
                                      Checked="RadioDatabaseType_Checked">
                             <StackPanel>
                                 <TextBlock Text="📄 CSV/JSON (Portable)" FontWeight="Bold" FontSize="14"/>
                                 <TextBlock Text="• No dependencies - works everywhere" Margin="20,5,0,0" FontSize="11"/>
                                 <TextBlock Text="• Human-readable and portable" Margin="20,2,0,0" FontSize="11"/>
                                 <TextBlock Text="• Best for small environments (&lt;1,000 computers)" Margin="20,2,0,0" FontSize="11"/>
-                                <TextBlock Text="• Limited query performance" Margin="20,2,0,0" FontSize="11" Foreground="#FFFF8533"/>
+                                <TextBlock Text="• Limited query performance" Margin="20,2,0,0" FontSize="11" Foreground="{DynamicResource AccentOrangeBrush}"/>
                             </StackPanel>
                         </RadioButton>
                     </StackPanel>
                 </Border>
 
                 <!-- Step 2: Configuration -->
-                <Border x:Name="PanelStep2" Background="{StaticResource BgCardBrush}"
-                        BorderBrush="{StaticResource BorderDimBrush}" BorderThickness="1"
+                <Border x:Name="PanelStep2" Background="{DynamicResource BgCardBrush}"
+                        BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1"
                         CornerRadius="4" Padding="20" Margin="0,0,0,15" Visibility="Collapsed">
                     <StackPanel>
                         <TextBlock Text="Step 2: Configuration" FontSize="18" FontWeight="Bold"
-                                   Foreground="{StaticResource AccentOrangeBrush}" Margin="0,0,0,15"/>
+                                   Foreground="{DynamicResource AccentOrangeBrush}" Margin="0,0,0,15"/>
 
                         <!-- SQLite Configuration -->
                         <StackPanel x:Name="ConfigSQLite" Visibility="Collapsed">
-                            <TextBlock Text="SQLite Database Configuration" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,10"/>
+                            <TextBlock Text="SQLite Database Configuration" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10"/>
 
-                            <TextBlock Text="Database File Location:" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,10,0,5"/>
+                            <TextBlock Text="Database File Location:" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,10,0,5"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBox x:Name="TxtSQLitePath" Grid.Column="0"
-                                         Background="{StaticResource BgDarkBrush}"
-                                         Foreground="{StaticResource TextPrimaryBrush}"
+                                         Background="{DynamicResource BgDarkBrush}"
+                                         Foreground="{DynamicResource TextPrimaryBrush}"
                                          Padding="8" Margin="0,0,10,0"/>
                                 <!-- TAG: #TOOLTIPS #FILE_OPERATIONS -->
                                 <Button Grid.Column="1" Content="Browse..." Width="100" Click="BtnBrowseSQLite_Click"
-                                        Background="{StaticResource BgLightBrush}"
+                                        Background="{DynamicResource BgLightBrush}"
                                         ToolTip="Opens folder browser to select directory for SQLite database file. Database file will be created as 'NecessaryAdminTool.db' in selected location. Recommended: C:\ProgramData\NecessaryAdminTool\ for multi-user access or network share for centralized storage."/>
                             </Grid>
 
                             <CheckBox x:Name="ChkEnableEncryption" Content="Enable encryption (SQLCipher)"
-                                      Foreground="{StaticResource TextPrimaryBrush}" Margin="0,15,0,5"
+                                      Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,15,0,5"
                                       Checked="ChkEnableEncryption_Changed" Unchecked="ChkEnableEncryption_Changed"/>
 
                             <StackPanel x:Name="PanelEncryptionKey" Visibility="Collapsed" Margin="20,10,0,0">
-                                <TextBlock Text="Encryption Password:" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,5"/>
+                                <TextBlock Text="Encryption Password:" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,5"/>
                                 <PasswordBox x:Name="TxtEncryptionPassword"
-                                             Background="{StaticResource BgDarkBrush}"
-                                             Foreground="{StaticResource TextPrimaryBrush}"
+                                             Background="{DynamicResource BgDarkBrush}"
+                                             Foreground="{DynamicResource TextPrimaryBrush}"
                                              Padding="8"/>
                                 <TextBlock Text="⚠️ Store this password securely - you cannot recover data without it!"
-                                           Foreground="#FFFF8533" FontSize="10" Margin="0,5,0,0"/>
+                                           Foreground="{DynamicResource AccentOrangeBrush}" FontSize="10" Margin="0,5,0,0"/>
                             </StackPanel>
                         </StackPanel>
 
                         <!-- SQL Server Configuration -->
                         <StackPanel x:Name="ConfigSqlServer" Visibility="Collapsed">
-                            <TextBlock Text="SQL Server Configuration" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,10"/>
+                            <TextBlock Text="SQL Server Configuration" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10"/>
 
-                            <TextBlock Text="Server Name/IP:" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,10,0,5"/>
+                            <TextBlock Text="Server Name/IP:" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,10,0,5"/>
                             <TextBox x:Name="TxtSqlServerName"
-                                     Background="{StaticResource BgDarkBrush}"
-                                     Foreground="{StaticResource TextPrimaryBrush}"
+                                     Background="{DynamicResource BgDarkBrush}"
+                                     Foreground="{DynamicResource TextPrimaryBrush}"
                                      Padding="8"/>
 
-                            <TextBlock Text="Database Name:" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,10,0,5"/>
+                            <TextBlock Text="Database Name:" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,10,0,5"/>
                             <TextBox x:Name="TxtSqlDatabaseName" Text="NecessaryAdminTool"
-                                     Background="{StaticResource BgDarkBrush}"
-                                     Foreground="{StaticResource TextPrimaryBrush}"
+                                     Background="{DynamicResource BgDarkBrush}"
+                                     Foreground="{DynamicResource TextPrimaryBrush}"
                                      Padding="8"/>
 
                             <CheckBox x:Name="ChkSqlWindowsAuth" Content="Use Windows Authentication"
-                                      Foreground="{StaticResource TextPrimaryBrush}" Margin="0,15,0,5" IsChecked="True"
+                                      Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,15,0,5" IsChecked="True"
                                       Checked="ChkSqlWindowsAuth_Changed" Unchecked="ChkSqlWindowsAuth_Changed"/>
 
                             <StackPanel x:Name="PanelSqlCredentials" Visibility="Collapsed" Margin="20,10,0,0">
-                                <TextBlock Text="Username:" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,5"/>
+                                <TextBlock Text="Username:" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,5"/>
                                 <TextBox x:Name="TxtSqlUsername"
-                                         Background="{StaticResource BgDarkBrush}"
-                                         Foreground="{StaticResource TextPrimaryBrush}"
+                                         Background="{DynamicResource BgDarkBrush}"
+                                         Foreground="{DynamicResource TextPrimaryBrush}"
                                          Padding="8"/>
 
-                                <TextBlock Text="Password:" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,10,0,5"/>
+                                <TextBlock Text="Password:" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,10,0,5"/>
                                 <PasswordBox x:Name="TxtSqlPassword"
-                                             Background="{StaticResource BgDarkBrush}"
-                                             Foreground="{StaticResource TextPrimaryBrush}"
+                                             Background="{DynamicResource BgDarkBrush}"
+                                             Foreground="{DynamicResource TextPrimaryBrush}"
                                              Padding="8"/>
                             </StackPanel>
                         </StackPanel>
 
                         <!-- Access Configuration -->
                         <StackPanel x:Name="ConfigAccess" Visibility="Collapsed">
-                            <TextBlock Text="Microsoft Access Configuration" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,10"/>
+                            <TextBlock Text="Microsoft Access Configuration" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10"/>
 
-                            <TextBlock Text="Database File Location:" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,10,0,5"/>
+                            <TextBlock Text="Database File Location:" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,10,0,5"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBox x:Name="TxtAccessPath" Grid.Column="0"
-                                         Background="{StaticResource BgDarkBrush}"
-                                         Foreground="{StaticResource TextPrimaryBrush}"
+                                         Background="{DynamicResource BgDarkBrush}"
+                                         Foreground="{DynamicResource TextPrimaryBrush}"
                                          Padding="8" Margin="0,0,10,0"/>
                                 <!-- TAG: #TOOLTIPS #FILE_OPERATIONS -->
                                 <Button Grid.Column="1" Content="Browse..." Width="100" Click="BtnBrowseAccess_Click"
-                                        Background="{StaticResource BgLightBrush}"
+                                        Background="{DynamicResource BgLightBrush}"
                                         ToolTip="Opens file browser to select or create Microsoft Access database file (.accdb). Requires ACE Database Engine (Office Runtime) installed. New .accdb file will be created if it doesn't exist. Supports network paths for multi-user access."/>
                             </Grid>
 
                             <TextBlock Text="Note: This will create a new .accdb file if it doesn't exist"
-                                       Foreground="{StaticResource TextPrimaryBrush}" FontSize="10" Margin="0,5,0,0"/>
+                                       Foreground="{DynamicResource TextPrimaryBrush}" FontSize="10" Margin="0,5,0,0"/>
                         </StackPanel>
 
                         <!-- CSV Configuration -->
                         <StackPanel x:Name="ConfigCsv" Visibility="Collapsed">
-                            <TextBlock Text="CSV/JSON Configuration" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,10"/>
+                            <TextBlock Text="CSV/JSON Configuration" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10"/>
 
-                            <TextBlock Text="Storage Directory:" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,10,0,5"/>
+                            <TextBlock Text="Storage Directory:" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,10,0,5"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBox x:Name="TxtCsvPath" Grid.Column="0"
-                                         Background="{StaticResource BgDarkBrush}"
-                                         Foreground="{StaticResource TextPrimaryBrush}"
+                                         Background="{DynamicResource BgDarkBrush}"
+                                         Foreground="{DynamicResource TextPrimaryBrush}"
                                          Padding="8" Margin="0,0,10,0"/>
                                 <!-- TAG: #TOOLTIPS #FILE_OPERATIONS -->
                                 <Button Grid.Column="1" Content="Browse..." Width="100" Click="BtnBrowseCsv_Click"
-                                        Background="{StaticResource BgLightBrush}"
+                                        Background="{DynamicResource BgLightBrush}"
                                         ToolTip="Opens folder browser to select directory for CSV/JSON file storage. Lightweight file-based database option without SQL requirements. Suitable for small deployments or portable installations. Files created: computers.csv, scans.csv, etc."/>
                             </Grid>
 
                             <RadioButton x:Name="RadioCsvFormat" GroupName="CsvFormat" Content="CSV Format"
-                                         Foreground="{StaticResource TextPrimaryBrush}" Margin="0,15,0,5" IsChecked="True"/>
+                                         Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,15,0,5" IsChecked="True"/>
                             <RadioButton x:Name="RadioJsonFormat" GroupName="CsvFormat" Content="JSON Format"
-                                         Foreground="{StaticResource TextPrimaryBrush}"/>
+                                         Foreground="{DynamicResource TextPrimaryBrush}"/>
                         </StackPanel>
 
                         <!-- TAG: #TOOLTIPS #ACTIONS -->
                         <Button x:Name="BtnTestConnection" Content="Test Connection" Width="150"
                                 Margin="0,20,0,0" Click="BtnTestConnection_Click" HorizontalAlignment="Left"
-                                Background="{StaticResource BgLightBrush}"
+                                Background="{DynamicResource BgLightBrush}"
                                 ToolTip="Tests database connection with current configuration. Verifies file paths, database engine availability, SQL Server connectivity, and credentials. Shows success/failure message with detailed error information if connection fails."/>
 
                         <TextBlock x:Name="TxtTestResult" Margin="0,10,0,0" FontSize="11"/>
@@ -244,17 +244,17 @@
                 </Border>
 
                 <!-- Step 3: Dependency Check & Installation -->
-                <Border x:Name="PanelStep3" Background="{StaticResource BgCardBrush}"
-                        BorderBrush="{StaticResource BorderDimBrush}" BorderThickness="1"
+                <Border x:Name="PanelStep3" Background="{DynamicResource BgCardBrush}"
+                        BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1"
                         CornerRadius="4" Padding="20" Margin="0,0,0,15" Visibility="Collapsed">
                     <StackPanel>
                         <TextBlock Text="Step 3: Dependency Check" FontSize="18" FontWeight="Bold"
-                                   Foreground="{StaticResource AccentOrangeBrush}" Margin="0,0,0,15"/>
+                                   Foreground="{DynamicResource AccentOrangeBrush}" Margin="0,0,0,15"/>
 
-                        <TextBlock x:Name="TxtDependencyStatus" Foreground="{StaticResource TextPrimaryBrush}" TextWrapping="Wrap"/>
+                        <TextBlock x:Name="TxtDependencyStatus" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap"/>
 
                         <StackPanel x:Name="PanelDependencyActions" Margin="0,15,0,0" Visibility="Collapsed">
-                            <TextBlock Text="Required Components:" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,10"/>
+                            <TextBlock Text="Required Components:" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10"/>
 
                             <StackPanel x:Name="PanelAccessEngineDownload" Visibility="Collapsed" Margin="0,5,0,0">
                                 <TextBlock Text="❌ Microsoft Access Database Engine (ACE) not detected"
@@ -262,10 +262,10 @@
                                 <!-- TAG: #TOOLTIPS #FILE_OPERATIONS -->
                                 <Button Content="Download ACE Database Engine (64-bit)" Width="300"
                                         Click="BtnDownloadAce_Click" HorizontalAlignment="Left"
-                                        Background="{StaticResource AccentOrangeBrush}"
+                                        Background="{DynamicResource AccentOrangeBrush}"
                                         ToolTip="Opens Microsoft download page for ACE Database Engine (Office Runtime) in your default browser. Required for Microsoft Access database support. 64-bit version required for 64-bit applications. Install and restart wizard after installation."/>
                                 <TextBlock Text="This will open the Microsoft download page in your browser"
-                                           Foreground="{StaticResource TextPrimaryBrush}" FontSize="10" Margin="0,5,0,0"/>
+                                           Foreground="{DynamicResource TextPrimaryBrush}" FontSize="10" Margin="0,5,0,0"/>
                             </StackPanel>
 
                             <StackPanel x:Name="PanelSqlServerDownload" Visibility="Collapsed" Margin="0,5,0,0">
@@ -273,17 +273,17 @@
                                            Foreground="#FFFF6666" Margin="0,0,0,5"/>
                                 <Button Content="Download SQL Server Express (Free)" Width="300"
                                         Click="BtnDownloadSqlExpress_Click" HorizontalAlignment="Left"
-                                        Background="{StaticResource AccentOrangeBrush}"
+                                        Background="{DynamicResource AccentOrangeBrush}"
                                         ToolTip="Opens Microsoft download page for SQL Server Express (free edition) in your default browser. Full-featured SQL database for enterprise deployments. Supports centralized multi-user access, advanced queries, and large datasets."/>
                                 <TextBlock Text="This will open the Microsoft download page in your browser"
-                                           Foreground="{StaticResource TextPrimaryBrush}" FontSize="10" Margin="0,5,0,0"/>
+                                           Foreground="{DynamicResource TextPrimaryBrush}" FontSize="10" Margin="0,5,0,0"/>
                             </StackPanel>
                         </StackPanel>
 
                         <!-- TAG: #TOOLTIPS #ACTIONS -->
                         <Button x:Name="BtnCheckDependencies" Content="Check Dependencies" Width="200"
                                 Margin="0,20,0,0" Click="BtnCheckDependencies_Click" HorizontalAlignment="Left"
-                                Background="{StaticResource BgLightBrush}"
+                                Background="{DynamicResource BgLightBrush}"
                                 ToolTip="Verifies all required database dependencies are installed. Checks for ACE Database Engine (Access), SQL Server connectivity, and .NET Framework components. Shows download links for missing dependencies."/>
                     </StackPanel>
                 </Border>
@@ -291,7 +291,7 @@
                 <!-- Progress Indicator -->
                 <StackPanel x:Name="PanelProgress" Visibility="Collapsed" Margin="0,0,0,15">
                     <TextBlock x:Name="TxtProgressMessage" Text="Initializing database..."
-                               Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,10"/>
+                               Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10"/>
                     <ProgressBar x:Name="ProgressBar" Height="20" IsIndeterminate="True"/>
                 </StackPanel>
 
@@ -299,8 +299,8 @@
         </ScrollViewer>
 
         <!-- Footer Buttons -->
-        <Border Grid.Row="2" BorderBrush="{StaticResource BorderDimBrush}" BorderThickness="0,1,0,0"
-                Background="{StaticResource BgCardBrush}" Padding="20">
+        <Border Grid.Row="2" BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="0,1,0,0"
+                Background="{DynamicResource BgCardBrush}" Padding="20">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -310,19 +310,19 @@
                 <!-- TAG: #TOOLTIPS #NAVIGATION -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal">
                     <Button x:Name="BtnBack" Content="← Back" Width="100" Click="BtnBack_Click"
-                            Visibility="Collapsed" Background="{StaticResource BgLightBrush}"
+                            Visibility="Collapsed" Background="{DynamicResource BgLightBrush}"
                             ToolTip="Returns to previous step in database setup wizard. Settings from current step are not saved. Use to change database type or configuration options."/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <Button x:Name="BtnNext" Content="Next →" Width="100" Click="BtnNext_Click"
-                            Margin="0,0,10,0" Background="{StaticResource AccentOrangeBrush}"
+                            Margin="0,0,10,0" Background="{DynamicResource AccentOrangeBrush}"
                             ToolTip="Proceeds to next step in database setup wizard. Validates current configuration before advancing. Test connection recommended before proceeding to ensure database accessibility."/>
                     <Button x:Name="BtnFinish" Content="Finish" Width="100" Click="BtnFinish_Click"
-                            Visibility="Collapsed" Background="{StaticResource AccentOrangeBrush}"
+                            Visibility="Collapsed" Background="{DynamicResource AccentOrangeBrush}"
                             ToolTip="Completes database setup wizard and saves configuration. Creates database file/tables if needed. Application will launch with configured database. First-run setup wizard will not show again."/>
                     <Button Content="Cancel" Width="100" Click="BtnCancel_Click"
-                            Background="{StaticResource BgLightBrush}"
+                            Background="{DynamicResource BgLightBrush}"
                             ToolTip="Exits database setup wizard without saving. Application will close and setup wizard will appear again on next launch. Use if you need to cancel setup or start over."/>
                 </StackPanel>
             </Grid>

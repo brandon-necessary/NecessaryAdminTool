@@ -29,6 +29,7 @@ namespace NecessaryAdminTool
             InitializeComponent();
             Title = $"{LogoConfig.PRODUCT_NAME} Options";
             LoadAllSettings();
+            InitializeThemeControls();
         }
 
         /// <summary>
@@ -285,6 +286,10 @@ namespace NecessaryAdminTool
                             gradientBrush.GradientStops.Add(new GradientStop(primaryColorObj, 0));
                             gradientBrush.GradientStops.Add(new GradientStop(secondaryColorObj, 1));
                             Application.Current.Resources["AccentGradientBrush"] = gradientBrush;
+
+                            // Update tab hover brush (25% opacity tint of primary)
+                            var hoverColor = Color.FromArgb(64, primaryColorObj.R, primaryColorObj.G, primaryColorObj.B);
+                            Application.Current.Resources["AccentHoverBrush"] = new SolidColorBrush(hoverColor);
                         }
                         catch (Exception ex)
                         {
@@ -781,8 +786,8 @@ namespace NecessaryAdminTool
                     TxtStatusMessage.Foreground = new SolidColorBrush(Color.FromRgb(22, 198, 12));
                     break;
                 case MessageType.Warning:
-                    StatusMessage.BorderBrush = new SolidColorBrush(Color.FromRgb(255, 133, 51));
-                    TxtStatusMessage.Foreground = new SolidColorBrush(Color.FromRgb(255, 133, 51));
+                    StatusMessage.BorderBrush = Helpers.ThemeHelper.PrimaryBrush;
+                    TxtStatusMessage.Foreground = Helpers.ThemeHelper.PrimaryBrush;
                     break;
                 case MessageType.Error:
                     StatusMessage.BorderBrush = new SolidColorBrush(Color.FromRgb(232, 17, 35));
@@ -1022,6 +1027,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         /// </summary>
         private void TxtPrimaryColor_TextChanged(object sender, TextChangedEventArgs e)
         {
+            if (_suppressColorEvents) return;
             try
             {
                 if (TxtPrimaryColor != null && PrimaryColorPreview != null)
@@ -1038,6 +1044,28 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                         if (PreviewButtonBg != null)
                             PreviewButtonBg.Color = color;
 
+                        // Set dropdown to "Custom" if doesn't match a named color
+                        _suppressColorEvents = true;
+                        if (CmbPrimaryColor != null)
+                        {
+                            bool matched = false;
+                            for (int i = 0; i < CmbPrimaryColor.Items.Count - 1; i++)
+                            {
+                                if (CmbPrimaryColor.Items[i] is ComboBoxItem item && item.Tag is Color c && c == color)
+                                { CmbPrimaryColor.SelectedIndex = i; matched = true; break; }
+                            }
+                            if (!matched) CmbPrimaryColor.SelectedIndex = CmbPrimaryColor.Items.Count - 1;
+                        }
+                        _suppressColorEvents = false;
+
+                        // Apply live via ThemeHelper
+                        Color secondaryC;
+                        if (!Helpers.ThemeHelper.TryParseColor(TxtSecondaryColor?.Text, out secondaryC))
+                            secondaryC = Helpers.ThemeHelper.SecondaryColor;
+                        Helpers.ThemeHelper.ApplyAccentColors(color, secondaryC);
+                        Properties.Settings.Default.PrimaryAccentColor = colorHex;
+                        Properties.Settings.Default.Save();
+
                         _hasUnsavedChanges = true;
                     }
                 }
@@ -1053,6 +1081,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         /// </summary>
         private void TxtSecondaryColor_TextChanged(object sender, TextChangedEventArgs e)
         {
+            if (_suppressColorEvents) return;
             try
             {
                 if (TxtSecondaryColor != null && SecondaryColorPreview != null)
@@ -1065,6 +1094,28 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
                         if (PreviewSecondaryStop != null)
                             PreviewSecondaryStop.Color = color;
+
+                        // Set dropdown to "Custom" if doesn't match a named color
+                        _suppressColorEvents = true;
+                        if (CmbSecondaryColor != null)
+                        {
+                            bool matched = false;
+                            for (int i = 0; i < CmbSecondaryColor.Items.Count - 1; i++)
+                            {
+                                if (CmbSecondaryColor.Items[i] is ComboBoxItem item && item.Tag is Color c && c == color)
+                                { CmbSecondaryColor.SelectedIndex = i; matched = true; break; }
+                            }
+                            if (!matched) CmbSecondaryColor.SelectedIndex = CmbSecondaryColor.Items.Count - 1;
+                        }
+                        _suppressColorEvents = false;
+
+                        // Apply live via ThemeHelper
+                        Color primaryC;
+                        if (!Helpers.ThemeHelper.TryParseColor(TxtPrimaryColor?.Text, out primaryC))
+                            primaryC = Helpers.ThemeHelper.PrimaryColor;
+                        Helpers.ThemeHelper.ApplyAccentColors(primaryC, color);
+                        Properties.Settings.Default.SecondaryAccentColor = colorHex;
+                        Properties.Settings.Default.Save();
 
                         _hasUnsavedChanges = true;
                     }
@@ -1086,7 +1137,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 "• Logo: NecessaryAdmin \"A\" icon\n" +
                 "• Primary Color: Orange (#FFFF8533)\n" +
                 "• Secondary Color: Zinc (#FFA1A1AA)\n" +
-                "• Font: Segoe UI",
+                "• Font: Segoe UI\n" +
+                "• Dark Mode: On",
                 "Reset Appearance",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
@@ -1094,18 +1146,222 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             if (result == MessageBoxResult.Yes)
             {
                 TxtLogoPath.Text = "(Using default NecessaryAdmin logo)";
-                TxtPrimaryColor.Text = "#FFFF8533";
-                TxtSecondaryColor.Text = "#FFA1A1AA";
                 SliderLogoSize.Value = 64;
                 TxtLogoSize.Text = "64";
                 CmbFontFamily.SelectedIndex = 0;
 
-                // TODO: Clear custom logo from AppData
-                // TODO: Apply default theme immediately
+                // Reset accent colors via ThemeHelper (applies immediately)
+                Helpers.ThemeHelper.ResetToDefaults();
+
+                // Reset dropdowns to index 0 (Orange, Zinc)
+                _suppressColorEvents = true;
+                if (CmbPrimaryColor != null) CmbPrimaryColor.SelectedIndex = 0;
+                if (CmbSecondaryColor != null) CmbSecondaryColor.SelectedIndex = 0;
+                TxtPrimaryColor.Text = "#FFFF8533";
+                TxtSecondaryColor.Text = "#FFA1A1AA";
+                PrimaryColorPreview.Background = new SolidColorBrush(Helpers.ThemeHelper.DefaultPrimary);
+                SecondaryColorPreview.Background = new SolidColorBrush(Helpers.ThemeHelper.DefaultSecondary);
+                if (PreviewPrimaryStop != null) PreviewPrimaryStop.Color = Helpers.ThemeHelper.DefaultPrimary;
+                if (PreviewSecondaryStop != null) PreviewSecondaryStop.Color = Helpers.ThemeHelper.DefaultSecondary;
+                if (PreviewButtonBg != null) PreviewButtonBg.Color = Helpers.ThemeHelper.DefaultPrimary;
+                _suppressColorEvents = false;
+
+                // Reset dark mode
+                if (ChkDarkMode != null) ChkDarkMode.IsChecked = true;
 
                 ShowStatus("Appearance reset to defaults", MessageType.Success);
                 _hasUnsavedChanges = true;
             }
+        }
+
+        // Prevents infinite loops when programmatically setting color controls
+        private bool _suppressColorEvents = false;
+
+        /// <summary>
+        /// Initialize preset swatches and color dropdowns
+        /// </summary>
+        private void InitializeThemeControls()
+        {
+            // Populate preset swatches
+            if (PresetSwatches != null)
+            {
+                var panel = new WrapPanel { Orientation = Orientation.Horizontal };
+                foreach (var preset in Helpers.ThemeHelper.Presets)
+                {
+                    var swatch = new Border
+                    {
+                        Width = 52, Height = 34,
+                        CornerRadius = new CornerRadius(4),
+                        Margin = new Thickness(0, 0, 6, 6),
+                        Cursor = System.Windows.Input.Cursors.Hand,
+                        BorderBrush = new SolidColorBrush(Color.FromRgb(60, 60, 60)),
+                        BorderThickness = new Thickness(1),
+                        Tag = preset,
+                        ToolTip = preset.Name
+                    };
+                    var gradient = new LinearGradientBrush();
+                    gradient.StartPoint = new Point(0, 0);
+                    gradient.EndPoint = new Point(1, 0);
+                    gradient.GradientStops.Add(new GradientStop(preset.Primary, 0));
+                    gradient.GradientStops.Add(new GradientStop(preset.Secondary, 1));
+                    swatch.Background = gradient;
+
+                    var label = new TextBlock
+                    {
+                        Text = preset.Name,
+                        FontSize = 7, FontWeight = FontWeights.Bold,
+                        Foreground = Brushes.White,
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center
+                    };
+                    label.Effect = new System.Windows.Media.Effects.DropShadowEffect
+                    {
+                        Color = Colors.Black, BlurRadius = 3, ShadowDepth = 1, Opacity = 0.8
+                    };
+                    swatch.Child = label;
+                    swatch.MouseLeftButtonDown += PresetSwatch_Click;
+                    panel.Children.Add(swatch);
+                }
+                PresetSwatches.Items.Clear();
+                PresetSwatches.Items.Add(panel);
+            }
+
+            // Populate primary color dropdown
+            if (CmbPrimaryColor != null)
+            {
+                CmbPrimaryColor.Items.Clear();
+                foreach (var nc in Helpers.ThemeHelper.PrimaryColors)
+                    CmbPrimaryColor.Items.Add(new ComboBoxItem { Content = nc.Name, Tag = nc.Color });
+                CmbPrimaryColor.Items.Add(new ComboBoxItem { Content = "Custom" });
+                CmbPrimaryColor.SelectedIndex = 0;
+            }
+
+            // Populate secondary color dropdown
+            if (CmbSecondaryColor != null)
+            {
+                CmbSecondaryColor.Items.Clear();
+                foreach (var nc in Helpers.ThemeHelper.SecondaryColors)
+                    CmbSecondaryColor.Items.Add(new ComboBoxItem { Content = nc.Name, Tag = nc.Color });
+                CmbSecondaryColor.Items.Add(new ComboBoxItem { Content = "Custom" });
+                CmbSecondaryColor.SelectedIndex = 0;
+            }
+
+            // Load saved dark mode state
+            if (ChkDarkMode != null)
+                ChkDarkMode.IsChecked = Properties.Settings.Default.IsDarkMode;
+
+            // Select matching dropdown items for saved colors
+            SelectMatchingDropdownColor();
+        }
+
+        /// <summary>Select dropdown items that match the current saved colors</summary>
+        private void SelectMatchingDropdownColor()
+        {
+            _suppressColorEvents = true;
+            try
+            {
+                var savedPrimary = Helpers.ThemeHelper.PrimaryColor;
+                var savedSecondary = Helpers.ThemeHelper.SecondaryColor;
+
+                // Match primary
+                bool foundPrimary = false;
+                if (CmbPrimaryColor != null)
+                {
+                    for (int i = 0; i < CmbPrimaryColor.Items.Count - 1; i++)
+                    {
+                        if (CmbPrimaryColor.Items[i] is ComboBoxItem item && item.Tag is Color c && c == savedPrimary)
+                        {
+                            CmbPrimaryColor.SelectedIndex = i;
+                            foundPrimary = true;
+                            break;
+                        }
+                    }
+                    if (!foundPrimary) CmbPrimaryColor.SelectedIndex = CmbPrimaryColor.Items.Count - 1; // Custom
+                }
+
+                // Match secondary
+                bool foundSecondary = false;
+                if (CmbSecondaryColor != null)
+                {
+                    for (int i = 0; i < CmbSecondaryColor.Items.Count - 1; i++)
+                    {
+                        if (CmbSecondaryColor.Items[i] is ComboBoxItem item && item.Tag is Color c && c == savedSecondary)
+                        {
+                            CmbSecondaryColor.SelectedIndex = i;
+                            foundSecondary = true;
+                            break;
+                        }
+                    }
+                    if (!foundSecondary) CmbSecondaryColor.SelectedIndex = CmbSecondaryColor.Items.Count - 1; // Custom
+                }
+            }
+            finally { _suppressColorEvents = false; }
+        }
+
+        /// <summary>Preset swatch clicked — apply both colors</summary>
+        private void PresetSwatch_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (sender is Border border && border.Tag is Helpers.ThemeHelper.ThemePreset preset)
+            {
+                ApplyColorPair(preset.Primary, preset.Secondary);
+                ShowStatus($"Applied '{preset.Name}' theme preset", MessageType.Success);
+            }
+        }
+
+        /// <summary>Primary color dropdown changed</summary>
+        private void CmbPrimaryColor_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_suppressColorEvents || CmbPrimaryColor == null) return;
+            if (CmbPrimaryColor.SelectedItem is ComboBoxItem item && item.Tag is Color c)
+            {
+                _suppressColorEvents = true;
+                TxtPrimaryColor.Text = Helpers.ThemeHelper.ColorToHex(c);
+                _suppressColorEvents = false;
+            }
+        }
+
+        /// <summary>Secondary color dropdown changed</summary>
+        private void CmbSecondaryColor_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_suppressColorEvents || CmbSecondaryColor == null) return;
+            if (CmbSecondaryColor.SelectedItem is ComboBoxItem item && item.Tag is Color c)
+            {
+                _suppressColorEvents = true;
+                TxtSecondaryColor.Text = Helpers.ThemeHelper.ColorToHex(c);
+                _suppressColorEvents = false;
+            }
+        }
+
+        /// <summary>Dark mode checkbox changed</summary>
+        private void ChkDarkMode_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_suppressColorEvents || ChkDarkMode == null) return;
+            bool isDark = ChkDarkMode.IsChecked == true;
+            MainWindow.ThemeManager.SetTheme(isDark);
+            _hasUnsavedChanges = true;
+        }
+
+        /// <summary>Apply a primary+secondary color pair from any source</summary>
+        private void ApplyColorPair(Color primary, Color secondary)
+        {
+            _suppressColorEvents = true;
+            TxtPrimaryColor.Text = Helpers.ThemeHelper.ColorToHex(primary);
+            TxtSecondaryColor.Text = Helpers.ThemeHelper.ColorToHex(secondary);
+            PrimaryColorPreview.Background = new SolidColorBrush(primary);
+            SecondaryColorPreview.Background = new SolidColorBrush(secondary);
+            if (PreviewPrimaryStop != null) PreviewPrimaryStop.Color = primary;
+            if (PreviewSecondaryStop != null) PreviewSecondaryStop.Color = secondary;
+            if (PreviewButtonBg != null) PreviewButtonBg.Color = primary;
+            _suppressColorEvents = false;
+
+            // Apply live
+            Helpers.ThemeHelper.ApplyAccentColors(primary, secondary);
+            Properties.Settings.Default.PrimaryAccentColor = Helpers.ThemeHelper.ColorToHex(primary);
+            Properties.Settings.Default.SecondaryAccentColor = Helpers.ThemeHelper.ColorToHex(secondary);
+            Properties.Settings.Default.Save();
+
+            SelectMatchingDropdownColor();
+            _hasUnsavedChanges = true;
         }
 
         #endregion
@@ -1307,7 +1563,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             {
                 LoadDefaultServices();
                 TxtConfigStatus.Text = "🔄 Configuration reset to defaults";
-                TxtConfigStatus.Foreground = new SolidColorBrush(Color.FromRgb(255, 133, 51));
+                TxtConfigStatus.SetResourceReference(TextBlock.ForegroundProperty, "AccentOrangeBrush");
                 TxtConfigStatus.Visibility = Visibility.Visible;
                 ShowStatus("Reset to default services", MessageType.Success);
             }

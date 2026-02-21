@@ -4,7 +4,7 @@
         Title="🔒 SuperAdmin Configuration"
         Height="700" Width="1000"
         WindowStartupLocation="CenterScreen"
-        Background="{StaticResource MicaBrush}"
+        Background="{DynamicResource MicaBrush}"
         ResizeMode="CanResize"
         Icon="pack://application:,,,/Resources/icon.ico"
         Topmost="True"
@@ -19,9 +19,7 @@
     <!-- TAG: #SUPERADMIN #WHITELABEL_GUI #ADVANCED_CONFIG -->
 
     <Window.Resources>
-        <!-- Unified Theme Colors -->
-        <SolidColorBrush x:Key="AccentOrangeBrush" Color="#FF6B35"/>
-        <SolidColorBrush x:Key="AccentZincBrush" Color="#71797E"/>
+        <!-- Theme colors — AccentOrangeBrush/AccentZincBrush inherited from App.xaml (modular, driven by Options) -->
         <SolidColorBrush x:Key="BgDarkBrush" Color="#1a1a1a"/>
         <SolidColorBrush x:Key="BgCardBrush" Color="#2a2a2a"/>
         <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFFFFF"/>
@@ -49,14 +47,14 @@
 
         <!-- Fluent TextBox Style -->
         <Style x:Key="ModernTextBox" TargetType="TextBox">
-            <Setter Property="Background" Value="{StaticResource MicaAltBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource MicaAltBrush}"/>
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderBrush" Value="{StaticResource BorderDimBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderDimBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="12,10"/>
             <Setter Property="FontSize" Value="{StaticResource FontBody}"/>
             <Setter Property="FontFamily" Value="{StaticResource FluentFont}"/>
-            <Setter Property="CaretBrush" Value="{StaticResource AccentOrangeBrush}"/>
+            <Setter Property="CaretBrush" Value="{DynamicResource AccentOrangeBrush}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TextBox">
@@ -69,7 +67,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsFocused" Value="True">
-                                <Setter Property="BorderBrush" Value="{StaticResource AccentOrangeBrush}"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource AccentOrangeBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -108,45 +106,9 @@
         </Border>
 
         <!-- Main Content - TabControl -->
-        <TabControl Grid.Row="1" Background="Transparent" BorderThickness="0">
-            <TabControl.Resources>
-                <Style TargetType="TabItem">
-                    <Setter Property="Template">
-                        <Setter.Value>
-                            <ControlTemplate TargetType="TabItem">
-                                <Border x:Name="Border"
-                                        Background="#2a2a2a"
-                                        BorderThickness="0"
-                                        CornerRadius="6,6,0,0"
-                                        Margin="0,0,5,0"
-                                        Padding="20,12">
-                                    <ContentPresenter ContentSource="Header"
-                                                      HorizontalAlignment="Center"
-                                                      VerticalAlignment="Center"/>
-                                </Border>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property="IsSelected" Value="True">
-                                        <Setter TargetName="Border" Property="Background" Value="#FF6B35"/>
-                                    </Trigger>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter TargetName="Border" Property="Background" Value="#3a3a3a"/>
-                                    </Trigger>
-                                    <MultiTrigger>
-                                        <MultiTrigger.Conditions>
-                                            <Condition Property="IsSelected" Value="True"/>
-                                            <Condition Property="IsMouseOver" Value="True"/>
-                                        </MultiTrigger.Conditions>
-                                        <Setter TargetName="Border" Property="Background" Value="#FF8555"/>
-                                    </MultiTrigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                    <Setter Property="Foreground" Value="White"/>
-                    <Setter Property="FontWeight" Value="SemiBold"/>
-                    <Setter Property="FontSize" Value="14"/>
-                </Style>
-            </TabControl.Resources>
+        <TabControl Grid.Row="1" Background="Transparent" BorderThickness="0"
+                    FontSize="14"
+                    ItemContainerStyle="{StaticResource AccentTabItemRounded}">
 
             <!-- Tab 1: White-Label Configuration -->
             <TabItem Header="🏷️ White-Label Branding">
@@ -208,13 +170,13 @@
                                            FontWeight="SemiBold"
                                            Margin="0,0,0,5"/>
                                 <Border Background="#1a1a1a"
-                                        BorderBrush="{StaticResource AccentOrangeBrush}"
+                                        BorderBrush="{DynamicResource AccentOrangeBrush}"
                                         BorderThickness="1"
                                         CornerRadius="6"
                                         Padding="12,10">
                                     <TextBlock x:Name="TxtSupportEmail"
                                                Text="{}support@{COMPANY_DOMAIN}"
-                                               Foreground="#FF6B35"
+                                               Foreground="{DynamicResource AccentOrangeBrush}"
                                                FontSize="14"
                                                FontFamily="Consolas"/>
                                 </Border>
@@ -293,7 +255,7 @@
                                         Margin="0,0,0,15">
                                     <StackPanel>
                                         <TextBlock Text="Warranty Disclaimer Preview:"
-                                                   Foreground="#FF6B35"
+                                                   Foreground="{DynamicResource AccentOrangeBrush}"
                                                    FontWeight="Bold"
                                                    FontSize="12"
                                                    Margin="0,0,0,10"/>
@@ -314,7 +276,7 @@
                                         Margin="0,0,0,15">
                                     <StackPanel>
                                         <TextBlock Text="Contact Information Preview:"
-                                                   Foreground="#FF6B35"
+                                                   Foreground="{DynamicResource AccentOrangeBrush}"
                                                    FontWeight="Bold"
                                                    FontSize="12"
                                                    Margin="0,0,0,10"/>
@@ -323,7 +285,7 @@
                                                    Foreground="#CCCCCC"
                                                    FontSize="11">
                                             <Run Text="Legal Department: "/><Run x:Name="PreviewCompanyName" Text="{}{COMPANY_NAME}" FontWeight="Bold"/><LineBreak/>
-                                            <Run Text="Email: "/><Run x:Name="PreviewEmail" Text="{}support@{COMPANY_DOMAIN}" Foreground="#FF6B35"/><LineBreak/>
+                                            <Run Text="Email: "/><Run x:Name="PreviewEmail" Text="{}support@{COMPANY_DOMAIN}" Foreground="{DynamicResource AccentOrangeBrush}"/><LineBreak/>
                                             <Run Text="Phone: "/><Run x:Name="PreviewPhone" Text="Contact your authorized representative"/>
                                         </TextBlock>
                                     </StackPanel>
@@ -337,7 +299,7 @@
                                         Padding="15">
                                     <StackPanel>
                                         <TextBlock Text="📁 Files That Will Be Modified:"
-                                                   Foreground="#FF6B35"
+                                                   Foreground="{DynamicResource AccentOrangeBrush}"
                                                    FontWeight="Bold"
                                                    FontSize="12"
                                                    Margin="0,0,0,10"/>
@@ -491,14 +453,14 @@
 
                             <!-- TAG: #DEBUG_TESTING - Setup Wizard Access -->
                             <Border Background="#1a1a1a"
-                                    BorderBrush="#FF6B35"
+                                    BorderBrush="{DynamicResource AccentOrangeBrush}"
                                     BorderThickness="2"
                                     CornerRadius="6"
                                     Padding="20"
                                     Margin="0,20,0,0">
                                 <StackPanel>
                                     <TextBlock Text="🧪 Debug Testing Tools"
-                                               Foreground="#FF6B35"
+                                               Foreground="{DynamicResource AccentOrangeBrush}"
                                                FontWeight="Bold"
                                                FontSize="14"
                                                Margin="0,0,0,10"/>
@@ -548,7 +510,7 @@
                                     Margin="0,0,0,15">
                                 <StackPanel>
                                     <TextBlock Text="📊 Database Statistics"
-                                               Foreground="#FF6B35"
+                                               Foreground="{DynamicResource AccentOrangeBrush}"
                                                FontWeight="Bold"
                                                FontSize="14"
                                                Margin="0,0,0,15"/>

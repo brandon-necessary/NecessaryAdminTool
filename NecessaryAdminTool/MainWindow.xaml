@@ -39,8 +39,8 @@
         <!-- ══════════════════════════════════════ -->
         <!-- TOP HEADER BAR                         -->
         <!-- ══════════════════════════════════════ -->
-        <Border Grid.Row="0" Background="{StaticResource BgMediumBrush}"
-                BorderBrush="{StaticResource BorderDimBrush}" BorderThickness="0,0,0,1"
+        <Border Grid.Row="0" Background="{DynamicResource BgMediumBrush}"
+                BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="0,0,0,1"
                 Padding="16,8">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -72,10 +72,7 @@
                             Margin="0,0,12,0"
                             VerticalAlignment="Center">
                         <Border.Background>
-                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                <GradientStop Color="#FFFF8533" Offset="0"/>
-                                <GradientStop Color="#FFCC6B29" Offset="1"/>
-                            </LinearGradientBrush>
+                            <SolidColorBrush Color="{DynamicResource AccentOrange}"/>
                         </Border.Background>
                         <Border.Effect>
                             <DropShadowEffect Color="#FFFF8533" BlurRadius="10" ShadowDepth="0" Opacity="0.5"/>
@@ -95,16 +92,13 @@
                                 <DropShadowEffect Color="Black" BlurRadius="4" ShadowDepth="2" Opacity="0.5"/>
                             </TextBlock.Effect>
                             <TextBlock.Foreground>
-                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                    <GradientStop Color="#FFFF8533" Offset="0"/>
-                                    <GradientStop Color="#FFA1A1AA" Offset="0.7"/>
-                                </LinearGradientBrush>
+                                <DynamicResource ResourceKey="AccentGradientBrush"/>
                             </TextBlock.Foreground>
                             <Run Text="Necessary" FontSize="24" FontWeight="ExtraBold"/>
                             <Run Text="Admin" FontSize="18" FontWeight="Light"/>
                         </TextBlock>
                         <TextBlock Text="I T   M A N A G E M E N T   S U I T E" FontSize="7"
-                                   Foreground="{StaticResource AccentOrangeBrush}"
+                                   Foreground="{DynamicResource AccentOrangeBrush}"
                                    FontWeight="Bold"
                                    Margin="2,0,0,0"
                                    Opacity="0.8"/>
@@ -118,19 +112,11 @@
                             Margin="14,0,0,0"
                             VerticalAlignment="Center">
                         <Border.BorderBrush>
-                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                <GradientStop Color="#FF8533" Offset="0"/>
-                                <GradientStop Color="#A1A1AA" Offset="1"/>
-                            </LinearGradientBrush>
+                            <DynamicResource ResourceKey="AccentGradientBrush"/>
                         </Border.BorderBrush>
                         <Grid>
-                            <TextBlock x:Name="TxtVersionBadge" FontSize="10" FontWeight="Bold">
-                                <TextBlock.Foreground>
-                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                        <GradientStop Color="#FF8533" Offset="0"/>
-                                        <GradientStop Color="#A1A1AA" Offset="1"/>
-                                    </LinearGradientBrush>
-                                </TextBlock.Foreground>
+                            <TextBlock x:Name="TxtVersionBadge" FontSize="10" FontWeight="Bold"
+                                       Foreground="{DynamicResource AccentGradientBrush}">
                             </TextBlock>
 
                             <!-- TAG: #SUPERADMIN #TOOLTIPS #CONFIGURATION - Invisible button overlay - Click 5x rapidly to access SuperAdmin -->
@@ -147,13 +133,13 @@
                 </StackPanel>
 
                 <!-- Role Badge - TAG: #THEME_COLORS #AUTH_STATUS #ELEVATION -->
-                <Border x:Name="RoleBadgeBorder" Grid.Column="1" Background="#FF2A2A2A"
-                        CornerRadius="3" BorderThickness="1" BorderBrush="#FF3C3C3C"
+                <Border x:Name="RoleBadgeBorder" Grid.Column="1" Background="{DynamicResource BgCardBrush}"
+                        CornerRadius="3" BorderThickness="1" BorderBrush="{DynamicResource BorderDimBrush}"
                         Padding="8,3" Margin="20,0,0,0" VerticalAlignment="Center"
                         Cursor="Hand"
                         ToolTip="Double-click to restart as Administrator (when not elevated)">
                     <TextBlock x:Name="TxtRoleBadge" Text="GUEST" FontSize="10"
-                               Foreground="{StaticResource TextMutedBrush}" FontWeight="Bold"
+                               Foreground="{DynamicResource TextMutedBrush}" FontWeight="Bold"
                                MouseLeftButtonDown="TxtRoleBadge_MouseLeftButtonDown"/>
                 </Border>
 
@@ -187,14 +173,9 @@
                     </Border>
                 </StackPanel>
 
-                <!-- Master Log Status - TAG: #STATUS_INDICATORS #LOGGING -->
-                <TextBlock x:Name="TxtLogPath" Grid.Column="3" Text="LOG: CHECKING..."
-                           Foreground="{StaticResource TextMutedBrush}" FontSize="10"
-                           VerticalAlignment="Center" Margin="0,0,15,0"/>
-
                 <!-- Domain Badge - TAG: #DC_DISCOVERY #THEME_COLORS -->
                 <Border x:Name="DomainBadge" Grid.Column="4"
-                        Background="#FF1A1A1A"
+                        Background="{DynamicResource BgCardBrush}"
                         BorderThickness="1"
                         CornerRadius="3"
                         Padding="8,3"
@@ -202,20 +183,12 @@
                         VerticalAlignment="Center"
                         ToolTip="Detected Active Directory domain">
                     <Border.BorderBrush>
-                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                            <GradientStop Color="#FF8533" Offset="0"/>
-                            <GradientStop Color="#A1A1AA" Offset="1"/>
-                        </LinearGradientBrush>
+                        <DynamicResource ResourceKey="AccentGradientBrush"/>
                     </Border.BorderBrush>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock x:Name="TxtDomainName" Text="DOMAIN: CHECKING..."
-                                   FontSize="10" FontWeight="Bold" VerticalAlignment="Center">
-                            <TextBlock.Foreground>
-                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                    <GradientStop Color="#FF8533" Offset="0"/>
-                                    <GradientStop Color="#A1A1AA" Offset="1"/>
-                                </LinearGradientBrush>
-                            </TextBlock.Foreground>
+                                   FontSize="10" FontWeight="Bold" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource AccentGradientBrush}">
                         </TextBlock>
                     </StackPanel>
                 </Border>
@@ -223,7 +196,7 @@
                 <!-- Auth Status with Login Button - TAG: #AUTH_STATUS #STATUS_INDICATORS -->
                 <StackPanel Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
                     <TextBlock x:Name="TxtAuthStatus" Text="NOT AUTHENTICATED"
-                               Foreground="{StaticResource TextMutedBrush}" FontSize="11"
+                               Foreground="{DynamicResource TextMutedBrush}" FontSize="11"
                                FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,8,0"/>
 
                     <!-- TAG: #TOOLTIPS #NAVIGATION - Login Button (appears in read-only mode) -->
@@ -234,7 +207,7 @@
                             Padding="8,3,8,3"
                             FontSize="9"
                             FontWeight="Bold"
-                            Background="{StaticResource AccentOrangeBrush}"
+                            Background="{DynamicResource AccentOrangeBrush}"
                             Foreground="White"
                             BorderThickness="0"
                             Cursor="Hand"
@@ -254,14 +227,7 @@
                                 </Setter>
                                 <Style.Triggers>
                                     <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Background">
-                                            <Setter.Value>
-                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                    <GradientStop Color="#FF8533" Offset="0"/>
-                                                    <GradientStop Color="#A1A1AA" Offset="1"/>
-                                                </LinearGradientBrush>
-                                            </Setter.Value>
-                                        </Setter>
+                                        <Setter Property="Background" Value="{DynamicResource AccentGradientBrush}"/>
                                     </Trigger>
                                 </Style.Triggers>
                             </Style>
@@ -356,8 +322,8 @@
         <!-- COLLAPSIBLE TERMINAL (BOTTOM)          -->
         <!-- ══════════════════════════════════════ -->
         <Border x:Name="TerminalPanel" DockPanel.Dock="Bottom"
-                Background="{StaticResource BgDarkBrush}"
-                BorderBrush="{StaticResource BorderDimBrush}"
+                Background="{DynamicResource BgDarkBrush}"
+                BorderBrush="{DynamicResource BorderDimBrush}"
                 BorderThickness="0,1,0,0" Height="0"
                 MinHeight="100" MaxHeight="500"
                 Visibility="Collapsed">
@@ -365,16 +331,16 @@
                 <!-- Resizable Splitter (Top drag bar) -->
                 <GridSplitter DockPanel.Dock="Top" Height="5"
                               HorizontalAlignment="Stretch"
-                              Background="{StaticResource BorderDimBrush}"
+                              Background="{DynamicResource BorderDimBrush}"
                               Cursor="SizeNS"
                               ResizeBehavior="PreviousAndNext"
                               ToolTip="Drag to resize terminal"/>
 
                 <!-- Terminal Header -->
-                <Border DockPanel.Dock="Top" Background="{StaticResource BgMediumBrush}"
+                <Border DockPanel.Dock="Top" Background="{DynamicResource BgMediumBrush}"
                         Padding="10,6">
                     <Grid>
-                        <TextBlock Text="LIVE TERMINAL &amp; DEBUG OUTPUT" Foreground="{StaticResource TextSecondaryBrush}"
+                        <TextBlock Text="LIVE TERMINAL &amp; DEBUG OUTPUT" Foreground="{DynamicResource TextSecondaryBrush}"
                                    FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
                         <!-- TAG: #TOOLTIPS #NAVIGATION -->
                         <Button Content="✕" HorizontalAlignment="Right" Style="{StaticResource BtnGhost}"
@@ -391,8 +357,8 @@
         </Border>
 
         <!-- Terminal Toggle Bar - TAG: #BOTTOM_BAR -->
-        <Border DockPanel.Dock="Bottom" Background="{StaticResource BgMediumBrush}"
-                BorderBrush="{StaticResource BorderDimBrush}" BorderThickness="0,1,0,0"
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource BgMediumBrush}"
+                BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="0,1,0,0"
                 Padding="8,4">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -424,13 +390,13 @@
 
                         <!-- Terminal Activity Indicator -->
                         <TextBlock Grid.Column="1" x:Name="TxtTerminalStatus" Text=""
-                                   Foreground="{StaticResource AccentOrangeBrush}" FontSize="10"
+                                   Foreground="{DynamicResource AccentOrangeBrush}" FontSize="10"
                                    FontWeight="SemiBold" VerticalAlignment="Center"
                                    ToolTip="Recent activity - click ▼ TERMINAL to view all logs"/>
 
                         <!-- Status Message - TAG: #VERSION_7 #AUTO_SAVE #NOTIFICATIONS -->
                         <TextBlock Grid.Column="2" x:Name="StatusMessage" Text=""
-                                   Foreground="{StaticResource TextSecondaryBrush}" FontSize="10"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10"
                                    FontWeight="SemiBold" VerticalAlignment="Center"
                                    Margin="12,0,0,0"/>
                     </Grid>
@@ -441,10 +407,7 @@
                                  BorderThickness="0"
                                  Value="0" Maximum="100" Visibility="Collapsed">
                         <ProgressBar.Foreground>
-                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                <GradientStop Color="#FF8533" Offset="0"/>
-                                <GradientStop Color="#FFAA6633" Offset="1"/>
-                            </LinearGradientBrush>
+                            <SolidColorBrush Color="{DynamicResource AccentOrange}"/>
                         </ProgressBar.Foreground>
                     </ProgressBar>
                 </StackPanel>
@@ -479,8 +442,8 @@
             <!-- ════════════════════════════════ -->
             <!-- LEFT SIDEBAR                     -->
             <!-- ════════════════════════════════ -->
-            <Border Grid.Column="0" Background="{StaticResource BgDarkBrush}"
-                    BorderBrush="{StaticResource BorderDimBrush}" BorderThickness="0,0,0,0">
+            <Border Grid.Column="0" Background="{DynamicResource BgDarkBrush}"
+                    BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="0,0,0,0">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12,10">
                     <StackPanel>
 
@@ -489,11 +452,11 @@
                             <StackPanel>
                                 <!-- TAG: #THEME_COLORS #SECTION_HEADERS -->
                                 <TextBlock Text="📌 PINNED DEVICES MONITOR"
-                                           Foreground="{StaticResource AccentOrangeBrush}"
+                                           Foreground="{DynamicResource AccentOrangeBrush}"
                                            FontSize="11" FontWeight="Bold" Margin="0,0,0,10"/>
 
                                 <TextBlock Text="Pin up to 10 devices for quick status monitoring:"
-                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Foreground="{DynamicResource TextMutedBrush}"
                                            FontSize="9" Margin="0,0,0,8"/>
 
                                 <!-- Add Device Input -->
@@ -538,7 +501,7 @@
                                     <DataGrid.ColumnHeaderStyle>
                                         <Style TargetType="DataGridColumnHeader">
                                             <Setter Property="Background" Value="#FF1A1A1A"/>
-                                            <Setter Property="Foreground" Value="#FFFF8533"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                                             <Setter Property="FontWeight" Value="Bold"/>
                                             <Setter Property="FontSize" Value="11"/>
                                             <Setter Property="Padding" Value="8,4"/>
@@ -570,7 +533,7 @@
                                         <DataGridTextColumn Header="Last Ping" Binding="{Binding LastChecked}" Width="80" IsReadOnly="True">
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="TextBlock">
-                                                    <Setter Property="Foreground" Value="#FFA1A1AA"/>
+                                                    <Setter Property="Foreground" Value="{DynamicResource AccentZincBrush}"/>
                                                     <Setter Property="Padding" Value="6,2"/>
                                                     <Setter Property="FontSize" Value="10"/>
                                                 </Style>
@@ -623,16 +586,16 @@
                             <StackPanel>
                                 <!-- TAG: #THEME_COLORS #SECTION_HEADERS -->
                                 <TextBlock Text="🌐 GLOBAL SERVICES STATUS"
-                                           Foreground="{StaticResource AccentOrangeBrush}"
+                                           Foreground="{DynamicResource AccentOrangeBrush}"
                                            FontSize="12" FontWeight="Bold" Margin="0,0,0,10"/>
 
                                 <TextBlock Text="Monitor connectivity to critical cloud infrastructure:"
-                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Foreground="{DynamicResource TextMutedBrush}"
                                            FontSize="10" Margin="0,0,0,8"/>
 
                                 <!-- Essential Services (Always Visible) -->
                                 <TextBlock Text="ESSENTIAL SERVICES"
-                                           Foreground="{StaticResource AccentOrangeBrush}"
+                                           Foreground="{DynamicResource AccentOrangeBrush}"
                                            FontSize="10" FontWeight="Bold" Margin="0,0,0,6"/>
                                 <DataGrid x:Name="GridEssentialServices"
                                           AutoGenerateColumns="False"
@@ -654,7 +617,7 @@
                                     <DataGrid.ColumnHeaderStyle>
                                         <Style TargetType="DataGridColumnHeader">
                                             <Setter Property="Background" Value="#FF1A1A1A"/>
-                                            <Setter Property="Foreground" Value="#FFFF8533"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                                             <Setter Property="FontWeight" Value="Bold"/>
                                             <Setter Property="FontSize" Value="10"/>
                                             <Setter Property="Padding" Value="8,4"/>
@@ -699,7 +662,7 @@
                                                 <DataTemplate>
                                                     <Button Content="🔗 Open Status Page" Tag="{Binding Endpoint}"
                                                             Click="BtnOpenServiceStatusPage_Click"
-                                                            Background="#FF2A2A2A" Foreground="{StaticResource AccentOrangeBrush}"
+                                                            Background="#FF2A2A2A" Foreground="{DynamicResource AccentOrangeBrush}"
                                                             BorderThickness="1" BorderBrush="#FF3C3C3C"
                                                             Padding="8,4" Margin="2" FontSize="10" FontWeight="SemiBold"
                                                             Cursor="Hand" HorizontalAlignment="Stretch"
@@ -721,7 +684,7 @@
                                                                                     <Setter Property="Foreground" Value="White"/>
                                                                                 </Trigger>
                                                                                 <Trigger Property="IsPressed" Value="True">
-                                                                                    <Setter TargetName="border" Property="Background" Value="{StaticResource AccentOrangeBrush}"/>
+                                                                                    <Setter TargetName="border" Property="Background" Value="{DynamicResource AccentOrangeBrush}"/>
                                                                                     <Setter Property="Foreground" Value="White"/>
                                                                                 </Trigger>
                                                                             </ControlTemplate.Triggers>
@@ -739,7 +702,7 @@
 
                                 <!-- High Priority Services (Collapsible) -->
                                 <Expander x:Name="ExpanderHighPriority" Header="▼ HIGH PRIORITY (9 services)"
-                                          Foreground="#FFFF8533" FontSize="10" FontWeight="Bold"
+                                          Foreground="{DynamicResource AccentOrangeBrush}" FontSize="10" FontWeight="Bold"
                                           Background="Transparent" BorderThickness="0" Margin="0,4,0,4"
                                           IsExpanded="False">
                                     <DataGrid x:Name="GridHighPriorityServices"
@@ -762,7 +725,7 @@
                                         <DataGrid.ColumnHeaderStyle>
                                             <Style TargetType="DataGridColumnHeader">
                                                 <Setter Property="Background" Value="#FF1A1A1A"/>
-                                                <Setter Property="Foreground" Value="#FFFF8533"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                                                 <Setter Property="FontWeight" Value="Bold"/>
                                                 <Setter Property="FontSize" Value="10"/>
                                                 <Setter Property="Padding" Value="8,4"/>
@@ -805,7 +768,7 @@
                                                     <DataTemplate>
                                                         <Button Content="🔗 Open Status Page" Tag="{Binding Endpoint}"
                                                                 Click="BtnOpenServiceStatusPage_Click"
-                                                                Background="#FF2A2A2A" Foreground="{StaticResource AccentOrangeBrush}"
+                                                                Background="#FF2A2A2A" Foreground="{DynamicResource AccentOrangeBrush}"
                                                                 BorderThickness="1" BorderBrush="#FF3C3C3C"
                                                                 Padding="8,4" Margin="2" FontSize="10" FontWeight="SemiBold"
                                                                 Cursor="Hand" HorizontalAlignment="Stretch"
@@ -827,7 +790,7 @@
                                                                                         <Setter Property="Foreground" Value="White"/>
                                                                                     </Trigger>
                                                                                     <Trigger Property="IsPressed" Value="True">
-                                                                                        <Setter TargetName="border" Property="Background" Value="{StaticResource AccentOrangeBrush}"/>
+                                                                                        <Setter TargetName="border" Property="Background" Value="{DynamicResource AccentOrangeBrush}"/>
                                                                                         <Setter Property="Foreground" Value="White"/>
                                                                                     </Trigger>
                                                                                 </ControlTemplate.Triggers>
@@ -846,7 +809,7 @@
 
                                 <!-- Medium Priority Services (Collapsible) -->
                                 <Expander x:Name="ExpanderMediumPriority" Header="▼ MEDIUM PRIORITY (5 services)"
-                                          Foreground="#FFA1A1AA" FontSize="10" FontWeight="Bold"
+                                          Foreground="{DynamicResource AccentZincBrush}" FontSize="10" FontWeight="Bold"
                                           Background="Transparent" BorderThickness="0" Margin="0,4,0,8"
                                           IsExpanded="False">
                                     <DataGrid x:Name="GridMediumPriorityServices"
@@ -869,7 +832,7 @@
                                         <DataGrid.ColumnHeaderStyle>
                                             <Style TargetType="DataGridColumnHeader">
                                                 <Setter Property="Background" Value="#FF1A1A1A"/>
-                                                <Setter Property="Foreground" Value="#FFFF8533"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                                                 <Setter Property="FontWeight" Value="Bold"/>
                                                 <Setter Property="FontSize" Value="10"/>
                                                 <Setter Property="Padding" Value="8,4"/>
@@ -912,7 +875,7 @@
                                                     <DataTemplate>
                                                         <Button Content="🔗 Open Status Page" Tag="{Binding Endpoint}"
                                                                 Click="BtnOpenServiceStatusPage_Click"
-                                                                Background="#FF2A2A2A" Foreground="{StaticResource AccentOrangeBrush}"
+                                                                Background="#FF2A2A2A" Foreground="{DynamicResource AccentOrangeBrush}"
                                                                 BorderThickness="1" BorderBrush="#FF3C3C3C"
                                                                 Padding="8,4" Margin="2" FontSize="10" FontWeight="SemiBold"
                                                                 Cursor="Hand" HorizontalAlignment="Stretch"
@@ -934,7 +897,7 @@
                                                                                         <Setter Property="Foreground" Value="White"/>
                                                                                     </Trigger>
                                                                                     <Trigger Property="IsPressed" Value="True">
-                                                                                        <Setter TargetName="border" Property="Background" Value="{StaticResource AccentOrangeBrush}"/>
+                                                                                        <Setter TargetName="border" Property="Background" Value="{DynamicResource AccentOrangeBrush}"/>
                                                                                         <Setter Property="Foreground" Value="White"/>
                                                                                     </Trigger>
                                                                                 </ControlTemplate.Triggers>
@@ -984,7 +947,7 @@
             <GridSplitter Grid.Column="1" Width="5"
                           HorizontalAlignment="Stretch"
                           VerticalAlignment="Stretch"
-                          Background="{StaticResource BorderDimBrush}"
+                          Background="{DynamicResource BorderDimBrush}"
                           Cursor="SizeWE"
                           ResizeBehavior="PreviousAndNext"
                           ToolTip="Drag to resize left panel"/>
@@ -1013,7 +976,7 @@
                             </Grid.RowDefinitions>
 
                             <!-- Header -->
-                            <Border Grid.Row="0" Background="#FF1E1E1E" BorderBrush="{StaticResource AccentOrangeBrush}"
+                            <Border Grid.Row="0" Background="#FF1E1E1E" BorderBrush="{DynamicResource AccentOrangeBrush}"
                                     BorderThickness="0,0,0,2" Padding="16,12" Margin="0,0,0,20">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -1022,10 +985,10 @@
                                     </Grid.ColumnDefinitions>
 
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Text="📊 FLEET HEALTH DASHBOARD" Foreground="{StaticResource AccentOrangeBrush}"
+                                        <TextBlock Text="📊 FLEET HEALTH DASHBOARD" Foreground="{DynamicResource AccentOrangeBrush}"
                                                    FontSize="18" FontWeight="Bold"/>
                                         <TextBlock x:Name="TxtDashboardLastUpdate" Text="Last updated: Never"
-                                                   Foreground="{StaticResource TextMutedBrush}" FontSize="10" Margin="0,4,0,0"/>
+                                                   Foreground="{DynamicResource TextMutedBrush}" FontSize="10" Margin="0,4,0,0"/>
                                     </StackPanel>
 
                                     <!-- TAG: #TOOLTIPS #ACTIONS -->
@@ -1076,7 +1039,7 @@
                                 <Border Grid.Column="0" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
                                         BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,0,8,0">
                                     <StackPanel>
-                                        <TextBlock Text="💿 OS DISTRIBUTION" Foreground="{StaticResource AccentOrangeBrush}"
+                                        <TextBlock Text="💿 OS DISTRIBUTION" Foreground="{DynamicResource AccentOrangeBrush}"
                                                    FontSize="12" FontWeight="Bold" Margin="0,0,0,16"/>
 
                                         <!-- Win11 -->
@@ -1089,7 +1052,7 @@
                                             <TextBlock Grid.Column="0" Text="Windows 11" Foreground="White" FontSize="11" VerticalAlignment="Center"/>
                                             <ProgressBar Grid.Column="1" x:Name="BarWin11" Height="20" Background="#FF2A2A2A"
                                                          Foreground="LimeGreen" Margin="8,0" Maximum="100"/>
-                                            <TextBlock Grid.Column="2" x:Name="TxtWin11Count" Text="0 (0%)" Foreground="{StaticResource TextMutedBrush}"
+                                            <TextBlock Grid.Column="2" x:Name="TxtWin11Count" Text="0 (0%)" Foreground="{DynamicResource TextMutedBrush}"
                                                        FontSize="10" VerticalAlignment="Center" MinWidth="60"/>
                                         </Grid>
 
@@ -1103,7 +1066,7 @@
                                             <TextBlock Grid.Column="0" Text="Windows 10" Foreground="White" FontSize="11" VerticalAlignment="Center"/>
                                             <ProgressBar Grid.Column="1" x:Name="BarWin10" Height="20" Background="#FF2A2A2A"
                                                          Foreground="#FF4FC3F7" Margin="8,0" Maximum="100"/>
-                                            <TextBlock Grid.Column="2" x:Name="TxtWin10Count" Text="0 (0%)" Foreground="{StaticResource TextMutedBrush}"
+                                            <TextBlock Grid.Column="2" x:Name="TxtWin10Count" Text="0 (0%)" Foreground="{DynamicResource TextMutedBrush}"
                                                        FontSize="10" VerticalAlignment="Center" MinWidth="60"/>
                                         </Grid>
 
@@ -1117,7 +1080,7 @@
                                             <TextBlock Grid.Column="0" Text="Windows 7" Foreground="White" FontSize="11" VerticalAlignment="Center"/>
                                             <ProgressBar Grid.Column="1" x:Name="BarWin7" Height="20" Background="#FF2A2A2A"
                                                          Foreground="#FFFF6B6B" Margin="8,0" Maximum="100"/>
-                                            <TextBlock Grid.Column="2" x:Name="TxtWin7Count" Text="0 (0%)" Foreground="{StaticResource TextMutedBrush}"
+                                            <TextBlock Grid.Column="2" x:Name="TxtWin7Count" Text="0 (0%)" Foreground="{DynamicResource TextMutedBrush}"
                                                        FontSize="10" VerticalAlignment="Center" MinWidth="60"/>
                                         </Grid>
 
@@ -1131,14 +1094,14 @@
                                             <TextBlock Grid.Column="0" Text="Legacy/Other" Foreground="White" FontSize="11" VerticalAlignment="Center"/>
                                             <ProgressBar Grid.Column="1" x:Name="BarLegacy" Height="20" Background="#FF2A2A2A"
                                                          Foreground="#FFFFA726" Margin="8,0" Maximum="100"/>
-                                            <TextBlock Grid.Column="2" x:Name="TxtLegacyCount" Text="0 (0%)" Foreground="{StaticResource TextMutedBrush}"
+                                            <TextBlock Grid.Column="2" x:Name="TxtLegacyCount" Text="0 (0%)" Foreground="{DynamicResource TextMutedBrush}"
                                                        FontSize="10" VerticalAlignment="Center" MinWidth="60"/>
                                         </Grid>
 
                                         <!-- Detailed Version Breakdown -->
                                         <Border Background="#FF2A2A2A" BorderBrush="#FF3C3C3C" BorderThickness="1"
                                                 CornerRadius="4" Padding="12,10" Margin="0,0,0,0">
-                                            <Expander Header="📋 DETAILED VERSION BREAKDOWN" Foreground="{StaticResource AccentOrangeBrush}"
+                                            <Expander Header="📋 DETAILED VERSION BREAKDOWN" Foreground="{DynamicResource AccentOrangeBrush}"
                                                       FontSize="10" FontWeight="SemiBold" IsExpanded="False">
                                                 <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
                                                     <ItemsControl x:Name="ListDetailedVersions">
@@ -1155,7 +1118,7 @@
                                                                     <ProgressBar Grid.Column="1" Value="{Binding Percentage}" Height="12"
                                                                                  Background="#FF1A1A1A" Foreground="{Binding Color}"
                                                                                  Margin="4,0" Maximum="100"/>
-                                                                    <TextBlock Grid.Column="2" Text="{Binding CountText}" Foreground="{StaticResource TextMutedBrush}"
+                                                                    <TextBlock Grid.Column="2" Text="{Binding CountText}" Foreground="{DynamicResource TextMutedBrush}"
                                                                                FontSize="9" VerticalAlignment="Center" TextAlignment="Right"/>
                                                                 </Grid>
                                                             </DataTemplate>
@@ -1168,14 +1131,14 @@
                                 </Border>
 
                                 <!-- DC Health Monitor - TAG: #DC_HEALTH #DASHBOARD #DOMAIN_CONTROLLERS -->
-                                <Border Grid.Column="1" Background="#FF1E1E1E" BorderBrush="{StaticResource AccentOrangeBrush}"
+                                <Border Grid.Column="1" Background="#FF1E1E1E" BorderBrush="{DynamicResource AccentOrangeBrush}"
                                         BorderThickness="1" CornerRadius="8" Padding="16" Margin="4,0">
                                     <StackPanel>
                                         <!-- Header with Domain Suffix - TAG: #DC_HEALTH #UI_IMPROVEMENT -->
                                         <Grid Margin="0,0,0,12">
-                                            <TextBlock Text="🌐 DOMAIN CONTROLLERS" Foreground="{StaticResource AccentOrangeBrush}"
+                                            <TextBlock Text="🌐 DOMAIN CONTROLLERS" Foreground="{DynamicResource AccentOrangeBrush}"
                                                        FontSize="11" FontWeight="Bold" HorizontalAlignment="Left"/>
-                                            <TextBlock x:Name="TxtDCDomainSuffix" Text="" Foreground="{StaticResource TextMutedBrush}"
+                                            <TextBlock x:Name="TxtDCDomainSuffix" Text="" Foreground="{DynamicResource TextMutedBrush}"
                                                        FontSize="9" FontWeight="Normal" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
                                         </Grid>
 
@@ -1190,7 +1153,7 @@
                                                 <TextBlock x:Name="TxtDCCount" Text="0 Detected" Foreground="White"
                                                            FontSize="18" FontWeight="Bold"/>
                                                 <TextBlock x:Name="TxtDCLastScan" Text="Never scanned"
-                                                           Foreground="{StaticResource TextMutedBrush}" FontSize="9"/>
+                                                           Foreground="{DynamicResource TextMutedBrush}" FontSize="9"/>
                                             </StackPanel>
                                         </Grid>
 
@@ -1264,7 +1227,7 @@
                                                 ToolTip="Show more / Show less domain controllers">
                                             <StackPanel Orientation="Horizontal">
                                                 <TextBlock x:Name="TxtToggleDCHealth" Text="▼ SHOW MORE"
-                                                           Foreground="{StaticResource AccentOrangeBrush}"
+                                                           Foreground="{DynamicResource AccentOrangeBrush}"
                                                            FontSize="9" FontWeight="SemiBold"/>
                                             </StackPanel>
                                         </Button>
@@ -1310,7 +1273,7 @@
                             <Border Grid.Row="3" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
                                     BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,0,0,20">
                                 <StackPanel>
-                                    <TextBlock Text="🔝 TOP COMPUTERS BY UPTIME" Foreground="{StaticResource AccentOrangeBrush}"
+                                    <TextBlock Text="🔝 TOP COMPUTERS BY UPTIME" Foreground="{DynamicResource AccentOrangeBrush}"
                                                FontSize="12" FontWeight="Bold" Margin="0,0,0,12"/>
 
                                     <DataGrid x:Name="GridTopComputers" AutoGenerateColumns="False" IsReadOnly="True"
@@ -1321,7 +1284,7 @@
                                         <DataGrid.ColumnHeaderStyle>
                                             <Style TargetType="DataGridColumnHeader">
                                                 <Setter Property="Background" Value="#FF2A2A2A"/>
-                                                <Setter Property="Foreground" Value="{StaticResource AccentOrangeBrush}"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                                                 <Setter Property="FontWeight" Value="Bold"/>
                                                 <Setter Property="FontSize" Value="10"/>
                                                 <Setter Property="Padding" Value="10,8"/>
@@ -1356,9 +1319,13 @@
                 </TabItem>
 
                 <!-- ══════════════════════════════ -->
-                <!-- TAB 1: SINGLE SYSTEM INSPECTOR -->
+                <!-- TAB 1: SYSTEM MANAGEMENT       -->
                 <!-- ══════════════════════════════ -->
-                <TabItem Header="SINGLE SYSTEM INSPECTOR">
+                <TabItem Header="🔧 SYSTEM MANAGEMENT">
+                    <TabControl x:Name="TabControlSystemMgmt" Background="{DynamicResource BgDarkBrush}"
+                                BorderThickness="0" Padding="10"
+                                ItemContainerStyle="{StaticResource AccentTabItemRounded}">
+                        <TabItem Header="🔍 SINGLE SYSTEM INSPECTOR">
                     <Grid Margin="0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="1.8*" MinWidth="450"/>
@@ -1367,13 +1334,13 @@
                         </Grid.ColumnDefinitions>
 
                         <!-- LEFT COLUMN: SCAN RESULTS -->
-                        <Border Grid.Column="0" Background="{StaticResource BgDarkestBrush}">
+                        <Border Grid.Column="0" Background="{DynamicResource BgDarkestBrush}">
                             <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20,15">
                                 <StackPanel>
                                     <!-- Status Header - TAG: #STATUS_INDICATORS #ANIMATION -->
                                     <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
                                         <Ellipse x:Name="StatusDot" Width="14" Height="14"
-                                                 Fill="{StaticResource TextMutedBrush}" Margin="0,0,10,0">
+                                                 Fill="{DynamicResource TextMutedBrush}" Margin="0,0,10,0">
                                             <Ellipse.Triggers>
                                                 <EventTrigger RoutedEvent="Loaded">
                                                     <BeginStoryboard x:Name="PulseAnimation">
@@ -1388,21 +1355,21 @@
                                         </Ellipse>
                                         <TextBlock x:Name="TxtTargetName" Text="NO TARGET"
                                                    Foreground="White" FontSize="22" FontWeight="Bold"/>
-                                        <TextBlock x:Name="TxtStatus" Text="" Foreground="{StaticResource TextMutedBrush}"
+                                        <TextBlock x:Name="TxtStatus" Text="" Foreground="{DynamicResource TextMutedBrush}"
                                                    FontSize="14" VerticalAlignment="Bottom" Margin="12,0,0,2"/>
                                         <ProgressBar x:Name="StatusProgressBar" Width="100" Height="3"
                                                     IsIndeterminate="True" Margin="10,0,0,0"
                                                     VerticalAlignment="Center" Visibility="Collapsed"
-                                                    Foreground="#FFFF8533" Background="#1A1A1A"/>
+                                                    Foreground="{DynamicResource AccentOrangeBrush}" Background="#1A1A1A"/>
                                     </StackPanel>
 
                                     <!-- IDENTITY & ACCESS -->
                                     <TextBlock Text="IDENTITY &amp; ACCESS" Foreground="#FFFF6B00"
                                                FontSize="12" FontWeight="Bold" Margin="0,0,0,6"/>
-                                    <TextBlock Text="Current User:" Foreground="{StaticResource TextMutedBrush}" FontSize="10"/>
+                                    <TextBlock Text="Current User:" Foreground="{DynamicResource TextMutedBrush}" FontSize="10"/>
                                     <TextBlock x:Name="TxtUser" Text="--" Foreground="{StaticResource AccentCyanBrush}"
                                                FontSize="14" FontWeight="Bold" Margin="0,0,0,4"/>
-                                    <TextBlock Text="Service Tag / Serial:" Foreground="{StaticResource TextMutedBrush}" FontSize="10"/>
+                                    <TextBlock Text="Service Tag / Serial:" Foreground="{DynamicResource TextMutedBrush}" FontSize="10"/>
                                     <TextBlock x:Name="TxtServiceTag" Text="--" Foreground="#FFFF4444"
                                                FontSize="14" FontWeight="Bold" Margin="0,0,0,6"/>
                                     <!-- TAG: #TOOLTIPS #UTILITIES -->
@@ -1425,11 +1392,11 @@
                                             <RowDefinition/>
                                             <RowDefinition/>
                                         </Grid.RowDefinitions>
-                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="IP Address:" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="IP Address:" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
                                         <TextBlock x:Name="TxtIP1" Grid.Row="0" Grid.Column="1" Text="--" Foreground="White" FontSize="12" FontWeight="Bold"/>
-                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="MAC Address:" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,3,0,0"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="MAC Address:" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,3,0,0"/>
                                         <TextBlock x:Name="TxtMAC" Grid.Row="1" Grid.Column="1" Text="--" Foreground="White" FontSize="12" FontWeight="Bold" Margin="0,3,0,0"/>
-                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="DNS Servers:" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,3,0,0"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="DNS Servers:" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,3,0,0"/>
                                         <TextBlock x:Name="TxtDNS" Grid.Row="2" Grid.Column="1" Text="--" Foreground="White" FontSize="12" FontWeight="Bold" Margin="0,3,0,0" TextWrapping="Wrap"/>
                                     </Grid>
 
@@ -1438,8 +1405,8 @@
                                                FontSize="12" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <TextBlock x:Name="TxtModel" Text="Model: --" Foreground="White" FontSize="13" FontWeight="Bold"/>
                                     <TextBlock x:Name="TxtBattery" Text="Power: --" Foreground="{StaticResource AccentGreenBrush}" FontSize="12"/>
-                                    <TextBlock x:Name="TxtCores" Text="Core Logic: --" Foreground="{StaticResource TextMutedBrush}" FontSize="11"/>
-                                    <TextBlock x:Name="TxtCPU" Text="--" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11"/>
+                                    <TextBlock x:Name="TxtCores" Text="Core Logic: --" Foreground="{DynamicResource TextMutedBrush}" FontSize="11"/>
+                                    <TextBlock x:Name="TxtCPU" Text="--" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11"/>
                                     <TextBlock x:Name="TxtRAM" Text="RAM: --" Foreground="White" FontSize="13" FontWeight="Bold" Margin="0,4,0,6"/>
                                     <TextBlock x:Name="TxtOS" Text="--" Foreground="White" FontSize="13" FontWeight="Bold"/>
                                     <TextBlock x:Name="TxtUptime" Text="Uptime: --" Foreground="{StaticResource AccentGreenBrush}" FontSize="12" Margin="0,0,0,16"/>
@@ -1448,7 +1415,7 @@
                                     <TextBlock Text="LOCAL STORAGE" Foreground="#FFFF6B00"
                                                FontSize="12" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <StackPanel x:Name="StkDrives">
-                                        <TextBlock Text="No data — scan a target to populate." Foreground="{StaticResource TextMutedBrush}" FontSize="11"/>
+                                        <TextBlock Text="No data — scan a target to populate." Foreground="{DynamicResource TextMutedBrush}" FontSize="11"/>
                                     </StackPanel>
                                 </StackPanel>
                             </ScrollViewer>
@@ -1462,17 +1429,14 @@
                                     <Border Background="#FF252525" CornerRadius="6" Padding="14" Margin="0,0,0,14"
                                             BorderThickness="1">
                                         <Border.BorderBrush>
-                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                <GradientStop Color="#FF8533" Offset="0"/>
-                                                <GradientStop Color="#A1A1AA" Offset="1"/>
-                                            </LinearGradientBrush>
+                                            <DynamicResource ResourceKey="AccentGradientBrush"/>
                                         </Border.BorderBrush>
                                         <StackPanel>
-                                            <TextBlock Text="🎯 TARGET SYSTEM" Foreground="{StaticResource AccentOrangeBrush}"
+                                            <TextBlock Text="🎯 TARGET SYSTEM" Foreground="{DynamicResource AccentOrangeBrush}"
                                                        FontSize="11" FontWeight="Bold" Margin="0,0,0,12"
                                                        HorizontalAlignment="Center"/>
 
-                                            <TextBlock Text="Hostname or IP Address:" Foreground="{StaticResource TextMutedBrush}"
+                                            <TextBlock Text="Hostname or IP Address:" Foreground="{DynamicResource TextMutedBrush}"
                                                        FontSize="9" Margin="0,0,0,4"/>
 
                                             <ComboBox x:Name="ComboTarget" IsEditable="True"
@@ -1490,10 +1454,7 @@
                                                     Foreground="White" BorderThickness="0"
                                                     ToolTip="Scans the specified computer using WMI/CIM queries. Retrieves hardware, software, network, and system information. Results are displayed in tabs below and automatically saved to database. Requires valid hostname or IP address. (F5)">
                                                 <Button.Background>
-                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                        <GradientStop Color="#FF8533" Offset="0"/>
-                                                        <GradientStop Color="#CC6B29" Offset="1"/>
-                                                    </LinearGradientBrush>
+                                                    <SolidColorBrush Color="{DynamicResource AccentOrange}"/>
                                                 </Button.Background>
                                                 <Button.Style>
                                                     <Style TargetType="Button">
@@ -1530,7 +1491,7 @@
                                                        FontSize="11" FontWeight="Bold" Margin="0,0,0,12"
                                                        HorizontalAlignment="Center"/>
 
-                                            <TextBlock Text="Update Package:" Foreground="{StaticResource TextMutedBrush}"
+                                            <TextBlock Text="Update Package:" Foreground="{DynamicResource TextMutedBrush}"
                                                        FontSize="9" Margin="0,0,0,4"/>
 
                                             <ComboBox x:Name="ComboScripts" Margin="0,0,0,10"
@@ -1566,7 +1527,7 @@
                                                        FontSize="11" FontWeight="Bold" Margin="0,0,0,4"
                                                        HorizontalAlignment="Center"/>
                                             <TextBlock TextWrapping="Wrap" FontSize="9" Margin="0,0,0,10"
-                                                       Foreground="{StaticResource TextMutedBrush}"
+                                                       Foreground="{DynamicResource TextMutedBrush}"
                                                        Text="Deploy BEFORE Feature Update. Reboots machines with pending updates so FeatureUpdate.ps1 runs clean. ME sees full visibility for both steps."/>
                                             <!-- TAG: #TOOLTIPS #DEPLOYMENT -->
                                             <Button Content="📥 DOWNLOAD PREFLIGHT REBOOT CHECK"
@@ -1581,7 +1542,7 @@
                                             BorderThickness="1" BorderBrush="#FF555555">
                                         <StackPanel>
                                             <!-- TAG: #TOOLTIPS #UTILITIES -->
-                                            <TextBlock Text="🔧 UTILITIES" Foreground="{StaticResource AccentOrangeBrush}"
+                                            <TextBlock Text="🔧 UTILITIES" Foreground="{DynamicResource AccentOrangeBrush}"
                                                        FontSize="11" FontWeight="Bold" Margin="0,0,0,12"
                                                        HorizontalAlignment="Center"/>
 
@@ -1607,7 +1568,7 @@
                                     <Border Background="#FF252525" CornerRadius="6" Padding="14"
                                             BorderThickness="1" BorderBrush="#FF555555" Margin="0,14,0,0">
                                         <StackPanel>
-                                            <TextBlock Text="🖥️ RMM QUICK LAUNCH" Foreground="{StaticResource AccentOrangeBrush}"
+                                            <TextBlock Text="🖥️ RMM QUICK LAUNCH" Foreground="{DynamicResource AccentOrangeBrush}"
                                                        FontSize="11" FontWeight="Bold" Margin="0,0,0,12"
                                                        HorizontalAlignment="Center"/>
 
@@ -1629,7 +1590,7 @@
                                             <!-- Message when no RMM tools enabled -->
                                             <TextBlock x:Name="TxtNoRmmTools"
                                                        Text="⚠️ No RMM tools enabled."
-                                                       Foreground="{StaticResource TextMutedBrush}"
+                                                       Foreground="{DynamicResource TextMutedBrush}"
                                                        FontSize="9" TextAlignment="Center"
                                                        Margin="0,4,0,8"
                                                        Visibility="Collapsed"/>
@@ -1648,8 +1609,8 @@
                         </Border>
 
                         <!-- RIGHT COLUMN: REMOTE MANAGEMENT TOOLS -->
-                        <Border Grid.Column="2" Background="{StaticResource BgDarkBrush}"
-                                BorderBrush="{StaticResource BorderDimBrush}" BorderThickness="0,0,0,0">
+                        <Border Grid.Column="2" Background="{DynamicResource BgDarkBrush}"
+                                BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="0,0,0,0">
                             <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="18,16,22,16">
                                 <StackPanel x:Name="GridTools" IsEnabled="False">
                                     <TextBlock Text="REMOTE MANAGEMENT TOOLS" Foreground="White"
@@ -1662,7 +1623,7 @@
                                     <!-- FILE & SOFTWARE -->
                                     <Expander IsExpanded="True" Margin="0,0,0,6">
                                         <Expander.Header>
-                                            <TextBlock Text="FILE &amp; SOFTWARE" Foreground="{StaticResource AccentOrangeBrush}"
+                                            <TextBlock Text="FILE &amp; SOFTWARE" Foreground="{DynamicResource AccentOrangeBrush}"
                                                        FontSize="10" FontWeight="Bold"/>
                                         </Expander.Header>
                                         <UniformGrid Columns="2" Margin="0,6,0,0">
@@ -1684,7 +1645,7 @@
                                     <!-- PROCESS & SERVICE MANAGEMENT -->
                                     <Expander IsExpanded="True" Margin="0,0,0,6">
                                         <Expander.Header>
-                                            <TextBlock Text="PROCESS &amp; SERVICE MANAGEMENT" Foreground="{StaticResource AccentOrangeBrush}"
+                                            <TextBlock Text="PROCESS &amp; SERVICE MANAGEMENT" Foreground="{DynamicResource AccentOrangeBrush}"
                                                        FontSize="10" FontWeight="Bold"/>
                                         </Expander.Header>
                                         <UniformGrid Columns="2" Margin="0,6,0,0">
@@ -1706,7 +1667,7 @@
                                     <!-- DIAGNOSTICS & REPAIR -->
                                     <Expander IsExpanded="True" Margin="0,0,0,6">
                                         <Expander.Header>
-                                            <TextBlock Text="DIAGNOSTICS &amp; REPAIR" Foreground="{StaticResource AccentOrangeBrush}"
+                                            <TextBlock Text="DIAGNOSTICS &amp; REPAIR" Foreground="{DynamicResource AccentOrangeBrush}"
                                                        FontSize="10" FontWeight="Bold"/>
                                         </Expander.Header>
                                         <UniformGrid Columns="2" Margin="0,6,0,0">
@@ -1731,7 +1692,7 @@
                                     <!-- REMOTE ACCESS -->
                                     <Expander IsExpanded="True" Margin="0,0,0,6">
                                         <Expander.Header>
-                                            <TextBlock Text="REMOTE ACCESS" Foreground="{StaticResource AccentOrangeBrush}"
+                                            <TextBlock Text="REMOTE ACCESS" Foreground="{DynamicResource AccentOrangeBrush}"
                                                        FontSize="10" FontWeight="Bold"/>
                                         </Expander.Header>
                                         <UniformGrid Columns="2" Margin="0,6,0,0">
@@ -1753,7 +1714,7 @@
                                     <!-- SYSTEM ACTIONS -->
                                     <Expander IsExpanded="True" Margin="0,0,0,6">
                                         <Expander.Header>
-                                            <TextBlock Text="SYSTEM ACTIONS" Foreground="{StaticResource AccentOrangeBrush}"
+                                            <TextBlock Text="SYSTEM ACTIONS" Foreground="{DynamicResource AccentOrangeBrush}"
                                                        FontSize="10" FontWeight="Bold"/>
                                         </Expander.Header>
                                         <StackPanel Margin="0,6,0,0">
@@ -1778,12 +1739,23 @@
                             </ScrollViewer>
                         </Border>
                     </Grid>
+                        </TabItem>
+
+                        <!-- SUB-TAB: REMOTE CONTROL -->
+                        <TabItem Header="🖥️ REMOTE CONTROL">
+                            <local:RemoteControlTab x:Name="RemoteControlTabContent"/>
+                        </TabItem>
+                    </TabControl>
                 </TabItem>
 
                 <!-- ══════════════════════════════ -->
-                <!-- TAB 2: AD FLEET INVENTORY      -->
+                <!-- TAB 2: ACTIVE DIRECTORY        -->
                 <!-- ══════════════════════════════ -->
-                <TabItem Header="AD FLEET INVENTORY">
+                <TabItem Header="🌐 ACTIVE DIRECTORY">
+                    <TabControl x:Name="TabControlActiveDirectory" Background="{DynamicResource BgDarkBrush}"
+                                BorderThickness="0" Padding="10"
+                                ItemContainerStyle="{StaticResource AccentTabItemRounded}">
+                        <TabItem Header="📋 FLEET INVENTORY">
                     <!-- TAG: #AUTO_UPDATE_UI_ENGINE #DETAIL_DRAWER - 2-column layout for slide-in detail panel -->
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -1810,17 +1782,12 @@
                                 <!-- LEFT: DC Controller Selection -->
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Text="🌐 DOMAIN CONTROLLER"
-                                               Foreground="{StaticResource AccentOrangeBrush}"
+                                               Foreground="{DynamicResource AccentOrangeBrush}"
                                                FontSize="12" FontWeight="Bold" Margin="0,0,0,12"/>
 
                                     <!-- DC Dropdown (Same style as DOMAIN & DIRECTORY tab) -->
-                                    <Border Background="#2D2D2D" CornerRadius="6" BorderThickness="1" Margin="0,0,0,10">
-                                        <Border.BorderBrush>
-                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                <GradientStop Color="#FF8533" Offset="0"/>
-                                                <GradientStop Color="#A1A1AA" Offset="1"/>
-                                            </LinearGradientBrush>
-                                        </Border.BorderBrush>
+                                    <Border Background="#2D2D2D" CornerRadius="6" BorderThickness="1" Margin="0,0,0,10"
+                                            BorderBrush="{DynamicResource AccentGradientBrush}">
                                         <ComboBox x:Name="ComboDCFleet"
                                                   Foreground="White" FontWeight="SemiBold" FontSize="12"
                                                   Background="Transparent" BorderThickness="0"
@@ -1834,23 +1801,22 @@
                                                     <Setter Property="Template">
                                                         <Setter.Value>
                                                             <ControlTemplate TargetType="ComboBoxItem">
-                                                                <Border Name="Border" Background="{TemplateBinding Background}"
-                                                                        Padding="{TemplateBinding Padding}" CornerRadius="3" Margin="2">
-                                                                    <ContentPresenter/>
-                                                                </Border>
+                                                                <Grid>
+                                                                    <Border Name="Border" Background="{TemplateBinding Background}"
+                                                                            Padding="{TemplateBinding Padding}" CornerRadius="3" Margin="2">
+                                                                        <ContentPresenter/>
+                                                                    </Border>
+                                                                    <Border Name="highlightOverlay" CornerRadius="3" Margin="2" Opacity="0"
+                                                                            Background="{DynamicResource AccentGradientBrush}"/>
+                                                                    <Border Name="selectionOverlay" CornerRadius="3" Margin="2" Opacity="0"
+                                                                            Background="{DynamicResource AccentOrangeBrush}"/>
+                                                                </Grid>
                                                                 <ControlTemplate.Triggers>
                                                                     <Trigger Property="IsHighlighted" Value="True">
-                                                                        <Setter TargetName="Border" Property="Background">
-                                                                            <Setter.Value>
-                                                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                                                    <GradientStop Color="#FF8533" Offset="0"/>
-                                                                                    <GradientStop Color="#A1A1AA" Offset="1"/>
-                                                                                </LinearGradientBrush>
-                                                                            </Setter.Value>
-                                                                        </Setter>
+                                                                        <Setter TargetName="highlightOverlay" Property="Opacity" Value="1"/>
                                                                     </Trigger>
                                                                     <Trigger Property="IsSelected" Value="True">
-                                                                        <Setter TargetName="Border" Property="Background" Value="#FF8533"/>
+                                                                        <Setter TargetName="selectionOverlay" Property="Opacity" Value="1"/>
                                                                         <Setter Property="FontWeight" Value="Bold"/>
                                                                     </Trigger>
                                                                 </ControlTemplate.Triggers>
@@ -1869,13 +1835,8 @@
                                             ToolTip="Refreshes list of available domain controllers in your Active Directory environment. Queries AD for all DCs including PDC emulator, GCs, and read-only DCs. Useful when DCs are added/removed or experiencing connectivity issues. (F5)">
                                         <Button.Template>
                                             <ControlTemplate TargetType="Button">
-                                                <Border x:Name="border" CornerRadius="4" Padding="10,7">
-                                                    <Border.Background>
-                                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                            <GradientStop Color="#FF8533" Offset="0"/>
-                                                            <GradientStop Color="#CC6B29" Offset="1"/>
-                                                        </LinearGradientBrush>
-                                                    </Border.Background>
+                                                <Border x:Name="border" CornerRadius="4" Padding="10,7"
+                                                        Background="{DynamicResource AccentOrangeBrush}">
                                                     <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 </Border>
                                                 <ControlTemplate.Triggers>
@@ -1898,11 +1859,11 @@
                                 <!-- RIGHT: Quick Actions -->
                                 <StackPanel Grid.Column="2">
                                     <TextBlock Text="⚡ QUICK ACTIONS"
-                                               Foreground="{StaticResource AccentOrangeBrush}"
+                                               Foreground="{DynamicResource AccentOrangeBrush}"
                                                FontSize="12" FontWeight="Bold" Margin="0,0,0,12"/>
 
                                     <!-- AD Query Method Selector -->
-                                    <TextBlock Text="AD Query Method:" Foreground="{StaticResource TextMutedBrush}"
+                                    <TextBlock Text="AD Query Method:" Foreground="{DynamicResource TextMutedBrush}"
                                                FontSize="9" Margin="0,0,0,4"/>
                                     <ComboBox x:Name="ComboADQueryMethod" Foreground="White" Background="#FF2A2A2A"
                                               BorderBrush="#FF444444" FontSize="10" Padding="8,4" Margin="0,0,0,8"
@@ -1961,7 +1922,7 @@
 
                                 <!-- Progress Bar and Status -->
                                 <Border x:Name="ScanProgressPanel" Visibility="Collapsed" Margin="0,10,0,0"
-                                        Background="#FF1E1E1E" BorderBrush="{StaticResource BorderDimBrush}"
+                                        Background="#FF1E1E1E" BorderBrush="{DynamicResource BorderDimBrush}"
                                         BorderThickness="1" CornerRadius="4" Padding="12,8">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
@@ -1995,9 +1956,9 @@
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
                                                 <TextBlock x:Name="TxtScanDetails" Grid.Column="0" Text="0 / 0 computers scanned"
-                                                           Foreground="{StaticResource TextMutedBrush}" FontSize="9"/>
+                                                           Foreground="{DynamicResource TextMutedBrush}" FontSize="9"/>
                                                 <TextBlock x:Name="TxtScanTime" Grid.Column="1" Text="Elapsed: 0s | Est: --"
-                                                           Foreground="{StaticResource TextMutedBrush}" FontSize="9"/>
+                                                           Foreground="{DynamicResource TextMutedBrush}" FontSize="9"/>
                                             </Grid>
                                         </StackPanel>
 
@@ -2183,7 +2144,7 @@
                                     <!-- Quick Actions -->
                                     <MenuItem Header="🔍 Inspect (Deep Scan)" Click="Ctx_Inspect_Click"/>
                                     <MenuItem Header="🔄 Refresh Node" Click="Ctx_RefreshNode_Click"/>
-                                    <MenuItem Header="📌 Pin Device" Click="Ctx_PinDevice_Click" FontWeight="SemiBold" Foreground="#FFFF8533"/>
+                                    <MenuItem Header="📌 Pin Device" Click="Ctx_PinDevice_Click" FontWeight="SemiBold" Foreground="{DynamicResource AccentOrangeBrush}"/>
 
                                     <!-- TAG: #VERSION_7 #BOOKMARKS - Favorites/Bookmarks -->
                                     <MenuItem Header="⭐ Add to Favorites" x:Name="CtxAddFavorite" Click="Ctx_AddToFavorites_Click" FontWeight="SemiBold" Foreground="LimeGreen"/>
@@ -2256,8 +2217,8 @@
                                         <DataTemplate>
                                             <!-- Computer Card Component -->
                                             <Border Width="300" Height="180"
-                                                    Background="{StaticResource BgMediumBrush}"
-                                                    BorderBrush="{StaticResource BorderDimBrush}"
+                                                    Background="{DynamicResource BgMediumBrush}"
+                                                    BorderBrush="{DynamicResource BorderDimBrush}"
                                                     BorderThickness="1"
                                                     CornerRadius="8"
                                                     Margin="6"
@@ -2315,17 +2276,17 @@
                                                     <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
                                                         <Button Content="RDP"
                                                                 FontSize="9" Padding="6,3" Margin="0,0,4,0"
-                                                                Background="{StaticResource AccentOrangeBrush}"
+                                                                Background="{DynamicResource AccentOrangeBrush}"
                                                                 Foreground="White" BorderThickness="0"
                                                                 Tag="{Binding Hostname}"
                                                                 Click="BtnHoverRDP_Click"
                                                                 ToolTip="Remote Desktop"/>
                                                         <Button Content="PS"
                                                                 FontSize="9" Padding="6,3"
-                                                                Background="{StaticResource BgDarkBrush}"
-                                                                Foreground="{StaticResource AccentOrangeBrush}"
+                                                                Background="{DynamicResource BgDarkBrush}"
+                                                                Foreground="{DynamicResource AccentOrangeBrush}"
                                                                 BorderThickness="1"
-                                                                BorderBrush="{StaticResource AccentOrangeBrush}"
+                                                                BorderBrush="{DynamicResource AccentOrangeBrush}"
                                                                 Tag="{Binding Hostname}"
                                                                 Click="BtnHoverPowerShell_Click"
                                                                 ToolTip="PowerShell"/>
@@ -2339,7 +2300,7 @@
 
                             <!-- Skeleton Loader Overlay - TAG: #AUTO_UPDATE_UI_ENGINE #SKELETON_LOADER -->
                             <Border x:Name="FleetSkeletonLoader"
-                                    Background="{StaticResource BgDarkBrush}"
+                                    Background="{DynamicResource BgDarkBrush}"
                                     Visibility="Collapsed">
                                 <StackPanel Margin="20">
                                     <!-- Repeat skeleton rows -->
@@ -2392,11 +2353,11 @@
                                     BorderBrush="#FF3C3C3C" BorderThickness="0,0,0,1">
                                 <Grid>
                                     <TextBlock x:Name="TxtDetailHostname" Text="DEVICE DETAILS"
-                                               FontSize="13" FontWeight="Bold" Foreground="{StaticResource AccentOrangeBrush}"
+                                               FontSize="13" FontWeight="Bold" Foreground="{DynamicResource AccentOrangeBrush}"
                                                VerticalAlignment="Center"/>
                                     <Button x:Name="BtnCloseDetailDrawer" Content="✕" HorizontalAlignment="Right"
                                             FontSize="14" Padding="6,2" Background="Transparent"
-                                            Foreground="#FFA1A1AA" BorderThickness="0" Cursor="Hand"
+                                            Foreground="{DynamicResource AccentZincBrush}" BorderThickness="0" Cursor="Hand"
                                             Click="BtnCloseDetailDrawer_Click"
                                             ToolTip="Close detail panel"/>
                                 </Grid>
@@ -2452,95 +2413,9 @@
                     </Border>
 
                     </Grid>
-                </TabItem>
+                        </TabItem>
 
-                <!-- ══════════════════════════════ -->
-                <!-- TAB 3: AUDIT TRAIL             -->
-                <!-- ══════════════════════════════ -->
-                <TabItem Header="AUDIT TRAIL">
-                    <DockPanel Margin="15">
-                        <Border DockPanel.Dock="Top" Margin="0,0,0,10">
-                            <StackPanel Orientation="Horizontal">
-                                <Button Content="REFRESH" Style="{StaticResource BtnPrimary}"
-                                        Click="Menu_RefreshLogs_Click" Padding="14,6" FontSize="11"
-                                        ToolTip="Reload audit log entries from AuditLogs folder (last 7 days)"/>
-                                <TextBox x:Name="TxtAuditSearch" Width="250" Margin="10,0,0,0"
-                                         Background="{StaticResource BgMediumBrush}" Foreground="White" FontSize="11"
-                                         VerticalContentAlignment="Center" Padding="6,4"
-                                         TextChanged="TxtAuditSearch_TextChanged"
-                                         Tag="Search audit logs..."/>
-                                <Button Content="EXPORT CSV" Margin="10,0,0,0" Padding="14,6" FontSize="11"
-                                        Click="BtnExportAuditLog_Click"
-                                        ToolTip="Export current audit log view to CSV on Desktop"/>
-                                <Button Content="OPEN FOLDER" Margin="10,0,0,0" Padding="14,6" FontSize="11"
-                                        Click="BtnOpenAuditFolder_Click"
-                                        ToolTip="Open AuditLogs folder in File Explorer"/>
-                            </StackPanel>
-                        </Border>
-
-                        <DataGrid x:Name="AuditGrid" AutoGenerateColumns="False" IsReadOnly="True">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="Timestamp" Binding="{Binding Time}" Width="155"/>
-                                <DataGridTextColumn Header="User" Binding="{Binding User}" Width="150"/>
-                                <DataGridTextColumn Header="Target" Binding="{Binding Target}" Width="140"/>
-                                <DataGridTextColumn Header="Action" Binding="{Binding Action}" Width="160"/>
-                                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="70"/>
-                                <DataGridTextColumn Header="Details" Binding="{Binding Details}" Width="*"/>
-                            </DataGrid.Columns>
-                            <DataGrid.ContextMenu>
-                                <ContextMenu>
-                                    <MenuItem Header="Kill Process" Click="Ctx_KillProc_Click"/>
-                                    <MenuItem Header="Restart Service" Click="Ctx_RestartSvc_Click"/>
-                                </ContextMenu>
-                            </DataGrid.ContextMenu>
-                        </DataGrid>
-                    </DockPanel>
-                </TabItem>
-
-                <!-- ══════════════════════════════ -->
-                <!-- TAB 4: DOMAIN & DIRECTORY (with Sub-Tabs) - TAG: #VERSION_7 #UI_FIX #SUB_TABS #MMC_EMBEDDING -->
-                <!-- ══════════════════════════════ -->
-                <TabItem Header="DOMAIN &amp; DIRECTORY">
-                    <TabControl x:Name="TabControlDomainDirectory" Background="{StaticResource BgDarkBrush}" BorderThickness="0" Padding="10">
-                        <TabControl.Resources>
-                            <Style TargetType="TabItem">
-                                <Setter Property="Background" Value="#2A2A2A"/>
-                                <Setter Property="Foreground" Value="White"/>
-                                <Setter Property="FontWeight" Value="SemiBold"/>
-                                <Setter Property="FontSize" Value="11"/>
-                                <Setter Property="Padding" Value="20,10"/>
-                                <Setter Property="Margin" Value="0,0,4,0"/>
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="TabItem">
-                                            <Border Name="Border" Background="{TemplateBinding Background}"
-                                                    BorderBrush="#444" BorderThickness="1" CornerRadius="6,6,0,0"
-                                                    Padding="{TemplateBinding Padding}" Margin="{TemplateBinding Margin}">
-                                                <ContentPresenter ContentSource="Header" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            </Border>
-                                            <ControlTemplate.Triggers>
-                                                <Trigger Property="IsSelected" Value="True">
-                                                    <Setter TargetName="Border" Property="Background">
-                                                        <Setter.Value>
-                                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                                <GradientStop Color="#FF6B35" Offset="0"/>
-                                                                <GradientStop Color="#71797E" Offset="1"/>
-                                                            </LinearGradientBrush>
-                                                        </Setter.Value>
-                                                    </Setter>
-                                                    <Setter Property="FontWeight" Value="Bold"/>
-                                                </Trigger>
-                                                <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter TargetName="Border" Property="Background" Value="#3A3A3A"/>
-                                                </Trigger>
-                                            </ControlTemplate.Triggers>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                            </Style>
-                        </TabControl.Resources>
-
-                        <!-- SUB-TAB 1: Domain Services -->
+                        <!-- SUB-TAB: DOMAIN SERVICES -->
                         <TabItem Header="🌐 DOMAIN SERVICES">
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <Grid Margin="20">
@@ -2564,17 +2439,12 @@
                                         BorderThickness="1" CornerRadius="8" Padding="16">
                                     <StackPanel>
                                         <TextBlock Text="🌐 DOMAIN CONTROLLER SELECTION"
-                                                   Foreground="{StaticResource AccentOrangeBrush}"
+                                                   Foreground="{DynamicResource AccentOrangeBrush}"
                                                    FontSize="12" FontWeight="Bold" Margin="0,0,0,12"/>
 
                                         <!-- Modern Sleek DC Dropdown - TAG: #DC_DISCOVERY #THEME_COLORS -->
-                                        <Border Background="#2D2D2D" CornerRadius="6" BorderThickness="1" Margin="0,0,0,10">
-                                            <Border.BorderBrush>
-                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                    <GradientStop Color="#FF8533" Offset="0"/>
-                                                    <GradientStop Color="#A1A1AA" Offset="1"/>
-                                                </LinearGradientBrush>
-                                            </Border.BorderBrush>
+                                        <Border Background="#2D2D2D" CornerRadius="6" BorderThickness="1" Margin="0,0,0,10"
+                                                BorderBrush="{DynamicResource AccentGradientBrush}">
                                             <ComboBox x:Name="ComboDC"
                                                       Foreground="White" FontWeight="SemiBold" FontSize="12"
                                                       Background="Transparent" BorderThickness="0"
@@ -2587,23 +2457,22 @@
                                                     <Setter Property="Template">
                                                         <Setter.Value>
                                                             <ControlTemplate TargetType="ComboBoxItem">
-                                                                <Border Name="Border" Background="{TemplateBinding Background}"
-                                                                        Padding="{TemplateBinding Padding}" CornerRadius="3" Margin="2">
-                                                                    <ContentPresenter/>
-                                                                </Border>
+                                                                <Grid>
+                                                                    <Border Name="Border" Background="{TemplateBinding Background}"
+                                                                            Padding="{TemplateBinding Padding}" CornerRadius="3" Margin="2">
+                                                                        <ContentPresenter/>
+                                                                    </Border>
+                                                                    <Border Name="highlightOverlay" CornerRadius="3" Margin="2" Opacity="0"
+                                                                            Background="{DynamicResource AccentGradientBrush}"/>
+                                                                    <Border Name="selectionOverlay" CornerRadius="3" Margin="2" Opacity="0"
+                                                                            Background="{DynamicResource AccentOrangeBrush}"/>
+                                                                </Grid>
                                                                 <ControlTemplate.Triggers>
                                                                     <Trigger Property="IsHighlighted" Value="True">
-                                                                        <Setter TargetName="Border" Property="Background">
-                                                                            <Setter.Value>
-                                                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                                                    <GradientStop Color="#FF8533" Offset="0"/>
-                                                                                    <GradientStop Color="#A1A1AA" Offset="1"/>
-                                                                                </LinearGradientBrush>
-                                                                            </Setter.Value>
-                                                                        </Setter>
+                                                                        <Setter TargetName="highlightOverlay" Property="Opacity" Value="1"/>
                                                                     </Trigger>
                                                                     <Trigger Property="IsSelected" Value="True">
-                                                                        <Setter TargetName="Border" Property="Background" Value="#FF8533"/>
+                                                                        <Setter TargetName="selectionOverlay" Property="Opacity" Value="1"/>
                                                                         <Setter Property="FontWeight" Value="Bold"/>
                                                                     </Trigger>
                                                                 </ControlTemplate.Triggers>
@@ -2622,13 +2491,8 @@
                                                 ToolTip="Rediscovers all domain controllers in Active Directory environment and refreshes health status indicators. Pings each DC, checks LDAP connectivity, verifies replication status, and displays role information (PDC, GC, RODC). Updates DC Health Topology grid with real-time status. (F5)">
                                             <Button.Template>
                                                 <ControlTemplate TargetType="Button">
-                                                    <Border x:Name="border" CornerRadius="4" Padding="10,7">
-                                                        <Border.Background>
-                                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                                <GradientStop Color="#FF8533" Offset="0"/>
-                                                                <GradientStop Color="#CC6B29" Offset="1"/>
-                                                            </LinearGradientBrush>
-                                                        </Border.Background>
+                                                    <Border x:Name="border" CornerRadius="4" Padding="10,7"
+                                                            Background="{DynamicResource AccentOrangeBrush}">
                                                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                     </Border>
                                                     <ControlTemplate.Triggers>
@@ -2659,7 +2523,7 @@
                                         </Button>
 
                                         <CheckBox x:Name="ChkRememberDC" Content="Remember DC Selection on Startup"
-                                                  Foreground="{StaticResource TextMutedBrush}" FontSize="10"
+                                                  Foreground="{DynamicResource TextMutedBrush}" FontSize="10"
                                                   Margin="0,0,0,0" Click="ChkRememberDC_Click"/>
                                     </StackPanel>
                                 </Border>
@@ -2669,7 +2533,7 @@
                                         BorderThickness="1" CornerRadius="8" Padding="16">
                                     <StackPanel>
                                         <TextBlock Text="ℹ️ DOMAIN INFORMATION"
-                                                   Foreground="{StaticResource AccentOrangeBrush}"
+                                                   Foreground="{DynamicResource AccentOrangeBrush}"
                                                    FontSize="12" FontWeight="Bold" Margin="0,0,0,12"/>
 
                                         <Grid>
@@ -2685,25 +2549,25 @@
                                             </Grid.RowDefinitions>
 
                                             <TextBlock Grid.Row="0" Grid.Column="0" Text="Current Domain:"
-                                                       Foreground="{StaticResource TextMutedBrush}" FontSize="10" Margin="0,0,8,8"/>
+                                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="10" Margin="0,0,8,8"/>
                                             <TextBlock Grid.Row="0" Grid.Column="1" x:Name="TxtCurrentDomain_Tab"
                                                        Text="Not connected" Foreground="White" FontSize="10"
                                                        FontWeight="SemiBold" Margin="0,0,0,8"/>
 
                                             <TextBlock Grid.Row="1" Grid.Column="0" Text="User Domain:"
-                                                       Foreground="{StaticResource TextMutedBrush}" FontSize="10" Margin="0,0,8,8"/>
+                                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="10" Margin="0,0,8,8"/>
                                             <TextBlock Grid.Row="1" Grid.Column="1" x:Name="TxtUserDomain_Tab"
                                                        Text="-" Foreground="White" FontSize="10" Margin="0,0,0,8"/>
 
                                             <TextBlock Grid.Row="2" Grid.Column="0" Text="Computer Name:"
-                                                       Foreground="{StaticResource TextMutedBrush}" FontSize="10" Margin="0,0,8,8"/>
+                                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="10" Margin="0,0,8,8"/>
                                             <TextBlock Grid.Row="2" Grid.Column="1" x:Name="TxtComputerName_Tab"
                                                        Text="-" Foreground="White" FontSize="10" Margin="0,0,0,8"/>
 
                                             <TextBlock Grid.Row="3" Grid.Column="0" Text="DCs Discovered:"
-                                                       Foreground="{StaticResource TextMutedBrush}" FontSize="10" Margin="0,0,8,0"/>
+                                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="10" Margin="0,0,8,0"/>
                                             <TextBlock Grid.Row="3" Grid.Column="1" x:Name="TxtDCCount_Tab"
-                                                       Text="0" Foreground="{StaticResource AccentOrangeBrush}"
+                                                       Text="0" Foreground="{DynamicResource AccentOrangeBrush}"
                                                        FontSize="10" FontWeight="Bold"/>
                                         </Grid>
                                     </StackPanel>
@@ -2715,7 +2579,7 @@
                                     BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,0,0,15">
                                 <StackPanel>
                                     <TextBlock Text="🔧 ADMIN TOOLS"
-                                               Foreground="{StaticResource AccentOrangeBrush}"
+                                               Foreground="{DynamicResource AccentOrangeBrush}"
                                                FontSize="14" FontWeight="Bold" Margin="0,0,0,14"/>
 
                                     <!-- TAG: #TOOLTIPS #UTILITIES -->
@@ -2725,7 +2589,7 @@
                                             ToolTip="Queries domain controllers for recent account lockout events from Security Event Log (Event ID 4740). Shows locked accounts, lockout source computer, timestamp, and DC that logged the event. Useful for troubleshooting user login issues and identifying password attack sources. Requires domain admin privileges."/>
 
                                     <TextBlock Text="Launch Management Console:"
-                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
                                                FontSize="11" Margin="0,0,0,6"/>
                                     <Grid>
                                         <Grid.ColumnDefinitions>
@@ -2771,11 +2635,11 @@
                                     BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,0,0,15">
                                 <StackPanel>
                                     <TextBlock Text="💚 DC HEALTH TOPOLOGY"
-                                               Foreground="{StaticResource AccentOrangeBrush}"
+                                               Foreground="{DynamicResource AccentOrangeBrush}"
                                                FontSize="16" FontWeight="Bold" Margin="0,0,0,12"/>
 
                                     <TextBlock Text="Real-time health status of all discovered domain controllers:"
-                                               Foreground="{StaticResource TextMutedBrush}" FontSize="12"
+                                               Foreground="{DynamicResource TextMutedBrush}" FontSize="12"
                                                Margin="0,0,0,16" TextWrapping="Wrap"/>
 
                                     <!-- TAG: #DC_DISCOVERY #THEME_COLORS #UI_IMPROVEMENT #RESPONSIVE - Auto-wrapping cards that fill space -->
@@ -2794,7 +2658,7 @@
                                         </Grid.ColumnDefinitions>
 
                                         <TextBlock Grid.Column="0" Text="📜 DC DISCOVERY HISTORY"
-                                                   Foreground="{StaticResource AccentOrangeBrush}"
+                                                   Foreground="{DynamicResource AccentOrangeBrush}"
                                                    FontSize="14" FontWeight="Bold" VerticalAlignment="Center"/>
 
                                         <Border Grid.Column="1" Background="#FF2A2A2A"
@@ -2802,17 +2666,17 @@
                                                 MouseLeftButtonDown="DCHistory_Toggle">
                                             <StackPanel Orientation="Horizontal">
                                                 <TextBlock x:Name="DCHistoryToggleIcon" Text="▼"
-                                                           Foreground="{StaticResource AccentOrangeBrush}"
+                                                           Foreground="{DynamicResource AccentOrangeBrush}"
                                                            FontSize="9" FontWeight="Bold" Margin="0,0,6,0"/>
                                                 <TextBlock Text="SHOW/HIDE"
-                                                           Foreground="{StaticResource AccentOrangeBrush}"
+                                                           Foreground="{DynamicResource AccentOrangeBrush}"
                                                            FontSize="9" FontWeight="Bold"/>
                                             </StackPanel>
                                         </Border>
                                     </Grid>
 
                                     <TextBlock Text="Previously discovered domain controllers (cached for 30 days):"
-                                               Foreground="{StaticResource TextMutedBrush}" FontSize="10"
+                                               Foreground="{DynamicResource TextMutedBrush}" FontSize="10"
                                                Margin="0,0,0,10" TextWrapping="Wrap"/>
 
                                     <!-- TAG: #DC_DISCOVERY #THEME_COLORS -->
@@ -2822,7 +2686,7 @@
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
                                                         <Border Background="#FF252525" Padding="12,10" Margin="0,0,0,8"
-                                                                CornerRadius="4" BorderBrush="{StaticResource AccentOrangeBrush}" BorderThickness="0,0,0,2">
+                                                                CornerRadius="4" BorderBrush="{DynamicResource AccentOrangeBrush}" BorderThickness="0,0,0,2">
                                                             <Grid>
                                                                 <Grid.ColumnDefinitions>
                                                                     <ColumnDefinition Width="Auto"/>
@@ -2858,14 +2722,7 @@
                                                                                     </Setter>
                                                                                 </DataTrigger>
                                                                                 <DataTrigger Binding="{Binding StatusIcon}" Value="🟠">
-                                                                                    <Setter Property="Background">
-                                                                                        <Setter.Value>
-                                                                                            <RadialGradientBrush>
-                                                                                                <GradientStop Color="#FF8533" Offset="0"/>
-                                                                                                <GradientStop Color="#CC6B29" Offset="1"/>
-                                                                                            </RadialGradientBrush>
-                                                                                        </Setter.Value>
-                                                                                    </Setter>
+                                                                                    <Setter Property="Background" Value="{DynamicResource AccentOrangeBrush}"/>
                                                                                 </DataTrigger>
                                                                             </Style.Triggers>
                                                                         </Style>
@@ -2877,13 +2734,13 @@
                                                                                FontSize="12" FontWeight="SemiBold"/>
                                                                     <TextBlock FontSize="10" Margin="0,3,0,0">
                                                                         <TextBlock.Foreground>
-                                                                            <SolidColorBrush Color="#A1A1AA"/>
+                                                                            <DynamicResource ResourceKey="AccentZincBrush"/>
                                                                         </TextBlock.Foreground>
                                                                         <Run Text="Last seen: "/>
                                                                         <Run Text="{Binding LastSeen, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" Foreground="#CCCCCC"/>
                                                                         <Run Text=" | Latency: "/>
-                                                                        <Run Text="{Binding AvgLatency}" Foreground="{StaticResource AccentOrangeBrush}"/>
-                                                                        <Run Text="ms" Foreground="{StaticResource AccentOrangeBrush}"/>
+                                                                        <Run Text="{Binding AvgLatency}" Foreground="{DynamicResource AccentOrangeBrush}"/>
+                                                                        <Run Text="ms" Foreground="{DynamicResource AccentOrangeBrush}"/>
                                                                     </TextBlock>
                                                                 </StackPanel>
 
@@ -2905,7 +2762,7 @@
                                                                                     </DataTrigger>
                                                                                     <DataTrigger Binding="{Binding StatusIcon}" Value="🟠">
                                                                                         <Setter Property="Text" Value="~1 MONTH"/>
-                                                                                        <Setter Property="Foreground" Value="{StaticResource AccentOrangeBrush}"/>
+                                                                                        <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                                                                                     </DataTrigger>
                                                                                 </Style.Triggers>
                                                                             </Style>
@@ -2943,11 +2800,11 @@
                                         BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,0,0,15">
                                     <StackPanel>
                                         <TextBlock Text="👥 ACTIVE DIRECTORY MANAGEMENT"
-                                                   Foreground="{StaticResource AccentOrangeBrush}"
+                                                   Foreground="{DynamicResource AccentOrangeBrush}"
                                                    FontSize="16" FontWeight="Bold" Margin="0,0,0,12"/>
 
                                         <TextBlock Text="Browse and manage AD objects (users, computers, groups, OUs) with cached admin credentials:"
-                                                   Foreground="{StaticResource TextMutedBrush}" FontSize="12"
+                                                   Foreground="{DynamicResource TextMutedBrush}" FontSize="12"
                                                    Margin="0,0,0,0" TextWrapping="Wrap"/>
                                     </StackPanel>
                                 </Border>
@@ -2998,17 +2855,14 @@
                 </TabItem>
 
                 <!-- ══════════════════════════════ -->
-                <!-- TAB 5: REMOTE CONTROL          -->
-                <!-- TAG: #REMOTE_CONTROL #RMM_TAB  -->
+                <!-- TAB 3: OPERATIONS              -->
                 <!-- ══════════════════════════════ -->
-                <TabItem Header="🖥️ REMOTE CONTROL">
-                    <local:RemoteControlTab x:Name="RemoteControlTabContent"/>
-                </TabItem>
-
-                <!-- ══════════════════════════════════════════════════════════════ -->
-                <!-- TAB: DEPLOYMENT RESULTS - TAG: #DEPLOYMENT_RESULTS #CSV_VIEW  -->
-                <!-- ══════════════════════════════════════════════════════════════ -->
-                <TabItem Header="📋 DEPLOYMENT RESULTS">
+                <TabItem Header="📋 OPERATIONS">
+                    <TabControl x:Name="TabControlOperations" Background="{DynamicResource BgDarkBrush}"
+                                BorderThickness="0" Padding="10"
+                                ItemContainerStyle="{StaticResource AccentTabItemRounded}">
+                        <!-- SUB-TAB: DEPLOYMENT RESULTS - TAG: #DEPLOYMENT_RESULTS #CSV_VIEW -->
+                        <TabItem Header="📋 DEPLOYMENT RESULTS">
                     <DockPanel Margin="15">
 
                         <!-- Toolbar -->
@@ -3101,7 +2955,7 @@
                                     <!-- TAG: #DEPLOYMENT_RESULTS - "Latest per PC" toggle -->
                                     <CheckBox x:Name="ChkLatestPerPC"
                                               Content="Latest per PC" IsChecked="True"
-                                              Foreground="#A1A1AA" FontSize="11"
+                                              Foreground="{DynamicResource AccentZincBrush}" FontSize="11"
                                               VerticalContentAlignment="Center" Margin="16,0,0,0"
                                               Checked="ChkLatestPerPC_Changed" Unchecked="ChkLatestPerPC_Changed"
                                               ToolTip="When checked: shows only the most recent run per computer (cleaner view). Uncheck to see the full run history for every PC."/>
@@ -3114,7 +2968,7 @@
                                     <!-- TAG: #DEPLOYMENT_RESULTS - Auto-refresh toggle -->
                                     <CheckBox x:Name="ChkDeploymentAutoRefresh"
                                               Content="Auto-refresh (60s)" IsChecked="False"
-                                              Foreground="#A1A1AA" FontSize="11"
+                                              Foreground="{DynamicResource AccentZincBrush}" FontSize="11"
                                               VerticalContentAlignment="Center" Margin="16,0,0,0"
                                               Checked="ChkDeploymentAutoRefresh_Changed" Unchecked="ChkDeploymentAutoRefresh_Changed"
                                               ToolTip="Automatically reload the deployment log every 60 seconds while this tab is visible. Useful for monitoring active deployments in real-time."/>
@@ -3133,10 +2987,10 @@
                                 <!-- Right: status info -->
                                 <StackPanel Grid.Column="2" Orientation="Vertical" VerticalAlignment="Center">
                                     <TextBlock x:Name="TxtDeploymentCount"
-                                               Text="0 records" Foreground="{StaticResource AccentOrangeBrush}"
+                                               Text="0 records" Foreground="{DynamicResource AccentOrangeBrush}"
                                                FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Right"/>
                                     <TextBlock x:Name="TxtDeploymentLogPath"
-                                               Text="Log: not loaded" Foreground="#A1A1AA"
+                                               Text="Log: not loaded" Foreground="{DynamicResource AccentZincBrush}"
                                                FontSize="9" HorizontalAlignment="Right"
                                                TextTrimming="CharacterEllipsis" MaxWidth="350"/>
                                 </StackPanel>
@@ -3195,7 +3049,7 @@
                                         ToolTip="Total script runs in the log (all PCs, all runs). Use 'Latest per PC' toggle to see unique PC count.">
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Total Runs:" Foreground="#FDBA74" FontSize="10.5" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                        <TextBlock x:Name="TxtTallyTotal" Text="—" Foreground="{StaticResource AccentOrangeBrush}" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="TxtTallyTotal" Text="—" Foreground="{DynamicResource AccentOrangeBrush}" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
 
@@ -3260,7 +3114,7 @@
                                                    VerticalAlignment="Center" Margin="0,0,2,0"/>
                                         <TextBlock Text="Win10" Foreground="#6B7280" FontSize="10"
                                                    VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                        <TextBlock Text="0" Foreground="#A1A1AA" FontSize="10" FontWeight="Bold"
+                                        <TextBlock Text="0" Foreground="{DynamicResource AccentZincBrush}" FontSize="10" FontWeight="Bold"
                                                    VerticalAlignment="Center" Margin="0,0,2,0"/>
                                         <TextBlock Text="No change" Foreground="#6B7280" FontSize="10"
                                                    VerticalAlignment="Center" Margin="0,0,12,0"/>
@@ -3299,7 +3153,7 @@
                                                        VerticalAlignment="Center" Padding="4,0">
                                                 <TextBlock.Style>
                                                     <Style TargetType="TextBlock">
-                                                        <Setter Property="Foreground" Value="#A1A1AA"/>
+                                                        <Setter Property="Foreground" Value="{DynamicResource AccentZincBrush}"/>
                                                         <Style.Triggers>
                                                             <DataTrigger Binding="{Binding Status}" Value="COMPLIANT">
                                                                 <Setter Property="Foreground" Value="#10B981"/>
@@ -3356,6 +3210,49 @@
                         </DataGrid>
 
                     </DockPanel>
+                        </TabItem>
+
+                        <!-- SUB-TAB: AUDIT TRAIL -->
+                        <TabItem Header="📝 AUDIT TRAIL">
+                            <DockPanel Margin="15">
+                                <Border DockPanel.Dock="Top" Margin="0,0,0,10">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Content="REFRESH" Style="{StaticResource BtnPrimary}"
+                                                Click="Menu_RefreshLogs_Click" Padding="14,6" FontSize="11"
+                                                ToolTip="Reload audit log entries from AuditLogs folder (last 7 days)"/>
+                                        <TextBox x:Name="TxtAuditSearch" Width="250" Margin="10,0,0,0"
+                                                 Background="{DynamicResource BgMediumBrush}" Foreground="White" FontSize="11"
+                                                 VerticalContentAlignment="Center" Padding="6,4"
+                                                 TextChanged="TxtAuditSearch_TextChanged"
+                                                 Tag="Search audit logs..."/>
+                                        <Button Content="EXPORT CSV" Margin="10,0,0,0" Padding="14,6" FontSize="11"
+                                                Click="BtnExportAuditLog_Click"
+                                                ToolTip="Export current audit log view to CSV on Desktop"/>
+                                        <Button Content="OPEN FOLDER" Margin="10,0,0,0" Padding="14,6" FontSize="11"
+                                                Click="BtnOpenAuditFolder_Click"
+                                                ToolTip="Open AuditLogs folder in File Explorer"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <DataGrid x:Name="AuditGrid" AutoGenerateColumns="False" IsReadOnly="True">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Timestamp" Binding="{Binding Time}" Width="155"/>
+                                        <DataGridTextColumn Header="User" Binding="{Binding User}" Width="150"/>
+                                        <DataGridTextColumn Header="Target" Binding="{Binding Target}" Width="140"/>
+                                        <DataGridTextColumn Header="Action" Binding="{Binding Action}" Width="160"/>
+                                        <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="70"/>
+                                        <DataGridTextColumn Header="Details" Binding="{Binding Details}" Width="*"/>
+                                    </DataGrid.Columns>
+                                    <DataGrid.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Kill Process" Click="Ctx_KillProc_Click"/>
+                                            <MenuItem Header="Restart Service" Click="Ctx_RestartSvc_Click"/>
+                                        </ContextMenu>
+                                    </DataGrid.ContextMenu>
+                                </DataGrid>
+                            </DockPanel>
+                        </TabItem>
+                    </TabControl>
                 </TabItem>
 
             </TabControl>
@@ -3366,7 +3263,7 @@
         <!-- ═══════════════════════════════════════════════════════════ -->
         <Border x:Name="ToolProgressPanel"
                 Background="#DD1E1E1E"
-                BorderBrush="{StaticResource AccentOrangeBrush}"
+                BorderBrush="{DynamicResource AccentOrangeBrush}"
                 BorderThickness="2"
                 CornerRadius="6"
                 Padding="16,12"
@@ -3380,14 +3277,14 @@
                            Text="Opening Tool..."
                            FontSize="13"
                            FontWeight="SemiBold"
-                           Foreground="{StaticResource AccentOrangeBrush}"
+                           Foreground="{DynamicResource AccentOrangeBrush}"
                            Margin="0,0,0,8"/>
 
                 <!-- Progress Bar -->
                 <ProgressBar x:Name="ToolProgressBar"
                              Height="6"
                              Background="#FF2A2A2A"
-                             Foreground="{StaticResource AccentOrangeBrush}"
+                             Foreground="{DynamicResource AccentOrangeBrush}"
                              IsIndeterminate="True"
                              Margin="0,0,0,8"/>
 
@@ -3395,7 +3292,7 @@
                 <TextBlock x:Name="TxtToolStatus"
                            Text="Connecting..."
                            FontSize="11"
-                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
                            TextWrapping="Wrap"/>
             </StackPanel>
         </Border>
@@ -3409,13 +3306,8 @@
                 Panel.ZIndex="9999">
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                 <!-- Logo -->
-                <Border Width="80" Height="80" CornerRadius="40" Margin="0,0,0,20">
-                    <Border.Background>
-                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                            <GradientStop Color="#FF8533" Offset="0"/>
-                            <GradientStop Color="#A1A1AA" Offset="1"/>
-                        </LinearGradientBrush>
-                    </Border.Background>
+                <Border Width="80" Height="80" CornerRadius="40" Margin="0,0,0,20"
+                        Background="{DynamicResource AccentGradientBrush}">
                     <TextBlock Text="A" FontSize="48" FontWeight="Bold"
                                Foreground="White"
                                HorizontalAlignment="Center"
@@ -3443,14 +3335,14 @@
                 <ProgressBar Width="300"
                              Height="4"
                              IsIndeterminate="True"
-                             Foreground="#FF8533"
+                             Foreground="{DynamicResource AccentOrangeBrush}"
                              Background="#333333"
                              Margin="0,0,0,10"/>
 
                 <!-- Detailed Status -->
                 <TextBlock x:Name="LoadingDetailText"
                            Text="Please wait..."
-                           Foreground="#A1A1AA"
+                           Foreground="{DynamicResource AccentZincBrush}"
                            FontSize="11"
                            HorizontalAlignment="Center"
                            Margin="0,0,0,0"/>
@@ -3466,14 +3358,16 @@
                 BorderThickness="0,1,0,0" Padding="12,4">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>  <!-- 0: Live pulse -->
+                    <ColumnDefinition Width="Auto"/>  <!-- 1: Device count -->
+                    <ColumnDefinition Width="Auto"/>  <!-- 2: Online count -->
+                    <ColumnDefinition Width="Auto"/>  <!-- 3: Critical count -->
+                    <ColumnDefinition Width="Auto"/>  <!-- 4: Separator -->
+                    <ColumnDefinition Width="*"/>     <!-- 5: Last scan -->
+                    <ColumnDefinition Width="Auto"/>  <!-- 6: Audit log status -->
+                    <ColumnDefinition Width="Auto"/>  <!-- 7: Separator -->
+                    <ColumnDefinition Width="Auto"/>  <!-- 8: DB info -->
+                    <ColumnDefinition Width="Auto"/>  <!-- 9: Refresh -->
                 </Grid.ColumnDefinitions>
 
                 <!-- Live indicator -->
@@ -3497,7 +3391,7 @@
 
                 <!-- Device count -->
                 <TextBlock Grid.Column="1" x:Name="TxtStatusDevices" Text="0 devices"
-                           FontSize="9" Foreground="#FFA1A1AA" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                           FontSize="9" Foreground="{DynamicResource AccentZincBrush}" VerticalAlignment="Center" Margin="0,0,12,0"/>
 
                 <!-- Online count -->
                 <TextBlock Grid.Column="2" x:Name="TxtStatusOnline" Text="0 online"
@@ -3514,12 +3408,20 @@
                 <TextBlock Grid.Column="5" x:Name="TxtStatusLastScan" Text="Last scan: Never"
                            FontSize="9" Foreground="#FF6B7280" VerticalAlignment="Center"/>
 
+                <!-- Audit log status - TAG: #STATUS_INDICATORS #LOGGING -->
+                <TextBlock Grid.Column="6" x:Name="TxtLogPath" Text=""
+                           FontSize="9" Foreground="#FF6B7280" VerticalAlignment="Center" Margin="12,0,0,0"
+                           ToolTip="Audit trail log entries loaded from CSV files"/>
+
+                <!-- Separator -->
+                <Border Grid.Column="7" Width="1" Background="#FF3C3C3C" Margin="12,2,0,2"/>
+
                 <!-- DB info -->
-                <TextBlock Grid.Column="6" x:Name="TxtStatusDb" Text=""
-                           FontSize="9" Foreground="#FF6B7280" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBlock Grid.Column="8" x:Name="TxtStatusDb" Text=""
+                           FontSize="9" Foreground="#FF6B7280" VerticalAlignment="Center" Margin="12,0,8,0"/>
 
                 <!-- Refresh button -->
-                <Button Grid.Column="7" Content="🔄" FontSize="10" Padding="4,2"
+                <Button Grid.Column="9" Content="🔄" FontSize="10" Padding="4,2"
                         Background="Transparent" Foreground="#FF6B7280" BorderThickness="0"
                         Cursor="Hand" Click="BtnRefreshDashboard_Click"
                         ToolTip="Refresh dashboard statistics"/>

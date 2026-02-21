@@ -303,89 +303,372 @@ namespace NecessaryAdminTool.Data
         }
         #endif
 
-        // TAG MANAGEMENT - Simplified implementations
+        // TAG MANAGEMENT
         public async Task<List<string>> GetComputerTagsAsync(string hostname)
         {
-            LogManager.LogWarning($"SqliteDataProvider.GetComputerTagsAsync not implemented - returning empty for {hostname}");
-            return await Task.FromResult(new List<string>());
+            var tags = new List<string>();
+            #if SQLITE_ENABLED
+            using (var conn = new SQLiteConnection(_connectionString))
+            {
+                await conn.OpenAsync().ConfigureAwait(false);
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT TagName FROM ComputerTags WHERE Hostname = @hostname ORDER BY TagName";
+                    cmd.Parameters.AddWithValue("@hostname", hostname);
+                    using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
+                    {
+                        while (await reader.ReadAsync().ConfigureAwait(false))
+                            tags.Add(reader.GetString(0));
+                    }
+                }
+            }
+            #else
+            await Task.CompletedTask;
+            #endif
+            return tags;
         }
+
         public async Task AddTagAsync(string hostname, string tagName)
         {
-            LogManager.LogWarning($"SqliteDataProvider.AddTagAsync not implemented - '{tagName}' on {hostname} not saved");
+            #if SQLITE_ENABLED
+            using (var conn = new SQLiteConnection(_connectionString))
+            {
+                await conn.OpenAsync().ConfigureAwait(false);
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "INSERT OR IGNORE INTO ComputerTags (Hostname, TagName) VALUES (@hostname, @tag)";
+                    cmd.Parameters.AddWithValue("@hostname", hostname);
+                    cmd.Parameters.AddWithValue("@tag", tagName);
+                    await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+                }
+            }
+            #else
             await Task.CompletedTask;
+            #endif
         }
+
         public async Task RemoveTagAsync(string hostname, string tagName)
         {
-            LogManager.LogWarning($"SqliteDataProvider.RemoveTagAsync not implemented - '{tagName}' on {hostname} not removed");
+            #if SQLITE_ENABLED
+            using (var conn = new SQLiteConnection(_connectionString))
+            {
+                await conn.OpenAsync().ConfigureAwait(false);
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "DELETE FROM ComputerTags WHERE Hostname = @hostname AND TagName = @tag";
+                    cmd.Parameters.AddWithValue("@hostname", hostname);
+                    cmd.Parameters.AddWithValue("@tag", tagName);
+                    await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+                }
+            }
+            #else
             await Task.CompletedTask;
+            #endif
         }
+
         public async Task<List<string>> GetAllTagsAsync()
         {
-            LogManager.LogWarning("SqliteDataProvider.GetAllTagsAsync not implemented - returning empty");
-            return await Task.FromResult(new List<string>());
+            var tags = new List<string>();
+            #if SQLITE_ENABLED
+            using (var conn = new SQLiteConnection(_connectionString))
+            {
+                await conn.OpenAsync().ConfigureAwait(false);
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT DISTINCT TagName FROM ComputerTags ORDER BY TagName";
+                    using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
+                    {
+                        while (await reader.ReadAsync().ConfigureAwait(false))
+                            tags.Add(reader.GetString(0));
+                    }
+                }
+            }
+            #else
+            await Task.CompletedTask;
+            #endif
+            return tags;
         }
 
-        // SCAN HISTORY - Simplified implementations
+        // SCAN HISTORY
         public async Task<ScanHistory> GetLastScanAsync()
         {
-            LogManager.LogWarning("SqliteDataProvider.GetLastScanAsync not implemented - returning null");
-            return await Task.FromResult<ScanHistory>(null);
+            #if SQLITE_ENABLED
+            using (var conn = new SQLiteConnection(_connectionString))
+            {
+                await conn.OpenAsync().ConfigureAwait(false);
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT ScanId, StartTime, EndTime, ComputersScanned, SuccessCount, FailureCount, DurationSeconds FROM ScanHistory ORDER BY ScanId DESC LIMIT 1";
+                    using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
+                    {
+                        if (await reader.ReadAsync().ConfigureAwait(false))
+                        {
+                            return new ScanHistory
+                            {
+                                ScanId = Convert.ToInt32(reader["ScanId"]),
+                                StartTime = Convert.ToDateTime(reader["StartTime"]),
+                                EndTime = reader["EndTime"] != DBNull.Value ? Convert.ToDateTime(reader["EndTime"]) : DateTime.MinValue,
+                                ComputersScanned = Convert.ToInt32(reader["ComputersScanned"]),
+                                SuccessCount = Convert.ToInt32(reader["SuccessCount"]),
+                                FailureCount = Convert.ToInt32(reader["FailureCount"]),
+                                DurationSeconds = Convert.ToDouble(reader["DurationSeconds"])
+                            };
+                        }
+                    }
+                }
+            }
+            #else
+            await Task.CompletedTask;
+            #endif
+            return null;
         }
+
         public async Task SaveScanHistoryAsync(ScanHistory scan)
         {
-            LogManager.LogWarning("SqliteDataProvider.SaveScanHistoryAsync not implemented - scan history not persisted");
+            #if SQLITE_ENABLED
+            using (var conn = new SQLiteConnection(_connectionString))
+            {
+                await conn.OpenAsync().ConfigureAwait(false);
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"INSERT INTO ScanHistory (StartTime, EndTime, ComputersScanned, SuccessCount, FailureCount, DurationSeconds)
+                        VALUES (@start, @end, @scanned, @success, @failure, @duration)";
+                    cmd.Parameters.AddWithValue("@start", scan.StartTime);
+                    cmd.Parameters.AddWithValue("@end", scan.EndTime);
+                    cmd.Parameters.AddWithValue("@scanned", scan.ComputersScanned);
+                    cmd.Parameters.AddWithValue("@success", scan.SuccessCount);
+                    cmd.Parameters.AddWithValue("@failure", scan.FailureCount);
+                    cmd.Parameters.AddWithValue("@duration", scan.DurationSeconds);
+                    await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+                }
+            }
+            #else
             await Task.CompletedTask;
+            #endif
         }
+
         public async Task<List<ScanHistory>> GetScanHistoryAsync(int limit = 10)
         {
-            LogManager.LogWarning("SqliteDataProvider.GetScanHistoryAsync not implemented - returning empty");
-            return await Task.FromResult(new List<ScanHistory>());
+            var history = new List<ScanHistory>();
+            #if SQLITE_ENABLED
+            using (var conn = new SQLiteConnection(_connectionString))
+            {
+                await conn.OpenAsync().ConfigureAwait(false);
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT ScanId, StartTime, EndTime, ComputersScanned, SuccessCount, FailureCount, DurationSeconds FROM ScanHistory ORDER BY ScanId DESC LIMIT @limit";
+                    cmd.Parameters.AddWithValue("@limit", limit);
+                    using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
+                    {
+                        while (await reader.ReadAsync().ConfigureAwait(false))
+                        {
+                            history.Add(new ScanHistory
+                            {
+                                ScanId = Convert.ToInt32(reader["ScanId"]),
+                                StartTime = Convert.ToDateTime(reader["StartTime"]),
+                                EndTime = reader["EndTime"] != DBNull.Value ? Convert.ToDateTime(reader["EndTime"]) : DateTime.MinValue,
+                                ComputersScanned = Convert.ToInt32(reader["ComputersScanned"]),
+                                SuccessCount = Convert.ToInt32(reader["SuccessCount"]),
+                                FailureCount = Convert.ToInt32(reader["FailureCount"]),
+                                DurationSeconds = Convert.ToDouble(reader["DurationSeconds"])
+                            });
+                        }
+                    }
+                }
+            }
+            #else
+            await Task.CompletedTask;
+            #endif
+            return history;
         }
 
-        // SETTINGS - Simplified implementations
+        // SETTINGS
         public async Task<string> GetSettingAsync(string key, string defaultValue = null)
         {
-            LogManager.LogWarning($"SqliteDataProvider.GetSettingAsync not implemented - returning default for key '{key}'");
-            return await Task.FromResult(defaultValue);
+            #if SQLITE_ENABLED
+            using (var conn = new SQLiteConnection(_connectionString))
+            {
+                await conn.OpenAsync().ConfigureAwait(false);
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT Value FROM Settings WHERE Key = @key";
+                    cmd.Parameters.AddWithValue("@key", key);
+                    var result = await cmd.ExecuteScalarAsync().ConfigureAwait(false);
+                    if (result != null && result != DBNull.Value)
+                        return result.ToString();
+                }
+            }
+            #else
+            await Task.CompletedTask;
+            #endif
+            return defaultValue;
         }
+
         public async Task SaveSettingAsync(string key, string value)
         {
-            LogManager.LogWarning($"SqliteDataProvider.SaveSettingAsync not implemented - '{key}' not persisted");
+            #if SQLITE_ENABLED
+            using (var conn = new SQLiteConnection(_connectionString))
+            {
+                await conn.OpenAsync().ConfigureAwait(false);
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "INSERT OR REPLACE INTO Settings (Key, Value, UpdatedAt) VALUES (@key, @value, @now)";
+                    cmd.Parameters.AddWithValue("@key", key);
+                    cmd.Parameters.AddWithValue("@value", value ?? string.Empty);
+                    cmd.Parameters.AddWithValue("@now", DateTime.UtcNow);
+                    await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+                }
+            }
+            #else
             await Task.CompletedTask;
+            #endif
         }
 
-        // SCRIPTS - Simplified implementations
+        // SCRIPTS
         public async Task<List<ScriptInfo>> GetAllScriptsAsync()
         {
-            LogManager.LogWarning("SqliteDataProvider.GetAllScriptsAsync not implemented - returning empty");
-            return await Task.FromResult(new List<ScriptInfo>());
-        }
-        public async Task SaveScriptAsync(ScriptInfo script)
-        {
-            LogManager.LogWarning("SqliteDataProvider.SaveScriptAsync not implemented - script not persisted");
+            var scripts = new List<ScriptInfo>();
+            #if SQLITE_ENABLED
+            using (var conn = new SQLiteConnection(_connectionString))
+            {
+                await conn.OpenAsync().ConfigureAwait(false);
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT ScriptId, Name, Description, Content, Category, CreatedAt FROM Scripts ORDER BY Name";
+                    using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
+                    {
+                        while (await reader.ReadAsync().ConfigureAwait(false))
+                        {
+                            scripts.Add(new ScriptInfo
+                            {
+                                ScriptId = Convert.ToInt32(reader["ScriptId"]),
+                                Name = reader["Name"]?.ToString(),
+                                Description = reader["Description"]?.ToString(),
+                                Content = reader["Content"]?.ToString(),
+                                Category = reader["Category"]?.ToString(),
+                                CreatedAt = reader["CreatedAt"] != DBNull.Value ? Convert.ToDateTime(reader["CreatedAt"]) : DateTime.MinValue
+                            });
+                        }
+                    }
+                }
+            }
+            #else
             await Task.CompletedTask;
-        }
-        public async Task DeleteScriptAsync(int scriptId)
-        {
-            LogManager.LogWarning($"SqliteDataProvider.DeleteScriptAsync not implemented - script {scriptId} not deleted");
-            await Task.CompletedTask;
+            #endif
+            return scripts;
         }
 
-        // BOOKMARKS - Simplified implementations
+        public async Task SaveScriptAsync(ScriptInfo script)
+        {
+            #if SQLITE_ENABLED
+            using (var conn = new SQLiteConnection(_connectionString))
+            {
+                await conn.OpenAsync().ConfigureAwait(false);
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"INSERT OR REPLACE INTO Scripts (Name, Description, Content, Category, CreatedAt)
+                        VALUES (@name, @desc, @content, @category, @created)";
+                    cmd.Parameters.AddWithValue("@name", script.Name ?? string.Empty);
+                    cmd.Parameters.AddWithValue("@desc", script.Description ?? string.Empty);
+                    cmd.Parameters.AddWithValue("@content", script.Content ?? string.Empty);
+                    cmd.Parameters.AddWithValue("@category", script.Category ?? string.Empty);
+                    cmd.Parameters.AddWithValue("@created", script.CreatedAt == DateTime.MinValue ? DateTime.UtcNow : script.CreatedAt);
+                    await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+                }
+            }
+            #else
+            await Task.CompletedTask;
+            #endif
+        }
+
+        public async Task DeleteScriptAsync(int scriptId)
+        {
+            #if SQLITE_ENABLED
+            using (var conn = new SQLiteConnection(_connectionString))
+            {
+                await conn.OpenAsync().ConfigureAwait(false);
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "DELETE FROM Scripts WHERE ScriptId = @id";
+                    cmd.Parameters.AddWithValue("@id", scriptId);
+                    await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+                }
+            }
+            #else
+            await Task.CompletedTask;
+            #endif
+        }
+
+        // BOOKMARKS
         public async Task<List<BookmarkInfo>> GetAllBookmarksAsync()
         {
-            LogManager.LogWarning("SqliteDataProvider.GetAllBookmarksAsync not implemented - returning empty");
-            return await Task.FromResult(new List<BookmarkInfo>());
+            var bookmarks = new List<BookmarkInfo>();
+            #if SQLITE_ENABLED
+            using (var conn = new SQLiteConnection(_connectionString))
+            {
+                await conn.OpenAsync().ConfigureAwait(false);
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT Hostname, Category, Notes, IsFavorite FROM Bookmarks ORDER BY Hostname";
+                    using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
+                    {
+                        while (await reader.ReadAsync().ConfigureAwait(false))
+                        {
+                            bookmarks.Add(new BookmarkInfo
+                            {
+                                Hostname = reader["Hostname"]?.ToString(),
+                                Category = reader["Category"]?.ToString(),
+                                Notes = reader["Notes"]?.ToString(),
+                                IsFavorite = reader["IsFavorite"] != DBNull.Value && Convert.ToInt32(reader["IsFavorite"]) == 1
+                            });
+                        }
+                    }
+                }
+            }
+            #else
+            await Task.CompletedTask;
+            #endif
+            return bookmarks;
         }
+
         public async Task SaveBookmarkAsync(BookmarkInfo bookmark)
         {
-            LogManager.LogWarning("SqliteDataProvider.SaveBookmarkAsync not implemented - bookmark not persisted");
+            #if SQLITE_ENABLED
+            using (var conn = new SQLiteConnection(_connectionString))
+            {
+                await conn.OpenAsync().ConfigureAwait(false);
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"INSERT OR REPLACE INTO Bookmarks (Hostname, Category, Notes, IsFavorite)
+                        VALUES (@hostname, @category, @notes, @fav)";
+                    cmd.Parameters.AddWithValue("@hostname", bookmark.Hostname ?? string.Empty);
+                    cmd.Parameters.AddWithValue("@category", bookmark.Category ?? string.Empty);
+                    cmd.Parameters.AddWithValue("@notes", bookmark.Notes ?? string.Empty);
+                    cmd.Parameters.AddWithValue("@fav", bookmark.IsFavorite ? 1 : 0);
+                    await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+                }
+            }
+            #else
             await Task.CompletedTask;
+            #endif
         }
+
         public async Task DeleteBookmarkAsync(string hostname)
         {
-            LogManager.LogWarning($"SqliteDataProvider.DeleteBookmarkAsync not implemented - {hostname} bookmark not deleted");
+            #if SQLITE_ENABLED
+            using (var conn = new SQLiteConnection(_connectionString))
+            {
+                await conn.OpenAsync().ConfigureAwait(false);
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "DELETE FROM Bookmarks WHERE Hostname = @hostname";
+                    cmd.Parameters.AddWithValue("@hostname", hostname);
+                    await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+                }
+            }
+            #else
             await Task.CompletedTask;
+            #endif
         }
 
         // DATABASE OPERATIONS

@@ -20,8 +20,8 @@
         <SolidColorBrush x:Key="BgLight" Color="#FF2F2F2F"/>
         <SolidColorBrush x:Key="BgCard" Color="#FF1E1E1E"/>
         <SolidColorBrush x:Key="BorderDim" Color="#FF3C3C3C"/>
-        <SolidColorBrush x:Key="AccentOrange" Color="#FFFF8533"/>
-        <SolidColorBrush x:Key="AccentZinc" Color="#FFA1A1AA"/>
+        <!-- AccentOrange removed — now uses app-level AccentOrangeBrush via DynamicResource for modular accent colors -->
+        <!-- AccentZinc removed — now uses app-level AccentZincBrush via DynamicResource -->
         <SolidColorBrush x:Key="TextPrimary" Color="#FFFFFFFF"/>
         <SolidColorBrush x:Key="TextMuted" Color="#FF888888"/>
         <SolidColorBrush x:Key="AccentGreen" Color="#FF16C60C"/>
@@ -29,7 +29,7 @@
 
         <!-- Button Styles -->
         <Style x:Key="BtnPrimary" TargetType="Button">
-            <Setter Property="Background" Value="{StaticResource AccentOrange}"/>
+            <Setter Property="Background" Value="{DynamicResource AccentOrangeBrush}"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="FontSize" Value="12"/>
@@ -66,7 +66,7 @@
 
         <Style x:Key="BtnGhost" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource AccentZinc}"/>
+            <Setter Property="Foreground" Value="{DynamicResource AccentZincBrush}"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="FontSize" Value="11"/>
             <Setter Property="Padding" Value="12,6"/>
@@ -96,7 +96,7 @@
                 <!-- Title -->
                 <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="30,0">
                     <TextBlock Text="⚙️ APPLICATION OPTIONS" FontSize="22" FontWeight="Bold"
-                               Foreground="{StaticResource AccentOrange}"/>
+                               Foreground="{DynamicResource AccentOrangeBrush}"/>
                     <TextBlock Text="Configure application settings and preferences"
                                FontSize="11" Foreground="{StaticResource TextMuted}" Margin="0,4,0,0"/>
                 </StackPanel>
@@ -133,17 +133,17 @@
                     <Expander.HeaderTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding}" FontSize="13" FontWeight="Bold"
-                                       Foreground="{StaticResource AccentOrange}"/>
+                                       Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
                     <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
                             BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
                         <StackPanel>
-                            <TextBlock Text="ADMIN LAUNCHER SETUP" Foreground="{StaticResource AccentOrange}"
+                            <TextBlock Text="ADMIN LAUNCHER SETUP" Foreground="{DynamicResource AccentOrangeBrush}"
                                        FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
 
                             <!-- Create Shortcut Button - TAG: #ADMIN_TOOLS -->
-                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource AccentOrange}"
+                            <Border Background="{StaticResource BgDark}" BorderBrush="{DynamicResource AccentOrangeBrush}"
                                     BorderThickness="1" CornerRadius="4" Padding="12,10" Margin="0,0,0,8"
                                     Cursor="Hand" MouseEnter="DebugButton_MouseEnter" MouseLeave="DebugButton_MouseLeave"
                                     MouseLeftButtonDown="CreateShortcut_Click">
@@ -155,7 +155,7 @@
                                     <TextBlock Grid.Column="0" Text="🚀" FontSize="18" Margin="0,0,12,0" VerticalAlignment="Center"/>
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                         <TextBlock x:Name="DebugButtonText" Text="Create Admin Launcher Shortcut"
-                                                  Foreground="{StaticResource AccentOrange}" FontSize="11" FontWeight="Bold"/>
+                                                  Foreground="{DynamicResource AccentOrangeBrush}" FontSize="11" FontWeight="Bold"/>
                                         <TextBlock Text="Creates a desktop shortcut to launch NecessaryAdminTool Suite as domain admin"
                                                   Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,0" TextWrapping="Wrap"/>
                                     </StackPanel>
@@ -172,11 +172,11 @@
                 <!-- SECTION 2a: GENERAL PREFS     -->
                 <!-- ══════════════════════════════ -->
                 <Expander x:Name="ExpanderGeneral" Header="⚙️ GENERAL PREFERENCES"
-                          IsExpanded="True" Margin="0,0,0,10">
+                          IsExpanded="False" Margin="0,0,0,10">
                     <Expander.HeaderTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding}" FontSize="13" FontWeight="Bold"
-                                       Foreground="{StaticResource AccentOrange}"/>
+                                       Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
                     <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
@@ -235,7 +235,7 @@
                     <Expander.HeaderTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding}" FontSize="13" FontWeight="Bold"
-                                       Foreground="{StaticResource AccentOrange}"/>
+                                       Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
                     <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
@@ -277,7 +277,7 @@
                                     BorderThickness="1" CornerRadius="4" Padding="12,10" Margin="0,0,0,16">
                                 <StackPanel>
                                     <TextBlock Text="🔐 Credential Storage Information"
-                                               Foreground="{StaticResource AccentOrange}" FontSize="10" FontWeight="Bold" Margin="0,0,0,6"/>
+                                               Foreground="{DynamicResource AccentOrangeBrush}" FontSize="10" FontWeight="Bold" Margin="0,0,0,6"/>
                                     <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextMuted}" FontSize="9" LineHeight="14">
                                         <Run Text="• Credentials are encrypted using Windows Data Protection API (DPAPI)"/>
                                         <LineBreak/>
@@ -295,7 +295,7 @@
                             </Border>
 
                             <!-- DC Health Display Settings - TAG: #DC_HEALTH #CONFIGURABLE_OPTIONS #DASHBOARD -->
-                            <TextBlock Text="DC Health Widget Settings:" Foreground="{StaticResource AccentOrange}"
+                            <TextBlock Text="DC Health Widget Settings:" Foreground="{DynamicResource AccentOrangeBrush}"
                                        FontSize="10" FontWeight="Bold" Margin="0,8,0,8"/>
 
                             <!-- Expand DC Health by Default -->
@@ -323,7 +323,7 @@
                     <Expander.HeaderTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding}" FontSize="13" FontWeight="Bold"
-                                       Foreground="{StaticResource AccentOrange}"/>
+                                       Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
                     <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
@@ -340,7 +340,7 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <Button x:Name="BtnVisualEditor" Content="📋 VISUAL EDITOR" Grid.Column="0"
-                                        Background="{StaticResource AccentOrange}" Foreground="White" BorderThickness="0"
+                                        Background="{DynamicResource AccentOrangeBrush}" Foreground="White" BorderThickness="0"
                                         Padding="8,6" FontSize="10" FontWeight="Bold" Margin="0,0,2,0"
                                         Click="BtnVisualEditor_Click" Cursor="Hand"
                                         ToolTip="Switches to visual editor mode with grid-based service configuration. Easier to use for adding, editing, and removing cloud services. Recommended for most users. Changes are synchronized with JSON editor."/>
@@ -353,7 +353,7 @@
 
                             <!-- Visual Editor Panel -->
                             <StackPanel x:Name="VisualEditorPanel" Margin="0,0,0,0">
-                                <TextBlock Text="SERVICES LIST" Foreground="{StaticResource AccentOrange}"
+                                <TextBlock Text="SERVICES LIST" Foreground="{DynamicResource AccentOrangeBrush}"
                                            FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
 
                                 <!-- Services DataGrid - TAG: #GLOBAL_SERVICES -->
@@ -375,7 +375,7 @@
                                     <DataGrid.ColumnHeaderStyle>
                                         <Style TargetType="DataGridColumnHeader">
                                             <Setter Property="Background" Value="{StaticResource BgDark}"/>
-                                            <Setter Property="Foreground" Value="{StaticResource AccentOrange}"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                                             <Setter Property="FontWeight" Value="Bold"/>
                                             <Setter Property="FontSize" Value="10"/>
                                             <Setter Property="Padding" Value="8,4"/>
@@ -389,7 +389,7 @@
                                             <Setter Property="Padding" Value="8,4"/>
                                             <Style.Triggers>
                                                 <Trigger Property="IsSelected" Value="True">
-                                                    <Setter Property="Background" Value="{StaticResource AccentOrange}"/>
+                                                    <Setter Property="Background" Value="{DynamicResource AccentOrangeBrush}"/>
                                                     <Setter Property="Foreground" Value="White"/>
                                                 </Trigger>
                                             </Style.Triggers>
@@ -420,7 +420,7 @@
                                                 <Style TargetType="TextBox">
                                                     <Setter Property="Foreground" Value="#FFE0E0E0"/>
                                                     <Setter Property="Background" Value="#FF1A1A1A"/>
-                                                    <Setter Property="BorderBrush" Value="{StaticResource AccentOrange}"/>
+                                                    <Setter Property="BorderBrush" Value="{DynamicResource AccentOrangeBrush}"/>
                                                 </Style>
                                             </DataGridTextColumn.EditingElementStyle>
                                         </DataGridTextColumn>
@@ -435,7 +435,7 @@
                                                 <Style TargetType="TextBox">
                                                     <Setter Property="Foreground" Value="#FFE0E0E0"/>
                                                     <Setter Property="Background" Value="#FF1A1A1A"/>
-                                                    <Setter Property="BorderBrush" Value="{StaticResource AccentOrange}"/>
+                                                    <Setter Property="BorderBrush" Value="{DynamicResource AccentOrangeBrush}"/>
                                                 </Style>
                                             </DataGridTextColumn.EditingElementStyle>
                                         </DataGridTextColumn>
@@ -443,12 +443,12 @@
                                 </DataGrid>
 
                                 <TextBlock Text="💡 TIP: Use 'ping:IP' for simple ping checks (e.g., ping:8.8.8.8) or full HTTPS URLs for status APIs"
-                                           Foreground="{StaticResource AccentOrange}" FontSize="8" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="12"/>
+                                           Foreground="{DynamicResource AccentOrangeBrush}" FontSize="8" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="12"/>
                             </StackPanel>
 
                             <!-- JSON Editor Panel -->
                             <StackPanel x:Name="JsonEditorPanel" Visibility="Collapsed">
-                                <TextBlock Text="RAW JSON CONFIGURATION" Foreground="{StaticResource AccentOrange}"
+                                <TextBlock Text="RAW JSON CONFIGURATION" Foreground="{DynamicResource AccentOrangeBrush}"
                                            FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
 
                                 <TextBox x:Name="TxtJsonConfig"
@@ -509,7 +509,7 @@
                     <Expander.HeaderTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding}" FontSize="13" FontWeight="Bold"
-                                       Foreground="{StaticResource AccentOrange}"/>
+                                       Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
                     <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
@@ -532,7 +532,7 @@
                                 <DataGrid.ColumnHeaderStyle>
                                     <Style TargetType="DataGridColumnHeader">
                                         <Setter Property="Background" Value="{StaticResource BgDark}"/>
-                                        <Setter Property="Foreground" Value="{StaticResource AccentOrange}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                                         <Setter Property="FontWeight" Value="Bold"/>
                                         <Setter Property="FontSize" Value="10"/>
                                         <Setter Property="Padding" Value="8,4"/>
@@ -546,7 +546,7 @@
                                         <Setter Property="Padding" Value="8,4"/>
                                         <Style.Triggers>
                                             <Trigger Property="IsSelected" Value="True">
-                                                <Setter Property="Background" Value="{StaticResource AccentOrange}"/>
+                                                <Setter Property="Background" Value="{DynamicResource AccentOrangeBrush}"/>
                                                 <Setter Property="Foreground" Value="White"/>
                                             </Trigger>
                                         </Style.Triggers>
@@ -634,7 +634,7 @@
                     <Expander.HeaderTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding}" FontSize="13" FontWeight="Bold"
-                                       Foreground="{StaticResource AccentOrange}"/>
+                                       Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
                     <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
@@ -704,145 +704,169 @@
                     <Expander.HeaderTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding}" FontSize="13" FontWeight="Bold"
-                                       Foreground="{StaticResource AccentOrange}"/>
+                                       Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
                     <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
                             BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
+                        <StackPanel>
 
-                            <!-- Left Column: Logo & Colors -->
-                            <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                                <!-- Custom Logo - TAG: #LOGO_PLACEMENT #BRANDING -->
-                                <TextBlock Text="Custom Logo:" Foreground="{StaticResource TextMuted}" FontSize="11" FontWeight="Bold"/>
-                                <Grid Margin="0,4,0,12">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBox x:Name="TxtLogoPath" Grid.Column="0" IsReadOnly="True"
+                            <!-- Preset Themes Row (Quick Apply) - TAG: #THEME_COLORS -->
+                            <TextBlock Text="Theme Presets:" Foreground="{StaticResource TextMuted}" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
+                            <ItemsControl x:Name="PresetSwatches" Margin="0,0,0,16">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel Orientation="Horizontal"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                            </ItemsControl>
+
+                            <!-- Dark Mode Toggle -->
+                            <CheckBox x:Name="ChkDarkMode" Content="Dark Mode" IsChecked="True"
+                                      Foreground="White" FontSize="11" Margin="0,0,0,16"
+                                      Checked="ChkDarkMode_Changed" Unchecked="ChkDarkMode_Changed"
+                                      ToolTip="Toggle between dark and light application theme"/>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Left Column: Logo & Colors -->
+                                <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                                    <!-- Custom Logo - TAG: #LOGO_PLACEMENT #BRANDING -->
+                                    <TextBlock Text="Custom Logo:" Foreground="{StaticResource TextMuted}" FontSize="11" FontWeight="Bold"/>
+                                    <Grid Margin="0,4,0,12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox x:Name="TxtLogoPath" Grid.Column="0" IsReadOnly="True"
+                                                 Background="{StaticResource BgDark}" Foreground="White"
+                                                 BorderBrush="{StaticResource BorderDim}" Padding="8,6" FontSize="10"
+                                                 Text="(Using default NecessaryAdmin logo)"/><!-- TAG: #DYNAMIC_BRANDING -->
+                                        <Button Grid.Column="1" Content="BROWSE" Style="{StaticResource BtnPrimary}"
+                                                Click="BtnBrowseLogo_Click" Margin="8,0,0,0" Padding="12,6" FontSize="10"
+                                                ToolTip="Browse for a custom logo image file (PNG, JPG, BMP)."/>
+                                    </Grid>
+
+                                    <!-- Logo Preview -->
+                                    <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                                            BorderThickness="1" Padding="10" Margin="0,0,0,12" Height="80">
+                                        <Viewbox x:Name="LogoPreview" Stretch="Uniform" HorizontalAlignment="Center">
+                                            <TextBlock Text="A" FontSize="48" FontWeight="Bold"
+                                                       Foreground="{DynamicResource AccentOrangeBrush}"/>
+                                        </Viewbox>
+                                    </Border>
+
+                                    <!-- Logo Size -->
+                                    <TextBlock Text="Logo Size:" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                    <Grid Margin="0,4,0,12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="60"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Slider x:Name="SliderLogoSize" Grid.Column="0" Minimum="32" Maximum="128"
+                                                Value="64" TickFrequency="16" IsSnapToTickEnabled="False"/>
+                                        <TextBox x:Name="TxtLogoSize" Grid.Column="1" Text="64" TextAlignment="Center"
+                                                 Background="{StaticResource BgDark}" Foreground="White"
+                                                 BorderBrush="{StaticResource BorderDim}" Padding="4" Margin="8,0,0,0"/>
+                                    </Grid>
+
+                                    <!-- Primary Accent Color - TAG: #THEME_COLORS -->
+                                    <TextBlock Text="Primary Accent Color:" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                    <Grid Margin="0,4,0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox x:Name="CmbPrimaryColor" Grid.Column="0" FontSize="10"
+                                                  SelectionChanged="CmbPrimaryColor_SelectionChanged"
+                                                  ToolTip="Choose a primary accent color or select Custom"/>
+                                        <Border x:Name="PrimaryColorPreview" Grid.Column="1" Width="30" Height="24"
+                                                Background="#FFFF8533" BorderBrush="{StaticResource BorderDim}"
+                                                BorderThickness="1" Margin="8,0,0,0" Cursor="Hand" CornerRadius="3"
+                                                MouseLeftButtonDown="PrimaryColorPreview_Click"
+                                                ToolTip="Click to open color picker"/>
+                                    </Grid>
+                                    <TextBox x:Name="TxtPrimaryColor" Text="#FFFF8533" Margin="0,0,0,12"
                                              Background="{StaticResource BgDark}" Foreground="White"
                                              BorderBrush="{StaticResource BorderDim}" Padding="8,6" FontSize="10"
-                                             Text="(Using default NecessaryAdmin logo)"/><!-- TAG: #DYNAMIC_BRANDING -->
-                                    <!-- TAG: #TOOLTIPS #FILE_OPERATIONS -->
-                                    <Button Grid.Column="1" Content="BROWSE" Style="{StaticResource BtnPrimary}"
-                                            Click="BtnBrowseLogo_Click" Margin="8,0,0,0" Padding="12,6" FontSize="10"
-                                            ToolTip="Browse for a custom logo image file (PNG, JPG, BMP). Logo appears in the About window and main title bar. Recommended size: 200x50 pixels. Leave empty to use default NecessaryAdminTool branding. Changes apply immediately."/>
-                                </Grid>
+                                             TextChanged="TxtPrimaryColor_TextChanged"
+                                             ToolTip="Enter custom hex color (#RRGGBB or #AARRGGBB)"/>
 
-                                <!-- Logo Preview -->
-                                <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
-                                        BorderThickness="1" Padding="10" Margin="0,0,0,12" Height="80">
-                                    <Viewbox x:Name="LogoPreview" Stretch="Uniform" HorizontalAlignment="Center">
-                                        <TextBlock Text="A" FontSize="48" FontWeight="Bold"
-                                                   Foreground="{StaticResource AccentOrange}"/>
-                                    </Viewbox>
-                                </Border>
-
-                                <!-- Logo Size -->
-                                <TextBlock Text="Logo Size:" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                                <Grid Margin="0,4,0,12">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="60"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Slider x:Name="SliderLogoSize" Grid.Column="0" Minimum="32" Maximum="128"
-                                            Value="64" TickFrequency="16" IsSnapToTickEnabled="False"/>
-                                    <TextBox x:Name="TxtLogoSize" Grid.Column="1" Text="64" TextAlignment="Center"
-                                             Background="{StaticResource BgDark}" Foreground="White"
-                                             BorderBrush="{StaticResource BorderDim}" Padding="4" Margin="8,0,0,0"/>
-                                </Grid>
-
-                                <!-- Primary Accent Color - TAG: #THEME_COLORS -->
-                                <TextBlock Text="Primary Accent Color (Orange):" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                                <Grid Margin="0,4,0,12">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Border x:Name="PrimaryColorPreview" Grid.Column="0" Width="40" Height="30"
-                                            Background="#FFFF8533" BorderBrush="{StaticResource BorderDim}"
-                                            BorderThickness="1" Margin="0,0,8,0" Cursor="Hand"
-                                            MouseLeftButtonDown="PrimaryColorPreview_Click"
-                                            ToolTip="Click to open color picker"/>
-                                    <TextBox x:Name="TxtPrimaryColor" Grid.Column="1" Text="#FFFF8533"
+                                    <!-- Secondary Accent Color -->
+                                    <TextBlock Text="Secondary Accent Color:" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                    <Grid Margin="0,4,0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox x:Name="CmbSecondaryColor" Grid.Column="0" FontSize="10"
+                                                  SelectionChanged="CmbSecondaryColor_SelectionChanged"
+                                                  ToolTip="Choose a secondary accent color or select Custom"/>
+                                        <Border x:Name="SecondaryColorPreview" Grid.Column="1" Width="30" Height="24"
+                                                Background="#FFA1A1AA" BorderBrush="{StaticResource BorderDim}"
+                                                BorderThickness="1" Margin="8,0,0,0" Cursor="Hand" CornerRadius="3"
+                                                MouseLeftButtonDown="SecondaryColorPreview_Click"
+                                                ToolTip="Click to open color picker"/>
+                                    </Grid>
+                                    <TextBox x:Name="TxtSecondaryColor" Text="#FFA1A1AA" Margin="0,0,0,12"
                                              Background="{StaticResource BgDark}" Foreground="White"
                                              BorderBrush="{StaticResource BorderDim}" Padding="8,6" FontSize="10"
-                                             TextChanged="TxtPrimaryColor_TextChanged"/>
-                                </Grid>
+                                             TextChanged="TxtSecondaryColor_TextChanged"
+                                             ToolTip="Enter custom hex color (#RRGGBB or #AARRGGBB)"/>
+                                </StackPanel>
 
-                                <!-- Secondary Accent Color -->
-                                <TextBlock Text="Secondary Accent Color (Zinc):" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                                <Grid Margin="0,4,0,12">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Border x:Name="SecondaryColorPreview" Grid.Column="0" Width="40" Height="30"
-                                            Background="#FFA1A1AA" BorderBrush="{StaticResource BorderDim}"
-                                            BorderThickness="1" Margin="0,0,8,0" Cursor="Hand"
-                                            MouseLeftButtonDown="SecondaryColorPreview_Click"
-                                            ToolTip="Click to open color picker"/>
-                                    <TextBox x:Name="TxtSecondaryColor" Grid.Column="1" Text="#FFA1A1AA"
-                                             Background="{StaticResource BgDark}" Foreground="White"
-                                             BorderBrush="{StaticResource BorderDim}" Padding="8,6" FontSize="10"
-                                             TextChanged="TxtSecondaryColor_TextChanged"/>
-                                </Grid>
-                            </StackPanel>
+                                <!-- Right Column: Preview & Actions -->
+                                <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                    <!-- Preview Panel -->
+                                    <TextBlock Text="Preview:" Foreground="{StaticResource TextMuted}" FontSize="11" FontWeight="Bold"/>
+                                    <Border Background="{StaticResource BgDarkest}" BorderBrush="{StaticResource BorderDim}"
+                                            BorderThickness="1" Padding="15" Margin="0,4,0,12" Height="200">
+                                        <StackPanel>
+                                            <TextBlock Text="NecessaryAdmin" FontSize="18" FontWeight="Bold" Margin="0,0,0,8">
+                                                <TextBlock.Foreground>
+                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                                        <GradientStop x:Name="PreviewPrimaryStop" Color="#FFFF8533" Offset="0"/>
+                                                        <GradientStop x:Name="PreviewSecondaryStop" Color="#FFA1A1AA" Offset="0.7"/>
+                                                    </LinearGradientBrush>
+                                                </TextBlock.Foreground>
+                                            </TextBlock>
+                                            <TextBlock Text="I T   M A N A G E M E N T   S U I T E" FontSize="7"
+                                                       Foreground="{DynamicResource AccentOrangeBrush}" FontWeight="Bold" Opacity="0.8"/>
+                                            <Border Height="1" Background="{StaticResource BorderDim}" Margin="0,10"/>
+                                            <Button Content="Sample Button" Padding="12,6" FontSize="11" Margin="0,10,0,0">
+                                                <Button.Background>
+                                                    <SolidColorBrush x:Name="PreviewButtonBg" Color="#FFFF8533"/>
+                                                </Button.Background>
+                                                <Button.Foreground>
+                                                    <SolidColorBrush Color="White"/>
+                                                </Button.Foreground>
+                                            </Button>
+                                        </StackPanel>
+                                    </Border>
 
-                            <!-- Right Column: Preview & Actions -->
-                            <StackPanel Grid.Column="1" Margin="10,0,0,0">
-                                <!-- Preview Panel -->
-                                <TextBlock Text="Preview:" Foreground="{StaticResource TextMuted}" FontSize="11" FontWeight="Bold"/>
-                                <Border Background="{StaticResource BgDarkest}" BorderBrush="{StaticResource BorderDim}"
-                                        BorderThickness="1" Padding="15" Margin="0,4,0,12" Height="200">
-                                    <StackPanel>
-                                        <!-- TAG: #DYNAMIC_BRANDING - Preview uses static text (OK for preview) -->
-                                        <TextBlock Text="NecessaryAdmin" FontSize="18" FontWeight="Bold" Margin="0,0,0,8">
-                                            <TextBlock.Foreground>
-                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                    <GradientStop x:Name="PreviewPrimaryStop" Color="#FFFF8533" Offset="0"/>
-                                                    <GradientStop x:Name="PreviewSecondaryStop" Color="#FFA1A1AA" Offset="0.7"/>
-                                                </LinearGradientBrush>
-                                            </TextBlock.Foreground>
-                                        </TextBlock>
-                                        <TextBlock Text="I T   M A N A G E M E N T   S U I T E" FontSize="7"
-                                                   Foreground="{StaticResource AccentOrange}" FontWeight="Bold" Opacity="0.8"/>
-                                        <Border Height="1" Background="{StaticResource BorderDim}" Margin="0,10"/>
-                                        <Button Content="Sample Button" Padding="12,6" FontSize="11" Margin="0,10,0,0">
-                                            <Button.Background>
-                                                <SolidColorBrush x:Name="PreviewButtonBg" Color="#FFFF8533"/>
-                                            </Button.Background>
-                                            <Button.Foreground>
-                                                <SolidColorBrush Color="White"/>
-                                            </Button.Foreground>
-                                        </Button>
-                                    </StackPanel>
-                                </Border>
+                                    <!-- Font Settings -->
+                                    <TextBlock Text="Font Family:" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                    <ComboBox x:Name="CmbFontFamily" Margin="0,4,0,12"
+                                              Background="{StaticResource BgDark}" Foreground="White"
+                                              BorderBrush="{StaticResource BorderDim}" Padding="8,6" FontSize="10">
+                                        <ComboBoxItem Content="Segoe UI (Default)" IsSelected="True"/>
+                                        <ComboBoxItem Content="Arial"/>
+                                        <ComboBoxItem Content="Calibri"/>
+                                        <ComboBoxItem Content="Consolas"/>
+                                        <ComboBoxItem Content="Courier New"/>
+                                    </ComboBox>
 
-                                <!-- Font Settings -->
-                                <TextBlock Text="Font Family:" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                                <ComboBox x:Name="CmbFontFamily" Margin="0,4,0,12"
-                                          Background="{StaticResource BgDark}" Foreground="White"
-                                          BorderBrush="{StaticResource BorderDim}" Padding="8,6" FontSize="10">
-                                    <ComboBoxItem Content="Segoe UI (Default)" IsSelected="True"/>
-                                    <ComboBoxItem Content="Arial"/>
-                                    <ComboBoxItem Content="Calibri"/>
-                                    <ComboBoxItem Content="Consolas"/>
-                                    <ComboBoxItem Content="Courier New"/>
-                                </ComboBox>
-
-                                <!-- TAG: #TOOLTIPS #ACTIONS -->
-                                <!-- Action Buttons -->
-                                <Button Content="🔄 RESET TO DEFAULTS" Style="{StaticResource BtnDanger}"
-                                        Click="BtnResetAppearance_Click" Padding="12,8" FontSize="10" Margin="0,20,0,0"
-                                        ToolTip="Resets all appearance settings to factory defaults. This includes primary accent color (Orange #FF8533), secondary accent color (Zinc #A1A1AA), custom logo path, and font family. Changes apply immediately to all windows. Theme engine uses 35+ resource keys."/>
-                            </StackPanel>
-                        </Grid>
+                                    <!-- Action Buttons -->
+                                    <Button Content="🔄 RESET TO DEFAULTS" Style="{StaticResource BtnDanger}"
+                                            Click="BtnResetAppearance_Click" Padding="12,8" FontSize="10" Margin="0,20,0,0"
+                                            ToolTip="Resets all appearance settings to factory defaults including colors, logo, and font."/>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
                     </Border>
                 </Expander>
 
@@ -854,7 +878,7 @@
                     <Expander.HeaderTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding}" FontSize="13" FontWeight="Bold"
-                                       Foreground="{StaticResource AccentOrange}"/>
+                                       Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
                     <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
@@ -880,7 +904,7 @@
                                         VerticalAlignment="Center"/>
 
                                 <TextBlock x:Name="TxtFontSizeValue" Grid.Column="2" Text="1.0x" FontWeight="Bold"
-                                           Foreground="{StaticResource AccentOrange}" FontSize="12"
+                                           Foreground="{DynamicResource AccentOrangeBrush}" FontSize="12"
                                            VerticalAlignment="Center" Margin="12,0,0,0" MinWidth="50"/>
                             </Grid>
 
@@ -913,7 +937,7 @@
                     <Expander.HeaderTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding}" FontSize="13" FontWeight="Bold"
-                                       Foreground="{StaticResource AccentOrange}"/>
+                                       Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
                     <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
@@ -988,7 +1012,7 @@
                     <Expander.HeaderTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding}" FontSize="13" FontWeight="Bold"
-                                       Foreground="{StaticResource AccentOrange}"/>
+                                       Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
                     <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
@@ -1009,7 +1033,7 @@
                                 <DataGrid.ColumnHeaderStyle>
                                     <Style TargetType="DataGridColumnHeader">
                                         <Setter Property="Background" Value="{StaticResource BgDark}"/>
-                                        <Setter Property="Foreground" Value="{StaticResource AccentOrange}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                                         <Setter Property="FontWeight" Value="Bold"/>
                                         <Setter Property="FontSize" Value="10"/>
                                         <Setter Property="Padding" Value="8,4"/>
@@ -1069,7 +1093,7 @@
                                     </Grid.ColumnDefinitions>
 
                                     <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="Add New Profile"
-                                               Foreground="{StaticResource AccentOrange}" FontSize="11" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource AccentOrangeBrush}" FontSize="11" FontWeight="SemiBold"
                                                Margin="0,0,0,8"/>
 
                                     <TextBlock Grid.Row="1" Grid.Column="0" Text="Profile Name:" Foreground="White" FontSize="10"
@@ -1112,7 +1136,7 @@
                     <Expander.HeaderTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding}" FontSize="13" FontWeight="Bold"
-                                       Foreground="{StaticResource AccentOrange}"/>
+                                       Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
                     <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
@@ -1133,7 +1157,7 @@
                                 <DataGrid.ColumnHeaderStyle>
                                     <Style TargetType="DataGridColumnHeader">
                                         <Setter Property="Background" Value="{StaticResource BgDark}"/>
-                                        <Setter Property="Foreground" Value="{StaticResource AccentOrange}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                                         <Setter Property="FontWeight" Value="Bold"/>
                                         <Setter Property="FontSize" Value="10"/>
                                         <Setter Property="Padding" Value="8,4"/>
@@ -1202,7 +1226,7 @@
                                     </Grid.ColumnDefinitions>
 
                                     <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="Add New Bookmark"
-                                               Foreground="{StaticResource AccentOrange}" FontSize="11" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource AccentOrangeBrush}" FontSize="11" FontWeight="SemiBold"
                                                Margin="0,0,0,8"/>
 
                                     <TextBlock Grid.Row="1" Grid.Column="0" Text="Display Name:" Foreground="White" FontSize="10"
@@ -1259,7 +1283,7 @@
                     <Expander.HeaderTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding}" FontSize="13" FontWeight="Bold"
-                                       Foreground="{StaticResource AccentOrange}"/>
+                                       Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
                     <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
@@ -1269,7 +1293,7 @@
                                        Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="14"/>
 
                             <!-- Current Configuration -->
-                            <TextBlock Text="CURRENT CONFIGURATION" Foreground="{StaticResource AccentOrange}"
+                            <TextBlock Text="CURRENT CONFIGURATION" Foreground="{DynamicResource AccentOrangeBrush}"
                                        FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
 
                             <Grid Margin="0,0,0,12">
@@ -1294,7 +1318,7 @@
                             </Grid>
 
                             <!-- Database Statistics -->
-                            <TextBlock Text="DATABASE STATISTICS" Foreground="{StaticResource AccentOrange}"
+                            <TextBlock Text="DATABASE STATISTICS" Foreground="{DynamicResource AccentOrangeBrush}"
                                        FontSize="10" FontWeight="Bold" Margin="0,12,0,8"/>
 
                             <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
@@ -1311,7 +1335,7 @@
                                     <StackPanel Grid.Column="0">
                                         <TextBlock Text="💻" FontSize="18" HorizontalAlignment="Center" Margin="0,0,0,4"/>
                                         <TextBlock x:Name="TxtDbComputers" Text="0" FontSize="20" FontWeight="Bold"
-                                                   Foreground="{StaticResource AccentOrange}" HorizontalAlignment="Center"/>
+                                                   Foreground="{DynamicResource AccentOrangeBrush}" HorizontalAlignment="Center"/>
                                         <TextBlock Text="Computers" FontSize="9" Foreground="{StaticResource TextMuted}"
                                                    HorizontalAlignment="Center"/>
                                     </StackPanel>
@@ -1320,7 +1344,7 @@
                                     <StackPanel Grid.Column="1">
                                         <TextBlock Text="🔍" FontSize="18" HorizontalAlignment="Center" Margin="0,0,0,4"/>
                                         <TextBlock x:Name="TxtDbScans" Text="0" FontSize="20" FontWeight="Bold"
-                                                   Foreground="{StaticResource AccentOrange}" HorizontalAlignment="Center"/>
+                                                   Foreground="{DynamicResource AccentOrangeBrush}" HorizontalAlignment="Center"/>
                                         <TextBlock Text="Scans" FontSize="9" Foreground="{StaticResource TextMuted}"
                                                    HorizontalAlignment="Center"/>
                                     </StackPanel>
@@ -1329,7 +1353,7 @@
                                     <StackPanel Grid.Column="2">
                                         <TextBlock Text="📜" FontSize="18" HorizontalAlignment="Center" Margin="0,0,0,4"/>
                                         <TextBlock x:Name="TxtDbScripts" Text="0" FontSize="20" FontWeight="Bold"
-                                                   Foreground="{StaticResource AccentOrange}" HorizontalAlignment="Center"/>
+                                                   Foreground="{DynamicResource AccentOrangeBrush}" HorizontalAlignment="Center"/>
                                         <TextBlock Text="Scripts" FontSize="9" Foreground="{StaticResource TextMuted}"
                                                    HorizontalAlignment="Center"/>
                                     </StackPanel>
@@ -1338,7 +1362,7 @@
                                     <StackPanel Grid.Column="3">
                                         <TextBlock Text="💾" FontSize="18" HorizontalAlignment="Center" Margin="0,0,0,4"/>
                                         <TextBlock x:Name="TxtDbSize" Text="0 MB" FontSize="20" FontWeight="Bold"
-                                                   Foreground="{StaticResource AccentOrange}" HorizontalAlignment="Center"/>
+                                                   Foreground="{DynamicResource AccentOrangeBrush}" HorizontalAlignment="Center"/>
                                         <TextBlock Text="Size" FontSize="9" Foreground="{StaticResource TextMuted}"
                                                    HorizontalAlignment="Center"/>
                                     </StackPanel>
@@ -1346,7 +1370,7 @@
                             </Border>
 
                             <!-- Database Actions -->
-                            <TextBlock Text="DATABASE ACTIONS" Foreground="{StaticResource AccentOrange}"
+                            <TextBlock Text="DATABASE ACTIONS" Foreground="{DynamicResource AccentOrangeBrush}"
                                        FontSize="10" FontWeight="Bold" Margin="0,12,0,8"/>
 
                             <!-- Refresh Stats -->
@@ -1479,7 +1503,7 @@
 
                                     <Button x:Name="BtnResetSetup" Grid.Column="1" VerticalAlignment="Center"
                                             Content="🔄 Reset Setup" Click="BtnResetSetup_Click"
-                                            Background="{StaticResource AccentOrangeBrush}" Foreground="White"
+                                            Background="{DynamicResource AccentOrangeBrush}" Foreground="White"
                                             Padding="12,6" FontSize="10" FontWeight="SemiBold"
                                             ToolTip="Reset first-run flag and restart to launch setup wizard"/>
                                 </Grid>
@@ -1497,7 +1521,7 @@
                     <Expander.HeaderTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding}" FontSize="13" FontWeight="Bold"
-                                       Foreground="{StaticResource AccentOrange}"/>
+                                       Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
                     <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
@@ -1505,7 +1529,7 @@
                         <StackPanel>
                             <!-- TAG: #CONFIGURABLE_OPTIONS #DEPLOYMENT #POWERSHELL_SCRIPTS -->
                             <!-- Deployment Configuration -->
-                            <TextBlock Text="DEPLOYMENT CONFIGURATION" Foreground="{StaticResource AccentOrange}"
+                            <TextBlock Text="DEPLOYMENT CONFIGURATION" Foreground="{DynamicResource AccentOrangeBrush}"
                                        FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
 
                             <!-- Deployment Log Directory -->
@@ -1530,14 +1554,14 @@
 
                                         <!-- TAG: #TOOLTIPS #FILE_OPERATIONS -->
                                         <Button Grid.Column="1" Content="📁" Width="36" Height="32"
-                                                Background="{StaticResource BgLight}" Foreground="{StaticResource AccentOrange}"
+                                                Background="{StaticResource BgLight}" Foreground="{DynamicResource AccentOrangeBrush}"
                                                 BorderBrush="{StaticResource BorderDim}" BorderThickness="1"
                                                 Click="BtnBrowseLogDir_Click" FontSize="14"
                                                 ToolTip="Opens folder browser to select deployment log directory. Choose a network share for centralized logging or local path for single-machine scenarios."/>
                                     </Grid>
 
                                     <TextBlock Text="💡 Scripts will automatically fall back to local logging if network path is unavailable."
-                                               Foreground="{StaticResource AccentOrange}" FontSize="8" Margin="0,8,0,0" TextWrapping="Wrap"/>
+                                               Foreground="{DynamicResource AccentOrangeBrush}" FontSize="8" Margin="0,8,0,0" TextWrapping="Wrap"/>
                                 </StackPanel>
                             </Border>
 
@@ -1563,7 +1587,7 @@
 
                                         <!-- TAG: #TOOLTIPS #FILE_OPERATIONS -->
                                         <Button Grid.Column="1" Content="📁" Width="36" Height="32"
-                                                Background="{StaticResource BgLight}" Foreground="{StaticResource AccentOrange}"
+                                                Background="{StaticResource BgLight}" Foreground="{DynamicResource AccentOrangeBrush}"
                                                 BorderBrush="{StaticResource BorderDim}" BorderThickness="1"
                                                 Click="BtnBrowseISO_Click" FontSize="14"
                                                 ToolTip="Opens file browser to select Windows Update ISO file (.iso). Typically used for Feature Updates (e.g., Windows 11 version upgrades). ISO path is passed to PowerShell scripts via environment variables."/>
@@ -1607,12 +1631,12 @@
                                     </Grid>
 
                                     <TextBlock Text="💡 Computers matching this pattern will use the local ISO. Others will use cloud update."
-                                               Foreground="{StaticResource AccentOrange}" FontSize="8" Margin="0,8,0,0" TextWrapping="Wrap"/>
+                                               Foreground="{DynamicResource AccentOrangeBrush}" FontSize="8" Margin="0,8,0,0" TextWrapping="Wrap"/>
                                 </StackPanel>
                             </Border>
 
                             <!-- Background Service Management -->
-                            <TextBlock Text="BACKGROUND SERVICE" Foreground="{StaticResource AccentOrange}"
+                            <TextBlock Text="BACKGROUND SERVICE" Foreground="{DynamicResource AccentOrangeBrush}"
                                        FontSize="10" FontWeight="Bold" Margin="0,20,0,8"/>
 
                             <!-- Service Status -->
@@ -1677,7 +1701,7 @@
                     <Expander.HeaderTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding}" FontSize="13" FontWeight="Bold"
-                                       Foreground="{StaticResource AccentOrange}"/>
+                                       Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
                     <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
@@ -1693,7 +1717,7 @@
 
                             <!-- Toast Types Section -->
                             <TextBlock Text="TOAST TYPES" FontSize="11" FontWeight="Bold"
-                                       Foreground="{StaticResource AccentOrange}" Margin="0,0,0,8"/>
+                                       Foreground="{DynamicResource AccentOrangeBrush}" Margin="0,0,0,8"/>
 
                             <StackPanel Margin="20,0,0,16">
                                 <CheckBox x:Name="ChkToastSuccess" Content="✓ Success Toasts (Green)"
@@ -1708,7 +1732,7 @@
 
                             <!-- Toast Categories Section -->
                             <TextBlock Text="TOAST CATEGORIES" FontSize="11" FontWeight="Bold"
-                                       Foreground="{StaticResource AccentOrange}" Margin="0,0,0,8"/>
+                                       Foreground="{DynamicResource AccentOrangeBrush}" Margin="0,0,0,8"/>
 
                             <StackPanel Margin="20,0,0,16">
                                 <CheckBox x:Name="ChkToastStatus" Content="Status Update Toasts"
@@ -1755,7 +1779,7 @@
                     <Expander.HeaderTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding}" FontSize="13" FontWeight="Bold"
-                                       Foreground="{StaticResource AccentOrange}"/>
+                                       Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
                     <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
@@ -1776,7 +1800,7 @@
                                 <DataGrid.ColumnHeaderStyle>
                                     <Style TargetType="DataGridColumnHeader">
                                         <Setter Property="Background" Value="{StaticResource BgDark}"/>
-                                        <Setter Property="Foreground" Value="{StaticResource AccentOrange}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                                         <Setter Property="FontWeight" Value="Bold"/>
                                         <Setter Property="FontSize" Value="10"/>
                                         <Setter Property="Padding" Value="8,6"/>
@@ -1815,7 +1839,7 @@
                                     <DataGridTextColumn Header="Shortcut" Binding="{Binding Value.DisplayShortcut}" Width="200" IsReadOnly="True">
                                         <DataGridTextColumn.ElementStyle>
                                             <Style TargetType="TextBlock">
-                                                <Setter Property="Foreground" Value="{StaticResource AccentOrange}"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                                                 <Setter Property="FontWeight" Value="SemiBold"/>
                                                 <Setter Property="Padding" Value="4,2"/>
                                             </Style>

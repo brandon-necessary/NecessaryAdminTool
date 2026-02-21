@@ -55,11 +55,33 @@
         <!-- Legacy brush for compatibility (maps to orange) -->
         <SolidColorBrush x:Key="AccentCyanBrush" Color="{StaticResource AccentOrange}"/>
 
+        <!-- Tab gradient: used by two-layer tab template for selected state -->
+        <LinearGradientBrush x:Key="AccentGradientBrush" StartPoint="0,0" EndPoint="1,0">
+            <GradientStop Color="#FFFF8533" Offset="0"/>
+            <GradientStop Color="#FFA1A1AA" Offset="1"/>
+        </LinearGradientBrush>
+
+        <!-- Tab hover: lighter tint of primary accent -->
+        <SolidColorBrush x:Key="AccentHoverBrush" Color="#33FF8533" Opacity="1"/>
+
+        <!-- Derivative accent brushes (replaced at runtime by ThemeHelper) -->
+        <SolidColorBrush x:Key="AccentPrimaryHoverBrush" Color="#FFFF9944"/>
+        <SolidColorBrush x:Key="AccentPrimaryPressedBrush" Color="#FFDD6622"/>
+        <SolidColorBrush x:Key="AccentPrimarySemiBrush" Color="#80FF8533"/>
+        <SolidColorBrush x:Key="AccentPrimarySelectionBrush" Color="#66FF8533"/>
+        <SolidColorBrush x:Key="AccentPrimaryHighlightBrush" Color="#4DFF8533"/>
+
+        <!-- Vertical gradient variant (for borders, headers) -->
+        <LinearGradientBrush x:Key="AccentGradientVerticalBrush" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#FFFF8533" Offset="0"/>
+            <GradientStop Color="#FFA1A1AA" Offset="1"/>
+        </LinearGradientBrush>
+
         <!-- ═══════════════════════════════════════════════════ -->
         <!-- BUTTON STYLE: Primary (Orange)                      -->
         <!-- ═══════════════════════════════════════════════════ -->
         <Style x:Key="BtnPrimary" TargetType="Button">
-            <Setter Property="Background" Value="{StaticResource AccentOrangeBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource AccentOrangeBrush}"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="FontSize" Value="12"/>
@@ -69,21 +91,42 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="bd" Background="{TemplateBinding Background}"
-                                CornerRadius="4" Padding="{TemplateBinding Padding}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                BorderBrush="{TemplateBinding BorderBrush}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
+                        <Grid>
+                            <!-- Base layer: primary accent -->
+                            <Border x:Name="bd" Background="{DynamicResource AccentOrangeBrush}"
+                                    CornerRadius="4"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"/>
+                            <!-- Hover overlay (DynamicResource-safe via opacity toggle) -->
+                            <Border x:Name="hoverOverlay"
+                                    Background="{DynamicResource AccentPrimaryHoverBrush}"
+                                    CornerRadius="4" Opacity="0"/>
+                            <!-- Pressed overlay -->
+                            <Border x:Name="pressedOverlay"
+                                    Background="{DynamicResource AccentPrimaryPressedBrush}"
+                                    CornerRadius="4" Opacity="0"/>
+                            <!-- Disabled overlay -->
+                            <Border x:Name="disabledOverlay"
+                                    Background="#FF444444"
+                                    CornerRadius="4" Opacity="0"/>
+                            <!-- Content -->
+                            <Border Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#FFFF9944"/>
+                                <Setter TargetName="hoverOverlay" Property="Opacity" Value="1"/>
+                                <Setter TargetName="bd" Property="Opacity" Value="0"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#FFDD6622"/>
+                                <Setter TargetName="pressedOverlay" Property="Opacity" Value="1"/>
+                                <Setter TargetName="bd" Property="Opacity" Value="0"/>
+                                <Setter TargetName="hoverOverlay" Property="Opacity" Value="0"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="bd" Property="Background" Value="#FF444444"/>
+                                <Setter TargetName="disabledOverlay" Property="Opacity" Value="1"/>
+                                <Setter TargetName="bd" Property="Opacity" Value="0"/>
                                 <Setter Property="Foreground" Value="#FF888888"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -122,26 +165,46 @@
         <!-- BUTTON STYLE: Ghost (Transparent border) -->
         <Style x:Key="BtnGhost" TargetType="Button" BasedOn="{StaticResource BtnPrimary}">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="{StaticResource BorderDimBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderDimBrush}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="bd" Background="{TemplateBinding Background}"
-                                CornerRadius="4" Padding="{TemplateBinding Padding}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                BorderBrush="{TemplateBinding BorderBrush}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
+                        <Grid>
+                            <!-- Base layer: transparent background -->
+                            <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                    CornerRadius="4"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"/>
+                            <!-- Hover overlay (background + accent border) -->
+                            <Border x:Name="hoverOverlay"
+                                    CornerRadius="4"
+                                    BorderThickness="1"
+                                    BorderBrush="{DynamicResource AccentOrangeBrush}"
+                                    Background="#FF333333"
+                                    Opacity="0"/>
+                            <!-- Disabled overlay -->
+                            <Border x:Name="disabledOverlay"
+                                    CornerRadius="4"
+                                    Background="Transparent"
+                                    BorderBrush="#FF2A2A2A"
+                                    BorderThickness="1"
+                                    Opacity="0"/>
+                            <!-- Single ContentPresenter on top -->
+                            <Border Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#FF333333"/>
-                                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource AccentOrangeBrush}"/>
+                                <Setter TargetName="hoverOverlay" Property="Opacity" Value="1"/>
+                                <Setter TargetName="bd" Property="Opacity" Value="0"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="disabledOverlay" Property="Opacity" Value="1"/>
+                                <Setter TargetName="bd" Property="Opacity" Value="0"/>
                                 <Setter Property="Foreground" Value="#FF555555"/>
-                                <Setter TargetName="bd" Property="BorderBrush" Value="#FF2A2A2A"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -184,8 +247,8 @@
 
         <!-- CARD BORDER STYLE -->
         <Style x:Key="CardBorder" TargetType="Border">
-            <Setter Property="Background" Value="{StaticResource BgCardBrush}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource BorderDimBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource BgCardBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderDimBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="6"/>
             <Setter Property="Padding" Value="14"/>
@@ -206,7 +269,7 @@
         <Style TargetType="ComboBox">
             <Setter Property="Background" Value="#FF2D2D2D"/>
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderBrush" Value="{StaticResource BorderDimBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderDimBrush}"/>
             <Setter Property="Padding" Value="8,6"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="Template">
@@ -232,6 +295,11 @@
                                                     BorderBrush="{TemplateBinding BorderBrush}"
                                                     BorderThickness="{TemplateBinding BorderThickness}"
                                                     CornerRadius="3"/>
+                                            <!-- Hover border overlay (DynamicResource-safe via opacity toggle) -->
+                                            <Border x:Name="hoverBorder" Grid.ColumnSpan="2"
+                                                    BorderBrush="{DynamicResource AccentOrangeBrush}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="3" Opacity="0"/>
                                             <Path x:Name="Arrow" Grid.Column="1"
                                                   Fill="White"
                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -239,7 +307,7 @@
                                         </Grid>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource AccentOrangeBrush}"/>
+                                                <Setter TargetName="hoverBorder" Property="Opacity" Value="1"/>
                                             </Trigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
@@ -281,7 +349,7 @@
                                     <Border x:Name="DropDownBorder"
                                             Background="#FF2D2D2D"
                                             BorderThickness="1"
-                                            BorderBrush="{StaticResource BorderBrightBrush}"/>
+                                            BorderBrush="{DynamicResource BorderBrightBrush}"/>
                                     <ScrollViewer Margin="4,6,4,6" SnapsToDevicePixels="True">
                                         <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained"/>
                                     </ScrollViewer>
@@ -317,18 +385,28 @@
                         <Setter Property="Template">
                             <Setter.Value>
                                 <ControlTemplate TargetType="ComboBoxItem">
-                                    <Border x:Name="itemBorder"
-                                            Background="{TemplateBinding Background}"
-                                            Padding="{TemplateBinding Padding}">
-                                        <ContentPresenter/>
-                                    </Border>
+                                    <Grid>
+                                        <Border x:Name="itemBorder"
+                                                Background="{TemplateBinding Background}"
+                                                Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter/>
+                                        </Border>
+                                        <!-- Highlight overlay (DynamicResource-safe via opacity toggle) -->
+                                        <Border x:Name="highlightOverlay"
+                                                Background="{DynamicResource AccentPrimaryHighlightBrush}"
+                                                Opacity="0"/>
+                                        <!-- Selection overlay -->
+                                        <Border x:Name="selectionOverlay"
+                                                Background="{DynamicResource AccentPrimarySemiBrush}"
+                                                Opacity="0"/>
+                                    </Grid>
                                     <ControlTemplate.Triggers>
                                         <Trigger Property="IsHighlighted" Value="True">
-                                            <Setter TargetName="itemBorder" Property="Background" Value="#4DFF8533"/>
+                                            <Setter TargetName="highlightOverlay" Property="Opacity" Value="1"/>
                                             <Setter Property="Foreground" Value="White"/>
                                         </Trigger>
                                         <Trigger Property="IsSelected" Value="True">
-                                            <Setter TargetName="itemBorder" Property="Background" Value="#80FF8533"/>
+                                            <Setter TargetName="selectionOverlay" Property="Opacity" Value="1"/>
                                             <Setter Property="Foreground" Value="White"/>
                                         </Trigger>
                                     </ControlTemplate.Triggers>
@@ -346,7 +424,7 @@
         <Style TargetType="TextBox">
             <Setter Property="Background" Value="#FF1A1A1A"/>
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderBrush" Value="{StaticResource BorderDimBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderDimBrush}"/>
             <Setter Property="Padding" Value="8,6"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="CaretBrush" Value="White"/>
@@ -357,26 +435,94 @@
         <!-- ═══════════════════════════════════════════════════ -->
         <Style TargetType="TabItem">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
             <Setter Property="Padding" Value="18,10"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TabItem">
-                        <Border x:Name="tabBorder" Padding="{TemplateBinding Padding}"
-                                Background="Transparent" BorderThickness="0,0,0,2"
-                                BorderBrush="Transparent" Cursor="Hand">
-                            <ContentPresenter ContentSource="Header"/>
-                        </Border>
+                        <Grid Cursor="Hand">
+                            <!-- Layer 1: Gradient overlay (opacity toggled by triggers) -->
+                            <Border x:Name="gradientOverlay"
+                                    Background="{DynamicResource AccentGradientBrush}"
+                                    Opacity="0"/>
+                            <!-- Layer 2: Content -->
+                            <Border x:Name="tabBorder"
+                                    Padding="{TemplateBinding Padding}"
+                                    Background="Transparent">
+                                <ContentPresenter ContentSource="Header"/>
+                            </Border>
+                        </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="tabBorder" Property="BorderBrush" Value="{StaticResource AccentOrangeBrush}"/>
+                                <Setter TargetName="gradientOverlay" Property="Opacity" Value="0.85"/>
                                 <Setter Property="Foreground" Value="White"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="tabBorder" Property="Background" Value="#FF2A2A2A"/>
+                                <Setter TargetName="gradientOverlay" Property="Opacity" Value="0.25"/>
                             </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsSelected" Value="True"/>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="gradientOverlay" Property="Opacity" Value="1.0"/>
+                            </MultiTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- TAB STYLE: Rounded variant for sub-tabs              -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <Style x:Key="AccentTabItemRounded" TargetType="TabItem">
+            <Setter Property="Background" Value="#2A2A2A"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Padding" Value="20,10"/>
+            <Setter Property="Margin" Value="0,0,4,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Grid Cursor="Hand">
+                            <Border x:Name="gradientOverlay"
+                                    Background="{DynamicResource AccentGradientBrush}"
+                                    CornerRadius="6,6,0,0"
+                                    Opacity="0"/>
+                            <Border x:Name="Border"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="#444" BorderThickness="1"
+                                    CornerRadius="6,6,0,0"
+                                    Padding="{TemplateBinding Padding}"
+                                    Margin="{TemplateBinding Margin}">
+                                <ContentPresenter ContentSource="Header"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="gradientOverlay" Property="Opacity" Value="0.9"/>
+                                <Setter TargetName="Border" Property="Background" Value="Transparent"/>
+                                <Setter TargetName="Border" Property="BorderBrush" Value="Transparent"/>
+                                <Setter Property="FontWeight" Value="Bold"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="gradientOverlay" Property="Opacity" Value="0.3"/>
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsSelected" Value="True"/>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="gradientOverlay" Property="Opacity" Value="1.0"/>
+                                <Setter TargetName="Border" Property="Background" Value="Transparent"/>
+                                <Setter TargetName="Border" Property="BorderBrush" Value="Transparent"/>
+                            </MultiTrigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -387,10 +533,10 @@
         <!-- DATAGRID STYLE                                      -->
         <!-- ═══════════════════════════════════════════════════ -->
         <Style TargetType="DataGrid">
-            <Setter Property="Background" Value="{StaticResource BgDarkBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderBrush" Value="{StaticResource BorderDimBrush}"/>
-            <Setter Property="RowBackground" Value="{StaticResource BgDarkBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderDimBrush}"/>
+            <Setter Property="RowBackground" Value="{DynamicResource BgDarkBrush}"/>
             <Setter Property="AlternatingRowBackground" Value="#FF1F1F1F"/>
             <Setter Property="GridLinesVisibility" Value="Horizontal"/>
             <Setter Property="HorizontalGridLinesBrush" Value="#FF2A2A2A"/>
@@ -401,7 +547,7 @@
 
         <Style TargetType="DataGridColumnHeader">
             <Setter Property="Background" Value="#FF2D2D2D"/>
-            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
             <Setter Property="Padding" Value="10,8"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="FontSize" Value="11"/>
@@ -413,7 +559,7 @@
             <Setter Property="Foreground" Value="White"/>
             <Style.Triggers>
                 <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="#66FF8533"/>
+                    <Setter Property="Background" Value="{DynamicResource AccentPrimarySelectionBrush}"/>
                 </Trigger>
                 <Trigger Property="IsMouseOver" Value="True">
                     <Setter Property="Background" Value="#FF333333"/>
@@ -439,16 +585,27 @@
                                     <Thumb>
                                         <Thumb.Template>
                                             <ControlTemplate TargetType="{x:Type Thumb}">
-                                                <Border x:Name="ThumbBorder"
-                                                        Background="#FF555555"
-                                                        CornerRadius="6"
-                                                        Margin="2"/>
+                                                <Grid>
+                                                    <Border x:Name="ThumbBorder"
+                                                            Background="#FF555555"
+                                                            CornerRadius="6"
+                                                            Margin="2"/>
+                                                    <Border x:Name="ThumbHover"
+                                                            Background="{DynamicResource AccentOrangeBrush}"
+                                                            CornerRadius="6"
+                                                            Margin="2" Opacity="0"/>
+                                                    <Border x:Name="ThumbDrag"
+                                                            Background="{DynamicResource AccentPrimaryHoverBrush}"
+                                                            CornerRadius="6"
+                                                            Margin="2" Opacity="0"/>
+                                                </Grid>
                                                 <ControlTemplate.Triggers>
                                                     <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter TargetName="ThumbBorder" Property="Background" Value="#FFFF8533"/>
+                                                        <Setter TargetName="ThumbHover" Property="Opacity" Value="1"/>
                                                     </Trigger>
                                                     <Trigger Property="IsDragging" Value="True">
-                                                        <Setter TargetName="ThumbBorder" Property="Background" Value="#FFFF9944"/>
+                                                        <Setter TargetName="ThumbDrag" Property="Opacity" Value="1"/>
+                                                        <Setter TargetName="ThumbHover" Property="Opacity" Value="0"/>
                                                     </Trigger>
                                                 </ControlTemplate.Triggers>
                                             </ControlTemplate>
@@ -476,16 +633,27 @@
                                             <Thumb>
                                                 <Thumb.Template>
                                                     <ControlTemplate TargetType="{x:Type Thumb}">
-                                                        <Border x:Name="ThumbBorder"
-                                                                Background="#FF555555"
-                                                                CornerRadius="6"
-                                                                Margin="2"/>
+                                                        <Grid>
+                                                            <Border x:Name="ThumbBorder"
+                                                                    Background="#FF555555"
+                                                                    CornerRadius="6"
+                                                                    Margin="2"/>
+                                                            <Border x:Name="ThumbHover"
+                                                                    Background="{DynamicResource AccentOrangeBrush}"
+                                                                    CornerRadius="6"
+                                                                    Margin="2" Opacity="0"/>
+                                                            <Border x:Name="ThumbDrag"
+                                                                    Background="{DynamicResource AccentPrimaryHoverBrush}"
+                                                                    CornerRadius="6"
+                                                                    Margin="2" Opacity="0"/>
+                                                        </Grid>
                                                         <ControlTemplate.Triggers>
                                                             <Trigger Property="IsMouseOver" Value="True">
-                                                                <Setter TargetName="ThumbBorder" Property="Background" Value="#FFFF8533"/>
+                                                                <Setter TargetName="ThumbHover" Property="Opacity" Value="1"/>
                                                             </Trigger>
                                                             <Trigger Property="IsDragging" Value="True">
-                                                                <Setter TargetName="ThumbBorder" Property="Background" Value="#FFFF9944"/>
+                                                                <Setter TargetName="ThumbDrag" Property="Opacity" Value="1"/>
+                                                                <Setter TargetName="ThumbHover" Property="Opacity" Value="0"/>
                                                             </Trigger>
                                                         </ControlTemplate.Triggers>
                                                     </ControlTemplate>

@@ -90,7 +90,7 @@
     <!-- ═══════════════════════════════════════════════════════════════════ -->
 
     <SolidColorBrush x:Key="SuccessBrush" Color="#FF10B981"/>
-    <SolidColorBrush x:Key="WarningBrush" Color="#FFF59E0B"/>
+    <!-- WarningBrush defined in App.xaml with brand-consistent orange (WarningOrange) -->
     <SolidColorBrush x:Key="ErrorBrush" Color="#FFEF4444"/>
     <SolidColorBrush x:Key="InfoBrush" Color="#FF3B82F6"/>
     <SolidColorBrush x:Key="MutedBrush" Color="#FF6B7280"/>
@@ -101,7 +101,7 @@
 
     <!-- Primary Button (Accent) -->
     <Style x:Key="FluentButtonPrimary" TargetType="Button">
-        <Setter Property="Background" Value="{StaticResource AccentOrangeBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource AccentOrangeBrush}"/>
         <Setter Property="Foreground" Value="White"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Padding" Value="16,8"/>
@@ -137,8 +137,8 @@
     <!-- Secondary Button (Outline) -->
     <Style x:Key="FluentButtonSecondary" TargetType="Button">
         <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="Foreground" Value="{StaticResource AccentZincBrush}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource AccentZincBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AccentZincBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentZincBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Padding" Value="16,8"/>
         <Setter Property="FontSize" Value="{StaticResource FontBody}"/>
@@ -170,8 +170,8 @@
     <!-- ═══════════════════════════════════════════════════════════════════ -->
 
     <Style x:Key="FluentCard" TargetType="Border">
-        <Setter Property="Background" Value="{StaticResource MicaAltBrush}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource BorderDimBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource MicaAltBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderDimBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="CornerRadius" Value="{StaticResource FluentCornerRadius}"/>
         <Setter Property="Padding" Value="{StaticResource SpacingDefault}"/>
@@ -186,7 +186,7 @@
         <Setter Property="Control.Template">
             <Setter.Value>
                 <ControlTemplate>
-                    <Border BorderBrush="{StaticResource AccentOrangeBrush}"
+                    <Border BorderBrush="{DynamicResource AccentOrangeBrush}"
                             BorderThickness="2"
                             CornerRadius="{StaticResource FluentCornerRadiusSmall}">
                         <Border.Effect>
@@ -217,20 +217,29 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ToggleButton">
-                    <Border x:Name="border"
-                            Background="{TemplateBinding Background}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="4"
-                            Padding="{TemplateBinding Padding}">
-                        <ContentPresenter HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"/>
-                    </Border>
+                    <Grid>
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"/>
+                        <!-- Checked overlay (DynamicResource-safe via opacity toggle) -->
+                        <Border x:Name="checkedOverlay"
+                                Background="{DynamicResource AccentOrangeBrush}"
+                                BorderBrush="{DynamicResource AccentOrangeBrush}"
+                                BorderThickness="1"
+                                CornerRadius="4" Opacity="0"/>
+                        <!-- Content -->
+                        <Border Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
                     <ControlTemplate.Triggers>
                         <!-- Checked State (Active Filter) -->
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="border" Property="Background" Value="#FFFF8533"/>
-                            <Setter TargetName="border" Property="BorderBrush" Value="#FFFF8533"/>
+                            <Setter TargetName="checkedOverlay" Property="Opacity" Value="1"/>
+                            <Setter TargetName="border" Property="Opacity" Value="0"/>
                             <Setter Property="Foreground" Value="White"/>
                         </Trigger>
                         <!-- Hover State -->

@@ -148,5 +148,9 @@
     <Setting Name="DisplayDensity" Type="System.String" Scope="User">
       <Value Profile="(Default)">Normal</Value>
     </Setting>
+    <!-- TAG: #CONFIGURABLE_OPTIONS #THEME_COLORS #DARK_MODE -->
+    <Setting Name="IsDarkMode" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

@@ -414,8 +414,16 @@ namespace NecessaryAdminTool.UI.Components
         /// </summary>
         private void HighlightSelected()
         {
-            // TODO: Implement visual highlighting of selected item
-            // This requires ItemContainerGenerator or custom ItemsControl
+            for (int i = 0; i < _filteredCommands.Count; i++)
+            {
+                var container = ResultsList.ItemContainerGenerator.ContainerFromIndex(i) as System.Windows.Controls.ContentPresenter;
+                if (container == null) continue;
+                var border = System.Windows.Media.VisualTreeHelper.GetChild(container, 0) as System.Windows.Controls.Border;
+                if (border == null) continue;
+                border.Background = i == _selectedIndex
+                    ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(40, 255, 255, 255))
+                    : System.Windows.Media.Brushes.Transparent;
+            }
         }
 
         /// <summary>
@@ -445,7 +453,7 @@ namespace NecessaryAdminTool.UI.Components
             if (sender is Border border)
             {
                 border.Background = new SolidColorBrush(Color.FromRgb(40, 40, 40));
-                border.BorderBrush = new SolidColorBrush(Color.FromRgb(255, 133, 51)); // Orange
+                border.BorderBrush = Helpers.ThemeHelper.PrimaryBrush; // Accent primary
             }
         }
 

@@ -17,7 +17,7 @@
                 <TextBlock x:Name="TxtLoadingMessage" Text="Loading MMC console..."
                            Foreground="White" FontSize="14" HorizontalAlignment="Center"/>
                 <TextBlock x:Name="TxtConsoleName" Text=""
-                           Foreground="#FF8533" FontSize="12" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                           Foreground="{DynamicResource AccentOrangeBrush}" FontSize="12" HorizontalAlignment="Center" Margin="0,8,0,0"/>
             </StackPanel>
         </Border>
 
@@ -32,7 +32,7 @@
                            Foreground="White" FontSize="12" TextWrapping="Wrap"
                            HorizontalAlignment="Center" Margin="0,0,0,16"/>
                 <Button x:Name="BtnRetry" Content="🔄 RETRY" Click="BtnRetry_Click"
-                        Background="#FF8533" Foreground="White" Padding="16,8"
+                        Background="{DynamicResource AccentOrangeBrush}" Foreground="White" Padding="16,8"
                         FontSize="11" FontWeight="SemiBold" BorderThickness="0"/>
             </StackPanel>
         </Border>

@@ -12,10 +12,10 @@
                     CornerRadius="6" Padding="20" Margin="0,0,0,20">
                 <StackPanel>
                     <TextBlock Text="🚀 QUICK LAUNCH" FontSize="14" FontWeight="Bold"
-                               Foreground="#FFFF8533" Margin="0,0,0,12"/>
+                               Foreground="{DynamicResource AccentOrangeBrush}" Margin="0,0,0,12"/>
 
                     <TextBlock Text="Launch remote control session to target device"
-                               Foreground="#FFA1A1AA" FontSize="10" Margin="0,0,0,12"/>
+                               Foreground="{DynamicResource AccentZincBrush}" FontSize="10" Margin="0,0,0,12"/>
 
                     <!-- Target Input -->
                     <Grid Margin="0,0,0,15">
@@ -65,7 +65,7 @@
                             <DataTemplate>
                                 <Button Content="{Binding DisplayName}" Tag="{Binding ToolType}"
                                         Click="QuickLaunch_Click"
-                                        Background="#FFFF8533" Foreground="White" BorderThickness="0"
+                                        Background="{DynamicResource AccentOrangeBrush}" Foreground="White" BorderThickness="0"
                                         Padding="20,10" Margin="0,0,8,8" FontSize="11" FontWeight="Bold"
                                         Cursor="Hand" IsEnabled="{Binding IsConfigured}"/>
                             </DataTemplate>
@@ -83,10 +83,10 @@
                     CornerRadius="6" Padding="20" Margin="0,0,0,20">
                 <StackPanel>
                     <TextBlock Text="⚙️ TOOL CONFIGURATION" FontSize="14" FontWeight="Bold"
-                               Foreground="#FFFF8533" Margin="0,0,0,12"/>
+                               Foreground="{DynamicResource AccentOrangeBrush}" Margin="0,0,0,12"/>
 
                     <TextBlock Text="Configure and test remote control integrations (all disabled by default for security)"
-                               Foreground="#FFA1A1AA" FontSize="10" Margin="0,0,0,12"/>
+                               Foreground="{DynamicResource AccentZincBrush}" FontSize="10" Margin="0,0,0,12"/>
 
                     <!-- Configuration DataGrid -->
                     <DataGrid x:Name="GridToolConfig" AutoGenerateColumns="False"
@@ -100,7 +100,7 @@
                         <DataGrid.ColumnHeaderStyle>
                             <Style TargetType="DataGridColumnHeader">
                                 <Setter Property="Background" Value="#FF0D0D0D"/>
-                                <Setter Property="Foreground" Value="#FFFF8533"/>
+                                <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                                 <Setter Property="FontWeight" Value="Bold"/>
                                 <Setter Property="FontSize" Value="10"/>
                                 <Setter Property="Padding" Value="10,6"/>
@@ -169,7 +169,7 @@
                     CornerRadius="6" Padding="20" Margin="0,0,0,20">
                 <StackPanel>
                     <TextBlock Text="🌐 GLOBAL SETTINGS" FontSize="14" FontWeight="Bold"
-                               Foreground="#FFFF8533" Margin="0,0,0,12"/>
+                               Foreground="{DynamicResource AccentOrangeBrush}" Margin="0,0,0,12"/>
 
                     <CheckBox x:Name="ChkShowConfirmation" Content="Show confirmation dialog before connecting"
                               Foreground="White" FontSize="10" Margin="0,0,0,8" IsChecked="True"/>
@@ -217,10 +217,10 @@
                     CornerRadius="6" Padding="20">
                 <StackPanel>
                     <TextBlock Text="📜 CONNECTION HISTORY" FontSize="14" FontWeight="Bold"
-                               Foreground="#FFFF8533" Margin="0,0,0,12"/>
+                               Foreground="{DynamicResource AccentOrangeBrush}" Margin="0,0,0,12"/>
 
                     <TextBlock Text="Recent remote control connections (last 10):"
-                               Foreground="#FFA1A1AA" FontSize="10" Margin="0,0,0,12"/>
+                               Foreground="{DynamicResource AccentZincBrush}" FontSize="10" Margin="0,0,0,12"/>
 
                     <ListBox x:Name="ListConnectionHistory" Background="#FF0D0D0D"
                              Foreground="#FFE0E0E0" BorderBrush="#FF2A2A2A" BorderThickness="1"
@@ -230,7 +230,7 @@
                                 <TextBlock>
                                     <Run Text="{Binding TimeAgo}" Foreground="#FF666666"/>
                                     <Run Text=": "/>
-                                    <Run Text="{Binding ToolName}" Foreground="#FFFF8533"/>
+                                    <Run Text="{Binding ToolName}" Foreground="{DynamicResource AccentOrangeBrush}"/>
                                     <Run Text=" → "/>
                                     <Run Text="{Binding Target}" Foreground="White"/>
                                     <Run Text=" "/>

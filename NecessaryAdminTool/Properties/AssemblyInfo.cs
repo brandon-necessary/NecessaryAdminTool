@@ -112,5 +112,16 @@ using System.Windows;
 // - Fix duplicate ComponentRef in Product.wxs
 // - Card view RDP/PS buttons wired with click handlers
 //
-[assembly: AssemblyVersion("3.2602.2.0")]
-[assembly: AssemblyFileVersion("3.2602.2.0")]
+// VERSION 3.0.3 (3.2602.3.0) - Data Provider + Feature Expansion (February 21, 2026)
+// - Implement all 60 data provider stubs (Tags, ScanHistory, Settings, Scripts, Bookmarks)
+// - Add ComputerTags + Settings schema tables to SQL Server + Access providers
+// - Add tags.json + settings.json to CSV/JSON provider
+// - ScanPeriod filter in global filter bar
+// - Breadcrumb navigation click-to-filter
+// - Load inventory from database on login
+// - Wake-on-LAN magic packet implementation
+// - Remove duplicate WarningBrush from Fluent.xaml
+// - Command palette highlight fix
+//
+[assembly: AssemblyVersion("3.2602.4.0")]
+[assembly: AssemblyFileVersion("3.2602.4.0")]

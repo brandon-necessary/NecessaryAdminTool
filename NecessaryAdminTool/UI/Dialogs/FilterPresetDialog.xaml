@@ -129,7 +129,7 @@
                         <!-- Logic Operator -->
                         <StackPanel Margin="0,8,0,0">
                             <TextBlock Text="Logic Operator:" Foreground="#999" FontSize="12" Margin="0,0,0,4"/>
-                            <TextBlock x:Name="TxtCriteriaLogic" Foreground="#FF8533" FontSize="14" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="TxtCriteriaLogic" Foreground="{DynamicResource AccentOrangeBrush}" FontSize="14" FontWeight="SemiBold"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>

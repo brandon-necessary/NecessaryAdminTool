@@ -15,7 +15,7 @@
 
             <!-- Filter icon label -->
             <TextBlock Grid.Column="0" Text="FILTERS" FontSize="10" FontWeight="Bold"
-                       Foreground="#FFA1A1AA" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                       Foreground="{DynamicResource AccentZincBrush}" VerticalAlignment="Center" Margin="0,0,12,0"/>
 
             <!-- OS Version -->
             <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,12,0">
@@ -64,7 +64,7 @@
             <!-- Clear Filters -->
             <Button Grid.Column="5" x:Name="BtnClearFilters" Content="Clear Filters"
                     FontSize="10" Padding="10,4"
-                    Background="Transparent" Foreground="#FFA1A1AA"
+                    Background="Transparent" Foreground="{DynamicResource AccentZincBrush}"
                     BorderBrush="#FF444444" BorderThickness="1"
                     Cursor="Hand" Click="BtnClearFilters_Click"
                     ToolTip="Reset all filters to default"/>

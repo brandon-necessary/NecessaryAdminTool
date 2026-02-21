@@ -21,7 +21,7 @@
         <SolidColorBrush x:Key="BgDark" Color="#FF1A1A1A"/>
         <SolidColorBrush x:Key="BgCard" Color="#FF1E1E1E"/>
         <SolidColorBrush x:Key="BorderDim" Color="#FF3C3C3C"/>
-        <SolidColorBrush x:Key="AccentOrange" Color="#FFFF8533"/>
+        <!-- AccentOrange removed — uses app-level AccentOrangeBrush via DynamicResource -->
         <SolidColorBrush x:Key="TextMuted" Color="#FF888888"/>
     </Window.Resources>
 
@@ -42,7 +42,7 @@
         <StackPanel Grid.Row="1" Margin="0,0,0,16">
             <TextBlock Text="Current Shortcut:" Foreground="{StaticResource TextMuted}" FontSize="11"/>
             <TextBlock x:Name="TxtCurrentShortcut" Text="Ctrl+K"
-                       Foreground="{StaticResource AccentOrange}" FontSize="14" FontWeight="Bold"
+                       Foreground="{DynamicResource AccentOrangeBrush}" FontSize="14" FontWeight="Bold"
                        Margin="0,4,0,0"/>
         </StackPanel>
 
@@ -80,7 +80,7 @@
                     BorderThickness="0" Padding="16,8" FontSize="11" Margin="0,0,8,0"
                     Click="BtnCancel_Click" Cursor="Hand"/>
 
-            <Button Grid.Column="2" x:Name="BtnAccept" Content="ACCEPT" Background="#FFFF8533" Foreground="White"
+            <Button Grid.Column="2" x:Name="BtnAccept" Content="ACCEPT" Background="{DynamicResource AccentOrangeBrush}" Foreground="White"
                     BorderThickness="0" Padding="16,8" FontSize="11" FontWeight="Bold"
                     Click="BtnAccept_Click" Cursor="Hand" IsEnabled="False"/>
         </Grid>

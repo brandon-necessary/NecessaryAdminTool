@@ -21,6 +21,8 @@ namespace NecessaryAdminTool.Data
         private readonly string _scanHistoryFile;
         private readonly string _scriptsFile;
         private readonly string _bookmarksFile;
+        private readonly string _tagsFile;
+        private readonly string _settingsFile;
         private readonly JavaScriptSerializer _serializer;
         // Serialize write operations to prevent concurrent read-modify-write corruption
         private readonly System.Threading.SemaphoreSlim _fileLock = new System.Threading.SemaphoreSlim(1, 1);
@@ -33,6 +35,8 @@ namespace NecessaryAdminTool.Data
             _scanHistoryFile = Path.Combine(_dataDirectory, "scan_history.json");
             _scriptsFile = Path.Combine(_dataDirectory, "scripts.json");
             _bookmarksFile = Path.Combine(_dataDirectory, "bookmarks.json");
+            _tagsFile = Path.Combine(_dataDirectory, "tags.json");
+            _settingsFile = Path.Combine(_dataDirectory, "settings.json");
             _serializer = new JavaScriptSerializer();
             _serializer.MaxJsonLength = int.MaxValue;
 
@@ -55,6 +59,8 @@ namespace NecessaryAdminTool.Data
                 await CreateEmptyFileIfNotExistsAsync(_scanHistoryFile, "[]");
                 await CreateEmptyFileIfNotExistsAsync(_scriptsFile, "[]");
                 await CreateEmptyFileIfNotExistsAsync(_bookmarksFile, "[]");
+                await CreateEmptyFileIfNotExistsAsync(_tagsFile, "{}");
+                await CreateEmptyFileIfNotExistsAsync(_settingsFile, "{}");
 
                 LogManager.LogInfo("CSV/JSON data store initialized successfully");
             }
@@ -194,99 +200,311 @@ namespace NecessaryAdminTool.Data
             }
         }
 
+        // TAG MANAGEMENT — uses tags.json: Dictionary<hostname, List<tagName>>
         public async Task<List<string>> GetComputerTagsAsync(string hostname)
         {
-            LogManager.LogWarning($"GetComputerTagsAsync not yet implemented in {GetType().Name}");
-            return await Task.FromResult(new List<string>());
+            try
+            {
+                var allTags = await ReadTagsFileAsync().ConfigureAwait(false);
+                if (allTags.ContainsKey(hostname))
+                    return allTags[hostname];
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to get tags for {hostname}", ex);
+            }
+            return new List<string>();
         }
 
         public async Task AddTagAsync(string hostname, string tagName)
         {
-            LogManager.LogWarning($"AddTagAsync not yet implemented in {GetType().Name}");
-            await Task.CompletedTask;
+            await _fileLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                var allTags = await ReadTagsFileAsync().ConfigureAwait(false);
+                if (!allTags.ContainsKey(hostname))
+                    allTags[hostname] = new List<string>();
+                if (!allTags[hostname].Contains(tagName))
+                    allTags[hostname].Add(tagName);
+                await Task.Run(() => WriteFileSafe(_tagsFile, _serializer.Serialize(allTags))).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to add tag '{tagName}' to {hostname}", ex);
+            }
+            finally { _fileLock.Release(); }
         }
 
         public async Task RemoveTagAsync(string hostname, string tagName)
         {
-            LogManager.LogWarning($"RemoveTagAsync not yet implemented in {GetType().Name}");
-            await Task.CompletedTask;
+            await _fileLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                var allTags = await ReadTagsFileAsync().ConfigureAwait(false);
+                if (allTags.ContainsKey(hostname))
+                {
+                    allTags[hostname].Remove(tagName);
+                    if (allTags[hostname].Count == 0)
+                        allTags.Remove(hostname);
+                    await Task.Run(() => WriteFileSafe(_tagsFile, _serializer.Serialize(allTags))).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to remove tag '{tagName}' from {hostname}", ex);
+            }
+            finally { _fileLock.Release(); }
         }
 
         public async Task<List<string>> GetAllTagsAsync()
         {
-            LogManager.LogWarning($"GetAllTagsAsync not yet implemented in {GetType().Name}");
-            return await Task.FromResult(new List<string>());
+            try
+            {
+                var allTags = await ReadTagsFileAsync().ConfigureAwait(false);
+                var distinct = new HashSet<string>();
+                foreach (var tagList in allTags.Values)
+                    foreach (var tag in tagList)
+                        distinct.Add(tag);
+                return distinct.OrderBy(t => t).ToList();
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to get all tags", ex);
+                return new List<string>();
+            }
         }
 
+        private async Task<Dictionary<string, List<string>>> ReadTagsFileAsync()
+        {
+            if (!File.Exists(_tagsFile)) return new Dictionary<string, List<string>>();
+            var json = await Task.Run(() => ReadFileSafe(_tagsFile)).ConfigureAwait(false);
+            return _serializer.Deserialize<Dictionary<string, List<string>>>(json)
+                   ?? new Dictionary<string, List<string>>();
+        }
+
+        // SCAN HISTORY — uses scan_history.json (already exists)
         public async Task<ScanHistory> GetLastScanAsync()
         {
-            LogManager.LogWarning($"GetLastScanAsync not yet implemented in {GetType().Name}");
-            return await Task.FromResult<ScanHistory>(null);
+            try
+            {
+                var history = await GetScanHistoryListAsync().ConfigureAwait(false);
+                return history.Count > 0 ? history[0] : null;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to get last scan", ex);
+                return null;
+            }
         }
 
         public async Task SaveScanHistoryAsync(ScanHistory scan)
         {
-            LogManager.LogWarning($"SaveScanHistoryAsync not yet implemented in {GetType().Name}");
-            await Task.CompletedTask;
+            await _fileLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                var history = await GetScanHistoryListAsync().ConfigureAwait(false);
+                // Auto-assign next ID
+                scan.ScanId = history.Count > 0 ? history.Max(h => h.ScanId) + 1 : 1;
+                history.Insert(0, scan);
+                var json = _serializer.Serialize(history);
+                await Task.Run(() => WriteFileSafe(_scanHistoryFile, json)).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to save scan history", ex);
+            }
+            finally { _fileLock.Release(); }
         }
 
         public async Task<List<ScanHistory>> GetScanHistoryAsync(int limit = 10)
         {
-            LogManager.LogWarning($"GetScanHistoryAsync not yet implemented in {GetType().Name}");
-            return await Task.FromResult(new List<ScanHistory>());
+            try
+            {
+                var history = await GetScanHistoryListAsync().ConfigureAwait(false);
+                return history.Take(limit).ToList();
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to get scan history", ex);
+                return new List<ScanHistory>();
+            }
         }
 
+        private async Task<List<ScanHistory>> GetScanHistoryListAsync()
+        {
+            if (!File.Exists(_scanHistoryFile)) return new List<ScanHistory>();
+            var json = await Task.Run(() => ReadFileSafe(_scanHistoryFile)).ConfigureAwait(false);
+            return _serializer.Deserialize<List<ScanHistory>>(json) ?? new List<ScanHistory>();
+        }
+
+        // SETTINGS — uses settings.json: Dictionary<key, value>
         public async Task<string> GetSettingAsync(string key, string defaultValue = null)
         {
-            LogManager.LogWarning($"GetSettingAsync not yet implemented in {GetType().Name}");
-            return await Task.FromResult(defaultValue);
+            try
+            {
+                var settings = await ReadSettingsFileAsync().ConfigureAwait(false);
+                if (settings.ContainsKey(key))
+                    return settings[key];
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to get setting '{key}'", ex);
+            }
+            return defaultValue;
         }
 
         public async Task SaveSettingAsync(string key, string value)
         {
-            LogManager.LogWarning($"SaveSettingAsync not yet implemented in {GetType().Name}");
-            await Task.CompletedTask;
+            await _fileLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                var settings = await ReadSettingsFileAsync().ConfigureAwait(false);
+                settings[key] = value;
+                await Task.Run(() => WriteFileSafe(_settingsFile, _serializer.Serialize(settings))).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to save setting '{key}'", ex);
+            }
+            finally { _fileLock.Release(); }
         }
 
+        private async Task<Dictionary<string, string>> ReadSettingsFileAsync()
+        {
+            if (!File.Exists(_settingsFile)) return new Dictionary<string, string>();
+            var json = await Task.Run(() => ReadFileSafe(_settingsFile)).ConfigureAwait(false);
+            return _serializer.Deserialize<Dictionary<string, string>>(json)
+                   ?? new Dictionary<string, string>();
+        }
+
+        // SCRIPTS — uses scripts.json (already exists)
         public async Task<List<ScriptInfo>> GetAllScriptsAsync()
         {
-            LogManager.LogWarning($"GetAllScriptsAsync not yet implemented in {GetType().Name}");
-            return await Task.FromResult(new List<ScriptInfo>());
+            try
+            {
+                if (!File.Exists(_scriptsFile)) return new List<ScriptInfo>();
+                var json = await Task.Run(() => ReadFileSafe(_scriptsFile)).ConfigureAwait(false);
+                return _serializer.Deserialize<List<ScriptInfo>>(json) ?? new List<ScriptInfo>();
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to get scripts", ex);
+                return new List<ScriptInfo>();
+            }
         }
 
         public async Task SaveScriptAsync(ScriptInfo script)
         {
-            LogManager.LogWarning($"SaveScriptAsync not yet implemented in {GetType().Name}");
-            await Task.CompletedTask;
+            await _fileLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                var scripts = File.Exists(_scriptsFile)
+                    ? _serializer.Deserialize<List<ScriptInfo>>(await Task.Run(() => ReadFileSafe(_scriptsFile)).ConfigureAwait(false))
+                      ?? new List<ScriptInfo>()
+                    : new List<ScriptInfo>();
+
+                var existingIndex = scripts.FindIndex(s =>
+                    s.Name?.Equals(script.Name, StringComparison.OrdinalIgnoreCase) == true);
+                if (existingIndex >= 0) scripts[existingIndex] = script;
+                else
+                {
+                    script.ScriptId = scripts.Count > 0 ? scripts.Max(s => s.ScriptId) + 1 : 1;
+                    if (script.CreatedAt == DateTime.MinValue) script.CreatedAt = DateTime.Now;
+                    scripts.Add(script);
+                }
+                await Task.Run(() => WriteFileSafe(_scriptsFile, _serializer.Serialize(scripts))).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to save script '{script.Name}'", ex);
+            }
+            finally { _fileLock.Release(); }
         }
 
         public async Task DeleteScriptAsync(int scriptId)
         {
-            LogManager.LogWarning($"DeleteScriptAsync not yet implemented in {GetType().Name}");
-            await Task.CompletedTask;
+            await _fileLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                var scripts = File.Exists(_scriptsFile)
+                    ? _serializer.Deserialize<List<ScriptInfo>>(await Task.Run(() => ReadFileSafe(_scriptsFile)).ConfigureAwait(false))
+                      ?? new List<ScriptInfo>()
+                    : new List<ScriptInfo>();
+                var removed = scripts.RemoveAll(s => s.ScriptId == scriptId);
+                if (removed > 0)
+                    await Task.Run(() => WriteFileSafe(_scriptsFile, _serializer.Serialize(scripts))).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to delete script {scriptId}", ex);
+            }
+            finally { _fileLock.Release(); }
         }
 
+        // BOOKMARKS — uses bookmarks.json (already exists)
         public async Task<List<BookmarkInfo>> GetAllBookmarksAsync()
         {
-            LogManager.LogWarning($"GetAllBookmarksAsync not yet implemented in {GetType().Name}");
-            return await Task.FromResult(new List<BookmarkInfo>());
+            try
+            {
+                if (!File.Exists(_bookmarksFile)) return new List<BookmarkInfo>();
+                var json = await Task.Run(() => ReadFileSafe(_bookmarksFile)).ConfigureAwait(false);
+                return _serializer.Deserialize<List<BookmarkInfo>>(json) ?? new List<BookmarkInfo>();
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to get bookmarks", ex);
+                return new List<BookmarkInfo>();
+            }
         }
 
         public async Task SaveBookmarkAsync(BookmarkInfo bookmark)
         {
-            LogManager.LogWarning($"SaveBookmarkAsync not yet implemented in {GetType().Name}");
-            await Task.CompletedTask;
+            await _fileLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                var bookmarks = File.Exists(_bookmarksFile)
+                    ? _serializer.Deserialize<List<BookmarkInfo>>(await Task.Run(() => ReadFileSafe(_bookmarksFile)).ConfigureAwait(false))
+                      ?? new List<BookmarkInfo>()
+                    : new List<BookmarkInfo>();
+
+                var existingIndex = bookmarks.FindIndex(b =>
+                    b.Hostname?.Equals(bookmark.Hostname, StringComparison.OrdinalIgnoreCase) == true);
+                if (existingIndex >= 0) bookmarks[existingIndex] = bookmark;
+                else                    bookmarks.Add(bookmark);
+
+                await Task.Run(() => WriteFileSafe(_bookmarksFile, _serializer.Serialize(bookmarks))).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to save bookmark for {bookmark.Hostname}", ex);
+            }
+            finally { _fileLock.Release(); }
         }
 
         public async Task DeleteBookmarkAsync(string hostname)
         {
-            LogManager.LogWarning($"DeleteBookmarkAsync not yet implemented in {GetType().Name}");
-            await Task.CompletedTask;
+            await _fileLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                var bookmarks = File.Exists(_bookmarksFile)
+                    ? _serializer.Deserialize<List<BookmarkInfo>>(await Task.Run(() => ReadFileSafe(_bookmarksFile)).ConfigureAwait(false))
+                      ?? new List<BookmarkInfo>()
+                    : new List<BookmarkInfo>();
+                var removed = bookmarks.RemoveAll(b =>
+                    b.Hostname?.Equals(hostname, StringComparison.OrdinalIgnoreCase) == true);
+                if (removed > 0)
+                    await Task.Run(() => WriteFileSafe(_bookmarksFile, _serializer.Serialize(bookmarks))).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to delete bookmark for {hostname}", ex);
+            }
+            finally { _fileLock.Release(); }
         }
 
         public async Task OptimizeDatabaseAsync()
         {
-            LogManager.LogWarning($"OptimizeDatabaseAsync not yet implemented in {GetType().Name}");
+            // JSON files don't need optimization — no-op success
             await Task.CompletedTask;
         }
 

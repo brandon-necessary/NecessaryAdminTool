@@ -953,7 +953,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             {
                 LoadDefaultServices();
                 TxtConfigStatus.Text = "🔄 Configuration reset to defaults";
-                TxtConfigStatus.Foreground = new SolidColorBrush(Color.FromRgb(255, 133, 51));
+                TxtConfigStatus.SetResourceReference(TextBlock.ForegroundProperty, "AccentOrangeBrush");
                 TxtConfigStatus.Visibility = Visibility.Visible;
                 LogManager.LogInfo("Global services configuration reset to defaults");
             }

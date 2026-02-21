@@ -499,5 +499,18 @@ namespace NecessaryAdminTool.Properties {
                 this["DisplayDensity"] = value;
             }
         }
+
+        // TAG: #CONFIGURABLE_OPTIONS #THEME_COLORS #DARK_MODE
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool IsDarkMode {
+            get {
+                return ((bool)(this["IsDarkMode"]));
+            }
+            set {
+                this["IsDarkMode"] = value;
+            }
+        }
     }
 }

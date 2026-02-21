@@ -3,7 +3,7 @@
 # Run this script to build the MSI installer
 
 param(
-    [string]$Version = "3.0.2",
+    [string]$Version = "3.0.4",
     [switch]$SkipBuild,
     [switch]$Verbose
 )

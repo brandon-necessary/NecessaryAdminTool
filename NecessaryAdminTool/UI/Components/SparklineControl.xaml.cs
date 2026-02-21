@@ -18,7 +18,7 @@ namespace NecessaryAdminTool.UI.Components
 
         public static readonly DependencyProperty LineBrushProperty =
             DependencyProperty.Register("LineBrush", typeof(Brush), typeof(SparklineControl),
-                new PropertyMetadata(new SolidColorBrush(Color.FromRgb(255, 133, 51)), OnAppearanceChanged));
+                new PropertyMetadata(new SolidColorBrush(Helpers.ThemeHelper.DefaultPrimary), OnAppearanceChanged));
 
         public IEnumerable<double> Data
         {

@@ -13,8 +13,7 @@
     <!-- TAG: #VERSION_7 #BOOKMARKS #UI -->
 
     <Window.Resources>
-        <SolidColorBrush x:Key="AccentOrange" Color="#FFFF8533"/>
-        <SolidColorBrush x:Key="TextMuted" Color="#FFA1A1AA"/>
+        <!-- Local shadows removed — uses app-level DynamicResource brushes -->
     </Window.Resources>
 
     <Grid Margin="20">
@@ -25,10 +24,10 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Border Grid.Row="0" Background="#FF1E1E1E" BorderBrush="{StaticResource AccentOrange}"
+        <Border Grid.Row="0" Background="#FF1E1E1E" BorderBrush="{DynamicResource AccentOrangeBrush}"
                 BorderThickness="0,0,0,2" Padding="14,10" Margin="0,0,0,18">
             <StackPanel>
-                <TextBlock Text="⭐ ADD TO FAVORITES" Foreground="{StaticResource AccentOrange}"
+                <TextBlock Text="⭐ ADD TO FAVORITES" Foreground="{DynamicResource AccentOrangeBrush}"
                            FontSize="14" FontWeight="Bold"/>
                 <TextBlock x:Name="TxtHostname" Text="Computer: " Foreground="{StaticResource TextMuted}"
                            FontSize="10" Margin="0,4,0,0"/>
@@ -73,14 +72,8 @@
 
             <Button Grid.Column="1" Content="⭐ ADD FAVORITE" x:Name="BtnSave" Click="BtnSave_Click"
                     Padding="14,8" FontSize="11" FontWeight="SemiBold"
-                    BorderThickness="0" Foreground="White" Margin="0,0,8,0">
-                <Button.Background>
-                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                        <GradientStop Color="#FFFF8533" Offset="0"/>
-                        <GradientStop Color="#FFCC6B29" Offset="1"/>
-                    </LinearGradientBrush>
-                </Button.Background>
-            </Button>
+                    BorderThickness="0" Foreground="White" Margin="0,0,8,0"
+                    Background="{DynamicResource AccentGradientBrush}"/>
 
             <Button Grid.Column="2" Content="CANCEL" x:Name="BtnCancel" Click="BtnCancel_Click"
                     Background="#FF3C3C3C" Foreground="White" BorderThickness="0"

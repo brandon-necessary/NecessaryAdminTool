@@ -15,14 +15,7 @@
     <Window.Resources>
         <!-- Orange/Zinc Theme Buttons -->
         <Style x:Key="BtnPrimary" TargetType="Button">
-            <Setter Property="Background">
-                <Setter.Value>
-                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                        <GradientStop Color="#FF6B35" Offset="0"/>
-                        <GradientStop Color="#71797E" Offset="1"/>
-                    </LinearGradientBrush>
-                </Setter.Value>
-            </Setter>
+            <Setter Property="Background" Value="{DynamicResource AccentGradientBrush}"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Padding" Value="16,8"/>
@@ -316,7 +309,7 @@
                 <ProgressBar x:Name="ProgressExecution"
                              Height="4" VerticalAlignment="Bottom"
                              Visibility="Collapsed"
-                             Foreground="#FF6B35" Background="#333"/>
+                             Foreground="{DynamicResource AccentOrangeBrush}" Background="#333"/>
             </Grid>
         </Border>
     </Grid>

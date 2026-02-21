@@ -20,9 +20,9 @@
         <!-- Header -->
         <StackPanel Grid.Row="0" Margin="0,0,0,20">
             <TextBlock x:Name="TxtTitle" FontSize="16" FontWeight="Bold"
-                       Foreground="#FFFF8533" Margin="0,0,0,8"/>
+                       Foreground="{DynamicResource AccentOrangeBrush}" Margin="0,0,0,8"/>
             <TextBlock Text="Configure connection settings and credentials"
-                       Foreground="#FFA1A1AA" FontSize="10"/>
+                       Foreground="{DynamicResource AccentZincBrush}" FontSize="10"/>
         </StackPanel>
 
         <!-- Configuration Form -->
@@ -38,7 +38,7 @@
                     Background="#FF2A2A2A" Foreground="White" BorderThickness="0"
                     Padding="15,8" Margin="0,0,8,0" FontSize="10" Click="Test_Click"/>
             <Button Content="SAVE" x:Name="BtnSave"
-                    Background="#FFFF8533" Foreground="White" BorderThickness="0"
+                    Background="{DynamicResource AccentOrangeBrush}" Foreground="White" BorderThickness="0"
                     Padding="15,8" Margin="0,0,8,0" FontSize="10" Click="Save_Click"
                     IsDefault="True"/>
             <Button Content="CANCEL" x:Name="BtnCancel"

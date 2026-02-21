@@ -33,8 +33,8 @@ namespace NecessaryAdminTool.UI.Components
                 seg.SeparatorVisibility = first ? Visibility.Collapsed : Visibility.Visible;
                 seg.Separator = ">";
                 seg.Foreground = seg.IsActive
-                    ? new SolidColorBrush(Color.FromRgb(255, 133, 51))
-                    : new SolidColorBrush(Color.FromRgb(161, 161, 170));
+                    ? Helpers.ThemeHelper.PrimaryBrush
+                    : Helpers.ThemeHelper.SecondaryBrush;
                 seg.FontWeight = seg.IsActive ? FontWeights.SemiBold : FontWeights.Normal;
                 _segments.Add(seg);
                 first = false;

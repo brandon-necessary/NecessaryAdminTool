@@ -418,6 +418,9 @@
     <Compile Include="Helpers\GridLengthAnimation.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Helpers\ThemeHelper.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="UI\Dialogs\FilterPresetDialog.xaml.cs">
       <DependentUpon>FilterPresetDialog.xaml</DependentUpon>
       <SubType>Code</SubType>

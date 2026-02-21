@@ -12,20 +12,11 @@
     <!-- TAG: #VERSION_7 #CONNECTION_PROFILES #UI -->
 
     <Window.Resources>
-        <!-- Orange Accent Brush -->
-        <SolidColorBrush x:Key="AccentOrange" Color="#FFFF8533"/>
-        <SolidColorBrush x:Key="TextMuted" Color="#FFA1A1AA"/>
+        <!-- Local shadows removed — uses app-level DynamicResource brushes -->
 
         <!-- Primary Button Style -->
         <Style x:Key="BtnPrimary" TargetType="Button">
-            <Setter Property="Background">
-                <Setter.Value>
-                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                        <GradientStop Color="#FFFF8533" Offset="0"/>
-                        <GradientStop Color="#FFCC6B29" Offset="1"/>
-                    </LinearGradientBrush>
-                </Setter.Value>
-            </Setter>
+            <Setter Property="Background" Value="{DynamicResource AccentGradientBrush}"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="16,8"/>
@@ -61,10 +52,10 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Border Grid.Row="0" Background="#FF1E1E1E" BorderBrush="{StaticResource AccentOrange}"
+        <Border Grid.Row="0" Background="#FF1E1E1E" BorderBrush="{DynamicResource AccentOrangeBrush}"
                 BorderThickness="0,0,0,2" Padding="16,12" Margin="0,0,0,16">
             <StackPanel>
-                <TextBlock Text="🔗 CONNECTION PROFILES" Foreground="{StaticResource AccentOrange}"
+                <TextBlock Text="🔗 CONNECTION PROFILES" Foreground="{DynamicResource AccentOrangeBrush}"
                            FontSize="16" FontWeight="Bold"/>
                 <TextBlock Text="Save and manage domain controller connections for quick switching"
                            Foreground="{StaticResource TextMuted}" FontSize="10" Margin="0,4,0,0"/>
@@ -115,7 +106,7 @@
                     <DataGrid.ColumnHeaderStyle>
                         <Style TargetType="DataGridColumnHeader">
                             <Setter Property="Background" Value="#FF2A2A2A"/>
-                            <Setter Property="Foreground" Value="{StaticResource AccentOrange}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                             <Setter Property="FontWeight" Value="Bold"/>
                             <Setter Property="FontSize" Value="10"/>
                             <Setter Property="Padding" Value="10,8"/>
@@ -133,14 +124,7 @@
                                     <Setter Property="Background" Value="#FF252525"/>
                                 </Trigger>
                                 <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background">
-                                        <Setter.Value>
-                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0" Opacity="0.3">
-                                                <GradientStop Color="#FFFF8533" Offset="0"/>
-                                                <GradientStop Color="#FFA1A1AA" Offset="1"/>
-                                            </LinearGradientBrush>
-                                        </Setter.Value>
-                                    </Setter>
+                                    <Setter Property="Background" Value="{DynamicResource AccentPrimarySelectionBrush}"/>
                                 </Trigger>
                             </Style.Triggers>
                         </Style>

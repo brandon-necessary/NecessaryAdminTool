@@ -132,6 +132,21 @@ namespace NecessaryAdminTool.Data
                     Category NVARCHAR(100),
                     Notes NVARCHAR(MAX),
                     CreatedDate DATETIME DEFAULT GETDATE()
+                );
+
+                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='ComputerTags' AND xtype='U')
+                CREATE TABLE ComputerTags (
+                    Hostname NVARCHAR(255) NOT NULL,
+                    TagName NVARCHAR(100) NOT NULL,
+                    CONSTRAINT PK_ComputerTags PRIMARY KEY (Hostname, TagName),
+                    CONSTRAINT FK_ComputerTags_Computers FOREIGN KEY (Hostname) REFERENCES Computers(Hostname) ON DELETE CASCADE
+                );
+
+                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Settings' AND xtype='U')
+                CREATE TABLE Settings (
+                    SettingKey NVARCHAR(255) PRIMARY KEY,
+                    SettingValue NVARCHAR(MAX),
+                    UpdatedAt DATETIME DEFAULT GETDATE()
                 );";
 
             using (var cmd = new SqlCommand(schema, conn))
@@ -300,94 +315,384 @@ namespace NecessaryAdminTool.Data
             return computers;
         }
 
+        // TAG MANAGEMENT
         public async Task<List<string>> GetComputerTagsAsync(string hostname)
         {
-            LogManager.LogWarning($"GetComputerTagsAsync not yet implemented in {GetType().Name}");
-            return await Task.FromResult(new List<string>());
+            var tags = new List<string>();
+            try
+            {
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
+                {
+                    using (var cmd = new SqlCommand("SELECT TagName FROM ComputerTags WHERE Hostname = @Hostname ORDER BY TagName", conn))
+                    {
+                        cmd.Parameters.AddWithValue("@Hostname", hostname);
+                        using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
+                        {
+                            while (await reader.ReadAsync().ConfigureAwait(false))
+                                tags.Add(reader.GetString(0));
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to get tags for {hostname}", ex);
+            }
+            return tags;
         }
 
         public async Task AddTagAsync(string hostname, string tagName)
         {
-            LogManager.LogWarning($"AddTagAsync not yet implemented in {GetType().Name}");
-            await Task.CompletedTask;
+            try
+            {
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
+                {
+                    var query = @"IF NOT EXISTS (SELECT 1 FROM ComputerTags WHERE Hostname=@Hostname AND TagName=@Tag)
+                        INSERT INTO ComputerTags (Hostname, TagName) VALUES (@Hostname, @Tag)";
+                    using (var cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@Hostname", hostname);
+                        cmd.Parameters.AddWithValue("@Tag", tagName);
+                        await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to add tag '{tagName}' to {hostname}", ex);
+            }
         }
 
         public async Task RemoveTagAsync(string hostname, string tagName)
         {
-            LogManager.LogWarning($"RemoveTagAsync not yet implemented in {GetType().Name}");
-            await Task.CompletedTask;
+            try
+            {
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
+                {
+                    using (var cmd = new SqlCommand("DELETE FROM ComputerTags WHERE Hostname=@Hostname AND TagName=@Tag", conn))
+                    {
+                        cmd.Parameters.AddWithValue("@Hostname", hostname);
+                        cmd.Parameters.AddWithValue("@Tag", tagName);
+                        await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to remove tag '{tagName}' from {hostname}", ex);
+            }
         }
 
         public async Task<List<string>> GetAllTagsAsync()
         {
-            LogManager.LogWarning($"GetAllTagsAsync not yet implemented in {GetType().Name}");
-            return await Task.FromResult(new List<string>());
+            var tags = new List<string>();
+            try
+            {
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
+                {
+                    using (var cmd = new SqlCommand("SELECT DISTINCT TagName FROM ComputerTags ORDER BY TagName", conn))
+                    using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
+                    {
+                        while (await reader.ReadAsync().ConfigureAwait(false))
+                            tags.Add(reader.GetString(0));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to get all tags", ex);
+            }
+            return tags;
         }
 
+        // SCAN HISTORY
         public async Task<ScanHistory> GetLastScanAsync()
         {
-            LogManager.LogWarning($"GetLastScanAsync not yet implemented in {GetType().Name}");
-            return await Task.FromResult<ScanHistory>(null);
+            try
+            {
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
+                {
+                    using (var cmd = new SqlCommand("SELECT TOP 1 Id, ScanDate, ComputersFound, ErrorCount, DurationSeconds FROM ScanHistory ORDER BY Id DESC", conn))
+                    using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
+                    {
+                        if (await reader.ReadAsync().ConfigureAwait(false))
+                        {
+                            return new ScanHistory
+                            {
+                                ScanId = reader.GetInt32(0),
+                                StartTime = reader["ScanDate"] != System.DBNull.Value ? (DateTime)reader["ScanDate"] : DateTime.MinValue,
+                                ComputersScanned = reader["ComputersFound"] != System.DBNull.Value ? (int)reader["ComputersFound"] : 0,
+                                FailureCount = reader["ErrorCount"] != System.DBNull.Value ? (int)reader["ErrorCount"] : 0,
+                                DurationSeconds = reader["DurationSeconds"] != System.DBNull.Value ? Convert.ToDouble(reader["DurationSeconds"]) : 0
+                            };
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to get last scan", ex);
+            }
+            return null;
         }
 
         public async Task SaveScanHistoryAsync(ScanHistory scan)
         {
-            LogManager.LogWarning($"SaveScanHistoryAsync not yet implemented in {GetType().Name}");
-            await Task.CompletedTask;
+            try
+            {
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
+                {
+                    var query = @"INSERT INTO ScanHistory (ScanDate, ScanType, ComputersFound, ErrorCount, DurationSeconds, Notes)
+                        VALUES (@ScanDate, @ScanType, @Found, @Errors, @Duration, @Notes)";
+                    using (var cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@ScanDate", scan.StartTime);
+                        cmd.Parameters.AddWithValue("@ScanType", "Fleet Scan");
+                        cmd.Parameters.AddWithValue("@Found", scan.ComputersScanned);
+                        cmd.Parameters.AddWithValue("@Errors", scan.FailureCount);
+                        cmd.Parameters.AddWithValue("@Duration", (int)scan.DurationSeconds);
+                        cmd.Parameters.AddWithValue("@Notes", $"Success: {scan.SuccessCount}, Failed: {scan.FailureCount}");
+                        await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to save scan history", ex);
+            }
         }
 
         public async Task<List<ScanHistory>> GetScanHistoryAsync(int limit = 10)
         {
-            LogManager.LogWarning($"GetScanHistoryAsync not yet implemented in {GetType().Name}");
-            return await Task.FromResult(new List<ScanHistory>());
+            var history = new List<ScanHistory>();
+            try
+            {
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
+                {
+                    using (var cmd = new SqlCommand($"SELECT TOP (@Limit) Id, ScanDate, ComputersFound, ErrorCount, DurationSeconds FROM ScanHistory ORDER BY Id DESC", conn))
+                    {
+                        cmd.Parameters.AddWithValue("@Limit", limit);
+                        using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
+                        {
+                            while (await reader.ReadAsync().ConfigureAwait(false))
+                            {
+                                history.Add(new ScanHistory
+                                {
+                                    ScanId = reader.GetInt32(0),
+                                    StartTime = reader["ScanDate"] != System.DBNull.Value ? (DateTime)reader["ScanDate"] : DateTime.MinValue,
+                                    ComputersScanned = reader["ComputersFound"] != System.DBNull.Value ? (int)reader["ComputersFound"] : 0,
+                                    FailureCount = reader["ErrorCount"] != System.DBNull.Value ? (int)reader["ErrorCount"] : 0,
+                                    DurationSeconds = reader["DurationSeconds"] != System.DBNull.Value ? Convert.ToDouble(reader["DurationSeconds"]) : 0
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to get scan history", ex);
+            }
+            return history;
         }
 
+        // SETTINGS
         public async Task<string> GetSettingAsync(string key, string defaultValue = null)
         {
-            LogManager.LogWarning($"GetSettingAsync not yet implemented in {GetType().Name}");
-            return await Task.FromResult(defaultValue);
+            try
+            {
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
+                {
+                    using (var cmd = new SqlCommand("SELECT SettingValue FROM Settings WHERE SettingKey = @Key", conn))
+                    {
+                        cmd.Parameters.AddWithValue("@Key", key);
+                        var result = await cmd.ExecuteScalarAsync().ConfigureAwait(false);
+                        if (result != null && result != System.DBNull.Value)
+                            return result.ToString();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to get setting '{key}'", ex);
+            }
+            return defaultValue;
         }
 
         public async Task SaveSettingAsync(string key, string value)
         {
-            LogManager.LogWarning($"SaveSettingAsync not yet implemented in {GetType().Name}");
-            await Task.CompletedTask;
+            try
+            {
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
+                {
+                    var query = @"MERGE Settings AS target
+                        USING (SELECT @Key AS SettingKey) AS source ON target.SettingKey = source.SettingKey
+                        WHEN MATCHED THEN UPDATE SET SettingValue=@Value, UpdatedAt=GETDATE()
+                        WHEN NOT MATCHED THEN INSERT (SettingKey, SettingValue) VALUES (@Key, @Value);";
+                    using (var cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@Key", key);
+                        cmd.Parameters.AddWithValue("@Value", (object)value ?? System.DBNull.Value);
+                        await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to save setting '{key}'", ex);
+            }
         }
 
+        // SCRIPTS
         public async Task<List<ScriptInfo>> GetAllScriptsAsync()
         {
-            LogManager.LogWarning($"GetAllScriptsAsync not yet implemented in {GetType().Name}");
-            return await Task.FromResult(new List<ScriptInfo>());
+            var scripts = new List<ScriptInfo>();
+            try
+            {
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
+                {
+                    using (var cmd = new SqlCommand("SELECT Id, Name, Description, ScriptContent, Category, CreatedDate FROM Scripts ORDER BY Name", conn))
+                    using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
+                    {
+                        while (await reader.ReadAsync().ConfigureAwait(false))
+                        {
+                            scripts.Add(new ScriptInfo
+                            {
+                                ScriptId = reader.GetInt32(0),
+                                Name = reader["Name"]?.ToString(),
+                                Description = reader["Description"]?.ToString(),
+                                Content = reader["ScriptContent"]?.ToString(),
+                                Category = reader["Category"]?.ToString(),
+                                CreatedAt = reader["CreatedDate"] != System.DBNull.Value ? (DateTime)reader["CreatedDate"] : DateTime.MinValue
+                            });
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to get scripts", ex);
+            }
+            return scripts;
         }
 
         public async Task SaveScriptAsync(ScriptInfo script)
         {
-            LogManager.LogWarning($"SaveScriptAsync not yet implemented in {GetType().Name}");
-            await Task.CompletedTask;
+            try
+            {
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
+                {
+                    var query = @"MERGE Scripts AS target
+                        USING (SELECT @Name AS Name) AS source ON target.Name = source.Name
+                        WHEN MATCHED THEN UPDATE SET Description=@Desc, ScriptContent=@Content, Category=@Category, ModifiedDate=GETDATE()
+                        WHEN NOT MATCHED THEN INSERT (Name, Description, ScriptContent, Category) VALUES (@Name, @Desc, @Content, @Category);";
+                    using (var cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@Name", script.Name ?? string.Empty);
+                        cmd.Parameters.AddWithValue("@Desc", (object)script.Description ?? System.DBNull.Value);
+                        cmd.Parameters.AddWithValue("@Content", (object)script.Content ?? System.DBNull.Value);
+                        cmd.Parameters.AddWithValue("@Category", (object)script.Category ?? System.DBNull.Value);
+                        await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to save script '{script.Name}'", ex);
+            }
         }
 
         public async Task DeleteScriptAsync(int scriptId)
         {
-            LogManager.LogWarning($"DeleteScriptAsync not yet implemented in {GetType().Name}");
-            await Task.CompletedTask;
+            try
+            {
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
+                {
+                    using (var cmd = new SqlCommand("DELETE FROM Scripts WHERE Id = @Id", conn))
+                    {
+                        cmd.Parameters.AddWithValue("@Id", scriptId);
+                        await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to delete script {scriptId}", ex);
+            }
         }
 
+        // BOOKMARKS
         public async Task<List<BookmarkInfo>> GetAllBookmarksAsync()
         {
-            LogManager.LogWarning($"GetAllBookmarksAsync not yet implemented in {GetType().Name}");
-            return await Task.FromResult(new List<BookmarkInfo>());
+            var bookmarks = new List<BookmarkInfo>();
+            try
+            {
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
+                {
+                    using (var cmd = new SqlCommand("SELECT Hostname, Category, Notes FROM Bookmarks ORDER BY Hostname", conn))
+                    using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
+                    {
+                        while (await reader.ReadAsync().ConfigureAwait(false))
+                        {
+                            bookmarks.Add(new BookmarkInfo
+                            {
+                                Hostname = reader["Hostname"]?.ToString(),
+                                Category = reader["Category"]?.ToString(),
+                                Notes = reader["Notes"]?.ToString()
+                            });
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Failed to get bookmarks", ex);
+            }
+            return bookmarks;
         }
 
         public async Task SaveBookmarkAsync(BookmarkInfo bookmark)
         {
-            LogManager.LogWarning($"SaveBookmarkAsync not yet implemented in {GetType().Name}");
-            await Task.CompletedTask;
+            try
+            {
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
+                {
+                    var query = @"MERGE Bookmarks AS target
+                        USING (SELECT @Hostname AS Hostname) AS source ON target.Hostname = source.Hostname
+                        WHEN MATCHED THEN UPDATE SET Category=@Category, Notes=@Notes
+                        WHEN NOT MATCHED THEN INSERT (Name, Hostname, Category, Notes) VALUES (@Hostname, @Hostname, @Category, @Notes);";
+                    using (var cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@Hostname", bookmark.Hostname ?? string.Empty);
+                        cmd.Parameters.AddWithValue("@Category", (object)bookmark.Category ?? System.DBNull.Value);
+                        cmd.Parameters.AddWithValue("@Notes", (object)bookmark.Notes ?? System.DBNull.Value);
+                        await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to save bookmark for {bookmark.Hostname}", ex);
+            }
         }
 
         public async Task DeleteBookmarkAsync(string hostname)
         {
-            LogManager.LogWarning($"DeleteBookmarkAsync not yet implemented in {GetType().Name}");
-            await Task.CompletedTask;
+            try
+            {
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
+                {
+                    using (var cmd = new SqlCommand("DELETE FROM Bookmarks WHERE Hostname = @Hostname", conn))
+                    {
+                        cmd.Parameters.AddWithValue("@Hostname", hostname);
+                        await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError($"Failed to delete bookmark for {hostname}", ex);
+            }
         }
 
         public async Task OptimizeDatabaseAsync()

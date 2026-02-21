@@ -287,7 +287,7 @@ namespace NecessaryAdminTool.Managers.UI
                 var actionButton = new Button
                 {
                     Content = toast.ActionText,
-                    Foreground = new SolidColorBrush(Color.FromRgb(255, 133, 51)),
+                    Foreground = Helpers.ThemeHelper.PrimaryBrush,
                     Background = Brushes.Transparent,
                     BorderThickness = new Thickness(0),
                     Padding = new Thickness(12, 4, 12, 4),
