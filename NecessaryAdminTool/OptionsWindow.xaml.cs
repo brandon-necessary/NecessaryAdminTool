@@ -2409,15 +2409,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 // Load log directory (defaults to database path + "\Logs" if not set)
                 if (TxtLogDirectory != null)
                 {
-                    string logDir = Properties.Settings.Default.DeploymentLogDirectory;
-                    if (string.IsNullOrEmpty(logDir))
-                    {
-                        // Default to database directory + DeploymentLogs subfolder
-                        string dbPath2 = Properties.Settings.Default.DatabasePath;
-                        if (string.IsNullOrWhiteSpace(dbPath2))
-                            dbPath2 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "NecessaryAdminTool");
-                        logDir = Path.Combine(dbPath2, "DeploymentLogs");
-                    }
+                    string logDir = Properties.Settings.Default.DeploymentLogDirectory ?? "";
                     TxtLogDirectory.Text = logDir;
                 }
 

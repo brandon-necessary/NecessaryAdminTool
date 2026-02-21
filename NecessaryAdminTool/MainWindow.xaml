@@ -2451,14 +2451,26 @@
                 </TabItem>
 
                 <!-- ══════════════════════════════ -->
-                <!-- TAB 3: LIVE DATA & LOGS        -->
+                <!-- TAB 3: AUDIT TRAIL             -->
                 <!-- ══════════════════════════════ -->
-                <TabItem Header="LIVE DATA &amp; LOGS">
+                <TabItem Header="AUDIT TRAIL">
                     <DockPanel Margin="15">
                         <Border DockPanel.Dock="Top" Margin="0,0,0,10">
                             <StackPanel Orientation="Horizontal">
-                                <Button Content="REFRESH LOGS" Style="{StaticResource BtnPrimary}"
-                                        Click="Menu_RefreshLogs_Click" Padding="14,6" FontSize="11"/>
+                                <Button Content="REFRESH" Style="{StaticResource BtnPrimary}"
+                                        Click="Menu_RefreshLogs_Click" Padding="14,6" FontSize="11"
+                                        ToolTip="Reload audit log entries from AuditLogs folder (last 7 days)"/>
+                                <TextBox x:Name="TxtAuditSearch" Width="250" Margin="10,0,0,0"
+                                         Background="{StaticResource BgMid}" Foreground="White" FontSize="11"
+                                         VerticalContentAlignment="Center" Padding="6,4"
+                                         TextChanged="TxtAuditSearch_TextChanged"
+                                         Tag="Search audit logs..."/>
+                                <Button Content="EXPORT CSV" Margin="10,0,0,0" Padding="14,6" FontSize="11"
+                                        Click="BtnExportAuditLog_Click"
+                                        ToolTip="Export current audit log view to CSV on Desktop"/>
+                                <Button Content="OPEN FOLDER" Margin="10,0,0,0" Padding="14,6" FontSize="11"
+                                        Click="BtnOpenAuditFolder_Click"
+                                        ToolTip="Open AuditLogs folder in File Explorer"/>
                             </StackPanel>
                         </Border>
 

@@ -2337,6 +2337,7 @@ namespace NecessaryAdminTool
             };
 
             LogManager.LogInfo("Application initialized");
+            AddLog("local", "SESSION_START", $"{Environment.MachineName} / {Environment.UserName}", "OK");
         }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -2359,7 +2360,7 @@ namespace NecessaryAdminTool
                 UpdateLoadingStatus("Loading Configuration...", "Reading secure settings");
                 SecureConfig.LoadConfiguration();
                 LoadConfig();
-                LoadMasterLog();
+                LoadAuditLogs();
 
                 UpdateLoadingStatus("Loading Pinned Devices...", "Initializing monitors");
                 _ = LoadPinnedDevices();  // Fire-and-forget async initialization
@@ -2736,6 +2737,10 @@ namespace NecessaryAdminTool
             try
             {
                 LogManager.LogInfo("[App Shutdown] ------ Application shutdown initiated ------");
+
+                // -- 0. Write session-end audit entry (before anything is torn down) --
+                try { AddLog("local", "SESSION_END", $"User: {_authUser}, Uptime: {(DateTime.Now - System.Diagnostics.Process.GetCurrentProcess().StartTime):hh\\:mm\\:ss}", "OK"); }
+                catch { /* best-effort */ }
 
                 // -- 1. Save state -------------------------------------------------
                 try { SaveConfig(); } catch (Exception ex) { LogManager.LogError("[App Shutdown] SaveConfig failed", ex); }
@@ -3398,8 +3403,25 @@ namespace NecessaryAdminTool
 
         // -- Logging & Audit --
 
-        private static DateTime _lastNetworkLogCheck = DateTime.MinValue;
-        private static bool _networkLogAccessible = false;
+        private static DateTime _lastAuditDirCheck = DateTime.MinValue;
+        private static bool _auditDirAccessible = false;
+        private static string _cachedAuditDir = null;
+
+        /// <summary>
+        /// Gets the AuditLogs subfolder path under DeploymentLogDirectory.
+        /// Falls back to DatabasePath, then CommonApplicationData\NecessaryAdminTool.
+        /// </summary>
+        private static string GetAuditLogDirectory()
+        {
+            string baseDir = NecessaryAdminTool.Properties.Settings.Default.DeploymentLogDirectory;
+            if (string.IsNullOrWhiteSpace(baseDir))
+            {
+                baseDir = NecessaryAdminTool.Properties.Settings.Default.DatabasePath;
+                if (string.IsNullOrWhiteSpace(baseDir))
+                    baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "NecessaryAdminTool");
+            }
+            return Path.Combine(baseDir, "AuditLogs");
+        }
 
         private void AddLog(string target, string action, string details, string status)
         {
@@ -3427,50 +3449,61 @@ namespace NecessaryAdminTool
                 {
                     try
                     {
-                        // Check if network log is accessible (cache for 60 seconds to avoid spam)
-                        if ((DateTime.Now - _lastNetworkLogCheck).TotalSeconds > 60)
+                        // Check if audit log directory is accessible (cache for 60 seconds)
+                        if ((DateTime.Now - _lastAuditDirCheck).TotalSeconds > 60)
                         {
-                            _lastNetworkLogCheck = DateTime.Now;
+                            _lastAuditDirCheck = DateTime.Now;
                             try
                             {
-                                string dir = Path.GetDirectoryName(SecureConfig.SharedLogPath);
-                                _networkLogAccessible = Directory.Exists(dir);
+                                _cachedAuditDir = GetAuditLogDirectory();
+                                if (!Directory.Exists(_cachedAuditDir))
+                                    Directory.CreateDirectory(_cachedAuditDir);
+                                _auditDirAccessible = Directory.Exists(_cachedAuditDir);
                             }
                             catch (Exception ex)
                             {
-                                _networkLogAccessible = false;
-                                LogManager.LogDebug($"Network log path check failed: {ex.Message}");
+                                _auditDirAccessible = false;
+                                LogManager.LogDebug($"Audit log directory check failed: {ex.Message}");
                             }
                         }
 
-                        if (_networkLogAccessible)
+                        if (_auditDirAccessible && _cachedAuditDir != null)
                         {
+                            string fileName = $"NAT_Audit_{DateTime.Now:yyyy-MM-dd}.csv";
+                            string filePath = Path.Combine(_cachedAuditDir, fileName);
+
                             string csv = string.Format("\"{0}\",\"{1}\",\"{2}\",\"{3}\",\"{4}\",\"{5}\"\n",
                                 SecurityValidator.EscapeCsv(logEntry.Time), SecurityValidator.EscapeCsv(logEntry.User),
                                 SecurityValidator.EscapeCsv(logEntry.Target), SecurityValidator.EscapeCsv(logEntry.Action),
                                 SecurityValidator.EscapeCsv(logEntry.Status), SecurityValidator.EscapeCsv(logEntry.Details));
+
+                            // Add CSV header if new file
+                            if (!File.Exists(filePath))
+                            {
+                                string header = "\"Timestamp\",\"User\",\"Target\",\"Action\",\"Status\",\"Details\"\n";
+                                csv = header + csv;
+                            }
 
                             // Use retry logic for file in use errors
                             for (int retry = 0; retry < 3; retry++)
                             {
                                 try
                                 {
-                                    File.AppendAllText(SecureConfig.SharedLogPath, csv);
-                                    break; // Success, exit retry loop
+                                    File.AppendAllText(filePath, csv);
+                                    break;
                                 }
                                 catch (IOException) when (retry < 2)
                                 {
-                                    await Task.Delay(100); // Wait 100ms before retry
+                                    await Task.Delay(100);
                                 }
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        // Only log once per minute to avoid spam
-                        if ((DateTime.Now - _lastNetworkLogCheck).TotalSeconds > 60)
+                        if ((DateTime.Now - _lastAuditDirCheck).TotalSeconds > 60)
                         {
-                            LogManager.LogWarning($"Network log write failed: {ex.Message}");
+                            LogManager.LogWarning($"Audit log write failed: {ex.Message}");
                         }
                     }
                 });
@@ -3478,16 +3511,83 @@ namespace NecessaryAdminTool
             catch (Exception ex) { LogManager.LogError("AddLog failed", ex); }
         }
 
-        private void LoadMasterLog()
+        private void LoadAuditLogs()
         {
             try
             {
-                if (File.Exists(SecureConfig.SharedLogPath))
-                { TxtLogPath.Text = "LOG: CONNECTED"; TxtLogPath.Foreground = Brushes.Lime; }
-                else
-                { TxtLogPath.Text = "LOG: OFFLINE"; TxtLogPath.Foreground = Brushes.Red; }
+                string auditDir = GetAuditLogDirectory();
+                if (!Directory.Exists(auditDir))
+                {
+                    TxtLogPath.Text = "AUDIT: NO LOGS"; TxtLogPath.Foreground = Brushes.Orange;
+                    return;
+                }
+
+                // Find all audit CSV files, most recent first
+                var csvFiles = Directory.GetFiles(auditDir, "NAT_Audit_*.csv")
+                    .OrderByDescending(f => f)
+                    .Take(7) // Load last 7 days
+                    .ToArray();
+
+                if (csvFiles.Length == 0)
+                {
+                    TxtLogPath.Text = "AUDIT: NO LOGS"; TxtLogPath.Foreground = Brushes.Orange;
+                    return;
+                }
+
+                var entries = new System.Collections.Generic.List<AuditLog>();
+                foreach (var csvFile in csvFiles)
+                {
+                    try
+                    {
+                        var lines = File.ReadAllLines(csvFile);
+                        foreach (var line in lines)
+                        {
+                            if (string.IsNullOrWhiteSpace(line)) continue;
+                            // Skip header row
+                            if (line.StartsWith("\"Timestamp\"")) continue;
+
+                            var fields = ParseCsvLine(line);
+                            if (fields.Length >= 6)
+                            {
+                                entries.Add(new AuditLog
+                                {
+                                    Time = fields[0],
+                                    User = fields[1],
+                                    Target = fields[2],
+                                    Action = fields[3],
+                                    Status = fields[4],
+                                    Details = fields[5]
+                                });
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        LogManager.LogWarning($"Failed to read audit file {Path.GetFileName(csvFile)}: {ex.Message}");
+                    }
+                }
+
+                // Sort newest first, cap at 2000
+                entries = entries.OrderByDescending(e => e.Time).Take(2000).ToList();
+
+                lock (_logLock)
+                {
+                    _logs.Clear();
+                    foreach (var entry in entries)
+                        _logs.Add(entry);
+                }
+
+                int fileCount = csvFiles.Length;
+                TxtLogPath.Text = $"AUDIT: {entries.Count} entries ({fileCount}d)";
+                TxtLogPath.Foreground = Brushes.Lime;
+                LogManager.LogInfo($"LoadAuditLogs() - Loaded {entries.Count} entries from {fileCount} files in {auditDir}");
             }
-            catch { TxtLogPath.Text = "LOG: ERROR"; TxtLogPath.Foreground = Brushes.Orange; }
+            catch (Exception ex)
+            {
+                TxtLogPath.Text = "AUDIT: ERROR";
+                TxtLogPath.Foreground = Brushes.Orange;
+                LogManager.LogError("LoadAuditLogs() failed", ex);
+            }
         }
 
         // -- Inventory Filter (debounced, CollectionView) --
@@ -8156,6 +8256,7 @@ if ($rebootPending) {
                 // SECURE LOGOUT: Wipe credentials from memory
                 SecureMemory.WipeAndDispose(ref _authPass);
                 SecureMemory.ForceCleanup();
+                string logoutUser = _authUser;
                 _authUser = Environment.UserName; _isLoggedIn = false; _isDomainAdmin = false;
                 BtnAuth.Content = "LOGIN"; TxtAuthStatus.Text = "NOT AUTHENTICATED"; TxtAuthStatus.Foreground = Brushes.Gray;
 
@@ -8163,6 +8264,7 @@ if ($rebootPending) {
                 _adminCheckCache.Clear();
 
                 ApplyRoleRestrictions();
+                AddLog("local", "USER_LOGOUT", logoutUser, "OK");
                 LogManager.LogInfo("User logged out � credentials wiped");
             }
             else await ShowLoginDialog();
@@ -8320,6 +8422,7 @@ if ($rebootPending) {
 
                 // TAG: #SECURITY_CRITICAL #AUDIT_LOG
                 LogManager.LogInfo($"[AUTH] ✅ Authentication successful: {user} (Admin: {_isDomainAdmin}, Elevated: {_isElevated})");
+                AddLog("local", "USER_LOGIN", $"{user} (Admin: {_isDomainAdmin})", "OK");
 
                 // Apply restrictions based on domain admin status and elevation
                 ApplyRoleRestrictions();
@@ -9702,10 +9805,10 @@ if ($rebootPending) {
                                 string pattern  = NecessaryAdminTool.Properties.Settings.Default.LocalISOHostnamePattern ?? "";
                                 int injectedCount = 0;
 
-                                // LogDir � use configured value, or default path if blank
+                                // LogDir — use configured value, or DatabasePath directly if blank
                                 string effectiveLogDir = !string.IsNullOrEmpty(logDir)
                                     ? logDir
-                                    : Path.Combine(dbPath, "DeploymentLogs");
+                                    : dbPath;
                                 // Both scripts now align vars with 14 spaces
                                 content = content.Replace(
                                     "$LogDir              = $env:NECESSARYADMINTOOL_LOG_DIR",
@@ -9813,7 +9916,7 @@ if ($rebootPending) {
                         string logDir  = NecessaryAdminTool.Properties.Settings.Default.DeploymentLogDirectory;
                         string effectiveLogDir = !string.IsNullOrEmpty(logDir)
                             ? logDir
-                            : Path.Combine(dbPath, "DeploymentLogs");
+                            : dbPath;
                         content = content.Replace(
                             "$LogDir              = $env:NECESSARYADMINTOOL_LOG_DIR",
                             $"$LogDir              = \"{effectiveLogDir}\"  # Set in NecessaryAdminTool: Options -> Deployment Configuration");
@@ -9994,7 +10097,75 @@ if ($rebootPending) {
             }
         }
 
-        private void Menu_RefreshLogs_Click(object sender, RoutedEventArgs e) => LoadMasterLog();
+        private void Menu_RefreshLogs_Click(object sender, RoutedEventArgs e) => LoadAuditLogs();
+
+        private void TxtAuditSearch_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            try
+            {
+                string q = TxtAuditSearch.Text?.Trim().ToLower() ?? "";
+                var view = System.Windows.Data.CollectionViewSource.GetDefaultView(_logs);
+                view.Filter = string.IsNullOrEmpty(q) ? (Predicate<object>)null : obj =>
+                {
+                    var log = (AuditLog)obj;
+                    return (log.Target ?? "").ToLower().Contains(q) ||
+                           (log.Action ?? "").ToLower().Contains(q) ||
+                           (log.User ?? "").ToLower().Contains(q) ||
+                           (log.Details ?? "").ToLower().Contains(q) ||
+                           (log.Status ?? "").ToLower().Contains(q);
+                };
+            }
+            catch (Exception ex) { LogManager.LogError("Audit search filter failed", ex); }
+        }
+
+        private void BtnExportAuditLog_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string outPath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+                    $"NAT_AuditExport_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
+
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine("\"Timestamp\",\"User\",\"Target\",\"Action\",\"Status\",\"Details\"");
+
+                // Export the currently visible (filtered) view
+                var view = System.Windows.Data.CollectionViewSource.GetDefaultView(_logs);
+                foreach (AuditLog log in view)
+                {
+                    sb.AppendFormat("\"{0}\",\"{1}\",\"{2}\",\"{3}\",\"{4}\",\"{5}\"\n",
+                        SecurityValidator.EscapeCsv(log.Time), SecurityValidator.EscapeCsv(log.User),
+                        SecurityValidator.EscapeCsv(log.Target), SecurityValidator.EscapeCsv(log.Action),
+                        SecurityValidator.EscapeCsv(log.Status), SecurityValidator.EscapeCsv(log.Details));
+                }
+
+                File.WriteAllText(outPath, sb.ToString());
+                Managers.UI.ToastManager.ShowSuccess($"Exported {_logs.Count} audit entries to Desktop");
+                AddLog("local", "EXPORT_AUDIT_LOG", outPath, "OK");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("BtnExportAuditLog_Click failed", ex);
+                Managers.UI.ToastManager.ShowError($"Export failed: {ex.Message}");
+            }
+        }
+
+        private void BtnOpenAuditFolder_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string auditDir = GetAuditLogDirectory();
+                if (!Directory.Exists(auditDir))
+                    Directory.CreateDirectory(auditDir);
+                System.Diagnostics.Process.Start("explorer.exe", auditDir);
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("BtnOpenAuditFolder_Click failed", ex);
+                Managers.UI.ToastManager.ShowError($"Failed to open folder: {ex.Message}");
+            }
+        }
+
         private void ComboTarget_KeyDown(object sender, KeyEventArgs e) { if (e.Key == Key.Enter) BtnScan_Click(sender, e); }
         private void ComboTarget_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -10047,11 +10218,10 @@ if ($rebootPending) {
             string dir = NecessaryAdminTool.Properties.Settings.Default.DeploymentLogDirectory;
             if (string.IsNullOrWhiteSpace(dir))
             {
-                // Fall back to DatabasePath\DeploymentLogs (matches OptionsWindow default)
-                string dbPath = NecessaryAdminTool.Properties.Settings.Default.DatabasePath;
-                if (string.IsNullOrWhiteSpace(dbPath))
-                    dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "NecessaryAdminTool");
-                dir = Path.Combine(dbPath, "DeploymentLogs");
+                // Fall back to DatabasePath directly (no subfolder appended)
+                dir = NecessaryAdminTool.Properties.Settings.Default.DatabasePath;
+                if (string.IsNullOrWhiteSpace(dir))
+                    dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "NecessaryAdminTool");
             }
             return Path.Combine(dir, "Master_Update_Log.csv");
         }

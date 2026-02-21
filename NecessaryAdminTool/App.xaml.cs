@@ -562,7 +562,12 @@ namespace NecessaryAdminTool
             {
                 string logDir = NecessaryAdminTool.Properties.Settings.Default.DeploymentLogDirectory;
                 if (string.IsNullOrWhiteSpace(logDir))
-                    logDir = System.IO.Path.Combine(NecessaryAdminTool.Properties.Settings.Default.DatabasePath, "AutoScanLogs");
+                {
+                    string dbPath = NecessaryAdminTool.Properties.Settings.Default.DatabasePath;
+                    logDir = !string.IsNullOrWhiteSpace(dbPath)
+                        ? dbPath
+                        : System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "NecessaryAdminTool");
+                }
 
                 System.IO.Directory.CreateDirectory(logDir);
 
