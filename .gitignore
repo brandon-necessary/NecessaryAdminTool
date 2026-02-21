@@ -80,3 +80,29 @@ orleans.codegen.cs
 Backup*/
 UpgradeLog*.XML
 UpgradeLog*.htm
+
+# Claude Code local files
+.claude/
+
+# Installer outputs and dependencies
+Installer/Output/
+Installer/Dependencies/*.exe
+
+# Backup files
+*.backup
+*.bak
+
+# Build output captures
+*.err.txt
+build_*.txt
+
+# Scratch/temp files
+null
+do_msbuild*.bat
+do_msbuild*.ps1
+run_build.ps1
+get_diff.ps1
+
+# Old pre-rebrand project
+ArtaznIT/
+ArtaznIT.slnx
