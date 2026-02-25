@@ -386,19 +386,21 @@
                             <Setter.Value>
                                 <ControlTemplate TargetType="ComboBoxItem">
                                     <Grid>
+                                        <!-- Background (no content) — behind overlays -->
                                         <Border x:Name="itemBorder"
-                                                Background="{TemplateBinding Background}"
-                                                Padding="{TemplateBinding Padding}">
-                                            <ContentPresenter/>
-                                        </Border>
-                                        <!-- Highlight overlay (DynamicResource-safe via opacity toggle) -->
+                                                Background="{TemplateBinding Background}"/>
+                                        <!-- Overlays (behind content; opacity toggled by triggers) -->
                                         <Border x:Name="highlightOverlay"
                                                 Background="{DynamicResource AccentPrimaryHighlightBrush}"
                                                 Opacity="0"/>
-                                        <!-- Selection overlay -->
                                         <Border x:Name="selectionOverlay"
                                                 Background="{DynamicResource AccentPrimarySemiBrush}"
                                                 Opacity="0"/>
+                                        <!-- Content (transparent background — always on top of overlays) -->
+                                        <Border Background="Transparent"
+                                                Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter/>
+                                        </Border>
                                     </Grid>
                                     <ControlTemplate.Triggers>
                                         <Trigger Property="IsHighlighted" Value="True">

@@ -540,7 +540,20 @@ if (!$TPM -or !$SecureBoot -or !$RAMOk -or $FreeGB -lt $MIN_DISK_SPACE_GB) {
     if ($FreeGB -lt $MIN_DISK_SPACE_GB) { $Reasons += "${FreeGB}GB free (need ${MIN_DISK_SPACE_GB}GB)" }
 
     $ReasonText = $Reasons -join "|"
-    Write-NecessaryAdminToolLog -Status "WIN11_HW_INCOMPATIBLE_$ReasonText" -ToMaster $false
+    Write-NecessaryAdminToolLog -Status "WIN11_HW_CHECK_$ReasonText" -ToMaster $false
+
+    # If machine is already running Windows 11 (build >= 22000), the hardware gate is advisory only --
+    # the machine already passed (or bypassed) Win11 requirements during its original upgrade.
+    # Allow Win11 feature updates to proceed; fall through to Section 4b.
+    if ($CurrentBuild -ge 22000) {
+        Show-NecessaryAdminToolLogo -Msg "Win11 hardware advisory: $ReasonText -- continuing with feature update" "Yellow"
+        Write-Host "  Machine is already on Windows 11 (Build $CurrentBuild)." -ForegroundColor Yellow
+        Write-Host "  Hardware advisory: $ReasonText" -ForegroundColor Yellow
+        Write-Host "  Recommend addressing hardware issue to maintain upgrade eligibility." -ForegroundColor Yellow
+        Write-NecessaryAdminToolLog -Status "WIN11_HW_ADVISORY_BUILD_${CurrentBuild}_CONTINUING_TO_FEATURE_UPDATE_REASON_${ReasonText}" -ToMaster $false
+        # Fall through to Section 4b (already-compliant check and upgrade logic)
+    } else {
+    # Machine is on Windows 10 and hardware prevents upgrade to Windows 11.
     Show-NecessaryAdminToolLogo -Msg "Win11 incompatible ($ReasonText) -- checking Windows 10 status..." "Yellow"
 
     # --- WIN10 FALLBACK: Machine cannot run Win11 -- ensure it is at least on Win10 22H2 (Build 19045) ---
@@ -549,7 +562,7 @@ if (!$TPM -or !$SecureBoot -or !$RAMOk -or $FreeGB -lt $MIN_DISK_SPACE_GB) {
     $WIN10_LATEST_BUILD = 19045
 
     if ($CurrentBuild -ge $WIN10_LATEST_BUILD) {
-        Write-Host "  Machine is already on Windows 10 22H2 or later (Build $CurrentBuild) -- latest Win10." -ForegroundColor Green
+        Write-Host "  Machine is on Windows 10 22H2 (Build $CurrentBuild) -- already at latest Win10." -ForegroundColor Green
         Write-Host "  Cannot upgrade to Windows 11 until hardware requirements are met." -ForegroundColor Yellow
         Write-NecessaryAdminToolLog -Status "WIN10_ALREADY_LATEST_BUILD_${CurrentBuild}_NO_FURTHER_UPDATES" -ToMaster $false
         Write-MasterSummary -Status "HW_INCOMPATIBLE" -Method "None" -Details "Already on Win10 22H2 (Build $CurrentBuild); Win11 blocked: $ReasonText"
@@ -636,6 +649,7 @@ if (!$TPM -or !$SecureBoot -or !$RAMOk -or $FreeGB -lt $MIN_DISK_SPACE_GB) {
         Show-NecessaryAdminToolLogo -Msg "Win10 update failed: $($_.Exception.Message)" "Red"
         exit 29  # Win10 fallback update failed (machine also Win11-incompatible)
     }
+    }  # end else (Windows 10 hardware incompatible path)
 }
 
 Write-NecessaryAdminToolLog -Status "HW_COMPAT_CHECK_PASSED_TPM2_SECUREBOOT_RAM_${RAMGB}GB_DISK_${FreeGB}GB" -ToMaster $false

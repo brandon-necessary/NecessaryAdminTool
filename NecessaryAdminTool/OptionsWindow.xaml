@@ -1058,7 +1058,7 @@
                                             <DataTemplate>
                                                 <!-- TAG: #TOOLTIPS #CONNECTION_PROFILES -->
                                                 <StackPanel Orientation="Horizontal">
-                                                    <Button Content="✓ LOAD" Tag="{Binding}" Background="#FF16C60C" Foreground="White"
+                                                    <Button Content="✓ LOAD" Tag="{Binding}" Background="{DynamicResource AccentGreenBrush}" Foreground="White"
                                                             BorderThickness="0" Padding="10,4" Margin="0,0,8,0" FontSize="9"
                                                             Click="BtnLoadProfile_Click" Cursor="Hand"
                                                             ToolTip="Loads this connection profile as the active configuration. Sets domain/server address and username for Active Directory scans. Credentials are securely stored in Windows Credential Manager. Changes apply immediately."/>
@@ -1109,7 +1109,7 @@
                                              Padding="6,4" FontSize="10" Margin="0,0,0,4"/>
 
                                     <TextBlock Grid.Row="3" Grid.Column="0" Text="Username:" Foreground="White" FontSize="10"
-                                               VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                               VerticalAlignment="Center" Margin="0,0,8,4"/>
                                     <TextBox Grid.Row="3" Grid.Column="1" x:Name="TxtNewProfileUsername"
                                              Background="#FF0D0D0D" Foreground="White" BorderBrush="{StaticResource BorderDim}"
                                              Padding="6,4" FontSize="10"/>

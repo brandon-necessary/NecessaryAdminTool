@@ -93,13 +93,16 @@ namespace NecessaryAdminTool.Data
                             Hostname TEXT(255) PRIMARY KEY,
                             OS TEXT(100),
                             OSVersion TEXT(50),
+                            Status TEXT(50),
                             Manufacturer TEXT(100),
                             Model TEXT(100),
                             SerialNumber TEXT(100),
                             AssetTag TEXT(100),
+                            ChassisType TEXT(100),
                             IPAddress TEXT(50),
                             MACAddress TEXT(50),
                             Domain TEXT(100),
+                            DomainController TEXT(255),
                             LastLoggedOnUser TEXT(100),
                             RAM_GB INTEGER,
                             CPU TEXT(200),
@@ -108,6 +111,7 @@ namespace NecessaryAdminTool.Data
                             LastSeen DATETIME,
                             LastBootTime DATETIME,
                             InstallDate DATETIME,
+                            Uptime LONG,
                             BitLockerStatus TEXT(50),
                             TPMVersion TEXT(50),
                             AntivirusProduct TEXT(100),
@@ -116,6 +120,7 @@ namespace NecessaryAdminTool.Data
                             PendingRebootCount INTEGER,
                             LastPatchDate DATETIME,
                             Notes MEMO,
+                            RawDataJson MEMO,
                             CreatedDate DATETIME,
                             ModifiedDate DATETIME
                         )";
@@ -303,22 +308,26 @@ namespace NecessaryAdminTool.Data
                 if (exists)
                 {
                     query = @"UPDATE Computers SET
-                        OS=?, OSVersion=?, Manufacturer=?, Model=?, SerialNumber=?, AssetTag=?,
-                        IPAddress=?, MACAddress=?, Domain=?, LastLoggedOnUser=?, RAM_GB=?, CPU=?,
-                        DiskSize_GB=?, DiskFree_GB=?, LastSeen=?, LastBootTime=?, InstallDate=?,
+                        OS=?, OSVersion=?, Status=?, Manufacturer=?, Model=?, SerialNumber=?, AssetTag=?,
+                        ChassisType=?, IPAddress=?, MACAddress=?, Domain=?, DomainController=?,
+                        LastLoggedOnUser=?, RAM_GB=?, CPU=?, DiskSize_GB=?, DiskFree_GB=?,
+                        LastSeen=?, LastBootTime=?, InstallDate=?, Uptime=?,
                         BitLockerStatus=?, TPMVersion=?, AntivirusProduct=?, AntivirusStatus=?,
-                        FirewallStatus=?, PendingRebootCount=?, LastPatchDate=?, Notes=?, ModifiedDate=?
+                        FirewallStatus=?, PendingRebootCount=?, LastPatchDate=?, Notes=?, RawDataJson=?,
+                        ModifiedDate=?
                         WHERE Hostname=?";
                 }
                 else
                 {
                     query = @"INSERT INTO Computers (
-                        Hostname, OS, OSVersion, Manufacturer, Model, SerialNumber, AssetTag,
-                        IPAddress, MACAddress, Domain, LastLoggedOnUser, RAM_GB, CPU,
-                        DiskSize_GB, DiskFree_GB, LastSeen, LastBootTime, InstallDate,
+                        Hostname, OS, OSVersion, Status, Manufacturer, Model, SerialNumber, AssetTag,
+                        ChassisType, IPAddress, MACAddress, Domain, DomainController,
+                        LastLoggedOnUser, RAM_GB, CPU, DiskSize_GB, DiskFree_GB,
+                        LastSeen, LastBootTime, InstallDate, Uptime,
                         BitLockerStatus, TPMVersion, AntivirusProduct, AntivirusStatus,
-                        FirewallStatus, PendingRebootCount, LastPatchDate, Notes, CreatedDate, ModifiedDate
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                        FirewallStatus, PendingRebootCount, LastPatchDate, Notes, RawDataJson,
+                        CreatedDate, ModifiedDate
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 }
 
                 using (var cmd = new OleDbCommand(query, _connection))
@@ -1089,65 +1098,77 @@ namespace NecessaryAdminTool.Data
 
         private void AddUpdateParameters(OleDbCommand cmd, ComputerInfo computer)
         {
+            // ORDER must match UPDATE SET column list exactly
             cmd.Parameters.AddWithValue("?", computer.OS ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.OSVersion ?? string.Empty);
+            cmd.Parameters.AddWithValue("?", computer.Status ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.Manufacturer ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.Model ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.SerialNumber ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.AssetTag ?? string.Empty);
+            cmd.Parameters.AddWithValue("?", computer.ChassisType ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.IPAddress ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.MACAddress ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.Domain ?? string.Empty);
+            cmd.Parameters.AddWithValue("?", computer.DomainController ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.LastLoggedOnUser ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.RAM_GB);
             cmd.Parameters.AddWithValue("?", computer.CPU ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.DiskSize_GB);
             cmd.Parameters.AddWithValue("?", computer.DiskFree_GB);
             cmd.Parameters.AddWithValue("?", computer.LastSeen);
-            cmd.Parameters.AddWithValue("?", computer.LastBootTime);
-            cmd.Parameters.AddWithValue("?", computer.InstallDate);
+            cmd.Parameters.AddWithValue("?", (object)computer.LastBootTime ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("?", computer.InstallDate != DateTime.MinValue ? (object)computer.InstallDate : DBNull.Value);
+            cmd.Parameters.AddWithValue("?", (object)computer.Uptime ?? DBNull.Value);
             cmd.Parameters.AddWithValue("?", computer.BitLockerStatus ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.TPMVersion ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.AntivirusProduct ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.AntivirusStatus ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.FirewallStatus ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.PendingRebootCount);
-            cmd.Parameters.AddWithValue("?", computer.LastPatchDate);
+            cmd.Parameters.AddWithValue("?", computer.LastPatchDate != DateTime.MinValue ? (object)computer.LastPatchDate : DBNull.Value);
             cmd.Parameters.AddWithValue("?", computer.Notes ?? string.Empty);
-            cmd.Parameters.AddWithValue("?", DateTime.Now);
-            cmd.Parameters.AddWithValue("?", computer.Hostname ?? string.Empty);
+            cmd.Parameters.AddWithValue("?", computer.RawDataJson ?? string.Empty);
+            cmd.Parameters.AddWithValue("?", DateTime.Now);           // ModifiedDate
+            cmd.Parameters.AddWithValue("?", computer.Hostname ?? string.Empty); // WHERE
         }
 
         private void AddInsertParameters(OleDbCommand cmd, ComputerInfo computer)
         {
+            // ORDER must match INSERT column list exactly
             cmd.Parameters.AddWithValue("?", computer.Hostname ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.OS ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.OSVersion ?? string.Empty);
+            cmd.Parameters.AddWithValue("?", computer.Status ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.Manufacturer ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.Model ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.SerialNumber ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.AssetTag ?? string.Empty);
+            cmd.Parameters.AddWithValue("?", computer.ChassisType ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.IPAddress ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.MACAddress ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.Domain ?? string.Empty);
+            cmd.Parameters.AddWithValue("?", computer.DomainController ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.LastLoggedOnUser ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.RAM_GB);
             cmd.Parameters.AddWithValue("?", computer.CPU ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.DiskSize_GB);
             cmd.Parameters.AddWithValue("?", computer.DiskFree_GB);
             cmd.Parameters.AddWithValue("?", computer.LastSeen);
-            cmd.Parameters.AddWithValue("?", computer.LastBootTime);
-            cmd.Parameters.AddWithValue("?", computer.InstallDate);
+            cmd.Parameters.AddWithValue("?", (object)computer.LastBootTime ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("?", computer.InstallDate != DateTime.MinValue ? (object)computer.InstallDate : DBNull.Value);
+            cmd.Parameters.AddWithValue("?", (object)computer.Uptime ?? DBNull.Value);
             cmd.Parameters.AddWithValue("?", computer.BitLockerStatus ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.TPMVersion ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.AntivirusProduct ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.AntivirusStatus ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.FirewallStatus ?? string.Empty);
             cmd.Parameters.AddWithValue("?", computer.PendingRebootCount);
-            cmd.Parameters.AddWithValue("?", computer.LastPatchDate);
+            cmd.Parameters.AddWithValue("?", computer.LastPatchDate != DateTime.MinValue ? (object)computer.LastPatchDate : DBNull.Value);
             cmd.Parameters.AddWithValue("?", computer.Notes ?? string.Empty);
-            cmd.Parameters.AddWithValue("?", DateTime.Now);
-            cmd.Parameters.AddWithValue("?", DateTime.Now);
+            cmd.Parameters.AddWithValue("?", computer.RawDataJson ?? string.Empty);
+            cmd.Parameters.AddWithValue("?", DateTime.Now);           // CreatedDate
+            cmd.Parameters.AddWithValue("?", DateTime.Now);           // ModifiedDate
         }
 
         public void Dispose()

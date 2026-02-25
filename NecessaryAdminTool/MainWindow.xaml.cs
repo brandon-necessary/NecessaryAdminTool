@@ -1320,6 +1320,11 @@ namespace NecessaryAdminTool
         public string Chassis { get; set; } = "Unknown";
         public string BitLocker { get; set; } = "Unknown";
         public string TPMEnabled { get; set; } = "Unknown";
+        public string Disk { get; set; } = "N/A";          // "X GB free / Y GB" from Win32_LogicalDisk
+        public string AV { get; set; } = "N/A";            // Antivirus product name from SecurityCenter2
+        public string AVStatus { get; set; } = "N/A";      // Antivirus productState from SecurityCenter2
+        public string Firewall { get; set; } = "N/A";      // Firewall product from SecurityCenter2
+        public string InstallDate { get; set; } = "N/A";   // OS install date from Win32_OperatingSystem
     }
 
     // ############################################################################
@@ -1866,6 +1871,22 @@ namespace NecessaryAdminTool
             private string _lastBoot; public string LastBoot { get => _lastBoot; set { _lastBoot = value; OnProp(); } }
             private string _os; public string OS { get => _os; set { _os = value; OnProp(); } }
             private string _tags; public string Tags { get => _tags; set { _tags = value; OnProp(); } }
+            private string _ipAddress; public string IPAddress { get => _ipAddress; set { _ipAddress = value; OnProp(); } }
+            private string _macAddress; public string MACAddress { get => _macAddress; set { _macAddress = value; OnProp(); } }
+            private string _manufacturer; public string Manufacturer { get => _manufacturer; set { _manufacturer = value; OnProp(); } }
+            private string _model; public string Model { get => _model; set { _model = value; OnProp(); } }
+            private string _serialNumber; public string SerialNumber { get => _serialNumber; set { _serialNumber = value; OnProp(); } }
+            private string _domain; public string Domain { get => _domain; set { _domain = value; OnProp(); } }
+            private int _ram_gb; public int RAM_GB { get => _ram_gb; set { _ram_gb = value; OnProp(); } }
+            private string _cpu; public string CPU { get => _cpu; set { _cpu = value; OnProp(); } }
+            private int _diskSize_gb; public int DiskSize_GB { get => _diskSize_gb; set { _diskSize_gb = value; OnProp(); } }
+            private int _diskFree_gb; public int DiskFree_GB { get => _diskFree_gb; set { _diskFree_gb = value; OnProp(); } }
+            private string _tpmStatus; public string TPMStatus { get => _tpmStatus; set { _tpmStatus = value; OnProp(); } }
+            private string _avProduct; public string AvProduct { get => _avProduct; set { _avProduct = value; OnProp(); } }
+            private string _avStatus; public string AvStatus { get => _avStatus; set { _avStatus = value; OnProp(); } }
+            private string _firewallStatus; public string FirewallStatus { get => _firewallStatus; set { _firewallStatus = value; OnProp(); } }
+            private long? _uptime; public long? Uptime { get => _uptime; set { _uptime = value; OnProp(); } }
+            private DateTime? _installDate; public DateTime? InstallDate { get => _installDate; set { _installDate = value; OnProp(); } }
         }
 
         // TAG: #DEPLOYMENT_RESULTS - Model for Master_Update_Log.csv rows (24 columns v2, shared schema for all 5 scripts)
@@ -2334,6 +2355,14 @@ namespace NecessaryAdminTool
             // TAG: #AUTO_UPDATE_UI_ENGINE #FILTER_SYSTEM - Initialize filter manager
             Managers.FilterManager.Initialize();
 
+            // TAG: #VERSION_7 #THEME_COLORS - Apply saved accent colors BEFORE any UI/dialogs are created
+            // Must run synchronously in constructor so LoginWindow picks up the correct theme
+            ApplySavedAccentColors();
+
+            // Load persisted dark/light mode
+            if (!Properties.Settings.Default.IsDarkMode)
+                ThemeManager.SetTheme(false, this);
+
             // TAG: #VERSION_7 #QUICK_WINS - Restore window state and apply settings
             // TAG: #DPI_FIX - Made async to allow DPI context to stabilize
             Loaded += async (s, e) => {
@@ -2345,13 +2374,6 @@ namespace NecessaryAdminTool
 
                 // Apply saved font size
                 ApplyFontSize();
-
-                // TAG: #VERSION_7 #THEME_COLORS - Apply saved accent colors
-                ApplySavedAccentColors();
-
-                // Load persisted dark/light mode
-                if (!Properties.Settings.Default.IsDarkMode)
-                    ThemeManager.SetTheme(false, this);
 
                 // Load recent targets
                 LoadRecentTargets();
@@ -4225,15 +4247,32 @@ namespace NecessaryAdminTool
 
                                             if (spec.Protocol != "FAILED" && spec.Protocol != "CACHED_FAILURE")
                                             {
-                                                pc.DisplayOS = spec.OS;
-                                                pc.OS = spec.OS; // For dashboard analytics
+                                                pc.DisplayOS      = spec.OS;
+                                                pc.OS             = spec.OS;
                                                 pc.WindowsVersion = spec.WindowsVersion;
-                                                pc.CurrentUser = spec.User;
-                                                pc.Chassis = spec.Chassis;
+                                                pc.CurrentUser    = spec.User;
+                                                pc.Chassis        = spec.Chassis;
                                                 pc.BitLockerStatus = spec.BitLocker;
-                                                pc.LastBoot = spec.LastBoot;
-                                                pc.Disk = spec.Drives != null && spec.Drives.Count > 0 ? string.Join(", ", spec.Drives) : "N/A";
-                                                pc.LastUpdate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                                                pc.LastBoot       = spec.LastBoot;
+                                                pc.Disk           = (spec.Disk != "N/A") ? spec.Disk
+                                                                    : (spec.Drives?.Count > 0 ? string.Join(", ", spec.Drives) : "N/A");
+                                                pc.IPAddress      = spec.IP;
+                                                pc.MACAddress     = spec.MAC;
+                                                pc.Manufacturer   = spec.Manufacturer;
+                                                pc.Model          = spec.Model;
+                                                pc.SerialNumber   = spec.Serial;
+                                                pc.Domain         = spec.Domain;
+                                                pc.CPU            = spec.CPU;
+                                                pc.RAM_GB         = ParseRAMGb(spec.RAM);
+                                                pc.DiskSize_GB    = ParseDiskTotal(spec.Disk);
+                                                pc.DiskFree_GB    = ParseDiskFree(spec.Disk);
+                                                pc.TPMStatus      = spec.TPMEnabled;
+                                                pc.AvProduct      = spec.AV;
+                                                pc.AvStatus       = spec.AVStatus;
+                                                pc.FirewallStatus = spec.Firewall;
+                                                pc.InstallDate    = ParseInstallDate(spec.InstallDate);
+                                                pc.Uptime         = CalculateUptimeSeconds(spec.LastBoot);
+                                                pc.LastUpdate     = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                                                 UpdateMasterInventoryFile(pc);
                                             }
 
@@ -4418,7 +4457,18 @@ namespace NecessaryAdminTool
                 MAC          = info.MACAddress ?? "N/A",
                 LastBoot     = info.LastBoot ?? "N/A",
                 TPMEnabled   = info.TPMStatus ?? "Unknown",
+                CPU          = info.Processor ?? "N/A",
+                BitLocker    = info.SecureBoot ?? "Unknown",
+                Disk         = FormatAgentDiskString(info.DiskTotalGB, info.DiskFreeGB),
             };
+        }
+
+        private static string FormatAgentDiskString(string totalGB, string freeGB)
+        {
+            if (string.IsNullOrEmpty(totalGB) || string.IsNullOrEmpty(freeGB)) return "N/A";
+            if (double.TryParse(totalGB, out double total) && double.TryParse(freeGB, out double free))
+                return $"{(int)free} GB free / {(int)total} GB";
+            return "N/A";
         }
 
         private async Task<HardwareSpec> GetSystemSpecsAsync(string hostname, string username, SecureString password, CancellationToken ct = default)
@@ -5412,14 +5462,14 @@ namespace NecessaryAdminTool
                             if (specs.Protocol == "FAILED" || specs.Protocol == "TIMEOUT") { TxtStatus.Text = specs.Protocol == "TIMEOUT" ? "TIMEOUT" : "ACCESS DENIED"; StatusDot.Fill = Brushes.Red; AddLog(hostname, "SCAN_FAIL", specs.Protocol, "FAIL"); HideBottomProgress("Scan Failed"); return; }
                             TxtStatus.Text = "ONLINE"; StatusDot.Fill = Brushes.Lime;
                             TxtServiceTag.Text = specs.Serial; TxtUser.Text = specs.User;
-                            TxtModel.Text = specs.Manufacturer != "N/A" ? $"Model: {specs.Manufacturer} {specs.Model}" : $"Model: {specs.Model}";
-                            TxtCPU.Text = specs.CPU; TxtCores.Text = $"Core Logic: {specs.Cores}"; TxtRAM.Text = $"RAM: {specs.RAM}";
+                            TxtModel.Text = specs.Manufacturer != "N/A" ? $"{specs.Manufacturer} {specs.Model}" : specs.Model;
+                            TxtCPU.Text = specs.CPU; TxtCores.Text = specs.Cores; TxtRAM.Text = specs.RAM;
 
                             // Show OS with colored version indicator
                             TxtOS.Text = $"{specs.OS} [{specs.WindowsVersion}]";
                             TxtOS.Foreground = GetWindowsVersionColor(specs.WindowsVersion);
 
-                            TxtUptime.Text = $"Uptime: {specs.Uptime}"; TxtBattery.Text = $"Power: {specs.Battery}";
+                            TxtUptime.Text = specs.Uptime; TxtBattery.Text = specs.Battery;
                             TxtIP1.Text = specs.IP; TxtMAC.Text = specs.MAC; TxtDNS.Text = specs.DNS;
                             _currentServiceTag = specs.Serial;
                             GridTools.IsEnabled = true; BtnPush.IsEnabled = _isDomainAdmin; BtnGP.IsEnabled = true; BtnReboot.IsEnabled = true;
@@ -9690,8 +9740,19 @@ if ($rebootPending) {
                 AppendTerminal($"[AD Browser] Loading Active Directory objects from {selectedDC}...");
                 Mouse.OverrideCursor = Cursors.Wait;
 
-                // Show the ADObjectBrowser control
-                ADObjectBrowserControl.Visibility = Visibility.Visible;
+                // Toggle scope panel — hide if already visible
+                if (ScopeSelectorPanel.Visibility == Visibility.Visible)
+                {
+                    ScopeSelectorPanel.Visibility = Visibility.Collapsed;
+                    Mouse.OverrideCursor = null;
+                    return;
+                }
+
+                // Subscribe to ScanRequested once (remove old handler first to avoid duplicates)
+                ADObjectBrowserControl.ScanRequested -= OnAdBrowserScanRequested;
+                ADObjectBrowserControl.ScanRequested += OnAdBrowserScanRequested;
+
+                ScopeSelectorPanel.Visibility = Visibility.Visible;
 
                 // Get selected AD query method
                 bool useActiveDirectoryManager = false;
@@ -9703,7 +9764,7 @@ if ($rebootPending) {
                 // Initialize it with the selected DC, credentials, and backend
                 await ADObjectBrowserControl.InitializeAsync(selectedDC, user, pass, useActiveDirectoryManager);
 
-                AppendTerminal("[AD Browser] Active Directory object tree loaded successfully");
+                AppendTerminal("[AD Browser] Active Directory scope selector loaded successfully");
                 Mouse.OverrideCursor = null;
             }
             catch (Exception ex)
@@ -9713,6 +9774,42 @@ if ($rebootPending) {
                 LogManager.LogError("AD Object Browser initialization failed", ex);
                 Managers.UI.ToastManager.ShowError($"Failed to load Active Directory objects:\n\n{ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Collapse the OU scope selector panel (✕ CLOSE button).
+        /// </summary>
+        private void BtnCloseScopePanel_Click(object sender, RoutedEventArgs e)
+        {
+            ScopeSelectorPanel.Visibility = Visibility.Collapsed;
+        }
+
+        /// <summary>
+        /// Handle ScanRequested from ADObjectBrowserControl.
+        /// Collapses the scope panel and kicks off a targeted fleet scan for the given hostnames.
+        /// TAG: #AD_FLEET_INVENTORY #SCAN_INTEGRATION
+        /// </summary>
+        private void OnAdBrowserScanRequested(object sender, List<string> hostnames)
+        {
+            ScopeSelectorPanel.Visibility = Visibility.Collapsed;
+
+            if (hostnames == null || hostnames.Count == 0) return;
+
+            LogManager.LogInfo($"[AD Browser] ScanRequested for {hostnames.Count} computers: {string.Join(", ", hostnames.Take(5))}{(hostnames.Count > 5 ? "..." : "")}");
+            AppendTerminal($"[AD Browser] Scan queued for {hostnames.Count} computer(s): {string.Join(", ", hostnames.Take(3))}{(hostnames.Count > 3 ? $" +{hostnames.Count - 3} more" : "")}");
+
+            // Seed the fleet grid with the selected hostnames so the user can see them
+            lock (_inventoryLock)
+            {
+                foreach (var hostname in hostnames)
+                {
+                    if (_inventory.All(pc => !string.Equals(pc.Hostname, hostname, StringComparison.OrdinalIgnoreCase)))
+                        _inventory.Add(new PCInventory { Hostname = hostname, Status = "Queued" });
+                }
+            }
+            CollectionViewSource.GetDefaultView(_inventory)?.Refresh();
+
+            Managers.UI.ToastManager.ShowInfo($"Scan queued for {hostnames.Count} computer(s). Click SCAN DOMAIN to start, or wait for background scan.");
         }
 
         /// <summary>
@@ -10136,13 +10233,32 @@ if ($rebootPending) {
                         {
                             var ci = new Data.ComputerInfo
                             {
-                                Hostname = pc.Hostname,
-                                Status = pc.Status,
-                                OS = pc.DisplayOS ?? pc.OS,
+                                Hostname         = pc.Hostname,
+                                Status           = pc.Status,
+                                OS               = pc.DisplayOS ?? pc.OS,
+                                OSVersion        = pc.WindowsVersion,
                                 LastLoggedOnUser = pc.CurrentUser,
-                                ChassisType = pc.Chassis,
-                                BitLockerStatus = pc.BitLockerStatus,
-                                LastSeen = DateTime.Now
+                                ChassisType      = pc.Chassis,
+                                BitLockerStatus  = pc.BitLockerStatus,
+                                IPAddress        = pc.IPAddress,
+                                MACAddress       = pc.MACAddress,
+                                Manufacturer     = pc.Manufacturer,
+                                Model            = pc.Model,
+                                SerialNumber     = pc.SerialNumber,
+                                Domain           = pc.Domain,
+                                RAM_GB           = pc.RAM_GB,
+                                CPU              = pc.CPU,
+                                DiskSize_GB      = pc.DiskSize_GB,
+                                DiskFree_GB      = pc.DiskFree_GB,
+                                TPMVersion       = pc.TPMStatus,
+                                AntivirusProduct = pc.AvProduct,
+                                AntivirusStatus  = pc.AvStatus,
+                                FirewallStatus   = pc.FirewallStatus,
+                                Uptime           = pc.Uptime,
+                                InstallDate      = pc.InstallDate ?? DateTime.MinValue,
+                                LastBootTime     = ParseLastBoot(pc.LastBoot),
+                                LastSeen         = DateTime.Now,
+                                RawDataJson      = SerializeToJson(pc)
                             };
                             await provider.SaveComputerAsync(ci).ConfigureAwait(false);
                             saved++;
@@ -10162,6 +10278,88 @@ if ($rebootPending) {
                 Managers.UI.ToastManager.ShowError($"Sync failed: {ex.Message}");
             }
         }
+
+        // ── Data parsing helpers used by BtnSyncDB_Click and fleet scan merge ───────────
+        private static int ParseRAMGb(string ram)
+        {
+            if (string.IsNullOrEmpty(ram) || ram == "N/A") return 0;
+            var m = System.Text.RegularExpressions.Regex.Match(ram, @"(\d+)");
+            return m.Success && int.TryParse(m.Groups[1].Value, out int gb) ? gb : 0;
+        }
+
+        private static int ParseDiskTotal(string disk)
+        {
+            // "799 GB free / 931 GB" → 931
+            if (string.IsNullOrEmpty(disk) || disk == "N/A") return 0;
+            var m = System.Text.RegularExpressions.Regex.Match(disk, @"/\s*(\d+)\s*GB", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            return m.Success && int.TryParse(m.Groups[1].Value, out int gb) ? gb : 0;
+        }
+
+        private static int ParseDiskFree(string disk)
+        {
+            // "799 GB free / 931 GB" → 799
+            if (string.IsNullOrEmpty(disk) || disk == "N/A") return 0;
+            var m = System.Text.RegularExpressions.Regex.Match(disk, @"^(\d+)\s*GB", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            return m.Success && int.TryParse(m.Groups[1].Value, out int gb) ? gb : 0;
+        }
+
+        private static long? CalculateUptimeSeconds(string lastBoot)
+        {
+            if (string.IsNullOrEmpty(lastBoot) || lastBoot == "N/A") return null;
+            if (DateTime.TryParse(lastBoot, out DateTime boot))
+                return (long)(DateTime.Now - boot).TotalSeconds;
+            return null;
+        }
+
+        private static DateTime? ParseInstallDate(string installDate)
+        {
+            if (string.IsNullOrEmpty(installDate) || installDate == "N/A") return null;
+            return DateTime.TryParse(installDate, out DateTime dt) ? (DateTime?)dt : null;
+        }
+
+        private static string SerializeToJson(PCInventory pc)
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.Append("{");
+            sb.Append($"\"Hostname\":\"{EscapeJson(pc.Hostname)}\",");
+            sb.Append($"\"Status\":\"{EscapeJson(pc.Status)}\",");
+            sb.Append($"\"OS\":\"{EscapeJson(pc.DisplayOS ?? pc.OS)}\",");
+            sb.Append($"\"WindowsVersion\":\"{EscapeJson(pc.WindowsVersion)}\",");
+            sb.Append($"\"CurrentUser\":\"{EscapeJson(pc.CurrentUser)}\",");
+            sb.Append($"\"IPAddress\":\"{EscapeJson(pc.IPAddress)}\",");
+            sb.Append($"\"MACAddress\":\"{EscapeJson(pc.MACAddress)}\",");
+            sb.Append($"\"Manufacturer\":\"{EscapeJson(pc.Manufacturer)}\",");
+            sb.Append($"\"Model\":\"{EscapeJson(pc.Model)}\",");
+            sb.Append($"\"SerialNumber\":\"{EscapeJson(pc.SerialNumber)}\",");
+            sb.Append($"\"CPU\":\"{EscapeJson(pc.CPU)}\",");
+            sb.Append($"\"RAM_GB\":{pc.RAM_GB},");
+            sb.Append($"\"DiskSize_GB\":{pc.DiskSize_GB},");
+            sb.Append($"\"DiskFree_GB\":{pc.DiskFree_GB},");
+            sb.Append($"\"TPMStatus\":\"{EscapeJson(pc.TPMStatus)}\",");
+            sb.Append($"\"AvProduct\":\"{EscapeJson(pc.AvProduct)}\",");
+            sb.Append($"\"AvStatus\":\"{EscapeJson(pc.AvStatus)}\",");
+            sb.Append($"\"FirewallStatus\":\"{EscapeJson(pc.FirewallStatus)}\",");
+            sb.Append($"\"BitLockerStatus\":\"{EscapeJson(pc.BitLockerStatus)}\",");
+            sb.Append($"\"LastBoot\":\"{EscapeJson(pc.LastBoot)}\"");
+            sb.Append("}");
+            return sb.ToString();
+        }
+
+        private static string FormatUptimeSeconds(long? seconds)
+        {
+            if (!seconds.HasValue || seconds.Value <= 0) return "--";
+            var ts = TimeSpan.FromSeconds(seconds.Value);
+            if (ts.TotalDays >= 1) return $"{(int)ts.TotalDays}d {ts.Hours}h {ts.Minutes}m";
+            if (ts.TotalHours >= 1) return $"{ts.Hours}h {ts.Minutes}m";
+            return $"{ts.Minutes}m";
+        }
+
+        private static string EscapeJson(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return "";
+            return s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "\\r").Replace("\n", "\\n");
+        }
+
         private void BtnWarranty_Click(object sender, RoutedEventArgs e) { if (!string.IsNullOrEmpty(_currentServiceTag) && _currentServiceTag != "N/A") try { Process.Start(new ProcessStartInfo($"https://www.dell.com/support/home/en-us/product-support/servicetag/{_currentServiceTag}/overview") { UseShellExecute = true }); } catch { } }
         private void BtnWOL_Click(object sender, RoutedEventArgs e)
         {
@@ -18196,13 +18394,41 @@ if ($rebootPending) {
             try
             {
                 TxtDetailHostname.Text = pc.Hostname ?? "Unknown";
-                TxtDetailOS.Text = pc.DisplayOS ?? pc.OS ?? "--";
-                TxtDetailHardware.Text = pc.Chassis ?? "--";
-                TxtDetailNetwork.Text = "--";
-                TxtDetailUser.Text = pc.CurrentUser ?? "--";
-                TxtDetailDisk.Text = pc.Disk ?? "--";
-                TxtDetailStatus.Text = pc.Status ?? "--";
+
+                // System
+                TxtDetailOS.Text       = pc.DisplayOS ?? pc.OS ?? "--";
+                TxtDetailStatus.Text   = pc.Status ?? "--";
+                TxtDetailInstallDate.Text = pc.InstallDate.HasValue
+                    ? pc.InstallDate.Value.ToString("yyyy-MM-dd") : "--";
                 TxtDetailLastBoot.Text = pc.LastBoot ?? "--";
+                TxtDetailUptime.Text   = FormatUptimeSeconds(pc.Uptime);
+
+                // Hardware
+                var makeModel = string.Join(" ", new[] { pc.Manufacturer, pc.Model }
+                    .Where(s => !string.IsNullOrEmpty(s) && s != "N/A")).Trim();
+                TxtDetailMakeModel.Text = string.IsNullOrEmpty(makeModel) ? "--" : makeModel;
+                TxtDetailSerial.Text   = (pc.SerialNumber is string s && s.Length > 0 && s != "N/A") ? s : "--";
+                TxtDetailHardware.Text = pc.Chassis ?? "--";
+                TxtDetailCPU.Text      = (pc.CPU is string c && c.Length > 0 && c != "N/A") ? c : "--";
+                TxtDetailRAM.Text      = pc.RAM_GB > 0 ? $"{pc.RAM_GB} GB" : "--";
+                TxtDetailDisk.Text     = (pc.Disk is string d && d.Length > 0 && d != "N/A")
+                    ? pc.Disk : (pc.DiskFree_GB > 0 ? $"{pc.DiskFree_GB} GB free / {pc.DiskSize_GB} GB" : "--");
+
+                // Network
+                TxtDetailIP.Text      = (pc.IPAddress is string ip && ip.Length > 0 && ip != "N/A") ? ip : "--";
+                TxtDetailNetwork.Text = (pc.MACAddress is string mac && mac.Length > 0 && mac != "N/A") ? mac : "--";
+                TxtDetailDomain.Text  = (pc.Domain is string dom && dom.Length > 0 && dom != "N/A") ? dom : "--";
+
+                // Security
+                TxtDetailBitLocker.Text = pc.BitLockerStatus ?? "--";
+                TxtDetailTPM.Text       = (pc.TPMStatus is string tpm && tpm.Length > 0 && tpm != "N/A") ? tpm : "--";
+                TxtDetailAV.Text        = (pc.AvProduct is string av && av.Length > 0 && av != "N/A")
+                    ? (string.IsNullOrEmpty(pc.AvStatus) || pc.AvStatus == "N/A" ? av : $"{av}  ({pc.AvStatus})")
+                    : "--";
+                TxtDetailFirewall.Text  = (pc.FirewallStatus is string fw && fw.Length > 0 && fw != "N/A") ? fw : "--";
+
+                // User
+                TxtDetailUser.Text = pc.CurrentUser ?? "--";
 
                 // Animate drawer open
                 var animation = new GridLengthAnimation

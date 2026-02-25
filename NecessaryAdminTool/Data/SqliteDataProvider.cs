@@ -47,6 +47,9 @@ namespace NecessaryAdminTool.Data
                 // Create schema
                 await CreateSchemaAsync(conn);
 
+                // Migrate existing databases — add new columns if missing (SQLite throws on duplicate ADD COLUMN)
+                await MigrateSchemaAsync(conn);
+
                 LogManager.LogInfo("SQLite database initialized with encryption");
             }
             #else
@@ -63,16 +66,34 @@ namespace NecessaryAdminTool.Data
                 CREATE TABLE IF NOT EXISTS Computers (
                     Hostname TEXT PRIMARY KEY,
                     OS TEXT,
+                    OSVersion TEXT,
                     LastSeen DATETIME,
                     Status TEXT,
                     IPAddress TEXT,
+                    MACAddress TEXT,
                     Manufacturer TEXT,
                     Model TEXT,
                     SerialNumber TEXT,
+                    AssetTag TEXT,
                     ChassisType TEXT,
                     LastBootTime DATETIME,
+                    InstallDate DATETIME,
                     Uptime INTEGER,
+                    Domain TEXT,
                     DomainController TEXT,
+                    LastLoggedOnUser TEXT,
+                    RAM_GB INTEGER,
+                    CPU TEXT,
+                    DiskSize_GB INTEGER,
+                    DiskFree_GB INTEGER,
+                    BitLockerStatus TEXT,
+                    TPMVersion TEXT,
+                    AntivirusProduct TEXT,
+                    AntivirusStatus TEXT,
+                    FirewallStatus TEXT,
+                    PendingRebootCount INTEGER,
+                    LastPatchDate DATETIME,
+                    Notes TEXT,
                     RawDataJson TEXT
                 );
 
@@ -132,6 +153,48 @@ namespace NecessaryAdminTool.Data
             {
                 cmd.CommandText = schema;
                 await cmd.ExecuteNonQueryAsync();
+            }
+            #else
+            await Task.CompletedTask;
+            #endif
+        }
+
+        private static readonly string[] _migrationColumns = new[]
+        {
+            "ADD COLUMN OSVersion TEXT",
+            "ADD COLUMN MACAddress TEXT",
+            "ADD COLUMN AssetTag TEXT",
+            "ADD COLUMN InstallDate DATETIME",
+            "ADD COLUMN Domain TEXT",
+            "ADD COLUMN LastLoggedOnUser TEXT",
+            "ADD COLUMN RAM_GB INTEGER",
+            "ADD COLUMN CPU TEXT",
+            "ADD COLUMN DiskSize_GB INTEGER",
+            "ADD COLUMN DiskFree_GB INTEGER",
+            "ADD COLUMN BitLockerStatus TEXT",
+            "ADD COLUMN TPMVersion TEXT",
+            "ADD COLUMN AntivirusProduct TEXT",
+            "ADD COLUMN AntivirusStatus TEXT",
+            "ADD COLUMN FirewallStatus TEXT",
+            "ADD COLUMN PendingRebootCount INTEGER",
+            "ADD COLUMN LastPatchDate DATETIME",
+            "ADD COLUMN Notes TEXT",
+        };
+
+        private async Task MigrateSchemaAsync(dynamic conn)
+        {
+            #if SQLITE_ENABLED
+            foreach (var col in _migrationColumns)
+            {
+                try
+                {
+                    using (var cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = $"ALTER TABLE Computers {col}";
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+                }
+                catch { /* Column already exists — SQLite throws on duplicate ALTER */ }
             }
             #else
             await Task.CompletedTask;
@@ -202,24 +265,51 @@ namespace NecessaryAdminTool.Data
                 {
                     cmd.CommandText = @"
                         INSERT OR REPLACE INTO Computers
-                        (Hostname, OS, LastSeen, Status, IPAddress, Manufacturer, Model, SerialNumber,
-                         ChassisType, LastBootTime, Uptime, DomainController, RawDataJson)
-                        VALUES (@hostname, @os, @lastseen, @status, @ip, @mfg, @model, @serial,
-                                @chassis, @boot, @uptime, @dc, @json)";
+                        (Hostname, OS, OSVersion, LastSeen, Status, IPAddress, MACAddress,
+                         Manufacturer, Model, SerialNumber, AssetTag, ChassisType,
+                         LastBootTime, InstallDate, Uptime, Domain, DomainController,
+                         LastLoggedOnUser, RAM_GB, CPU, DiskSize_GB, DiskFree_GB,
+                         BitLockerStatus, TPMVersion, AntivirusProduct, AntivirusStatus,
+                         FirewallStatus, PendingRebootCount, LastPatchDate, Notes, RawDataJson)
+                        VALUES
+                        (@hostname, @os, @osver, @lastseen, @status, @ip, @mac,
+                         @mfg, @model, @serial, @assettag, @chassis,
+                         @boot, @installdate, @uptime, @domain, @dc,
+                         @user, @ram, @cpu, @disksize, @diskfree,
+                         @bitlocker, @tpm, @av, @avstatus,
+                         @firewall, @reboot, @patchdate, @notes, @json)";
 
-                    cmd.Parameters.AddWithValue("@hostname", computer.Hostname);
-                    cmd.Parameters.AddWithValue("@os", computer.OS ?? "");
-                    cmd.Parameters.AddWithValue("@lastseen", DateTime.Now);
-                    cmd.Parameters.AddWithValue("@status", computer.Status ?? "");
-                    cmd.Parameters.AddWithValue("@ip", computer.IPAddress ?? "");
-                    cmd.Parameters.AddWithValue("@mfg", computer.Manufacturer ?? "");
-                    cmd.Parameters.AddWithValue("@model", computer.Model ?? "");
-                    cmd.Parameters.AddWithValue("@serial", computer.SerialNumber ?? "");
-                    cmd.Parameters.AddWithValue("@chassis", computer.ChassisType ?? "");
-                    cmd.Parameters.AddWithValue("@boot", computer.LastBootTime ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@uptime", computer.Uptime ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@dc", computer.DomainController ?? "");
-                    cmd.Parameters.AddWithValue("@json", computer.RawDataJson ?? "");
+                    cmd.Parameters.AddWithValue("@hostname",    computer.Hostname ?? "");
+                    cmd.Parameters.AddWithValue("@os",          computer.OS ?? "");
+                    cmd.Parameters.AddWithValue("@osver",       computer.OSVersion ?? "");
+                    cmd.Parameters.AddWithValue("@lastseen",    DateTime.Now);
+                    cmd.Parameters.AddWithValue("@status",      computer.Status ?? "");
+                    cmd.Parameters.AddWithValue("@ip",          computer.IPAddress ?? "");
+                    cmd.Parameters.AddWithValue("@mac",         computer.MACAddress ?? "");
+                    cmd.Parameters.AddWithValue("@mfg",         computer.Manufacturer ?? "");
+                    cmd.Parameters.AddWithValue("@model",       computer.Model ?? "");
+                    cmd.Parameters.AddWithValue("@serial",      computer.SerialNumber ?? "");
+                    cmd.Parameters.AddWithValue("@assettag",    computer.AssetTag ?? "");
+                    cmd.Parameters.AddWithValue("@chassis",     computer.ChassisType ?? "");
+                    cmd.Parameters.AddWithValue("@boot",        computer.LastBootTime ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@installdate", computer.InstallDate != DateTime.MinValue ? (object)computer.InstallDate : DBNull.Value);
+                    cmd.Parameters.AddWithValue("@uptime",      computer.Uptime ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@domain",      computer.Domain ?? "");
+                    cmd.Parameters.AddWithValue("@dc",          computer.DomainController ?? "");
+                    cmd.Parameters.AddWithValue("@user",        computer.LastLoggedOnUser ?? "");
+                    cmd.Parameters.AddWithValue("@ram",         computer.RAM_GB);
+                    cmd.Parameters.AddWithValue("@cpu",         computer.CPU ?? "");
+                    cmd.Parameters.AddWithValue("@disksize",    computer.DiskSize_GB);
+                    cmd.Parameters.AddWithValue("@diskfree",    computer.DiskFree_GB);
+                    cmd.Parameters.AddWithValue("@bitlocker",   computer.BitLockerStatus ?? "");
+                    cmd.Parameters.AddWithValue("@tpm",         computer.TPMVersion ?? "");
+                    cmd.Parameters.AddWithValue("@av",          computer.AntivirusProduct ?? "");
+                    cmd.Parameters.AddWithValue("@avstatus",    computer.AntivirusStatus ?? "");
+                    cmd.Parameters.AddWithValue("@firewall",    computer.FirewallStatus ?? "");
+                    cmd.Parameters.AddWithValue("@reboot",      computer.PendingRebootCount);
+                    cmd.Parameters.AddWithValue("@patchdate",   computer.LastPatchDate != DateTime.MinValue ? (object)computer.LastPatchDate : DBNull.Value);
+                    cmd.Parameters.AddWithValue("@notes",       computer.Notes ?? "");
+                    cmd.Parameters.AddWithValue("@json",        computer.RawDataJson ?? "");
 
                     await cmd.ExecuteNonQueryAsync();
                 }
@@ -282,23 +372,58 @@ namespace NecessaryAdminTool.Data
         }
 
         #if SQLITE_ENABLED
+        private static string SafeStr(IDataReader r, string col)
+        {
+            try { var o = r[col]; return o == DBNull.Value ? null : o?.ToString(); } catch { return null; }
+        }
+        private static int SafeInt(IDataReader r, string col)
+        {
+            try { var o = r[col]; return o != DBNull.Value ? Convert.ToInt32(o) : 0; } catch { return 0; }
+        }
+        private static long? SafeLong(IDataReader r, string col)
+        {
+            try { var o = r[col]; return o != DBNull.Value ? (long?)Convert.ToInt64(o) : null; } catch { return null; }
+        }
+        private static DateTime? SafeDate(IDataReader r, string col)
+        {
+            try { var o = r[col]; return o != DBNull.Value ? (DateTime?)Convert.ToDateTime(o) : null; } catch { return null; }
+        }
+
         private ComputerInfo ReadComputerInfo(IDataReader reader)
         {
             return new ComputerInfo
             {
-                Hostname = reader["Hostname"]?.ToString(),
-                OS = reader["OS"]?.ToString(),
-                LastSeen = reader["LastSeen"] != DBNull.Value ? Convert.ToDateTime(reader["LastSeen"]) : DateTime.MinValue,
-                Status = reader["Status"]?.ToString(),
-                IPAddress = reader["IPAddress"]?.ToString(),
-                Manufacturer = reader["Manufacturer"]?.ToString(),
-                Model = reader["Model"]?.ToString(),
-                SerialNumber = reader["SerialNumber"]?.ToString(),
-                ChassisType = reader["ChassisType"]?.ToString(),
-                LastBootTime = reader["LastBootTime"] != DBNull.Value ? (DateTime?)Convert.ToDateTime(reader["LastBootTime"]) : null,
-                Uptime = reader["Uptime"] != DBNull.Value ? (long?)Convert.ToInt64(reader["Uptime"]) : null,
-                DomainController = reader["DomainController"]?.ToString(),
-                RawDataJson = reader["RawDataJson"]?.ToString()
+                Hostname         = SafeStr(reader, "Hostname"),
+                OS               = SafeStr(reader, "OS"),
+                OSVersion        = SafeStr(reader, "OSVersion"),
+                LastSeen         = SafeDate(reader, "LastSeen") ?? DateTime.MinValue,
+                Status           = SafeStr(reader, "Status"),
+                IPAddress        = SafeStr(reader, "IPAddress"),
+                MACAddress       = SafeStr(reader, "MACAddress"),
+                Manufacturer     = SafeStr(reader, "Manufacturer"),
+                Model            = SafeStr(reader, "Model"),
+                SerialNumber     = SafeStr(reader, "SerialNumber"),
+                AssetTag         = SafeStr(reader, "AssetTag"),
+                ChassisType      = SafeStr(reader, "ChassisType"),
+                LastBootTime     = SafeDate(reader, "LastBootTime"),
+                InstallDate      = SafeDate(reader, "InstallDate") ?? DateTime.MinValue,
+                Uptime           = SafeLong(reader, "Uptime"),
+                Domain           = SafeStr(reader, "Domain"),
+                DomainController = SafeStr(reader, "DomainController"),
+                LastLoggedOnUser = SafeStr(reader, "LastLoggedOnUser"),
+                RAM_GB           = SafeInt(reader, "RAM_GB"),
+                CPU              = SafeStr(reader, "CPU"),
+                DiskSize_GB      = SafeInt(reader, "DiskSize_GB"),
+                DiskFree_GB      = SafeInt(reader, "DiskFree_GB"),
+                BitLockerStatus  = SafeStr(reader, "BitLockerStatus"),
+                TPMVersion       = SafeStr(reader, "TPMVersion"),
+                AntivirusProduct = SafeStr(reader, "AntivirusProduct"),
+                AntivirusStatus  = SafeStr(reader, "AntivirusStatus"),
+                FirewallStatus   = SafeStr(reader, "FirewallStatus"),
+                PendingRebootCount = SafeInt(reader, "PendingRebootCount"),
+                LastPatchDate    = SafeDate(reader, "LastPatchDate") ?? DateTime.MinValue,
+                Notes            = SafeStr(reader, "Notes"),
+                RawDataJson      = SafeStr(reader, "RawDataJson"),
             };
         }
         #endif

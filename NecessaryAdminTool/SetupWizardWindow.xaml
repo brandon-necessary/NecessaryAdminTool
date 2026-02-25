@@ -66,7 +66,7 @@
                     <RadioButton x:Name="RbCsv" Content="CSV/JSON (Fallback)"
                                  Foreground="White" FontSize="15" Margin="0,8"/>
                     <TextBlock Text="   • Human-readable, portable" Foreground="{DynamicResource AccentZincBrush}" Margin="25,0,0,5"/>
-                    <TextBlock Text="   • Limited performance (~10,000 computers)" Foreground="{DynamicResource AccentZincBrush}" Margin="25,0,0,20"/>
+                    <TextBlock Text="   • Limited performance (~10,000 computers)" Foreground="{DynamicResource AccentZincBrush}" Margin="25,0,0,15"/>
 
                     <!-- Database Location -->
                     <TextBlock Text="2. Database Location:" FontSize="18" FontWeight="SemiBold"
@@ -95,7 +95,7 @@
                     </Grid>
 
                     <!-- Service Installation - TAG: #BACKGROUND_SERVICE #SCHEDULED_TASK #SETUP_WIZARD -->
-                    <Border Background="#22FF8533" BorderBrush="{DynamicResource AccentOrangeBrush}"
+                    <Border Background="{DynamicResource AccentPrimarySemiBrush}" BorderBrush="{DynamicResource AccentOrangeBrush}"
                             BorderThickness="1" CornerRadius="8" Padding="20,15" Margin="0,25,0,0">
                         <StackPanel>
                             <TextBlock Text="3. Background Service (Recommended):" FontSize="18" FontWeight="SemiBold"
@@ -107,16 +107,16 @@
                                       Margin="0,0,0,10"/>
 
                             <TextBlock Text="What this does:" Foreground="White" FontWeight="SemiBold" FontSize="12" Margin="0,5,0,5"/>
-                            <TextBlock Foreground="#FFCCCCCC" Margin="20,0,0,5" TextWrapping="Wrap">
+                            <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" Margin="20,0,0,5" TextWrapping="Wrap">
                                 <Run Text="• Automatically scans all domain computers at scheduled intervals"/>
                             </TextBlock>
-                            <TextBlock Foreground="#FFCCCCCC" Margin="20,0,0,5" TextWrapping="Wrap">
+                            <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" Margin="20,0,0,5" TextWrapping="Wrap">
                                 <Run Text="• Keeps your inventory up-to-date without manual intervention"/>
                             </TextBlock>
-                            <TextBlock Foreground="#FFCCCCCC" Margin="20,0,0,5" TextWrapping="Wrap">
+                            <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" Margin="20,0,0,5" TextWrapping="Wrap">
                                 <Run Text="• Creates Windows Scheduled Task (no Windows Service required)"/>
                             </TextBlock>
-                            <TextBlock Foreground="#FFCCCCCC" Margin="20,0,0,10" TextWrapping="Wrap">
+                            <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" Margin="20,0,0,10" TextWrapping="Wrap">
                                 <Run Text="• Can be changed anytime in Options → Background Service"/>
                             </TextBlock>
 
@@ -192,7 +192,7 @@
                     <!-- Bottom row - Version badge (DEBUG super menu trigger) -->
                     <!-- TAG: #VERSION_DISPLAY #DEBUG_BYPASS #SUPERADMIN #THEME_COLORS -->
                     <Border Grid.Row="1" Margin="0,15,0,0" HorizontalAlignment="Left">
-                        <Border Background="#FF1A1A1A"
+                        <Border Background="{DynamicResource BgCardBrush}"
                                 BorderThickness="1"
                                 CornerRadius="3"
                                 Padding="6,2"

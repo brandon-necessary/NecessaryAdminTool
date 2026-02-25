@@ -1403,13 +1403,35 @@
                                     <!-- HARDWARE & OS -->
                                     <TextBlock Text="HARDWARE &amp; OS" Foreground="#FFFF6B00"
                                                FontSize="12" FontWeight="Bold" Margin="0,0,0,8"/>
-                                    <TextBlock x:Name="TxtModel" Text="Model: --" Foreground="White" FontSize="13" FontWeight="Bold"/>
-                                    <TextBlock x:Name="TxtBattery" Text="Power: --" Foreground="{StaticResource AccentGreenBrush}" FontSize="12"/>
-                                    <TextBlock x:Name="TxtCores" Text="Core Logic: --" Foreground="{DynamicResource TextMutedBrush}" FontSize="11"/>
-                                    <TextBlock x:Name="TxtCPU" Text="--" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11"/>
-                                    <TextBlock x:Name="TxtRAM" Text="RAM: --" Foreground="White" FontSize="13" FontWeight="Bold" Margin="0,4,0,6"/>
-                                    <TextBlock x:Name="TxtOS" Text="--" Foreground="White" FontSize="13" FontWeight="Bold"/>
-                                    <TextBlock x:Name="TxtUptime" Text="Uptime: --" Foreground="{StaticResource AccentGreenBrush}" FontSize="12" Margin="0,0,0,16"/>
+                                    <Grid Margin="0,0,0,16">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="76"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition/>
+                                            <RowDefinition/>
+                                            <RowDefinition/>
+                                            <RowDefinition/>
+                                            <RowDefinition/>
+                                            <RowDefinition/>
+                                            <RowDefinition/>
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Model:" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
+                                        <TextBlock x:Name="TxtModel" Grid.Row="0" Grid.Column="1" Text="--" Foreground="White" FontSize="12" FontWeight="Bold" TextWrapping="Wrap"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="CPU:" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,3,0,0"/>
+                                        <TextBlock x:Name="TxtCPU" Grid.Row="1" Grid.Column="1" Text="--" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,3,0,0" TextWrapping="Wrap"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Cores:" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,3,0,0"/>
+                                        <TextBlock x:Name="TxtCores" Grid.Row="2" Grid.Column="1" Text="--" Foreground="{DynamicResource TextMutedBrush}" FontSize="12" Margin="0,3,0,0"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="0" Text="RAM:" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,3,0,0"/>
+                                        <TextBlock x:Name="TxtRAM" Grid.Row="3" Grid.Column="1" Text="--" Foreground="White" FontSize="12" FontWeight="Bold" Margin="0,3,0,0"/>
+                                        <TextBlock Grid.Row="4" Grid.Column="0" Text="OS:" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,3,0,0"/>
+                                        <TextBlock x:Name="TxtOS" Grid.Row="4" Grid.Column="1" Text="--" Foreground="White" FontSize="12" FontWeight="Bold" Margin="0,3,0,0" TextWrapping="Wrap"/>
+                                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Uptime:" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,3,0,0"/>
+                                        <TextBlock x:Name="TxtUptime" Grid.Row="5" Grid.Column="1" Text="--" Foreground="{StaticResource AccentGreenBrush}" FontSize="12" Margin="0,3,0,0"/>
+                                        <TextBlock Grid.Row="6" Grid.Column="0" Text="Power:" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,3,0,0"/>
+                                        <TextBlock x:Name="TxtBattery" Grid.Row="6" Grid.Column="1" Text="--" Foreground="{StaticResource AccentGreenBrush}" FontSize="12" Margin="0,3,0,0"/>
+                                    </Grid>
 
                                     <!-- LOCAL STORAGE -->
                                     <TextBlock Text="LOCAL STORAGE" Foreground="#FFFF6B00"
@@ -1802,14 +1824,18 @@
                                                         <Setter.Value>
                                                             <ControlTemplate TargetType="ComboBoxItem">
                                                                 <Grid>
-                                                                    <Border Name="Border" Background="{TemplateBinding Background}"
-                                                                            Padding="{TemplateBinding Padding}" CornerRadius="3" Margin="2">
-                                                                        <ContentPresenter/>
-                                                                    </Border>
+                                                                    <!-- Background (no content) — behind overlays -->
+                                                                    <Border Name="Bg" Background="{TemplateBinding Background}"
+                                                                            CornerRadius="3" Margin="2"/>
                                                                     <Border Name="highlightOverlay" CornerRadius="3" Margin="2" Opacity="0"
                                                                             Background="{DynamicResource AccentGradientBrush}"/>
                                                                     <Border Name="selectionOverlay" CornerRadius="3" Margin="2" Opacity="0"
                                                                             Background="{DynamicResource AccentOrangeBrush}"/>
+                                                                    <!-- Content (transparent — always on top of overlays) -->
+                                                                    <Border Name="Border" Background="Transparent"
+                                                                            Padding="{TemplateBinding Padding}" CornerRadius="3" Margin="2">
+                                                                        <ContentPresenter/>
+                                                                    </Border>
                                                                 </Grid>
                                                                 <ControlTemplate.Triggers>
                                                                     <Trigger Property="IsHighlighted" Value="True">
@@ -1884,9 +1910,36 @@
                             </Grid>
                         </Border>
 
-                        <!-- AD Object Browser (RSAT ADUC-like interface) -->
-                        <local:ADObjectBrowser x:Name="ADObjectBrowserControl" DockPanel.Dock="Top"
-                                               Margin="0,0,0,15" Height="400" Visibility="Collapsed"/>
+                        <!-- OU Scope Selector — collapsible, max 280px, replaces fixed 400px browser -->
+                        <!-- Toggled by BtnLoadADObjects; BtnCloseScopePanel collapses it -->
+                        <Border x:Name="ScopeSelectorPanel" DockPanel.Dock="Top" Margin="0,0,0,10"
+                                Background="#FF1E1E1E" BorderBrush="{DynamicResource AccentGradientBrush}"
+                                BorderThickness="1" CornerRadius="8" Visibility="Collapsed" MaxHeight="280">
+                            <DockPanel>
+                                <!-- Header strip -->
+                                <Border DockPanel.Dock="Top" Background="#FF252525" Padding="12,7"
+                                        BorderBrush="#FF3C3C3C" BorderThickness="0,0,0,1">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="📂 OU SCOPE SELECTOR" Foreground="{DynamicResource AccentOrangeBrush}"
+                                                       FontSize="11" FontWeight="Bold"/>
+                                            <TextBlock Text="  —  Select a container, choose computers, then click SCAN SELECTED"
+                                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="10" Margin="8,0,0,0"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" x:Name="BtnCloseScopePanel" Content="✕ CLOSE"
+                                                Click="BtnCloseScopePanel_Click"
+                                                Style="{StaticResource BtnGhost}" Padding="10,4" FontSize="9"/>
+                                    </Grid>
+                                </Border>
+                                <!-- Browser control fills remaining height -->
+                                <local:ADObjectBrowser x:Name="ADObjectBrowserControl" ShowScanButton="True"/>
+                            </DockPanel>
+                        </Border>
 
                         <!-- Toolbar -->
                         <Border DockPanel.Dock="Top" Margin="0,0,0,10">
@@ -2094,6 +2147,16 @@
 
                                 <DataGridTextColumn Header="Chassis" Binding="{Binding Chassis}" Width="80"/>
                                 <DataGridTextColumn Header="BitLocker" Binding="{Binding BitLockerStatus}" Width="80"/>
+                                <DataGridTextColumn Header="IP Address" Binding="{Binding IPAddress}" Width="110" x:Name="ColIPAddress"/>
+                                <!-- Hidden columns — toggle via context menu or settings -->
+                                <DataGridTextColumn Header="CPU" Binding="{Binding CPU}" Width="160" Visibility="Collapsed" x:Name="ColCPU"/>
+                                <DataGridTextColumn Header="RAM" Binding="{Binding RAM_GB, StringFormat='{}{0} GB'}" Width="65" Visibility="Collapsed" x:Name="ColRAM"/>
+                                <DataGridTextColumn Header="Manufacturer" Binding="{Binding Manufacturer}" Width="110" Visibility="Collapsed" x:Name="ColManufacturer"/>
+                                <DataGridTextColumn Header="Model" Binding="{Binding Model}" Width="130" Visibility="Collapsed" x:Name="ColModel"/>
+                                <DataGridTextColumn Header="Serial" Binding="{Binding SerialNumber}" Width="110" Visibility="Collapsed" x:Name="ColSerial"/>
+                                <DataGridTextColumn Header="Domain" Binding="{Binding Domain}" Width="110" Visibility="Collapsed" x:Name="ColDomain"/>
+                                <DataGridTextColumn Header="TPM" Binding="{Binding TPMStatus}" Width="80" Visibility="Collapsed" x:Name="ColTPM"/>
+                                <DataGridTextColumn Header="Antivirus" Binding="{Binding AvProduct}" Width="130" Visibility="Collapsed" x:Name="ColAV"/>
 
                                 <!-- TAG: #AUTO_UPDATE_UI_ENGINE #HOVER_ACTIONS - Quick action buttons on row hover -->
                                 <DataGridTemplateColumn Header="" Width="120" CanUserResize="False" CanUserSort="False">
@@ -2366,47 +2429,119 @@
                             <!-- Details content -->
                             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="12">
                                 <StackPanel x:Name="DetailContent">
-                                    <!-- OS Section -->
-                                    <TextBlock Text="OPERATING SYSTEM" FontSize="9" FontWeight="Bold"
-                                               Foreground="#FF6B7280" Margin="0,0,0,4"/>
-                                    <TextBlock x:Name="TxtDetailOS" Text="--" FontSize="11" Foreground="White"
-                                               TextWrapping="Wrap" Margin="0,0,0,12"/>
 
-                                    <!-- Hardware Section -->
+                                    <!-- ── SYSTEM ──────────────────────────────── -->
+                                    <TextBlock Text="SYSTEM" FontSize="9" FontWeight="Bold"
+                                               Foreground="{DynamicResource AccentOrangeBrush}" Margin="0,0,0,6"/>
+                                    <Grid Margin="0,0,0,3">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="76"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="OS" FontSize="10" Foreground="#FF6B7280" VerticalAlignment="Top"/>
+                                        <TextBlock x:Name="TxtDetailOS" Grid.Column="1" Text="--" FontSize="10" Foreground="White" TextWrapping="Wrap"/>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,3">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="76"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Status" FontSize="10" Foreground="#FF6B7280"/>
+                                        <TextBlock x:Name="TxtDetailStatus" Grid.Column="1" Text="--" FontSize="10" Foreground="White"/>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,3">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="76"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Installed" FontSize="10" Foreground="#FF6B7280"/>
+                                        <TextBlock x:Name="TxtDetailInstallDate" Grid.Column="1" Text="--" FontSize="10" Foreground="White"/>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,3">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="76"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Last Boot" FontSize="10" Foreground="#FF6B7280"/>
+                                        <TextBlock x:Name="TxtDetailLastBoot" Grid.Column="1" Text="--" FontSize="10" Foreground="White"/>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,16">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="76"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Uptime" FontSize="10" Foreground="#FF6B7280"/>
+                                        <TextBlock x:Name="TxtDetailUptime" Grid.Column="1" Text="--" FontSize="10" Foreground="White"/>
+                                    </Grid>
+
+                                    <!-- ── HARDWARE ────────────────────────────── -->
                                     <TextBlock Text="HARDWARE" FontSize="9" FontWeight="Bold"
-                                               Foreground="#FF6B7280" Margin="0,0,0,4"/>
-                                    <TextBlock x:Name="TxtDetailHardware" Text="--" FontSize="11" Foreground="White"
-                                               TextWrapping="Wrap" Margin="0,0,0,12"/>
+                                               Foreground="{DynamicResource AccentOrangeBrush}" Margin="0,0,0,6"/>
+                                    <Grid Margin="0,0,0,3">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="76"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Make/Model" FontSize="10" Foreground="#FF6B7280" VerticalAlignment="Top"/>
+                                        <TextBlock x:Name="TxtDetailMakeModel" Grid.Column="1" Text="--" FontSize="10" Foreground="White" TextWrapping="Wrap"/>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,3">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="76"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Serial" FontSize="10" Foreground="#FF6B7280"/>
+                                        <TextBlock x:Name="TxtDetailSerial" Grid.Column="1" Text="--" FontSize="10" Foreground="White" TextWrapping="Wrap"/>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,3">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="76"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Chassis" FontSize="10" Foreground="#FF6B7280"/>
+                                        <TextBlock x:Name="TxtDetailHardware" Grid.Column="1" Text="--" FontSize="10" Foreground="White"/>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,3">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="76"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="CPU" FontSize="10" Foreground="#FF6B7280" VerticalAlignment="Top"/>
+                                        <TextBlock x:Name="TxtDetailCPU" Grid.Column="1" Text="--" FontSize="10" Foreground="White" TextWrapping="Wrap"/>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,3">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="76"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="RAM" FontSize="10" Foreground="#FF6B7280"/>
+                                        <TextBlock x:Name="TxtDetailRAM" Grid.Column="1" Text="--" FontSize="10" Foreground="White"/>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,16">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="76"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Disk (C:)" FontSize="10" Foreground="#FF6B7280"/>
+                                        <TextBlock x:Name="TxtDetailDisk" Grid.Column="1" Text="--" FontSize="10" Foreground="White"/>
+                                    </Grid>
 
-                                    <!-- Network Section -->
+                                    <!-- ── NETWORK ─────────────────────────────── -->
                                     <TextBlock Text="NETWORK" FontSize="9" FontWeight="Bold"
-                                               Foreground="#FF6B7280" Margin="0,0,0,4"/>
-                                    <TextBlock x:Name="TxtDetailNetwork" Text="--" FontSize="11" Foreground="White"
-                                               TextWrapping="Wrap" Margin="0,0,0,12"/>
+                                               Foreground="{DynamicResource AccentOrangeBrush}" Margin="0,0,0,6"/>
+                                    <Grid Margin="0,0,0,3">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="76"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="IP Address" FontSize="10" Foreground="#FF6B7280"/>
+                                        <TextBlock x:Name="TxtDetailIP" Grid.Column="1" Text="--" FontSize="10" Foreground="White"/>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,3">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="76"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="MAC" FontSize="10" Foreground="#FF6B7280"/>
+                                        <TextBlock x:Name="TxtDetailNetwork" Grid.Column="1" Text="--" FontSize="10" Foreground="White"/>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,16">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="76"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Domain" FontSize="10" Foreground="#FF6B7280"/>
+                                        <TextBlock x:Name="TxtDetailDomain" Grid.Column="1" Text="--" FontSize="10" Foreground="White"/>
+                                    </Grid>
 
-                                    <!-- User Section -->
+                                    <!-- ── SECURITY ────────────────────────────── -->
+                                    <TextBlock Text="SECURITY" FontSize="9" FontWeight="Bold"
+                                               Foreground="{DynamicResource AccentOrangeBrush}" Margin="0,0,0,6"/>
+                                    <Grid Margin="0,0,0,3">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="76"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="BitLocker" FontSize="10" Foreground="#FF6B7280"/>
+                                        <TextBlock x:Name="TxtDetailBitLocker" Grid.Column="1" Text="--" FontSize="10" Foreground="White"/>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,3">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="76"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="TPM" FontSize="10" Foreground="#FF6B7280"/>
+                                        <TextBlock x:Name="TxtDetailTPM" Grid.Column="1" Text="--" FontSize="10" Foreground="White"/>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,3">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="76"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Antivirus" FontSize="10" Foreground="#FF6B7280" VerticalAlignment="Top"/>
+                                        <TextBlock x:Name="TxtDetailAV" Grid.Column="1" Text="--" FontSize="10" Foreground="White" TextWrapping="Wrap"/>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,16">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="76"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Firewall" FontSize="10" Foreground="#FF6B7280" VerticalAlignment="Top"/>
+                                        <TextBlock x:Name="TxtDetailFirewall" Grid.Column="1" Text="--" FontSize="10" Foreground="White" TextWrapping="Wrap"/>
+                                    </Grid>
+
+                                    <!-- ── USER ───────────────────────────────── -->
                                     <TextBlock Text="CURRENT USER" FontSize="9" FontWeight="Bold"
-                                               Foreground="#FF6B7280" Margin="0,0,0,4"/>
-                                    <TextBlock x:Name="TxtDetailUser" Text="--" FontSize="11" Foreground="White"
-                                               TextWrapping="Wrap" Margin="0,0,0,12"/>
+                                               Foreground="{DynamicResource AccentOrangeBrush}" Margin="0,0,0,6"/>
+                                    <TextBlock x:Name="TxtDetailUser" Text="--" FontSize="11"
+                                               Foreground="White" TextWrapping="Wrap"/>
 
-                                    <!-- Disk Section -->
-                                    <TextBlock Text="DISK" FontSize="9" FontWeight="Bold"
-                                               Foreground="#FF6B7280" Margin="0,0,0,4"/>
-                                    <TextBlock x:Name="TxtDetailDisk" Text="--" FontSize="11" Foreground="White"
-                                               TextWrapping="Wrap" Margin="0,0,0,12"/>
-
-                                    <!-- Status Section -->
-                                    <TextBlock Text="STATUS" FontSize="9" FontWeight="Bold"
-                                               Foreground="#FF6B7280" Margin="0,0,0,4"/>
-                                    <TextBlock x:Name="TxtDetailStatus" Text="--" FontSize="11" Foreground="White"
-                                               TextWrapping="Wrap" Margin="0,0,0,12"/>
-
-                                    <!-- Last Boot -->
-                                    <TextBlock Text="LAST BOOT" FontSize="9" FontWeight="Bold"
-                                               Foreground="#FF6B7280" Margin="0,0,0,4"/>
-                                    <TextBlock x:Name="TxtDetailLastBoot" Text="--" FontSize="11" Foreground="White"
-                                               TextWrapping="Wrap"/>
                                 </StackPanel>
                             </ScrollViewer>
                         </Grid>
@@ -2458,14 +2593,18 @@
                                                         <Setter.Value>
                                                             <ControlTemplate TargetType="ComboBoxItem">
                                                                 <Grid>
-                                                                    <Border Name="Border" Background="{TemplateBinding Background}"
-                                                                            Padding="{TemplateBinding Padding}" CornerRadius="3" Margin="2">
-                                                                        <ContentPresenter/>
-                                                                    </Border>
+                                                                    <!-- Background (no content) — behind overlays -->
+                                                                    <Border Name="Bg" Background="{TemplateBinding Background}"
+                                                                            CornerRadius="3" Margin="2"/>
                                                                     <Border Name="highlightOverlay" CornerRadius="3" Margin="2" Opacity="0"
                                                                             Background="{DynamicResource AccentGradientBrush}"/>
                                                                     <Border Name="selectionOverlay" CornerRadius="3" Margin="2" Opacity="0"
                                                                             Background="{DynamicResource AccentOrangeBrush}"/>
+                                                                    <!-- Content (transparent — always on top of overlays) -->
+                                                                    <Border Name="Border" Background="Transparent"
+                                                                            Padding="{TemplateBinding Padding}" CornerRadius="3" Margin="2">
+                                                                        <ContentPresenter/>
+                                                                    </Border>
                                                                 </Grid>
                                                                 <ControlTemplate.Triggers>
                                                                     <Trigger Property="IsHighlighted" Value="True">
@@ -2846,7 +2985,7 @@
                                         </Grid>
 
                                         <!-- AD Object Browser Control (fills remaining space) -->
-                                        <local:ADObjectBrowser x:Name="ADObjectBrowserDomainTab"/>
+                                        <local:ADObjectBrowser x:Name="ADObjectBrowserDomainTab" ShowScanButton="False"/>
                                     </DockPanel>
                                 </Border>
                             </Grid>

@@ -105,8 +105,7 @@ namespace NecessaryAdminTool
                             Height = 600,
                             WindowStartupLocation = WindowStartupLocation.CenterOwner,
                             Owner = this,
-                            Background = new System.Windows.Media.SolidColorBrush(
-                                System.Windows.Media.Color.FromRgb(13, 13, 13))
+                            Background = (System.Windows.Media.Brush)System.Windows.Application.Current.Resources["BgDarkBrush"]
                         };
 
                         var scrollViewer = new System.Windows.Controls.ScrollViewer
@@ -119,8 +118,8 @@ namespace NecessaryAdminTool
                         {
                             Text = result.Log,
                             Foreground = result.Success
-                                ? System.Windows.Media.Brushes.LightGreen
-                                : System.Windows.Media.Brushes.LightCoral,
+                                ? (System.Windows.Media.Brush)System.Windows.Application.Current.Resources["AccentGreenBrush"]
+                                : (System.Windows.Media.Brush)System.Windows.Application.Current.Resources["DangerBrush"],
                             FontFamily = new System.Windows.Media.FontFamily("Consolas"),
                             FontSize = 12,
                             TextWrapping = TextWrapping.Wrap

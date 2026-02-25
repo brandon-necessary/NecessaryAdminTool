@@ -17,7 +17,9 @@ Write-Host "  [$(Get-Date -Format 'HH:mm:ss')] WMIEnable.ps1 - Script loaded on 
 $ErrorActionPreference = 'Stop'
 
 # --- 0. CONFIGURABLE PATHS ---
-$LogDir = $env:NECESSARYADMINTOOL_LOG_DIR
+$LogDir              = $env:NECESSARYADMINTOOL_LOG_DIR
+$DatabaseType        = ""  # NAT_INJECT_DB_TYPE
+$SqlConnectionString = ""  # NAT_INJECT_SQL_CONN
 
 if ([string]::IsNullOrEmpty($LogDir) -or !(Test-Path $LogDir -ErrorAction SilentlyContinue)) {
     $LogDir = "$env:TEMP\NecessaryAdminTool_Logs"
@@ -93,6 +95,65 @@ function Write-MasterSummary {
     } finally {
         if ($Acquired -and $Mtx) { try { $Mtx.ReleaseMutex() } catch {} }
         if ($Mtx) { try { $Mtx.Dispose() } catch {} }
+    }
+}
+
+# --- 1b. DATABASE WRITE (SQL Server - optional, matches UpdateHistory table schema) ---
+function Write-ToDatabase {
+    param([string]$Status, [string]$Details = "")
+    if ([string]::IsNullOrEmpty($DatabaseType) -or
+        $DatabaseType -ne "SqlServer" -or
+        [string]::IsNullOrEmpty($SqlConnectionString)) { return }
+
+    $Duration = [math]::Round(((Get-Date) - $ScriptStart).TotalSeconds, 0)
+    $Conn = $null
+    try {
+        $Conn = New-Object System.Data.SqlClient.SqlConnection($SqlConnectionString)
+        $Conn.Open()
+        $CreateCmd = $Conn.CreateCommand()
+        $CreateCmd.CommandText = @"
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'UpdateHistory')
+CREATE TABLE UpdateHistory (
+    Id              INT IDENTITY(1,1) PRIMARY KEY,
+    Hostname        NVARCHAR(255)   NOT NULL,
+    Script          NVARCHAR(50)    NOT NULL,
+    Timestamp       DATETIME        NOT NULL,
+    OSVersion       NVARCHAR(500)   NULL,
+    UptimeDays      DECIMAL(10,2)   NULL,
+    DiskFreeGB      DECIMAL(10,2)   NULL,
+    Status          NVARCHAR(100)   NOT NULL,
+    UpdatesFound    NVARCHAR(500)   NULL,
+    Method          NVARCHAR(200)   NULL,
+    Details         NVARCHAR(MAX)   NULL,
+    DurationSeconds INT             NULL
+)
+"@
+        $CreateCmd.ExecuteNonQuery() | Out-Null
+        $InsertCmd = $Conn.CreateCommand()
+        $InsertCmd.CommandText = @"
+INSERT INTO UpdateHistory
+    (Hostname, Script, Timestamp, OSVersion, UptimeDays, DiskFreeGB,
+     Status, UpdatesFound, Method, Details, DurationSeconds)
+VALUES
+    (@Hostname, @Script, @Timestamp, @OSVersion, @UptimeDays, @DiskFreeGB,
+     @Status, NULL, NULL, @Details, @Duration)
+"@
+        $InsertCmd.Parameters.AddWithValue("@Hostname",   $Comp)           | Out-Null
+        $InsertCmd.Parameters.AddWithValue("@Script",     "WMIEnable")     | Out-Null
+        $InsertCmd.Parameters.AddWithValue("@Timestamp",  [DateTime]::Now) | Out-Null
+        $InsertCmd.Parameters.AddWithValue("@OSVersion",  $OSVersion)      | Out-Null
+        $InsertCmd.Parameters.AddWithValue("@UptimeDays", $UptimeDays)     | Out-Null
+        $InsertCmd.Parameters.AddWithValue("@DiskFreeGB", $FreeGB)         | Out-Null
+        $InsertCmd.Parameters.AddWithValue("@Status",     $Status)         | Out-Null
+        $InsertCmd.Parameters.AddWithValue("@Details",    $Details)        | Out-Null
+        $InsertCmd.Parameters.AddWithValue("@Duration",   $Duration)       | Out-Null
+        $InsertCmd.ExecuteNonQuery() | Out-Null
+        Write-Log "DB_WRITE_SUCCESS - Status=$Status"
+    } catch {
+        $SafeMsg = $_.Exception.Message -replace '(?i)(password|pwd|user id|uid|data source|server)[^;]*(=)[^;]*', '$1$2***'
+        Write-Log "DB_WRITE_FAILED - $SafeMsg"
+    } finally {
+        if ($null -ne $Conn) { $Conn.Close() }
     }
 }
 
@@ -192,10 +253,14 @@ try {
     Write-Log "WARNING: Enable-PSRemoting failed (may already be enabled or policy blocked) - $($_.Exception.Message)"
     # Try ensuring WinRM service is at least running
     try {
-        Set-Service -Name WinRM -StartupType Automatic -ErrorAction SilentlyContinue
-        Start-Service -Name WinRM -ErrorAction SilentlyContinue
-        Write-Log "WinRM service started manually"
-    } catch {}
+        Set-Service -Name WinRM -StartupType Automatic -ErrorAction Stop
+        Start-Service -Name WinRM -ErrorAction Stop
+        Write-Log "WinRM service started manually as fallback"
+        Write-Host "  [OK] WinRM service started manually" -ForegroundColor Green
+    } catch {
+        Write-Log "ERROR: WinRM service manual start also failed - $($_.Exception.Message)"
+        Write-Host "  [ERROR] WinRM could not be started - may be blocked by policy" -ForegroundColor Red
+    }
 }
 
 # --- 7. VERIFY WMI RESPONSIVE ---
@@ -219,6 +284,7 @@ $FinalStatus = if ($wmiOk) { "WMI_ENABLED_OK" } else { "WMI_ENABLE_PARTIAL" }
 
 Write-Log "Script END: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | Duration: ${Duration}s | Status: $FinalStatus"
 Write-MasterSummary -Status $FinalStatus -Details "WMI firewall+service+DCOM+WinRM configured on $(Get-Date -Format 'yyyy-MM-dd')"
+Write-ToDatabase -Status $FinalStatus -Details "WMI firewall+service+DCOM+WinRM configured; wmiOk=$wmiOk"
 
 Write-Host ""
 Write-Host "  [$(Get-Date -Format 'HH:mm:ss')] WMIEnable complete - Status: $FinalStatus (${Duration}s)" -ForegroundColor $(if ($wmiOk) { 'Green' } else { 'Yellow' })

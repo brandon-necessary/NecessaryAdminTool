@@ -13,6 +13,7 @@
 #   11 = PSWindowsUpdate module could not be installed (no internet / policy blocked)
 #   12 = PSWindowsUpdate module installed but failed to import
 #   13 = Windows Update installation failed (see individual PC log for KB details)
+#   20 = Power check timeout -- device on battery, no AC detected after 10 minutes
 # ==============================================================================
 
 # EARLY HEARTBEAT - first executable line; if ME execution log is blank, script never loaded
@@ -235,7 +236,9 @@ VALUES
 
         Write-NecessaryAdminToolLog -Status "DB_WRITE_SUCCESS_General_$Status" -ToMaster $false
     } catch {
-        Write-NecessaryAdminToolLog -Status "DB_WRITE_FAILED_$($_.Exception.Message)" -ToMaster $false
+        # Mask connection details from error message - .NET SQL exceptions can expose server/credentials
+        $SafeMsg = $_.Exception.Message -replace '(?i)(password|pwd|user id|uid|data source|server)[^;]*(=)[^;]*', '$1$2***'
+        Write-NecessaryAdminToolLog -Status "DB_WRITE_FAILED_$SafeMsg" -ToMaster $false
     } finally {
         if ($null -ne $Conn) { $Conn.Close() }
     }
@@ -484,8 +487,17 @@ try {
 
 # --- 5. EXECUTION ---
 Show-NecessaryAdminToolLogo -Msg "Checking Power Status..."
+$MaxPowerChecks = 20   # 10 minutes (20 × 30s) before aborting; prevents ME task from hanging indefinitely
+$PowerCheckCount = 0
 while (-not (Check-Power)) {
-    Show-NecessaryAdminToolLogo -Msg "BATTERY LOW. Plug in AC." -Color "Red"
+    $PowerCheckCount++
+    if ($PowerCheckCount -ge $MaxPowerChecks) {
+        Write-NecessaryAdminToolLog -Status "ERROR_POWER_CHECK_TIMEOUT_NO_AC_AFTER_${MaxPowerChecks}_ATTEMPTS" -ToMaster $false
+        Write-MasterSummary -Status "FAILED" -UpdatesFound "0" -Details "Battery low, no AC detected after 10 minutes - task aborted to prevent ME timeout"
+        Show-NecessaryAdminToolLogo -Msg "Power check timeout (10 min) - device on battery with no AC. Aborting." "Red"
+        exit 20  # Power check timeout -- device on battery, no AC detected
+    }
+    Show-NecessaryAdminToolLogo -Msg "BATTERY LOW. Plug in AC. ($PowerCheckCount/$MaxPowerChecks checks)" -Color "Red"
     Start-Sleep -Seconds 30
 }
 
@@ -529,7 +541,7 @@ if ($Updates.Count -eq 0) {
     Write-NecessaryAdminToolLog -Status "COMPLIANT_NO_UPDATES_FOUND" -ToMaster $false
     Write-MasterSummary -Status "COMPLIANT" -UpdatesFound "0" -Details "No updates required"
     Show-NecessaryAdminToolLogo -Msg "System is Up-to-Date." "Green"
-    Start-Sleep -Seconds 3; exit 0
+    exit 0
 }
 
 # Log each detected update and build KB list for master summary

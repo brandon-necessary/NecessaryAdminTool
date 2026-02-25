@@ -71,13 +71,16 @@ namespace NecessaryAdminTool.Data
                     Hostname NVARCHAR(255) PRIMARY KEY,
                     OS NVARCHAR(100),
                     OSVersion NVARCHAR(50),
+                    Status NVARCHAR(50),
                     Manufacturer NVARCHAR(100),
                     Model NVARCHAR(100),
                     SerialNumber NVARCHAR(100),
                     AssetTag NVARCHAR(100),
+                    ChassisType NVARCHAR(100),
                     IPAddress NVARCHAR(50),
                     MACAddress NVARCHAR(50),
                     Domain NVARCHAR(100),
+                    DomainController NVARCHAR(255),
                     LastLoggedOnUser NVARCHAR(100),
                     RAM_GB INT,
                     CPU NVARCHAR(200),
@@ -86,6 +89,7 @@ namespace NecessaryAdminTool.Data
                     LastSeen DATETIME,
                     LastBootTime DATETIME,
                     InstallDate DATETIME,
+                    Uptime BIGINT,
                     BitLockerStatus NVARCHAR(50),
                     TPMVersion NVARCHAR(50),
                     AntivirusProduct NVARCHAR(100),
@@ -94,9 +98,22 @@ namespace NecessaryAdminTool.Data
                     PendingRebootCount INT,
                     LastPatchDate DATETIME,
                     Notes NVARCHAR(MAX),
+                    RawDataJson NVARCHAR(MAX),
                     CreatedDate DATETIME DEFAULT GETDATE(),
                     ModifiedDate DATETIME DEFAULT GETDATE()
                 );
+
+                -- Migration: add columns to existing databases
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Computers') AND name='Status')
+                    ALTER TABLE Computers ADD Status NVARCHAR(50);
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Computers') AND name='ChassisType')
+                    ALTER TABLE Computers ADD ChassisType NVARCHAR(100);
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Computers') AND name='DomainController')
+                    ALTER TABLE Computers ADD DomainController NVARCHAR(255);
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Computers') AND name='Uptime')
+                    ALTER TABLE Computers ADD Uptime BIGINT;
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Computers') AND name='RawDataJson')
+                    ALTER TABLE Computers ADD RawDataJson NVARCHAR(MAX);
 
                 IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='ScanHistory' AND xtype='U')
                 CREATE TABLE ScanHistory (
@@ -193,28 +210,32 @@ namespace NecessaryAdminTool.Data
                         USING (SELECT @Hostname AS Hostname) AS source
                         ON target.Hostname = source.Hostname
                         WHEN MATCHED THEN
-                            UPDATE SET OS=@OS, OSVersion=@OSVersion, Manufacturer=@Manufacturer,
-                                       Model=@Model, SerialNumber=@SerialNumber, AssetTag=@AssetTag,
+                            UPDATE SET OS=@OS, OSVersion=@OSVersion, Status=@Status,
+                                       Manufacturer=@Manufacturer, Model=@Model, SerialNumber=@SerialNumber,
+                                       AssetTag=@AssetTag, ChassisType=@ChassisType,
                                        IPAddress=@IPAddress, MACAddress=@MACAddress, Domain=@Domain,
-                                       LastLoggedOnUser=@LastLoggedOnUser, RAM_GB=@RAM_GB, CPU=@CPU,
-                                       DiskSize_GB=@DiskSize_GB, DiskFree_GB=@DiskFree_GB,
+                                       DomainController=@DomainController, LastLoggedOnUser=@LastLoggedOnUser,
+                                       RAM_GB=@RAM_GB, CPU=@CPU, DiskSize_GB=@DiskSize_GB, DiskFree_GB=@DiskFree_GB,
                                        LastSeen=@LastSeen, LastBootTime=@LastBootTime,
-                                       InstallDate=@InstallDate, BitLockerStatus=@BitLockerStatus,
-                                       TPMVersion=@TPMVersion, AntivirusProduct=@AntivirusProduct,
-                                       AntivirusStatus=@AntivirusStatus, FirewallStatus=@FirewallStatus,
-                                       PendingRebootCount=@PendingRebootCount, LastPatchDate=@LastPatchDate,
-                                       Notes=@Notes, ModifiedDate=GETDATE()
+                                       InstallDate=@InstallDate, Uptime=@Uptime,
+                                       BitLockerStatus=@BitLockerStatus, TPMVersion=@TPMVersion,
+                                       AntivirusProduct=@AntivirusProduct, AntivirusStatus=@AntivirusStatus,
+                                       FirewallStatus=@FirewallStatus, PendingRebootCount=@PendingRebootCount,
+                                       LastPatchDate=@LastPatchDate, Notes=@Notes, RawDataJson=@RawDataJson,
+                                       ModifiedDate=GETDATE()
                         WHEN NOT MATCHED THEN
-                            INSERT (Hostname, OS, OSVersion, Manufacturer, Model, SerialNumber, AssetTag,
-                                    IPAddress, MACAddress, Domain, LastLoggedOnUser, RAM_GB, CPU,
-                                    DiskSize_GB, DiskFree_GB, LastSeen, LastBootTime, InstallDate,
+                            INSERT (Hostname, OS, OSVersion, Status, Manufacturer, Model, SerialNumber, AssetTag,
+                                    ChassisType, IPAddress, MACAddress, Domain, DomainController,
+                                    LastLoggedOnUser, RAM_GB, CPU, DiskSize_GB, DiskFree_GB,
+                                    LastSeen, LastBootTime, InstallDate, Uptime,
                                     BitLockerStatus, TPMVersion, AntivirusProduct, AntivirusStatus,
-                                    FirewallStatus, PendingRebootCount, LastPatchDate, Notes)
-                            VALUES (@Hostname, @OS, @OSVersion, @Manufacturer, @Model, @SerialNumber, @AssetTag,
-                                    @IPAddress, @MACAddress, @Domain, @LastLoggedOnUser, @RAM_GB, @CPU,
-                                    @DiskSize_GB, @DiskFree_GB, @LastSeen, @LastBootTime, @InstallDate,
+                                    FirewallStatus, PendingRebootCount, LastPatchDate, Notes, RawDataJson)
+                            VALUES (@Hostname, @OS, @OSVersion, @Status, @Manufacturer, @Model, @SerialNumber, @AssetTag,
+                                    @ChassisType, @IPAddress, @MACAddress, @Domain, @DomainController,
+                                    @LastLoggedOnUser, @RAM_GB, @CPU, @DiskSize_GB, @DiskFree_GB,
+                                    @LastSeen, @LastBootTime, @InstallDate, @Uptime,
                                     @BitLockerStatus, @TPMVersion, @AntivirusProduct, @AntivirusStatus,
-                                    @FirewallStatus, @PendingRebootCount, @LastPatchDate, @Notes);";
+                                    @FirewallStatus, @PendingRebootCount, @LastPatchDate, @Notes, @RawDataJson);";
 
                     using (var cmd = new SqlCommand(query, conn))
                     {
@@ -918,32 +939,37 @@ namespace NecessaryAdminTool.Data
 
         private void AddComputerParameters(SqlCommand cmd, ComputerInfo computer)
         {
-            cmd.Parameters.AddWithValue("@Hostname", computer.Hostname ?? string.Empty);
-            cmd.Parameters.AddWithValue("@OS", computer.OS ?? string.Empty);
-            cmd.Parameters.AddWithValue("@OSVersion", computer.OSVersion ?? string.Empty);
-            cmd.Parameters.AddWithValue("@Manufacturer", computer.Manufacturer ?? string.Empty);
-            cmd.Parameters.AddWithValue("@Model", computer.Model ?? string.Empty);
-            cmd.Parameters.AddWithValue("@SerialNumber", computer.SerialNumber ?? string.Empty);
-            cmd.Parameters.AddWithValue("@AssetTag", computer.AssetTag ?? string.Empty);
-            cmd.Parameters.AddWithValue("@IPAddress", computer.IPAddress ?? string.Empty);
-            cmd.Parameters.AddWithValue("@MACAddress", computer.MACAddress ?? string.Empty);
-            cmd.Parameters.AddWithValue("@Domain", computer.Domain ?? string.Empty);
-            cmd.Parameters.AddWithValue("@LastLoggedOnUser", computer.LastLoggedOnUser ?? string.Empty);
-            cmd.Parameters.AddWithValue("@RAM_GB", computer.RAM_GB);
-            cmd.Parameters.AddWithValue("@CPU", computer.CPU ?? string.Empty);
-            cmd.Parameters.AddWithValue("@DiskSize_GB", computer.DiskSize_GB);
-            cmd.Parameters.AddWithValue("@DiskFree_GB", computer.DiskFree_GB);
-            cmd.Parameters.AddWithValue("@LastSeen", computer.LastSeen);
-            cmd.Parameters.AddWithValue("@LastBootTime", computer.LastBootTime);
-            cmd.Parameters.AddWithValue("@InstallDate", computer.InstallDate);
-            cmd.Parameters.AddWithValue("@BitLockerStatus", computer.BitLockerStatus ?? string.Empty);
-            cmd.Parameters.AddWithValue("@TPMVersion", computer.TPMVersion ?? string.Empty);
-            cmd.Parameters.AddWithValue("@AntivirusProduct", computer.AntivirusProduct ?? string.Empty);
-            cmd.Parameters.AddWithValue("@AntivirusStatus", computer.AntivirusStatus ?? string.Empty);
-            cmd.Parameters.AddWithValue("@FirewallStatus", computer.FirewallStatus ?? string.Empty);
+            cmd.Parameters.AddWithValue("@Hostname",          computer.Hostname ?? string.Empty);
+            cmd.Parameters.AddWithValue("@OS",                computer.OS ?? string.Empty);
+            cmd.Parameters.AddWithValue("@OSVersion",         computer.OSVersion ?? string.Empty);
+            cmd.Parameters.AddWithValue("@Status",            computer.Status ?? string.Empty);
+            cmd.Parameters.AddWithValue("@Manufacturer",      computer.Manufacturer ?? string.Empty);
+            cmd.Parameters.AddWithValue("@Model",             computer.Model ?? string.Empty);
+            cmd.Parameters.AddWithValue("@SerialNumber",      computer.SerialNumber ?? string.Empty);
+            cmd.Parameters.AddWithValue("@AssetTag",          computer.AssetTag ?? string.Empty);
+            cmd.Parameters.AddWithValue("@ChassisType",       computer.ChassisType ?? string.Empty);
+            cmd.Parameters.AddWithValue("@IPAddress",         computer.IPAddress ?? string.Empty);
+            cmd.Parameters.AddWithValue("@MACAddress",        computer.MACAddress ?? string.Empty);
+            cmd.Parameters.AddWithValue("@Domain",            computer.Domain ?? string.Empty);
+            cmd.Parameters.AddWithValue("@DomainController",  computer.DomainController ?? string.Empty);
+            cmd.Parameters.AddWithValue("@LastLoggedOnUser",  computer.LastLoggedOnUser ?? string.Empty);
+            cmd.Parameters.AddWithValue("@RAM_GB",            computer.RAM_GB);
+            cmd.Parameters.AddWithValue("@CPU",               computer.CPU ?? string.Empty);
+            cmd.Parameters.AddWithValue("@DiskSize_GB",       computer.DiskSize_GB);
+            cmd.Parameters.AddWithValue("@DiskFree_GB",       computer.DiskFree_GB);
+            cmd.Parameters.AddWithValue("@LastSeen",          computer.LastSeen);
+            cmd.Parameters.AddWithValue("@LastBootTime",      (object)computer.LastBootTime ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@InstallDate",       computer.InstallDate != DateTime.MinValue ? (object)computer.InstallDate : DBNull.Value);
+            cmd.Parameters.AddWithValue("@Uptime",            (object)computer.Uptime ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@BitLockerStatus",   computer.BitLockerStatus ?? string.Empty);
+            cmd.Parameters.AddWithValue("@TPMVersion",        computer.TPMVersion ?? string.Empty);
+            cmd.Parameters.AddWithValue("@AntivirusProduct",  computer.AntivirusProduct ?? string.Empty);
+            cmd.Parameters.AddWithValue("@AntivirusStatus",   computer.AntivirusStatus ?? string.Empty);
+            cmd.Parameters.AddWithValue("@FirewallStatus",    computer.FirewallStatus ?? string.Empty);
             cmd.Parameters.AddWithValue("@PendingRebootCount", computer.PendingRebootCount);
-            cmd.Parameters.AddWithValue("@LastPatchDate", computer.LastPatchDate);
-            cmd.Parameters.AddWithValue("@Notes", computer.Notes ?? string.Empty);
+            cmd.Parameters.AddWithValue("@LastPatchDate",     computer.LastPatchDate != DateTime.MinValue ? (object)computer.LastPatchDate : DBNull.Value);
+            cmd.Parameters.AddWithValue("@Notes",             computer.Notes ?? string.Empty);
+            cmd.Parameters.AddWithValue("@RawDataJson",       computer.RawDataJson ?? string.Empty);
         }
 
         public void Dispose()

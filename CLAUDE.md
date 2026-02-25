@@ -1,7 +1,7 @@
 # NecessaryAdminTool - Claude Code Instructions
 <!-- TAG: #PROJECT_INSTRUCTIONS #CLAUDE_AI #VERSION_3_0 #AUTO_UPDATE_VERSION -->
-**Version:** 3.0.1 (3.2602.1.0)
-**Last Updated:** February 20, 2026
+**Version:** 3.0.5 (3.2602.5.0)
+**Last Updated:** February 25, 2026
 
 ---
 
@@ -342,7 +342,7 @@ TextOptions.SetTextRenderingMode(this, TextRenderingMode.ClearType);
 
 ---
 
-**Project Status:** Production (v3.0.1) | **Architecture Score:** 89/100
-**Last Updated:** February 20, 2026
+**Project Status:** Production (v3.0.5) | **Architecture Score:** 89/100
+**Last Updated:** February 25, 2026
 
 **Built with Claude Code**

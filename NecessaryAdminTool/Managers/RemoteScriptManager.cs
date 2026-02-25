@@ -67,6 +67,9 @@ namespace NecessaryAdminTool.Managers
             LogManager.LogInfo($"RemoteScriptManager.ExecuteAsync() - START - Target: {targetComputer}");
             var sw = Stopwatch.StartNew();
 
+            // Inject deployment paths so remote scripts use configured log directories
+            scriptContent = ScriptManager.InjectDeploymentSettings(scriptContent);
+
             // Parse domain\user from authUser
             string domain = string.Empty;
             string username = authUser ?? string.Empty;

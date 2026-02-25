@@ -559,6 +559,66 @@ Write-Output ""Uptime: $($uptime.Days) days, $($uptime.Hours) hours, $($uptime.M
         }
 
         /// <summary>
+        /// Inject NecessaryAdminTool deployment settings into script content.
+        /// Replaces environment variable placeholders with configured values so
+        /// scripts executed remotely (via Invoke-Command) use the correct paths
+        /// instead of falling back to $env:TEMP on the target machine.
+        /// Safe to call on any script — no-ops if placeholders aren't present.
+        /// </summary>
+        public static string InjectDeploymentSettings(string scriptContent)
+        {
+            if (string.IsNullOrEmpty(scriptContent))
+                return scriptContent;
+
+            string dbPath = Properties.Settings.Default.DatabasePath;
+            if (string.IsNullOrWhiteSpace(dbPath))
+                dbPath = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                    "NecessaryAdminTool");
+
+            string logDir = Properties.Settings.Default.DeploymentLogDirectory;
+            string effectiveLogDir = !string.IsNullOrEmpty(logDir) ? logDir : dbPath;
+
+            // LogDir — matches placeholder in GeneralUpdate.ps1, FeatureUpdate.ps1, PreflightReboot.ps1
+            scriptContent = scriptContent.Replace(
+                "$LogDir              = $env:NECESSARYADMINTOOL_LOG_DIR",
+                $"$LogDir              = \"{effectiveLogDir}\"  # Injected by NecessaryAdminTool");
+
+            // ISOPath — only inject if configured
+            string isoPath = Properties.Settings.Default.WindowsUpdateISOPath ?? "";
+            if (!string.IsNullOrEmpty(isoPath))
+            {
+                scriptContent = scriptContent.Replace(
+                    "$ISOPath             = $env:NECESSARYADMINTOOL_ISO_PATH",
+                    $"$ISOPath             = \"{isoPath}\"  # Injected by NecessaryAdminTool");
+            }
+
+            // HostnamePattern — only inject if configured
+            string pattern = Properties.Settings.Default.LocalISOHostnamePattern ?? "";
+            if (!string.IsNullOrEmpty(pattern))
+            {
+                scriptContent = scriptContent.Replace(
+                    "$HostnamePattern     = if ($env:NECESSARYADMINTOOL_HOSTNAME_PATTERN) { $env:NECESSARYADMINTOOL_HOSTNAME_PATTERN } else { \"*\" }",
+                    $"$HostnamePattern     = \"{pattern}\"  # Injected by NecessaryAdminTool");
+            }
+
+            // SQL Server database — inject type + connection string when configured
+            string dbType = Properties.Settings.Default.DatabaseType ?? "";
+            string connStr = Properties.Settings.Default.DatabasePath ?? "";
+            if (dbType.Equals("SqlServer", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(connStr))
+            {
+                scriptContent = scriptContent.Replace(
+                    "$DatabaseType        = \"\"  # NAT_INJECT_DB_TYPE",
+                    "$DatabaseType        = \"SqlServer\"  # Injected by NecessaryAdminTool");
+                scriptContent = scriptContent.Replace(
+                    "$SqlConnectionString = \"\"  # NAT_INJECT_SQL_CONN",
+                    "$SqlConnectionString = \"" + connStr + "\"  # Injected by NecessaryAdminTool");
+            }
+
+            return scriptContent;
+        }
+
+        /// <summary>
         /// Execute PowerShell script on multiple computers in parallel
         /// TAG: #VERSION_7.1 #BULK_OPERATIONS #PARALLEL_EXECUTION
         /// </summary>
@@ -571,6 +631,9 @@ Write-Output ""Uptime: $($uptime.Days) days, $($uptime.Hours) hours, $($uptime.M
             CancellationToken cancellationToken = default,
             IProgress<(string hostname, int completed, int total)> progress = null)
         {
+            // Inject deployment paths so remote scripts use configured log directories
+            scriptContent = InjectDeploymentSettings(scriptContent);
+
             var results = new List<ScriptExecutionResult>();
             var semaphore = new SemaphoreSlim(maxConcurrency);
             int completed = 0;

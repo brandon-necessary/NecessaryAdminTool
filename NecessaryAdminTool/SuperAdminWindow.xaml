@@ -141,7 +141,7 @@
                                          ToolTip="Full legal entity name (e.g., 'Contoso Corporation', 'Acme LLC')"
                                          TextChanged="OnWhiteLabelFieldChanged"/>
                                 <TextBlock Text="Used in: License agreements, warranty disclaimers, liability text"
-                                           Foreground="#888888"
+                                           Foreground="{DynamicResource TextMutedBrush}"
                                            FontSize="11"
                                            FontStyle="Italic"
                                            Margin="0,5,0,20"/>
@@ -158,7 +158,7 @@
                                          ToolTip="Email domain without 'support@' prefix (e.g., 'contoso.com')"
                                          TextChanged="OnWhiteLabelFieldChanged"/>
                                 <TextBlock Text="Used in: Support email links (support@domain)"
-                                           Foreground="#888888"
+                                           Foreground="{DynamicResource TextMutedBrush}"
                                            FontSize="11"
                                            FontStyle="Italic"
                                            Margin="0,5,0,20"/>
@@ -181,7 +181,7 @@
                                                FontFamily="Consolas"/>
                                 </Border>
                                 <TextBlock Text="Automatically generated from domain above"
-                                           Foreground="#888888"
+                                           Foreground="{DynamicResource TextMutedBrush}"
                                            FontSize="11"
                                            FontStyle="Italic"
                                            Margin="0,5,0,20"/>
@@ -198,7 +198,7 @@
                                          ToolTip="Support phone number or contact message"
                                          TextChanged="OnWhiteLabelFieldChanged"/>
                                 <TextBlock Text="Used in: About window contact section"
-                                           Foreground="#888888"
+                                           Foreground="{DynamicResource TextMutedBrush}"
                                            FontSize="11"
                                            FontStyle="Italic"
                                            Margin="0,5,0,25"/>
@@ -228,7 +228,7 @@
 
                                 <TextBlock x:Name="TxtWhiteLabelStatus"
                                            Text=""
-                                           Foreground="#4CAF50"
+                                           Foreground="{DynamicResource AccentGreenBrush}"
                                            FontSize="13"
                                            FontWeight="SemiBold"
                                            HorizontalAlignment="Center"
@@ -304,10 +304,10 @@
                                                    FontSize="12"
                                                    Margin="0,0,0,10"/>
                                         <TextBlock Foreground="#CCCCCC" FontSize="11" FontFamily="Consolas">
-                                            <Run Text="✓ AboutWindow.xaml" Foreground="#4CAF50"/><LineBreak/>
-                                            <Run Text="✓ AboutWindow.xaml.cs" Foreground="#4CAF50"/><LineBreak/>
-                                            <Run Text="✓ MainWindow.xaml.cs" Foreground="#4CAF50"/><LineBreak/><LineBreak/>
-                                            <Run Text="⚠ Backups will be created automatically" Foreground="#FFC107"/>
+                                            <Run Text="✓ AboutWindow.xaml" Foreground="{DynamicResource AccentGreenBrush}"/><LineBreak/>
+                                            <Run Text="✓ AboutWindow.xaml.cs" Foreground="{DynamicResource AccentGreenBrush}"/><LineBreak/>
+                                            <Run Text="✓ MainWindow.xaml.cs" Foreground="{DynamicResource AccentGreenBrush}"/><LineBreak/><LineBreak/>
+                                            <Run Text="⚠ Backups will be created automatically" Foreground="{StaticResource WarningBrush}"/>
                                         </TextBlock>
                                     </StackPanel>
                                 </Border>
@@ -394,7 +394,7 @@
 
                             <!-- Reset All Settings -->
                             <Border Background="#1a1a1a"
-                                    BorderBrush="#DC3545"
+                                    BorderBrush="{StaticResource ErrorBrush}"
                                     BorderThickness="2"
                                     CornerRadius="6"
                                     Padding="20"
@@ -407,7 +407,7 @@
 
                                     <StackPanel Grid.Column="0">
                                         <TextBlock Text="⚠️ Reset All Application Settings"
-                                                   Foreground="#DC3545"
+                                                   Foreground="{StaticResource ErrorBrush}"
                                                    FontWeight="Bold"
                                                    FontSize="14"/>
                                         <TextBlock Text="Delete all config files and return to factory defaults"
@@ -614,14 +614,14 @@
 
                 <TextBlock Grid.Column="0"
                            Text="⚠️ SuperAdmin mode active"
-                           Foreground="#FFC107"
+                           Foreground="{StaticResource WarningBrush}"
                            FontWeight="Bold"
                            VerticalAlignment="Center"/>
 
                 <TextBlock Grid.Column="1"
                            x:Name="TxtFooterStatus"
                            Text="Make changes carefully - all modifications are logged"
-                           Foreground="#888888"
+                           Foreground="{DynamicResource TextMutedBrush}"
                            FontSize="11"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"/>

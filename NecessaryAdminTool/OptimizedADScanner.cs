@@ -328,23 +328,30 @@ namespace NecessaryAdminTool
                 // OPTIMIZATION #4: SELECT specific columns instead of * - TAG: #PERFORMANCE_AUDIT
                 // Reduces network traffic by 90%, parsing time by 80%
                 var osTask = QueryCimInstanceAsync(session, "Win32_OperatingSystem",
-                    "Caption,BuildNumber,LastBootUpTime", ct);
+                    "Caption,BuildNumber,LastBootUpTime,InstallDate", ct);
                 var csTask = QueryCimInstanceAsync(session, "Win32_ComputerSystem",
                     "UserName,Model,Manufacturer,Domain,TotalPhysicalMemory", ct);
                 var biosTask = QueryCimInstanceAsync(session, "Win32_BIOS",
                     "SerialNumber,SMBIOSBIOSVersion", ct);
+                var cpuTask = QueryCimInstanceAsync(session, "Win32_Processor",
+                    "Name,NumberOfCores,NumberOfLogicalProcessors", ct);
+                var diskTask = QueryCimInstanceWithWhereAsync(session, "Win32_LogicalDisk",
+                    "Size,FreeSpace", "DeviceID='C:'", ct);
 
                 CimInstance osInstance = null;
                 CimInstance csInstance = null;
                 CimInstance biosInstance = null;
+                CimInstance cpuInstance = null;
+                CimInstance diskInstance = null;
 
                 try
                 {
-                    await Task.WhenAll(osTask, csTask, biosTask).ConfigureAwait(false);
-                    // Now safe - WhenAll already caught exceptions
-                    osInstance = osTask.Result;
-                    csInstance = csTask.Result;
+                    await Task.WhenAll(osTask, csTask, biosTask, cpuTask, diskTask).ConfigureAwait(false);
+                    osInstance   = osTask.Result;
+                    csInstance   = csTask.Result;
                     biosInstance = biosTask.Result;
+                    cpuInstance  = cpuTask.Result;
+                    diskInstance = diskTask.Result;
                 }
                 catch (Exception ex)
                 {
@@ -361,6 +368,8 @@ namespace NecessaryAdminTool
                         spec.OS
                     );
                     spec.LastBoot = GetCimDateProperty(osInstance, "LastBootUpTime")?.ToString("yyyy-MM-dd HH:mm") ?? "N/A";
+                    var installDt = GetCimDateProperty(osInstance, "InstallDate");
+                    if (installDt.HasValue) spec.InstallDate = installDt.Value.ToString("yyyy-MM-dd");
                 }
 
                 // Parse Computer System information
@@ -385,6 +394,47 @@ namespace NecessaryAdminTool
                     spec.Serial = GetCimProperty(biosInstance, "SerialNumber");
                     spec.Bios = GetCimProperty(biosInstance, "SMBIOSBIOSVersion");
                 }
+
+                // Parse CPU information
+                if (cpuInstance != null)
+                {
+                    spec.CPU = GetCimProperty(cpuInstance, "Name");
+                    var cores   = GetCimProperty(cpuInstance, "NumberOfCores");
+                    var threads = GetCimProperty(cpuInstance, "NumberOfLogicalProcessors");
+                    spec.Cores = $"{cores}C / {threads}T";
+                }
+
+                // Parse C: drive information
+                if (diskInstance != null)
+                {
+                    var size = GetCimLongProperty(diskInstance, "Size");
+                    var free = GetCimLongProperty(diskInstance, "FreeSpace");
+                    if (size > 0)
+                        spec.Disk = $"{free / (1024L * 1024 * 1024)} GB free / {size / (1024L * 1024 * 1024)} GB";
+                }
+
+                // SecurityCenter2 — optional, not available on Server SKUs
+                try
+                {
+                    var avInstances = session.QueryInstances("root/SecurityCenter2", "WQL",
+                        "SELECT displayName,productState FROM AntiVirusProduct");
+                    var av = avInstances.FirstOrDefault();
+                    if (av != null)
+                    {
+                        spec.AV       = GetCimProperty(av, "displayName");
+                        spec.AVStatus = GetCimProperty(av, "productState");
+                    }
+                }
+                catch { /* SecurityCenter2 not available on Server SKUs */ }
+
+                try
+                {
+                    var fwInstances = session.QueryInstances("root/SecurityCenter2", "WQL",
+                        "SELECT displayName FROM FirewallProduct");
+                    var fw = fwInstances.FirstOrDefault();
+                    if (fw != null) spec.Firewall = GetCimProperty(fw, "displayName");
+                }
+                catch { /* FirewallProduct not available */ }
 
                 return spec;
             }
@@ -446,6 +496,40 @@ namespace NecessaryAdminTool
         }
 
         /// <summary>
+        /// Query a CIM instance with an optional WHERE clause
+        /// TAG: #CIM #PERFORMANCE_AUDIT
+        /// </summary>
+        private async Task<CimInstance> QueryCimInstanceWithWhereAsync(
+            CimSession session,
+            string className,
+            string properties,
+            string whereClause,
+            CancellationToken ct)
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    string query = string.IsNullOrEmpty(properties)
+                        ? $"SELECT * FROM {className}"
+                        : $"SELECT {properties} FROM {className}";
+                    if (!string.IsNullOrEmpty(whereClause))
+                        query += $" WHERE {whereClause}";
+
+                    var instances = session.QueryInstances("root/cimv2", "WQL", query);
+                    CimInstance result = null;
+                    foreach (var instance in instances) { result = instance; break; }
+                    return result;
+                }
+                catch (Exception ex)
+                {
+                    LogManager.LogDebug($"[CIM] Query {className} WHERE {whereClause} failed: {ex.Message}");
+                    throw;
+                }
+            }, ct).ConfigureAwait(false);
+        }
+
+        /// <summary>
         /// Legacy WMI fallback with parallel query execution
         /// TAG: #PERFORMANCE_AUDIT #WMI #LEGACY #OPTIMIZED #FALLBACK #VERSION_7
         /// OPTIMIZATION #7: Parallelize WMI class queries for 3x faster execution
@@ -467,23 +551,27 @@ namespace NecessaryAdminTool
                     scope = WmiConnectionPool.GetPooledScope(hostname, username, password);
 
                     // STEP 2: Execute queries IN PARALLEL (OPTIMIZATION #7)
-                    // All three queries share the same ManagementScope connection
-                    var osTask = Task.Run(() => QueryWmiClass(scope, "Win32_OperatingSystem"), ct);
-                    var csTask = Task.Run(() => QueryWmiClass(scope, "Win32_ComputerSystem"), ct);
+                    // All queries share the same ManagementScope connection
+                    var osTask   = Task.Run(() => QueryWmiClass(scope, "Win32_OperatingSystem"), ct);
+                    var csTask   = Task.Run(() => QueryWmiClass(scope, "Win32_ComputerSystem"), ct);
                     var biosTask = Task.Run(() => QueryWmiClass(scope, "Win32_BIOS"), ct);
+                    var cpuTask  = Task.Run(() => QueryWmiClass(scope, "Win32_Processor"), ct);
+                    var diskTask = Task.Run(() => QueryWmiClassWithWhere(scope, "Win32_LogicalDisk", "DeviceID='C:'"), ct);
 
-                    ManagementObject osResult = null;
-                    ManagementObject csResult = null;
+                    ManagementObject osResult   = null;
+                    ManagementObject csResult   = null;
                     ManagementObject biosResult = null;
+                    ManagementObject cpuResult  = null;
+                    ManagementObject diskResult = null;
 
                     try
                     {
-                        // Wait for all three to complete (or timeout)
-                        await Task.WhenAll(osTask, csTask, biosTask).ConfigureAwait(false);
-                        // Now safe - WhenAll already caught exceptions
-                        osResult = osTask.Result;
-                        csResult = csTask.Result;
+                        await Task.WhenAll(osTask, csTask, biosTask, cpuTask, diskTask).ConfigureAwait(false);
+                        osResult   = osTask.Result;
+                        csResult   = csTask.Result;
                         biosResult = biosTask.Result;
+                        cpuResult  = cpuTask.Result;
+                        diskResult = diskTask.Result;
                     }
                     catch (Exception ex)
                     {
@@ -504,6 +592,12 @@ namespace NecessaryAdminTool
                             var bootTime = ManagementDateTimeConverter.ToDateTime(
                                 osResult["LastBootUpTime"].ToString());
                             spec.LastBoot = bootTime.ToString("yyyy-MM-dd HH:mm");
+                        }
+
+                        if (osResult["InstallDate"] != null)
+                        {
+                            var installDt = ManagementDateTimeConverter.ToDateTime(osResult["InstallDate"].ToString());
+                            spec.InstallDate = installDt.ToString("yyyy-MM-dd");
                         }
 
                         osResult.Dispose();
@@ -531,6 +625,51 @@ namespace NecessaryAdminTool
                         spec.Bios = biosResult["SMBIOSBIOSVersion"]?.ToString() ?? "N/A";
                         biosResult.Dispose();
                     }
+
+                    if (cpuResult != null)
+                    {
+                        spec.CPU = cpuResult["Name"]?.ToString() ?? "N/A";
+                        spec.Cores = $"{cpuResult["NumberOfCores"]}C / {cpuResult["NumberOfLogicalProcessors"]}T";
+                        cpuResult.Dispose();
+                    }
+
+                    if (diskResult != null)
+                    {
+                        if (diskResult["Size"] != null && diskResult["FreeSpace"] != null)
+                        {
+                            long size = Convert.ToInt64(diskResult["Size"]);
+                            long free = Convert.ToInt64(diskResult["FreeSpace"]);
+                            spec.Disk = $"{free / (1024L * 1024 * 1024)} GB free / {size / (1024L * 1024 * 1024)} GB";
+                        }
+                        diskResult.Dispose();
+                    }
+
+                    // SecurityCenter2 — separate namespace, optional (not on Server SKUs)
+                    try
+                    {
+                        var secScope = new ManagementScope($"\\\\{hostname}\\root\\SecurityCenter2");
+                        secScope.Connect();
+                        using (var s = new ManagementObjectSearcher(secScope,
+                            new ObjectQuery("SELECT displayName,productState FROM AntiVirusProduct")))
+                        using (var r = s.Get())
+                        {
+                            var av = r.Cast<ManagementObject>().FirstOrDefault();
+                            if (av != null)
+                            {
+                                spec.AV       = av["displayName"]?.ToString() ?? "N/A";
+                                spec.AVStatus = av["productState"]?.ToString() ?? "N/A";
+                                av.Dispose();
+                            }
+                        }
+                        using (var s2 = new ManagementObjectSearcher(secScope,
+                            new ObjectQuery("SELECT displayName FROM FirewallProduct")))
+                        using (var r2 = s2.Get())
+                        {
+                            var fw = r2.Cast<ManagementObject>().FirstOrDefault();
+                            if (fw != null) { spec.Firewall = fw["displayName"]?.ToString() ?? "N/A"; fw.Dispose(); }
+                        }
+                    }
+                    catch { /* SecurityCenter2 not available on Server SKUs */ }
 
                     return spec;
                 }
@@ -573,6 +712,32 @@ namespace NecessaryAdminTool
         }
 
         /// <summary>
+        /// Query a WMI class with a WHERE clause and return first result
+        /// TAG: #WMI #PERFORMANCE_AUDIT
+        /// </summary>
+        private ManagementObject QueryWmiClassWithWhere(ManagementScope scope, string className, string whereClause)
+        {
+            try
+            {
+                string query = string.IsNullOrEmpty(whereClause)
+                    ? $"SELECT * FROM {className}"
+                    : $"SELECT * FROM {className} WHERE {whereClause}";
+                using (var searcher = new ManagementObjectSearcher(scope, new ObjectQuery(query)))
+                using (var results = searcher.Get())
+                {
+                    foreach (ManagementObject obj in results)
+                        return obj; // Caller responsible for disposal
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogDebug($"[WMI] Query {className} WHERE {whereClause} failed: {ex.Message}");
+                return null;
+            }
+            return null;
+        }
+
+        /// <summary>
         /// Convert NatAgent system info to HardwareSpec for use in scan results.
         /// TAG: #NAT_AGENT #FLEET_SCAN
         /// </summary>
@@ -592,7 +757,18 @@ namespace NecessaryAdminTool
                 MAC         = info.MACAddress ?? "N/A",
                 LastBoot    = info.LastBoot ?? "N/A",
                 TPMEnabled  = info.TPMStatus ?? "Unknown",
+                CPU         = info.Processor ?? "N/A",
+                BitLocker   = info.SecureBoot ?? "Unknown",
+                Disk        = FormatDiskString(info.DiskTotalGB, info.DiskFreeGB),
             };
+        }
+
+        private static string FormatDiskString(string totalGB, string freeGB)
+        {
+            if (string.IsNullOrEmpty(totalGB) || string.IsNullOrEmpty(freeGB)) return "N/A";
+            if (double.TryParse(totalGB, out double total) && double.TryParse(freeGB, out double free))
+                return $"{(int)free} GB free / {(int)total} GB";
+            return "N/A";
         }
 
         // ══════════════════════════════════════════════════════════════
