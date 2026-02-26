@@ -13,7 +13,14 @@ namespace NecessaryAdminTool.Models
         private string _healthIcon;
         private string _latencyColor;
         private string _latencyBg;
+        private string _ipAddress = "---";
         private string _favoriteIcon = "☆";
+
+        public string IPAddress
+        {
+            get => _ipAddress;
+            set { _ipAddress = value; OnPropertyChanged(nameof(IPAddress)); }
+        }
 
         public string Hostname
         {

@@ -411,6 +411,18 @@ namespace NecessaryAdminTool.Properties {
             }
         }
 
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("6")]
+        public int DCHealthCollapsedCount {
+            get {
+                return ((int)(this["DCHealthCollapsedCount"]));
+            }
+            set {
+                this["DCHealthCollapsedCount"] = value;
+            }
+        }
+
         // TAG: #SECURITY #AUTHENTICATION #CREDENTIAL_STORAGE
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]

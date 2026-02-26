@@ -1134,12 +1134,32 @@
                                 <Border Grid.Column="1" Background="#FF1E1E1E" BorderBrush="{DynamicResource AccentOrangeBrush}"
                                         BorderThickness="1" CornerRadius="8" Padding="16" Margin="4,0">
                                     <StackPanel>
-                                        <!-- Header with Domain Suffix - TAG: #DC_HEALTH #UI_IMPROVEMENT -->
+                                        <!-- Header with Domain Suffix + Rows Selector - TAG: #DC_HEALTH #UI_IMPROVEMENT -->
                                         <Grid Margin="0,0,0,12">
-                                            <TextBlock Text="🌐 DOMAIN CONTROLLERS" Foreground="{DynamicResource AccentOrangeBrush}"
-                                                       FontSize="11" FontWeight="Bold" HorizontalAlignment="Left"/>
-                                            <TextBlock x:Name="TxtDCDomainSuffix" Text="" Foreground="{DynamicResource TextMutedBrush}"
-                                                       FontSize="9" FontWeight="Normal" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="🌐 DOMAIN CONTROLLERS"
+                                                       Foreground="{DynamicResource AccentOrangeBrush}"
+                                                       FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock x:Name="TxtDCDomainSuffix" Text=""
+                                                           Foreground="{DynamicResource TextMutedBrush}"
+                                                           FontSize="9" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                                <ComboBox x:Name="CboCollapsedRows"
+                                                          Width="68" FontSize="9" Height="22"
+                                                          Background="#FF2A2A2A" Foreground="{DynamicResource TextMutedBrush}"
+                                                          BorderBrush="#FF4A4A4A" BorderThickness="1"
+                                                          SelectionChanged="CboCollapsedRows_SelectionChanged"
+                                                          ToolTip="Rows shown when collapsed">
+                                                    <ComboBoxItem Content="2 rows" Tag="4"/>
+                                                    <ComboBoxItem Content="3 rows" Tag="6" IsSelected="True"/>
+                                                    <ComboBoxItem Content="4 rows" Tag="8"/>
+                                                    <ComboBoxItem Content="5 rows" Tag="10"/>
+                                                    <ComboBoxItem Content="All" Tag="0"/>
+                                                </ComboBox>
+                                            </StackPanel>
                                         </Grid>
 
                                         <!-- DC Count Summary -->
@@ -1157,59 +1177,69 @@
                                             </StackPanel>
                                         </Grid>
 
-                                        <!-- DC Health List - TAG: #DC_HEALTH #UI_IMPROVEMENT #RESPONSIVE_LAYOUT - Auto-expanding cards -->
+                                        <!-- DC Health List - TAG: #DC_HEALTH #UI_IMPROVEMENT #COMPACT_ROWS -->
                                         <Border Background="#FF2A2A2A" BorderBrush="#FF3C3C3C" BorderThickness="1"
-                                                CornerRadius="4" Padding="12">
+                                                CornerRadius="4" Padding="8,6">
                                             <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                                                 <ItemsControl x:Name="ListDCHealth">
-                                                    <!-- TAG: #DC_HEALTH #UI_IMPROVEMENT - WrapPanel with responsive card sizing -->
                                                     <ItemsControl.ItemsPanel>
                                                         <ItemsPanelTemplate>
-                                                            <WrapPanel Orientation="Horizontal" ItemWidth="200" ItemHeight="120"/>
+                                                            <UniformGrid Columns="2"/>
                                                         </ItemsPanelTemplate>
                                                     </ItemsControl.ItemsPanel>
 
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
-                                                            <!-- DC Card - TAG: #DC_HEALTH #UI_IMPROVEMENT #READABILITY_ENHANCED #RESPONSIVE #FAVORITES -->
-                                                            <Border Background="#FF2C2C2C" BorderBrush="#FF4A4A4A"
-                                                                    BorderThickness="1.5" CornerRadius="8" Padding="16,14"
-                                                                    Margin="6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                                                                    AllowDrop="True" Tag="{Binding Hostname}">
+                                                            <!-- Compact DC Row - TAG: #DC_HEALTH #COMPACT_ROWS #FAVORITES -->
+                                                            <Border Background="#FF2C2C2C" BorderBrush="#FF3A3A3A"
+                                                                    BorderThickness="0,0,0,1" Padding="6,5"
+                                                                    Margin="0,1" Tag="{Binding Hostname}">
                                                                 <Grid>
-                                                                    <!-- Favorite Star Button - Top Right -->
-                                                                    <Button x:Name="BtnFavoriteDC"
-                                                                            HorizontalAlignment="Right" VerticalAlignment="Top"
-                                                                            Width="24" Height="24" Padding="0" Margin="-8,-8,0,0"
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="10"/>   <!-- status dot -->
+                                                                        <ColumnDefinition Width="*"/>    <!-- hostname + IP -->
+                                                                        <ColumnDefinition Width="Auto"/> <!-- latency badge -->
+                                                                        <ColumnDefinition Width="18"/>   <!-- star -->
+                                                                    </Grid.ColumnDefinitions>
+
+                                                                    <!-- Status Dot -->
+                                                                    <Ellipse Grid.Column="0"
+                                                                             Fill="{Binding LatencyColor, Mode=OneWay}"
+                                                                             Width="7" Height="7"
+                                                                             VerticalAlignment="Center"/>
+
+                                                                    <!-- Hostname + IP stacked -->
+                                                                    <StackPanel Grid.Column="1" Margin="7,0,6,0" VerticalAlignment="Center">
+                                                                        <TextBlock Text="{Binding Hostname, Mode=OneWay}"
+                                                                                   Foreground="#FFEEEEEE" FontSize="11" FontWeight="SemiBold"
+                                                                                   TextTrimming="CharacterEllipsis"/>
+                                                                        <TextBlock Text="{Binding IPAddress, Mode=OneWay}"
+                                                                                   Foreground="{DynamicResource TextMutedBrush}"
+                                                                                   FontSize="9" TextTrimming="CharacterEllipsis"/>
+                                                                    </StackPanel>
+
+                                                                    <!-- Latency Badge -->
+                                                                    <Border Grid.Column="2"
+                                                                            Background="{Binding LatencyBg, Mode=OneWay}"
+                                                                            CornerRadius="6" Padding="7,2"
+                                                                            VerticalAlignment="Center" Margin="0,0,4,0">
+                                                                        <TextBlock Foreground="{Binding LatencyColor, Mode=OneWay}"
+                                                                                   FontSize="9" FontWeight="Bold">
+                                                                            <Run Text="{Binding AvgLatency, Mode=OneWay, StringFormat={}{0}ms}"/>
+                                                                        </TextBlock>
+                                                                    </Border>
+
+                                                                    <!-- Favorite Star -->
+                                                                    <Button Grid.Column="3"
+                                                                            Width="16" Height="16" Padding="0"
                                                                             Background="Transparent" BorderThickness="0"
-                                                                            Cursor="Hand"
+                                                                            Cursor="Hand" VerticalAlignment="Center"
                                                                             Click="BtnFavoriteDC_Click"
                                                                             Tag="{Binding Hostname}"
-                                                                            ToolTip="Click to favorite/unfavorite this DC">
-                                                                        <TextBlock Text="{Binding FavoriteIcon}" FontSize="16"/>
+                                                                            ToolTip="Favorite / unfavorite this DC">
+                                                                        <TextBlock Text="{Binding FavoriteIcon}" FontSize="10"
+                                                                                   VerticalAlignment="Center" HorizontalAlignment="Center"/>
                                                                     </Button>
-
-                                                                    <StackPanel>
-                                                                        <!-- DC Hostname - Larger, more prominent -->
-                                                                        <TextBlock Text="{Binding Hostname, Mode=OneWay}"
-                                                                                   Foreground="#FFEEEEEE" FontSize="13" FontWeight="Bold"
-                                                                                   TextAlignment="Center" TextTrimming="CharacterEllipsis"
-                                                                                   Margin="0,0,0,10"/>
-
-                                                                        <!-- Latency Badge - Larger, primary metric -->
-                                                                        <Border Background="{Binding LatencyBg, Mode=OneWay}"
-                                                                                CornerRadius="12" Padding="14,6"
-                                                                                HorizontalAlignment="Center" Margin="0,0,0,10">
-                                                                            <TextBlock Foreground="{Binding LatencyColor, Mode=OneWay}"
-                                                                                       FontSize="14" FontWeight="Bold" TextAlignment="Center">
-                                                                                <Run Text="{Binding AvgLatency, Mode=OneWay, StringFormat={}{0}ms}"/>
-                                                                            </TextBlock>
-                                                                        </Border>
-
-                                                                        <!-- Health Icon - Larger for better visibility -->
-                                                                        <TextBlock Text="{Binding HealthIcon, Mode=OneWay}"
-                                                                                   FontSize="24" TextAlignment="Center"/>
-                                                                    </StackPanel>
                                                                 </Grid>
                                                             </Border>
                                                         </DataTemplate>
@@ -2822,20 +2852,25 @@
                                     <StackPanel x:Name="DCHistoryPanel" Visibility="Collapsed">
                                         <ScrollViewer MaxHeight="250" VerticalScrollBarVisibility="Auto">
                                             <ItemsControl x:Name="DCHistoryList">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <UniformGrid Columns="2"/>
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
-                                                        <Border Background="#FF252525" Padding="12,10" Margin="0,0,0,8"
-                                                                CornerRadius="4" BorderBrush="{DynamicResource AccentOrangeBrush}" BorderThickness="0,0,0,2">
+                                                        <Border Background="#FF252525" Padding="6,5" Margin="0,1"
+                                                                BorderBrush="#FF3A3A3A" BorderThickness="0,0,0,1">
                                                             <Grid>
                                                                 <Grid.ColumnDefinitions>
-                                                                    <ColumnDefinition Width="Auto"/>
-                                                                    <ColumnDefinition Width="*"/>
-                                                                    <ColumnDefinition Width="Auto"/>
+                                                                    <ColumnDefinition Width="10"/>   <!-- status dot -->
+                                                                    <ColumnDefinition Width="*"/>    <!-- hostname + last seen -->
+                                                                    <ColumnDefinition Width="Auto"/> <!-- status badge -->
                                                                 </Grid.ColumnDefinitions>
 
-                                                                <!-- Status Indicator -->
-                                                                <Border Grid.Column="0" Width="12" Height="12" CornerRadius="6"
-                                                                        Margin="0,0,12,0" VerticalAlignment="Center">
+                                                                <!-- Status Dot -->
+                                                                <Border Grid.Column="0" Width="7" Height="7" CornerRadius="4"
+                                                                        VerticalAlignment="Center">
                                                                     <Border.Style>
                                                                         <Style TargetType="Border">
                                                                             <Setter Property="Background" Value="#666666"/>
@@ -2868,24 +2903,24 @@
                                                                     </Border.Style>
                                                                 </Border>
 
-                                                                <StackPanel Grid.Column="1">
-                                                                    <TextBlock Text="{Binding Hostname}" Foreground="White"
-                                                                               FontSize="12" FontWeight="SemiBold"/>
-                                                                    <TextBlock FontSize="10" Margin="0,3,0,0">
-                                                                        <TextBlock.Foreground>
-                                                                            <DynamicResource ResourceKey="AccentZincBrush"/>
-                                                                        </TextBlock.Foreground>
-                                                                        <Run Text="Last seen: "/>
-                                                                        <Run Text="{Binding LastSeen, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" Foreground="#CCCCCC"/>
-                                                                        <Run Text=" | Latency: "/>
+                                                                <!-- Hostname + last seen/latency -->
+                                                                <StackPanel Grid.Column="1" Margin="7,0,4,0" VerticalAlignment="Center">
+                                                                    <TextBlock Text="{Binding Hostname}" Foreground="#FFEEEEEE"
+                                                                               FontSize="11" FontWeight="SemiBold"
+                                                                               TextTrimming="CharacterEllipsis"/>
+                                                                    <TextBlock FontSize="9" Foreground="{DynamicResource TextMutedBrush}"
+                                                                               TextTrimming="CharacterEllipsis">
+                                                                        <Run Text="{Binding LastSeen, StringFormat='{}{0:MM-dd HH:mm}'}"/>
+                                                                        <Run Text=" ·"/>
                                                                         <Run Text="{Binding AvgLatency}" Foreground="{DynamicResource AccentOrangeBrush}"/>
                                                                         <Run Text="ms" Foreground="{DynamicResource AccentOrangeBrush}"/>
                                                                     </TextBlock>
                                                                 </StackPanel>
 
-                                                                <Border Grid.Column="2" Background="#FF1A1A1A" CornerRadius="3"
-                                                                        Padding="8,4" VerticalAlignment="Center">
-                                                                    <TextBlock FontSize="9" FontWeight="SemiBold">
+                                                                <!-- Status badge -->
+                                                                <Border Grid.Column="2" Background="#FF1A1A1A" CornerRadius="4"
+                                                                        Padding="5,2" VerticalAlignment="Center">
+                                                                    <TextBlock FontSize="8" FontWeight="SemiBold">
                                                                         <TextBlock.Style>
                                                                             <Style TargetType="TextBlock">
                                                                                 <Setter Property="Text" Value="OFFLINE"/>
@@ -2896,11 +2931,11 @@
                                                                                         <Setter Property="Foreground" Value="#00FF00"/>
                                                                                     </DataTrigger>
                                                                                     <DataTrigger Binding="{Binding StatusIcon}" Value="🟡">
-                                                                                        <Setter Property="Text" Value="~1 WEEK"/>
+                                                                                        <Setter Property="Text" Value="~1 WK"/>
                                                                                         <Setter Property="Foreground" Value="#FFFF00"/>
                                                                                     </DataTrigger>
                                                                                     <DataTrigger Binding="{Binding StatusIcon}" Value="🟠">
-                                                                                        <Setter Property="Text" Value="~1 MONTH"/>
+                                                                                        <Setter Property="Text" Value="~1 MO"/>
                                                                                         <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                                                                                     </DataTrigger>
                                                                                 </Style.Triggers>

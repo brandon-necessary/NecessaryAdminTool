@@ -2044,7 +2044,16 @@ namespace NecessaryAdminTool
         private double _previousOffline;
         private double _previousHealth;
         private double _previousCompliance;
+        private double _previousDbSize;
         private bool _kpiCardsInitialized;
+        private DateTime _lastFleetRefreshTime = DateTime.MinValue;
+        private List<Models.DCHealthItem> _allDCHealthItems;
+        // Sparkline rolling history (capped at 20 points per card)
+        private readonly List<double> _sparkTotal      = new List<double>();
+        private readonly List<double> _sparkOnline     = new List<double>();
+        private readonly List<double> _sparkOffline    = new List<double>();
+        private readonly List<double> _sparkHealth     = new List<double>();
+        private readonly List<double> _sparkCompliance = new List<double>();
         private DispatcherTimer _statusBarTimer;
         private string _currentServiceTag = "";
         private string _authUser = Environment.UserName;
@@ -2056,6 +2065,8 @@ namespace NecessaryAdminTool
         // Recent targets tracking (last 10 machines)
         private List<string> _recentTargets = new List<string>();
         private const int MaxRecentTargets = 10;
+        // Items shown when DC list is collapsed; int.MaxValue = show all (no toggle button)
+        private int _dcHealthCollapsedCount = 6;
 
         // Full PowerShell path prevents PATH hijacking attacks
         private static readonly string PowerShellExe = Path.Combine(
@@ -8921,8 +8932,8 @@ if ($rebootPending) {
                             // Update card: IP in subtitle, full FQDN in tooltip
                             ti.Text = ip;
                             card.ToolTip = $"{dc}\nIP: {ip}\nLatency: {ms}ms";
-                            // Dropdown shows short name (Tag stays as full FQDN for resolution)
-                            cbi.Content = $"{shortName} ({ms}ms)";
+                            // Dropdown shows short name + IP + latency (Tag stays as full FQDN for resolution)
+                            cbi.Content = $"{shortName} [{ip}] ({ms}ms)";
                             if (!on) { card.Background = Brushes.DarkRed; statusColor = Brushes.Red; }
                             else if (ms < 60) { card.Background = Brushes.DarkGreen; statusColor = Brushes.Lime; }
                             else if (ms < 150) { card.Background = Brushes.DarkGoldenrod; statusColor = Brushes.Yellow; }
@@ -8934,7 +8945,7 @@ if ($rebootPending) {
                             // BUG FIX: Also update Fleet tab dropdown item - TAG: #AD_FLEET_INVENTORY #VERSION_7
                             if (fleetItems.TryGetValue(dc, out var fleetCbi))
                             {
-                                fleetCbi.Content = $"{shortName} ({ms}ms)";
+                                fleetCbi.Content = $"{shortName} [{ip}] ({ms}ms)";
                                 fleetCbi.Foreground = statusColor;
                             }
 
@@ -8944,9 +8955,9 @@ if ($rebootPending) {
                                 {
                                     bestPing = ms;
                                     bestDC = dc;
-                                    // Auto item shows best short name + latency; Tag stays as full FQDN
+                                    // Auto item shows best short name + IP + latency; Tag stays as full FQDN
                                     string bestShort = bestDC.Contains(".") ? bestDC.Substring(0, bestDC.IndexOf('.')) : bestDC;
-                                    autoItem.Content = $"Auto ({bestShort} - {bestPing}ms)";
+                                    autoItem.Content = $"Auto ({bestShort} [{ip}] - {bestPing}ms)";
                                     autoItem.Tag = bestDC; // Full FQDN for resolution
                                     autoItem.Foreground = statusColor;
                                 }
@@ -12262,18 +12273,67 @@ if ($rebootPending) {
                     KpiCompliance.SetValue(compliancePercent, _previousCompliance);
                     KpiCompliance.Subtitle = $"{win11 + win10} modern OS devices";
 
+                    // KpiLastScan: minutes elapsed since previous refresh (0 on first run)
                     KpiLastScan.FormatString = "F0";
-                    KpiLastScan.SetValue(total > 0 ? 1 : 0);
-                    KpiLastScan.Subtitle = $"Updated {DateTime.Now:HH:mm}";
+                    double minutesAgo = _lastFleetRefreshTime == DateTime.MinValue
+                        ? 0
+                        : (DateTime.Now - _lastFleetRefreshTime).TotalMinutes;
+                    KpiLastScan.SetValue(Math.Round(minutesAgo));
+                    KpiLastScan.Subtitle = minutesAgo < 1
+                        ? $"Just updated  •  {DateTime.Now:HH:mm}"
+                        : minutesAgo < 60
+                            ? $"{(int)minutesAgo}m ago  •  {DateTime.Now:HH:mm}"
+                            : $"{(int)(minutesAgo / 60)}h ago  •  {DateTime.Now:HH:mm}";
+                    _lastFleetRefreshTime = DateTime.Now;
 
+                    // KpiDbSize: actual file size for SQLite/Access; 0 for SQL Server
                     KpiDbSize.FormatString = "F1";
+                    double dbSizeMb = 0;
+                    try
+                    {
+                        var dbType = Properties.Settings.Default.DatabaseType ?? "SQLite";
+                        var dbDir  = Properties.Settings.Default.DatabasePath;
+                        if (string.IsNullOrWhiteSpace(dbDir))
+                            dbDir = Path.Combine(
+                                Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                                "NecessaryAdminTool");
+
+                        if (dbType.Equals("SQLite", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var dbFile = Path.Combine(dbDir, "NecessaryAdminTool.db");
+                            if (File.Exists(dbFile))
+                                dbSizeMb = new FileInfo(dbFile).Length / 1024.0 / 1024.0;
+                        }
+                        else if (dbType.Equals("Access", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var accFiles = Directory.GetFiles(dbDir, "*.accdb", SearchOption.TopDirectoryOnly);
+                            if (accFiles.Length > 0)
+                                dbSizeMb = new FileInfo(accFiles[0]).Length / 1024.0 / 1024.0;
+                        }
+                        // SQL Server: leave at 0 (size not measurable from client)
+                    }
+                    catch { /* DB size is best-effort — silently skip on access error */ }
+                    KpiDbSize.SetValue(dbSizeMb, _previousDbSize);
                     KpiDbSize.Subtitle = Properties.Settings.Default.DatabaseType ?? "SQLite";
 
-                    _previousTotal = total;
-                    _previousOnline = online;
-                    _previousOffline = offline;
-                    _previousHealth = healthScore;
+                    // Sparkline rolling history (max 20 points)
+                    AppendSparkline(_sparkTotal,      total);
+                    AppendSparkline(_sparkOnline,     online);
+                    AppendSparkline(_sparkOffline,    offline);
+                    AppendSparkline(_sparkHealth,     healthScore);
+                    AppendSparkline(_sparkCompliance, compliancePercent);
+                    if (_sparkTotal.Count      >= 2) KpiTotal.SparklineData      = new List<double>(_sparkTotal);
+                    if (_sparkOnline.Count     >= 2) KpiOnline.SparklineData     = new List<double>(_sparkOnline);
+                    if (_sparkOffline.Count    >= 2) KpiOffline.SparklineData    = new List<double>(_sparkOffline);
+                    if (_sparkHealth.Count     >= 2) KpiHealth.SparklineData     = new List<double>(_sparkHealth);
+                    if (_sparkCompliance.Count >= 2) KpiCompliance.SparklineData = new List<double>(_sparkCompliance);
+
+                    _previousTotal      = total;
+                    _previousOnline     = online;
+                    _previousOffline    = offline;
+                    _previousHealth     = healthScore;
                     _previousCompliance = compliancePercent;
+                    _previousDbSize     = dbSizeMb;
 
                     // Update status bar - TAG: #AUTO_UPDATE_UI_ENGINE #STATUS_BAR
                     UpdateStatusBar(total, online, offline, win7 + legacy);
@@ -12570,11 +12630,31 @@ if ($rebootPending) {
                     // Wait for all pings to complete
                     dcList = (await Task.WhenAll(pingTasks)).ToList();
 
+                    // TAG: #DC_HEALTH #IP_RESOLUTION - Resolve IPs in parallel (reuse 10-min DnsHelper cache)
+                    var dnsResults = await Task.WhenAll(dcList.Select(async dc =>
+                    {
+                        string ip = "---";
+                        try
+                        {
+                            var dnsTask = DnsHelper.GetHostEntryAsync(dc.Hostname);
+                            if (await Task.WhenAny(dnsTask, Task.Delay(2000)) == dnsTask)
+                            {
+                                var entry = await dnsTask;
+                                ip = entry?.AddressList.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork)?.ToString() ?? "IPv6";
+                            }
+                            else ip = "DNS timeout";
+                        }
+                        catch { ip = "DNS err"; }
+                        return (dc.Hostname, ip);
+                    }));
+                    var ipLookup = dnsResults.ToDictionary(r => r.Hostname, r => r.ip);
+
                     // TAG: #DC_HEALTH #UI_IMPROVEMENT #FAVORITES - Create display items with short names and styled latency
                     var dcHealthItems = dcList.Select(dc => new Models.DCHealthItem
                     {
                         // Strip domain suffix for cleaner display
                         Hostname = dc.Hostname.Contains(".") ? dc.Hostname.Split('.')[0] : dc.Hostname,
+                        IPAddress = ipLookup.TryGetValue(dc.Hostname, out var resolvedIp) ? resolvedIp : "---",
                         AvgLatency = dc.AvgLatency,
                         HealthIcon = dc.AvgLatency < 50 ? "?" :
                                     dc.AvgLatency < 100 ? "??" :
@@ -12592,6 +12672,7 @@ if ($rebootPending) {
                     }).ToList();
 
                     // TAG: #DC_HEALTH #FAVORITES - Apply sorting and visibility based on preferences
+                    _allDCHealthItems = dcHealthItems;
                     ListDCHealth.ItemsSource = dcHealthItems;
                     RefreshDCHealthDisplay();
 
@@ -12659,9 +12740,12 @@ if ($rebootPending) {
                 // Load expanded state
                 _dcHealthExpanded = Properties.Settings.Default.DCHealthExpanded;
                 if (TxtToggleDCHealth != null)
-                {
                     TxtToggleDCHealth.Text = _dcHealthExpanded ? "▲ SHOW LESS" : "▼ SHOW MORE";
-                }
+
+                // Load collapsed count and sync ComboBox
+                int savedCount = Properties.Settings.Default.DCHealthCollapsedCount;
+                _dcHealthCollapsedCount = savedCount > 0 ? savedCount : 6;
+                SyncCollapsedRowsComboBox();
             }
             catch (Exception ex)
             {
@@ -12679,6 +12763,7 @@ if ($rebootPending) {
                 Properties.Settings.Default.FavoriteDCs = string.Join(",", _favoriteDCs);
                 Properties.Settings.Default.DCDisplayOrder = string.Join(",", _dcDisplayOrder);
                 Properties.Settings.Default.DCHealthExpanded = _dcHealthExpanded;
+                Properties.Settings.Default.DCHealthCollapsedCount = _dcHealthCollapsedCount == int.MaxValue ? 0 : _dcHealthCollapsedCount;
                 Properties.Settings.Default.Save();
                 LogManager.LogInfo($"[DC Health] Saved preferences: {_favoriteDCs.Count} favorites, expanded={_dcHealthExpanded}");
             }
@@ -12725,6 +12810,37 @@ if ($rebootPending) {
         /// Toggle expanded/collapsed state of DC Health list
         /// TAG: #DC_HEALTH #EXPAND_COLLAPSE
         /// </summary>
+        private void CboCollapsedRows_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (CboCollapsedRows?.SelectedItem is ComboBoxItem item && item.Tag != null
+                && int.TryParse(item.Tag.ToString(), out int tag))
+            {
+                _dcHealthCollapsedCount = tag == 0 ? int.MaxValue : tag;
+                // "All" — force expanded so toggle button hides and full list shows
+                if (_dcHealthCollapsedCount == int.MaxValue)
+                    _dcHealthExpanded = true;
+                SaveDCHealthPreferences();
+                RefreshDCHealthDisplay();
+                LogManager.LogInfo($"[DC Health] Collapsed count set to {_dcHealthCollapsedCount}");
+            }
+        }
+
+        private void SyncCollapsedRowsComboBox()
+        {
+            if (CboCollapsedRows == null) return;
+            int targetTag = _dcHealthCollapsedCount == int.MaxValue ? 0 : _dcHealthCollapsedCount;
+            foreach (ComboBoxItem item in CboCollapsedRows.Items)
+            {
+                if (int.TryParse(item.Tag?.ToString(), out int tag) && tag == targetTag)
+                {
+                    CboCollapsedRows.SelectedItem = item;
+                    return;
+                }
+            }
+            // Fallback: select "3 rows" (tag=6)
+            CboCollapsedRows.SelectedIndex = 1;
+        }
+
         private void BtnToggleDCHealth_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -12750,11 +12866,10 @@ if ($rebootPending) {
         {
             try
             {
-                // Get current DC list from ListDCHealth.ItemsSource
-                var dcList = ListDCHealth.ItemsSource as System.Collections.Generic.IEnumerable<Models.DCHealthItem>;
-                if (dcList == null) return;
+                // Use the full cached list — never read from ItemsSource (it may be truncated)
+                if (_allDCHealthItems == null || _allDCHealthItems.Count == 0) return;
 
-                var dcArray = dcList.ToList();
+                var dcArray = _allDCHealthItems.ToList();
 
                 // Update display order with any new DCs not in the list
                 foreach (var dc in dcArray)
@@ -12779,19 +12894,19 @@ if ($rebootPending) {
                 // Update FavoriteIcon property
                 foreach (var dc in sortedList)
                 {
-                    dc.FavoriteIcon = _favoriteDCs.Contains(dc.Hostname) ? "?" : "?";
+                    dc.FavoriteIcon = _favoriteDCs.Contains(dc.Hostname) ? "★" : "☆";
                 }
 
-                // Apply visibility (show only 6 if collapsed)
-                int visibleCount = _dcHealthExpanded ? sortedList.Count : Math.Min(6, sortedList.Count);
+                // Apply visibility (collapse to _dcHealthCollapsedCount if not expanded)
+                int visibleCount = _dcHealthExpanded ? sortedList.Count : Math.Min(_dcHealthCollapsedCount, sortedList.Count);
                 var visibleItems = sortedList.Take(visibleCount).ToList();
 
                 ListDCHealth.ItemsSource = new System.Collections.ObjectModel.ObservableCollection<Models.DCHealthItem>(visibleItems);
 
-                // Update toggle button visibility
+                // Show toggle only when there are more items than the collapsed threshold
                 if (BtnToggleDCHealth != null)
                 {
-                    BtnToggleDCHealth.Visibility = sortedList.Count > 6 ? Visibility.Visible : Visibility.Collapsed;
+                    BtnToggleDCHealth.Visibility = sortedList.Count > _dcHealthCollapsedCount ? Visibility.Visible : Visibility.Collapsed;
                 }
 
                 LogManager.LogDebug($"[DC Health] Display refreshed: {visibleCount}/{sortedList.Count} visible, {_favoriteDCs.Count} favorites");
@@ -18210,6 +18325,12 @@ if ($rebootPending) {
         /// Initialize KPI card labels and accent colors (called once).
         /// TAG: #AUTO_UPDATE_UI_ENGINE #KPI_CARD
         /// </summary>
+        private static void AppendSparkline(List<double> history, double value, int maxPoints = 20)
+        {
+            history.Add(value);
+            while (history.Count > maxPoints) history.RemoveAt(0);
+        }
+
         private void InitializeKpiCards()
         {
             if (_kpiCardsInitialized) return;

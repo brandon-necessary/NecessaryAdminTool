@@ -43,6 +43,9 @@
     <Setting Name="DCHealthExpanded" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
+    <Setting Name="DCHealthCollapsedCount" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">6</Value>
+    </Setting>
     <!-- TAG: #CONFIGURABLE_OPTIONS #UI_PREFERENCES -->
     <Setting Name="WindowPosition" Type="System.String" Scope="User">
       <Value Profile="(Default)" />

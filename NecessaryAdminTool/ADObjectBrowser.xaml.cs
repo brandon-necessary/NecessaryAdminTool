@@ -445,6 +445,7 @@ namespace NecessaryAdminTool
 
         private void UpdateObjectCounts()
         {
+            if (TxtComputerCount == null) return;
             TxtComputerCount.Text = _currentObjects.Count(o => o.ObjectType == "Computer").ToString();
             TxtUserCount.Text     = _currentObjects.Count(o => o.ObjectType == "User").ToString();
             TxtGroupCount.Text    = _currentObjects.Count(o => o.ObjectType == "Group").ToString();
