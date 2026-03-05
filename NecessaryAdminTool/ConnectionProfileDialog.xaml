@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Connection Profiles" Height="550" Width="700"
         WindowStartupLocation="CenterOwner"
-        Background="#FF0D0D0D" ResizeMode="CanResize"
+        Background="{DynamicResource BgDarkestBrush}" ResizeMode="CanResize"
         UseLayoutRounding="True"
         SnapsToDevicePixels="True"
         TextOptions.TextFormattingMode="Display"
@@ -52,18 +52,18 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Border Grid.Row="0" Background="#FF1E1E1E" BorderBrush="{DynamicResource AccentOrangeBrush}"
+        <Border Grid.Row="0" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource AccentOrangeBrush}"
                 BorderThickness="0,0,0,2" Padding="16,12" Margin="0,0,0,16">
             <StackPanel>
                 <TextBlock Text="🔗 CONNECTION PROFILES" Foreground="{DynamicResource AccentOrangeBrush}"
                            FontSize="16" FontWeight="Bold"/>
                 <TextBlock Text="Save and manage domain controller connections for quick switching"
-                           Foreground="{StaticResource TextMuted}" FontSize="10" Margin="0,4,0,0"/>
+                           Foreground="{DynamicResource TextMutedBrush}" FontSize="10" Margin="0,4,0,0"/>
             </StackPanel>
         </Border>
 
         <!-- Profile List -->
-        <Border Grid.Row="1" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
+        <Border Grid.Row="1" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                 BorderThickness="1" CornerRadius="6" Padding="12">
             <Grid>
                 <Grid.RowDefinitions>
@@ -85,7 +85,7 @@
                         <Button Content="➕ NEW" x:Name="BtnNewProfile" Click="BtnNewProfile_Click"
                                 Style="{StaticResource BtnPrimary}" Padding="12,6" Margin="0,0,6,0"/>
                         <Button Content="✏️ EDIT" x:Name="BtnEditProfile" Click="BtnEditProfile_Click"
-                                Background="#FF2A2A2A" Foreground="White" BorderBrush="#FF444444"
+                                Background="{DynamicResource BgLightBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource BorderBrightBrush}"
                                 BorderThickness="1" Padding="12,6" FontSize="11" FontWeight="SemiBold"
                                 Margin="0,0,6,0" IsEnabled="False"/>
                         <Button Content="🗑️ DELETE" x:Name="BtnDeleteProfile" Click="BtnDeleteProfile_Click"
@@ -97,28 +97,28 @@
                 <!-- Profile DataGrid -->
                 <DataGrid x:Name="GridProfiles" Grid.Row="1"
                           AutoGenerateColumns="False" IsReadOnly="True"
-                          Background="#FF1A1A1A" Foreground="White"
-                          GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#FF2A2A2A"
-                          BorderThickness="1" BorderBrush="#FF3C3C3C"
+                          Background="{DynamicResource BgDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+                          GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{DynamicResource BgLightBrush}"
+                          BorderThickness="1" BorderBrush="{DynamicResource BorderDimBrush}"
                           HeadersVisibility="Column" SelectionMode="Single"
                           SelectionChanged="GridProfiles_SelectionChanged">
 
                     <DataGrid.ColumnHeaderStyle>
                         <Style TargetType="DataGridColumnHeader">
-                            <Setter Property="Background" Value="#FF2A2A2A"/>
+                            <Setter Property="Background" Value="{DynamicResource BgLightBrush}"/>
                             <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                             <Setter Property="FontWeight" Value="Bold"/>
                             <Setter Property="FontSize" Value="10"/>
                             <Setter Property="Padding" Value="10,8"/>
-                            <Setter Property="BorderBrush" Value="#FF3C3C3C"/>
+                            <Setter Property="BorderBrush" Value="{DynamicResource BorderDimBrush}"/>
                             <Setter Property="BorderThickness" Value="0,0,1,1"/>
                         </Style>
                     </DataGrid.ColumnHeaderStyle>
 
                     <DataGrid.RowStyle>
                         <Style TargetType="DataGridRow">
-                            <Setter Property="Background" Value="#FF1A1A1A"/>
-                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                             <Style.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
                                     <Setter Property="Background" Value="#FF252525"/>
@@ -155,7 +155,7 @@
                     Margin="0,0,8,0" IsEnabled="False"/>
 
             <Button Grid.Column="2" Content="CLOSE" x:Name="BtnClose" Click="BtnClose_Click"
-                    Background="#FF3C3C3C" Foreground="White" BorderThickness="0"
+                    Background="{DynamicResource BorderDimBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0"
                     Padding="16,8" FontSize="11" FontWeight="SemiBold"/>
         </Grid>
     </Grid>

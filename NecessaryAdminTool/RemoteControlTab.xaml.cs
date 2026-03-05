@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
 using System.Web.Script.Serialization;
+using NecessaryAdminTool.Managers.UI;
 using System.IO;
 
 namespace NecessaryAdminTool
@@ -86,8 +87,7 @@ namespace NecessaryAdminTool
 
             if (string.IsNullOrEmpty(target))
             {
-                MessageBox.Show("Please enter a target hostname or IP address.",
-                    "Target Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ToastManager.ShowWarning("Please enter a target hostname or IP address.");
                 return;
             }
 
@@ -126,14 +126,12 @@ namespace NecessaryAdminTool
                 // Update last connection display
                 TxtLastConnection.Text = $"Last: {toolType} → {target} (just now)";
 
-                MessageBox.Show($"Remote session launched: {toolType} → {target}",
-                    "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                ToastManager.ShowSuccess($"Remote session launched: {toolType} → {target}");
             }
             catch (Exception ex)
             {
                 AddToHistory(toolType, target, false, ex.Message);
-                MessageBox.Show($"Failed to launch remote session:\n\n{ex.Message}",
-                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ToastManager.ShowError($"Failed to launch remote session: {ex.Message}");
             }
         }
 
@@ -193,15 +191,13 @@ namespace NecessaryAdminTool
                 {
                     toolVM.StatusDisplay = "✅ Test Passed";
                     toolVM.StatusColor = "Green";
-                    MessageBox.Show($"{toolVM.ToolName} connection test successful!",
-                        "Test Passed", MessageBoxButton.OK, MessageBoxImage.Information);
+                    ToastManager.ShowSuccess($"{toolVM.ToolName} connection test successful!");
                 }
                 else
                 {
                     toolVM.StatusDisplay = "❌ Test Failed";
                     toolVM.StatusColor = "Red";
-                    MessageBox.Show($"{toolVM.ToolName} connection test failed.\n\nCheck configuration and try again.",
-                        "Test Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    ToastManager.ShowError($"{toolVM.ToolName} connection test failed. Check configuration and try again.");
                 }
 
                 SaveConfiguration();
@@ -277,13 +273,11 @@ namespace NecessaryAdminTool
 
                     File.WriteAllText(dialog.FileName, json);
 
-                    MessageBox.Show("Configuration exported successfully!",
-                        "Export Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                    ToastManager.ShowSuccess("Configuration exported successfully.");
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Failed to export configuration:\n\n{ex.Message}",
-                        "Export Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                    ToastManager.ShowError($"Failed to export configuration: {ex.Message}");
                 }
             }
         }
@@ -309,13 +303,11 @@ namespace NecessaryAdminTool
                     RemoteControlManager.SaveConfiguration(config);
                     Initialize(); // Reload UI
 
-                    MessageBox.Show("Configuration imported successfully!",
-                        "Import Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                    ToastManager.ShowSuccess("Configuration imported successfully.");
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Failed to import configuration:\n\n{ex.Message}",
-                        "Import Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                    ToastManager.ShowError($"Failed to import configuration: {ex.Message}");
                 }
             }
         }
@@ -346,8 +338,7 @@ namespace NecessaryAdminTool
                 RemoteControlManager.Initialize();
                 Initialize();
 
-                MessageBox.Show("All configurations have been reset.",
-                    "Reset Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                ToastManager.ShowInfo("All configurations have been reset.");
             }
         }
 
@@ -363,8 +354,7 @@ namespace NecessaryAdminTool
 
                 if (recentTargets.Count == 0)
                 {
-                    MessageBox.Show("No recent targets found.\n\nTargets will appear here after you launch remote sessions.",
-                        "No Recent Targets", MessageBoxButton.OK, MessageBoxImage.Information);
+                    ToastManager.ShowInfo("No recent targets found. Targets appear here after launching remote sessions.");
                     return;
                 }
 
@@ -391,7 +381,7 @@ namespace NecessaryAdminTool
                 clearItem.Click += (s, args) =>
                 {
                     ClearRecentTargets();
-                    MessageBox.Show("Recent targets cleared.", "Cleared", MessageBoxButton.OK, MessageBoxImage.Information);
+                    ToastManager.ShowInfo("Recent targets cleared.");
                 };
                 contextMenu.Items.Add(clearItem);
 
@@ -402,8 +392,7 @@ namespace NecessaryAdminTool
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to load recent targets:\n\n{ex.Message}",
-                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ToastManager.ShowError($"Failed to load recent targets: {ex.Message}");
             }
         }
 
@@ -444,8 +433,7 @@ namespace NecessaryAdminTool
         private void ClearHistory_Click(object sender, RoutedEventArgs e)
         {
             _connectionHistory.Clear();
-            MessageBox.Show("Connection history cleared.", "Cleared",
-                MessageBoxButton.OK, MessageBoxImage.Information);
+            ToastManager.ShowInfo("Connection history cleared.");
         }
 
         /// <summary>

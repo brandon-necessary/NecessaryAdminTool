@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
+using NecessaryAdminTool.Managers.UI;
 using System.Linq;
 using System.Web.Script.Serialization;
 
@@ -254,8 +255,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             catch (Exception ex)
             {
                 LogManager.LogError("Failed to export legal terms", ex);
-                MessageBox.Show($"Failed to export legal terms: {ex.Message}", "Export Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                Managers.UI.ToastManager.ShowError($"Failed to export legal terms: {ex.Message}");
             }
         }
 

@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using NecessaryAdminTool.Security;
+using NecessaryAdminTool.Managers.UI;
 
 namespace NecessaryAdminTool
 {
@@ -154,8 +155,7 @@ namespace NecessaryAdminTool
             catch (Exception ex)
             {
                 TxtStatusMessage.Text = $"Failed to connect: {ex.Message}";
-                MessageBox.Show($"Failed to connect to Active Directory:\n\n{ex.Message}",
-                    "Connection Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ToastManager.ShowError($"Failed to connect to Active Directory: {ex.Message}");
             }
         }
 
@@ -422,8 +422,7 @@ namespace NecessaryAdminTool
 
             if (hostnames.Count == 0)
             {
-                MessageBox.Show("Please select one or more computers to scan.",
-                    "No Computers Selected", MessageBoxButton.OK, MessageBoxImage.Information);
+                ToastManager.ShowWarning("Please select one or more computers to scan.");
                 return;
             }
 

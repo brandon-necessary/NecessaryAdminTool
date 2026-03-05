@@ -3430,7 +3430,7 @@ namespace NecessaryAdminTool
                     message += $"Windows User: {Environment.UserName}@{Environment.UserDomainName}";
                 }
 
-                MessageBox.Show(message, "Role Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                Managers.UI.ToastManager.ShowInfo(message);
                 LogManager.LogInfo($"[Role Badge] Displayed role information dialog (elevated={isAdmin}, hasCredentials={hasCredentials})");
             }
             catch (Exception ex)
@@ -14136,12 +14136,7 @@ if ($rebootPending) {
             catch (Exception ex)
             {
                 LogManager.LogError($"[MMC] LaunchMmcViaRunasAsync() FAILED for {toolName}", ex);
-                MessageBox.Show(
-                    $"Could not launch {toolName}.\n\nBoth automatic credential passing and the manual credential prompt failed.\n\nError: {ex.Message}\n\n" +
-                    $"You can try running the tool directly:\n  {mmcExe} \"{mscPath}\"",
-                    "Launch Failed",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                Managers.UI.ToastManager.ShowError($"Could not launch {toolName}: {ex.Message}");
                 return false;
             }
         }

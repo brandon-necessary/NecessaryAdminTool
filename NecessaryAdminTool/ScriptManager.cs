@@ -86,6 +86,37 @@ namespace NecessaryAdminTool
 
             public string StatusIcon => Success ? "✅" : "❌";
             public string StatusText => Success ? "Success" : "Failed";
+
+            /// <summary>Returns the human-readable description for this result's exit code.</summary>
+            public string ExitCodeDescription => ScriptManager.GetExitCodeDescription(ExitCode);
+        }
+
+        /// <summary>
+        /// Maps PowerShell deployment script exit codes to human-readable descriptions.
+        /// Covers GeneralUpdate.ps1, FeatureUpdate.ps1, and PreflightReboot.ps1 exit codes.
+        /// </summary>
+        public static string GetExitCodeDescription(int exitCode)
+        {
+            return exitCode switch
+            {
+                0  => "Already compliant or user postponed — no changes made",
+                1  => "Script error (error stream)",
+                10 => "Win10 22H2 installed (Win11-incompatible machine) — reboot issued",
+                11 => "Win11 upgrade installed successfully — reboot issued",
+                20 => "Power check failed — device on battery below threshold",
+                21 => "Pending reboot detected — run PreflightReboot.ps1 first",
+                22 => "32-bit OS — incompatible with Windows 11",
+                23 => "Hardware incompatible — TPM 2.0 / Secure Boot / RAM / Disk",
+                24 => "PSWindowsUpdate module install failed — check internet / policy",
+                25 => "No feature upgrade offered via Windows Update (WUfB / WSUS policy)",
+                26 => "Cloud (Windows Update) upgrade install failed",
+                27 => "ISO file too small — re-download or check UNC path",
+                28 => "ISO setup timed out — check %TEMP%\\$WINDOWS.~BT\\Panther\\",
+                29 => "Win10 fallback update failed (machine also Win11-incompatible)",
+                30 => "Cloud upgrade failed — Secure Boot disabled on Win11; re-enable in BIOS/UEFI",
+                -1 => "Script exception or crash — see error details",
+                _  => $"Exit code {exitCode}"
+            };
         }
 
         /// <summary>
@@ -614,6 +645,13 @@ Write-Output ""Uptime: $($uptime.Days) days, $($uptime.Hours) hours, $($uptime.M
                     "$SqlConnectionString = \"\"  # NAT_INJECT_SQL_CONN",
                     "$SqlConnectionString = \"" + connStr + "\"  # Injected by NecessaryAdminTool");
             }
+
+            // Accent color — inject the admin console's current theme primary so remote dialogs match
+            var primary = Helpers.ThemeHelper.PrimaryColor;
+            string accentHex = $"#{primary.R:X2}{primary.G:X2}{primary.B:X2}";
+            scriptContent = scriptContent.Replace(
+                "$AccentColorHex      = \"#FF8533\"  # NAT_INJECT_ACCENT_COLOR — falls back to default orange if not injected",
+                $"$AccentColorHex      = \"{accentHex}\"  # Injected by NecessaryAdminTool");
 
             return scriptContent;
         }

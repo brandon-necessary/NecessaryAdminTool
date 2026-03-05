@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="1000"
-             Background="#FF0D0D0D">
+             Background="{DynamicResource BgDarkestBrush}">
 
     <!-- TAG: #AD_OBJECT_BROWSER #RSAT_ADUC #VERSION_7 -->
     <!-- Replicates RSAT Active Directory Users and Computers structure -->
@@ -18,10 +18,10 @@
         </Grid.ColumnDefinitions>
 
         <!-- LEFT PANEL: Tree View (like ADUC left pane) -->
-        <Border Grid.Column="0" Background="#FF1A1A1A" BorderBrush="#FF3C3C3C" BorderThickness="0,0,1,0">
+        <Border Grid.Column="0" Background="{DynamicResource BgDarkBrush}" BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="0,0,1,0">
             <DockPanel>
                 <!-- Header -->
-                <Border DockPanel.Dock="Top" Background="#FF252525" Padding="12,10" BorderBrush="{DynamicResource AccentOrangeBrush}" BorderThickness="0,0,0,2">
+                <Border DockPanel.Dock="Top" Background="{DynamicResource BgMediumBrush}" Padding="12,10" BorderBrush="{DynamicResource AccentOrangeBrush}" BorderThickness="0,0,0,2">
                     <StackPanel>
                         <TextBlock Text="🌳 ACTIVE DIRECTORY" Foreground="{DynamicResource AccentOrangeBrush}" FontSize="11" FontWeight="Bold"/>
                         <TextBlock x:Name="TxtDomainName" Text="Loading..." Foreground="{DynamicResource AccentZincBrush}" FontSize="9" Margin="0,4,0,0"/>
@@ -35,7 +35,7 @@
                         <TreeView.Resources>
                             <!-- TreeViewItem Style -->
                             <Style TargetType="TreeViewItem">
-                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                                 <Setter Property="FontSize" Value="10"/>
                                 <Setter Property="Padding" Value="4,3"/>
                                 <Setter Property="Template">
@@ -51,7 +51,7 @@
                                                 <Grid Grid.Row="0">
                                                     <!-- Overlays (behind content; opacity toggled by triggers) -->
                                                     <Border x:Name="hoverOverlay" CornerRadius="3" Margin="0,1" Opacity="0"
-                                                            Background="#FF2A2A2A"/>
+                                                            Background="{DynamicResource BgLightBrush}"/>
                                                     <Border x:Name="selectionOverlay" CornerRadius="3" Margin="0,1" Opacity="0"
                                                             Background="{DynamicResource AccentGradientBrush}"/>
                                                     <!-- Content border (transparent — always on top of overlays) -->
@@ -130,10 +130,10 @@
         </Border>
 
         <!-- SPLITTER -->
-        <GridSplitter Grid.Column="1" Width="5" Background="#FF3C3C3C" HorizontalAlignment="Stretch"/>
+        <GridSplitter Grid.Column="1" Width="5" Background="{DynamicResource BorderDimBrush}" HorizontalAlignment="Stretch"/>
 
         <!-- RIGHT PANEL: Object List and Details (like ADUC right pane) -->
-        <Border Grid.Column="2" Background="#FF1A1A1A">
+        <Border Grid.Column="2" Background="{DynamicResource BgDarkBrush}">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -143,7 +143,7 @@
                 </Grid.RowDefinitions>
 
                 <!-- Toolbar -->
-                <Border Grid.Row="0" Background="#FF252525" Padding="12,8" BorderBrush="#FF3C3C3C" BorderThickness="0,0,0,1">
+                <Border Grid.Row="0" Background="{DynamicResource BgMediumBrush}" Padding="12,8" BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="0,0,0,1">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -152,7 +152,7 @@
 
                         <StackPanel Grid.Column="0" Orientation="Horizontal">
                             <TextBlock x:Name="TxtSelectedContainer" Text="No container selected"
-                                       Foreground="White" FontSize="11" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11" FontWeight="SemiBold"
                                        VerticalAlignment="Center"/>
                             <TextBlock x:Name="TxtObjectCount" Text="(0 objects)"
                                        Foreground="{DynamicResource AccentZincBrush}" FontSize="10" Margin="8,0,0,0"
@@ -184,15 +184,15 @@
 
                             <Button x:Name="BtnRefresh" Content="🔄 REFRESH"
                                     Click="BtnRefresh_Click"
-                                    Background="#FF2A2A2A" Foreground="White"
-                                    BorderBrush="#FF444444" BorderThickness="1"
+                                    Background="{DynamicResource BgLightBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+                                    BorderBrush="{DynamicResource BorderBrightBrush}" BorderThickness="1"
                                     Padding="10,6" FontSize="10" FontWeight="SemiBold"/>
                         </StackPanel>
                     </Grid>
                 </Border>
 
                 <!-- Search and Filter bar -->
-                <Border Grid.Row="1" Background="#FF252525" Padding="8,5" BorderBrush="#FF3C3C3C" BorderThickness="0,0,0,1">
+                <Border Grid.Row="1" Background="{DynamicResource BgMediumBrush}" Padding="8,5" BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="0,0,0,1">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -200,22 +200,22 @@
                         </Grid.ColumnDefinitions>
 
                         <!-- Search box -->
-                        <Border Grid.Column="0" Background="#FF1A1A1A" BorderBrush="#FF3C3C3C" BorderThickness="1"
+                        <Border Grid.Column="0" Background="{DynamicResource BgDarkBrush}" BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1"
                                 CornerRadius="4" Margin="0,0,6,0">
                             <Grid>
                                 <TextBlock x:Name="SearchPlaceholder" Text="🔍  Search by name, account, or info..."
                                            Foreground="{DynamicResource TextMutedBrush}" FontSize="10"
                                            VerticalAlignment="Center" Margin="8,0" IsHitTestVisible="False"/>
-                                <TextBox x:Name="TxtSearch" Background="Transparent" Foreground="White"
+                                <TextBox x:Name="TxtSearch" Background="Transparent" Foreground="{DynamicResource TextPrimaryBrush}"
                                          BorderThickness="0" FontSize="10" Padding="8,5"
-                                         TextChanged="TxtSearch_TextChanged" CaretBrush="White"/>
+                                         TextChanged="TxtSearch_TextChanged" CaretBrush="{DynamicResource TextPrimaryBrush}"/>
                             </Grid>
                         </Border>
 
                         <!-- Type filter dropdown -->
                         <ComboBox x:Name="CboTypeFilter" Grid.Column="1" Width="115"
                                   SelectionChanged="CboTypeFilter_SelectionChanged"
-                                  Foreground="White" FontSize="10">
+                                  Foreground="{DynamicResource TextPrimaryBrush}" FontSize="10">
                             <ComboBoxItem Content="All Types" IsSelected="True"/>
                             <ComboBoxItem Content="🖥 Computers"/>
                             <ComboBoxItem Content="👤 Users"/>
@@ -228,27 +228,27 @@
                 <!-- Object List -->
                 <DataGrid x:Name="GridADObjects" Grid.Row="2"
                           AutoGenerateColumns="False" IsReadOnly="True"
-                          Background="#FF1A1A1A" Foreground="White"
-                          GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#FF2A2A2A"
+                          Background="{DynamicResource BgDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+                          GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{DynamicResource BgLightBrush}"
                           BorderThickness="0" HeadersVisibility="Column"
                           SelectionMode="Extended" SelectionUnit="FullRow">
 
                     <DataGrid.ColumnHeaderStyle>
                         <Style TargetType="DataGridColumnHeader">
-                            <Setter Property="Background" Value="#FF2A2A2A"/>
+                            <Setter Property="Background" Value="{DynamicResource BgLightBrush}"/>
                             <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                             <Setter Property="FontWeight" Value="Bold"/>
                             <Setter Property="FontSize" Value="10"/>
                             <Setter Property="Padding" Value="10,8"/>
-                            <Setter Property="BorderBrush" Value="#FF3C3C3C"/>
+                            <Setter Property="BorderBrush" Value="{DynamicResource BorderDimBrush}"/>
                             <Setter Property="BorderThickness" Value="0,0,1,1"/>
                         </Style>
                     </DataGrid.ColumnHeaderStyle>
 
                     <DataGrid.RowStyle>
                         <Style TargetType="DataGridRow">
-                            <Setter Property="Background" Value="#FF1A1A1A"/>
-                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                             <Style.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
                                     <Setter Property="Background" Value="#FF252525"/>
@@ -315,7 +315,7 @@
                 </DataGrid>
 
                 <!-- Status Bar -->
-                <Border Grid.Row="3" Background="#FF252525" Padding="12,6" BorderBrush="#FF3C3C3C" BorderThickness="0,1,0,0">
+                <Border Grid.Row="3" Background="{DynamicResource BgMediumBrush}" Padding="12,6" BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="0,1,0,0">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>

@@ -9,8 +9,8 @@
     <!-- TAG: #CARD_VIEW #COMPUTER_CARD #FLUENT_DESIGN #MODULAR -->
     <!-- Research: GitHub Projects card layout pattern -->
 
-    <Border Background="#FF1E1E1E"
-            BorderBrush="#FF3C3C3C"
+    <Border Background="{DynamicResource BgCardBrush}"
+            BorderBrush="{DynamicResource BorderDimBrush}"
             BorderThickness="1"
             CornerRadius="8"
             Padding="16"
@@ -70,7 +70,7 @@
             <!-- Status Badge -->
             <Border Grid.Row="1"
                     x:Name="StatusBadge"
-                    Background="#FF10B981"
+                    Background="{DynamicResource SuccessBrush}"
                     CornerRadius="12"
                     Padding="8,4"
                     HorizontalAlignment="Left"
@@ -105,7 +105,7 @@
                                 Value="{Binding CpuUsage}"
                                 Maximum="100"
                                 Height="4"
-                                Background="#FF3C3C3C"
+                                Background="{DynamicResource BorderDimBrush}"
                                 Foreground="{DynamicResource AccentOrangeBrush}"
                                 BorderThickness="0"/>
 
@@ -136,8 +136,8 @@
                                 Value="{Binding RamUsagePercent}"
                                 Maximum="100"
                                 Height="4"
-                                Background="#FF3C3C3C"
-                                Foreground="#FF3B82F6"
+                                Background="{DynamicResource BorderDimBrush}"
+                                Foreground="{DynamicResource InfoBrush}"
                                 BorderThickness="0"/>
 
                     <TextBlock Grid.Column="2"

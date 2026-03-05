@@ -28,6 +28,7 @@ $ErrorActionPreference = 'Stop'
 $LogDir              = $env:NECESSARYADMINTOOL_LOG_DIR
 $DatabaseType        = ""  # NAT_INJECT_DB_TYPE
 $SqlConnectionString = ""  # NAT_INJECT_SQL_CONN
+$AccentColorHex      = "#FF8533"  # NAT_INJECT_ACCENT_COLOR — falls back to default orange if not injected
 
 # ============================================================
 # SETUP
@@ -194,7 +195,7 @@ function Test-UserLoggedIn {
 
 function Show-RebootWarningDialog {
     param(
-        [int]$Minutes       = 20,
+        [int]$Minutes        = 20,
         [bool]$AllowPostpone = $false,
         [int]$PostponesLeft  = 0
     )
@@ -202,100 +203,143 @@ function Show-RebootWarningDialog {
     Add-Type -AssemblyName System.Windows.Forms
     Add-Type -AssemblyName System.Drawing
 
-    $TotalSeconds      = $Minutes * 60
-    $script:Elapsed    = 0
-    $script:Restart    = $false
-    $script:Postponed  = $false
+    $TotalSeconds     = $Minutes * 60
+    $script:Elapsed   = 0
+    $script:Restart   = $false
+    $script:Postponed = $false
+    $script:_isDragging = $false
+    $script:_dragStart  = [System.Drawing.Point]::new(0, 0)
 
-    $FormHeight = if ($AllowPostpone) { 310 } else { 280 }
+    # NAT Fluent palette — accent pulled from injected $AccentColorHex (set by NecessaryAdminTool theme engine)
+    $ClrBg      = [System.Drawing.Color]::FromArgb(26, 26, 26)
+    $ClrAccent  = try { [System.Drawing.ColorTranslator]::FromHtml($AccentColorHex) } catch { [System.Drawing.Color]::FromArgb(255, 133, 51) }
+    $ClrText    = [System.Drawing.Color]::FromArgb(230, 230, 230)
+    $ClrSubText = [System.Drawing.Color]::FromArgb(161, 161, 170)
+    $ClrSep     = [System.Drawing.Color]::FromArgb(55, 55, 60)
+    $ClrBtnSec  = [System.Drawing.Color]::FromArgb(48, 48, 52)
+    $ClrUrgent  = [System.Drawing.Color]::FromArgb(255, 80, 80)   # red — final 2 min warning (always red)
 
-    $Form                  = New-Object System.Windows.Forms.Form
-    $Form.Text             = "NecessaryAdminTool IT - Restart Required"
-    $Form.Size             = New-Object System.Drawing.Size(520, $FormHeight)
-    $Form.StartPosition    = "CenterScreen"
-    $Form.BackColor        = [System.Drawing.Color]::FromArgb(26, 26, 26)
-    $Form.ForeColor        = [System.Drawing.Color]::White
-    $Form.FormBorderStyle  = "FixedDialog"
-    $Form.MaximizeBox      = $false
-    $Form.MinimizeBox      = $false
-    $Form.ControlBox       = $false
-    $Form.TopMost          = $true
-
-    # Header label
-    $LblTitle              = New-Object System.Windows.Forms.Label
-    $LblTitle.Text         = "  IT Department - System Restart Required"
-    $LblTitle.Font         = New-Object System.Drawing.Font("Segoe UI", 11, [System.Drawing.FontStyle]::Bold)
-    $LblTitle.ForeColor    = [System.Drawing.Color]::FromArgb(255, 133, 51)
-    $LblTitle.BackColor    = [System.Drawing.Color]::FromArgb(40, 40, 40)
-    $LblTitle.Dock         = "Top"
-    $LblTitle.Height       = 36
-    $LblTitle.TextAlign    = "MiddleLeft"
-    $Form.Controls.Add($LblTitle)
-
-    # Body text — adjusted based on whether postpones are available
+    # Body text
     $BodyLines = "Your IT team needs to restart this computer to apply pending`n" +
                  "Windows updates before a scheduled OS upgrade.`n`n" +
                  "PLEASE SAVE YOUR WORK NOW.`n`n"
     if ($AllowPostpone) {
-        $BodyLines += "Postpones remaining: $PostponesLeft of $MaxPostpones`n" +
-                      "  Restart Now  - Restart immediately.`n" +
-                      "  Wait 20 min  - Delay this restart ($PostponesLeft remaining).`n`n" +
-                      "Your computer will restart automatically when the timer reaches zero."
+        $BodyLines += "Postpones remaining: $PostponesLeft of $MaxPostpones"
     } else {
-        $BodyLines += "*** NO FURTHER POSTPONES AVAILABLE ***`n`n" +
-                      "Your computer will restart automatically when the timer reaches zero."
+        $BodyLines += "*** NO FURTHER POSTPONES AVAILABLE ***"
     }
 
-    $LblBody               = New-Object System.Windows.Forms.Label
-    $LblBody.Text          = $BodyLines
-    $LblBody.Font          = New-Object System.Drawing.Font("Segoe UI", 9)
-    $LblBody.ForeColor     = [System.Drawing.Color]::FromArgb(200, 200, 200)
-    $LblBody.Location      = New-Object System.Drawing.Point(20, 52)
-    $LblBody.Size          = New-Object System.Drawing.Size(480, 130)
+    # --- Form (no standard chrome) ---
+    $Form                 = New-Object System.Windows.Forms.Form
+    $Form.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::None
+    $Form.Width           = 580
+    $Form.Height          = 420
+    $Form.TopMost         = $true
+    $Form.StartPosition   = [System.Windows.Forms.FormStartPosition]::CenterScreen
+    $Form.BackColor       = $ClrBg
+
+    # Left-edge accent bar (4px)
+    $AccentBar           = New-Object System.Windows.Forms.Panel
+    $AccentBar.Dock      = [System.Windows.Forms.DockStyle]::Left
+    $AccentBar.Width     = 4
+    $AccentBar.BackColor = $ClrAccent
+    $Form.Controls.Add($AccentBar)
+
+    # --- Header panel (draggable) ---
+    $PnlHeader           = New-Object System.Windows.Forms.Panel
+    $PnlHeader.Location  = New-Object System.Drawing.Point(4, 0)
+    $PnlHeader.Size      = New-Object System.Drawing.Size(576, 58)
+    $PnlHeader.BackColor = $ClrBg
+
+    $LblBrand            = New-Object System.Windows.Forms.Label
+    $LblBrand.Text       = "NecessaryAdminTool"
+    $LblBrand.Font       = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Bold)
+    $LblBrand.ForeColor  = $ClrAccent
+    $LblBrand.Location   = New-Object System.Drawing.Point(14, 8)
+    $LblBrand.AutoSize   = $true
+    $PnlHeader.Controls.Add($LblBrand)
+
+    $LblSub              = New-Object System.Windows.Forms.Label
+    $LblSub.Text         = "IT Department  |  System Restart Required"
+    $LblSub.Font         = New-Object System.Drawing.Font("Segoe UI", 9)
+    $LblSub.ForeColor    = $ClrSubText
+    $LblSub.Location     = New-Object System.Drawing.Point(14, 34)
+    $LblSub.AutoSize     = $true
+    $PnlHeader.Controls.Add($LblSub)
+
+    # Drag support
+    $DragDown = { if ($_.Button -eq [System.Windows.Forms.MouseButtons]::Left) { $script:_isDragging = $true; $script:_dragStart = [System.Drawing.Point]::new($_.X + 4, $_.Y) } }
+    $DragMove = { if ($script:_isDragging) { $Form.Left += $_.X + 4 - $script:_dragStart.X; $Form.Top += $_.Y - $script:_dragStart.Y } }
+    $DragUp   = { $script:_isDragging = $false }
+    $PnlHeader.Add_MouseDown($DragDown); $PnlHeader.Add_MouseMove($DragMove); $PnlHeader.Add_MouseUp($DragUp)
+    $LblBrand.Add_MouseDown($DragDown);  $LblBrand.Add_MouseMove($DragMove);  $LblBrand.Add_MouseUp($DragUp)
+    $LblSub.Add_MouseDown($DragDown);    $LblSub.Add_MouseMove($DragMove);    $LblSub.Add_MouseUp($DragUp)
+    $Form.Controls.Add($PnlHeader)
+
+    # Separator under header
+    $Sep1            = New-Object System.Windows.Forms.Panel
+    $Sep1.Location   = New-Object System.Drawing.Point(4, 58)
+    $Sep1.Size       = New-Object System.Drawing.Size(576, 1)
+    $Sep1.BackColor  = $ClrSep
+    $Form.Controls.Add($Sep1)
+
+    # --- Body text ---
+    $LblBody             = New-Object System.Windows.Forms.Label
+    $LblBody.Text        = $BodyLines
+    $LblBody.Font        = New-Object System.Drawing.Font("Segoe UI", 10)
+    $LblBody.ForeColor   = $ClrText
+    $LblBody.BackColor   = $ClrBg
+    $LblBody.Location    = New-Object System.Drawing.Point(20, 70)
+    $LblBody.Size        = New-Object System.Drawing.Size(548, 216)
     $Form.Controls.Add($LblBody)
 
-    # Countdown label
-    $LblTimer              = New-Object System.Windows.Forms.Label
-    $LblTimer.Text         = "Restarting in  $Minutes:00"
-    $LblTimer.Font         = New-Object System.Drawing.Font("Segoe UI", 13, [System.Drawing.FontStyle]::Bold)
-    $LblTimer.ForeColor    = [System.Drawing.Color]::FromArgb(255, 210, 80)
-    $LblTimer.Location     = New-Object System.Drawing.Point(20, 192)
-    $LblTimer.Size         = New-Object System.Drawing.Size(300, 30)
+    # Separator above footer
+    $Sep2            = New-Object System.Windows.Forms.Panel
+    $Sep2.Location   = New-Object System.Drawing.Point(4, 296)
+    $Sep2.Size       = New-Object System.Drawing.Size(576, 1)
+    $Sep2.BackColor  = $ClrSep
+    $Form.Controls.Add($Sep2)
+
+    # --- Countdown ---
+    $LblTimer               = New-Object System.Windows.Forms.Label
+    $LblTimer.Text          = "Restarting in  $($Minutes):00"
+    $LblTimer.Font          = New-Object System.Drawing.Font("Segoe UI", 11, [System.Drawing.FontStyle]::Bold)
+    $LblTimer.ForeColor     = $ClrAccent
+    $LblTimer.BackColor     = $ClrBg
+    $LblTimer.Location      = New-Object System.Drawing.Point(20, 306)
+    $LblTimer.Size          = New-Object System.Drawing.Size(340, 26)
     $Form.Controls.Add($LblTimer)
 
-    # Restart Now button
-    $BtnNow                = New-Object System.Windows.Forms.Button
-    $BtnNow.Text           = "Restart Now"
-    $BtnNow.Font           = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
-    $BtnNow.BackColor      = [System.Drawing.Color]::FromArgb(255, 133, 51)
-    $BtnNow.ForeColor      = [System.Drawing.Color]::White
-    $BtnNow.FlatStyle      = "Flat"
-    $BtnNow.Size           = New-Object System.Drawing.Size(140, 34)
-    $BtnNow.Location       = New-Object System.Drawing.Point(350, 186)
-    $BtnNow.Add_Click({
-        $script:Restart = $true
-        $Form.Close()
-    })
+    # --- Restart Now button (accent primary) ---
+    $BtnNow                              = New-Object System.Windows.Forms.Button
+    $BtnNow.Text                         = "Restart Now"
+    $BtnNow.FlatStyle                    = [System.Windows.Forms.FlatStyle]::Flat
+    $BtnNow.FlatAppearance.BorderSize    = 0
+    $BtnNow.BackColor                    = $ClrAccent
+    $BtnNow.ForeColor                    = [System.Drawing.Color]::White
+    $BtnNow.Font                         = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
+    $BtnNow.Location                     = New-Object System.Drawing.Point(20, 346)
+    $BtnNow.Size                         = New-Object System.Drawing.Size(130, 38)
+    $BtnNow.Add_Click({ $script:Restart = $true; $Form.Close() })
     $Form.Controls.Add($BtnNow)
 
-    # "Wait 20 min" (postpone) button — only shown when postpones remain
+    # --- Postpone button (zinc secondary) ---
     if ($AllowPostpone) {
-        $BtnWait               = New-Object System.Windows.Forms.Button
-        $BtnWait.Text          = "Wait 20 min  ($PostponesLeft left)"
-        $BtnWait.Font          = New-Object System.Drawing.Font("Segoe UI", 10)
-        $BtnWait.BackColor     = [System.Drawing.Color]::FromArgb(60, 60, 60)
-        $BtnWait.ForeColor     = [System.Drawing.Color]::White
-        $BtnWait.FlatStyle     = "Flat"
-        $BtnWait.Size          = New-Object System.Drawing.Size(185, 34)
-        $BtnWait.Location      = New-Object System.Drawing.Point(148, 232)
-        $BtnWait.Add_Click({
-            $script:Postponed = $true
-            $Form.Close()
-        })
+        $BtnWait                              = New-Object System.Windows.Forms.Button
+        $BtnWait.Text                         = "Wait 20 min  ($PostponesLeft left)"
+        $BtnWait.FlatStyle                    = [System.Windows.Forms.FlatStyle]::Flat
+        $BtnWait.FlatAppearance.BorderSize    = 1
+        $BtnWait.FlatAppearance.BorderColor   = $ClrSubText
+        $BtnWait.BackColor                    = $ClrBtnSec
+        $BtnWait.ForeColor                    = $ClrText
+        $BtnWait.Font                         = New-Object System.Drawing.Font("Segoe UI", 10)
+        $BtnWait.Location                     = New-Object System.Drawing.Point(166, 346)
+        $BtnWait.Size                         = New-Object System.Drawing.Size(185, 38)
+        $BtnWait.Add_Click({ $script:Postponed = $true; $Form.Close() })
         $Form.Controls.Add($BtnWait)
     }
 
-    # Timer - fires every second
+    # --- Timer: ticks every second, turns red at < 2 min, closes at zero ---
     $Timer          = New-Object System.Windows.Forms.Timer
     $Timer.Interval = 1000
     $Timer.Add_Tick({
@@ -310,10 +354,7 @@ function Show-RebootWarningDialog {
         $Mins = [math]::Floor($Remaining / 60)
         $Secs = $Remaining % 60
         $LblTimer.Text = "Restarting in  $($Mins):$($Secs.ToString('00'))"
-        # Turn label red in final 2 minutes
-        if ($Remaining -le 120) {
-            $LblTimer.ForeColor = [System.Drawing.Color]::FromArgb(255, 80, 80)
-        }
+        if ($Remaining -le 120) { $LblTimer.ForeColor = $ClrUrgent }
     })
     $Timer.Start()
 

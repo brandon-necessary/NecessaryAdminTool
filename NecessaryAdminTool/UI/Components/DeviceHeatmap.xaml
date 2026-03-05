@@ -18,12 +18,12 @@
             <TextBlock x:Name="TxtHeader" Text="DEVICE HEALTH MAP" FontSize="10" FontWeight="SemiBold"
                        Foreground="{DynamicResource AccentZincBrush}" VerticalAlignment="Center"/>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Ellipse Width="8" Height="8" Fill="#FF10B981" Margin="0,0,4,0"/>
-                <TextBlock Text="Online" FontSize="9" Foreground="#FF6B7280" Margin="0,0,10,0"/>
-                <Ellipse Width="8" Height="8" Fill="#FFEF4444" Margin="0,0,4,0"/>
-                <TextBlock Text="Offline" FontSize="9" Foreground="#FF6B7280" Margin="0,0,10,0"/>
-                <Ellipse Width="8" Height="8" Fill="#FF6B7280" Margin="0,0,4,0"/>
-                <TextBlock Text="Unknown" FontSize="9" Foreground="#FF6B7280"/>
+                <Ellipse Width="8" Height="8" Fill="{DynamicResource SuccessBrush}" Margin="0,0,4,0"/>
+                <TextBlock Text="Online" FontSize="9" Foreground="{DynamicResource MutedBrush}" Margin="0,0,10,0"/>
+                <Ellipse Width="8" Height="8" Fill="{DynamicResource ErrorBrush}" Margin="0,0,4,0"/>
+                <TextBlock Text="Offline" FontSize="9" Foreground="{DynamicResource MutedBrush}" Margin="0,0,10,0"/>
+                <Ellipse Width="8" Height="8" Fill="{DynamicResource MutedBrush}" Margin="0,0,4,0"/>
+                <TextBlock Text="Unknown" FontSize="9" Foreground="{DynamicResource MutedBrush}"/>
             </StackPanel>
         </Grid>
 
@@ -63,11 +63,11 @@
 
         <!-- Show All toggle -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,4,0,0">
-            <TextBlock x:Name="TxtDeviceCount" FontSize="9" Foreground="#FF6B7280" Margin="0,0,8,0"
+            <TextBlock x:Name="TxtDeviceCount" FontSize="9" Foreground="{DynamicResource MutedBrush}" Margin="0,0,8,0"
                        VerticalAlignment="Center"/>
             <Button x:Name="BtnShowAll" Content="Show All" FontSize="9" Padding="8,3"
-                    Background="#FF2A2A2A" Foreground="{DynamicResource AccentZincBrush}" BorderThickness="1"
-                    BorderBrush="#FF444444" Cursor="Hand" Visibility="Collapsed"
+                    Background="{DynamicResource BgLightBrush}" Foreground="{DynamicResource AccentZincBrush}" BorderThickness="1"
+                    BorderBrush="{DynamicResource BorderBrightBrush}" Cursor="Hand" Visibility="Collapsed"
                     Click="BtnShowAll_Click"/>
         </StackPanel>
     </Grid>

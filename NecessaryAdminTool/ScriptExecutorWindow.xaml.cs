@@ -130,15 +130,13 @@ namespace NecessaryAdminTool
             {
                 if (string.IsNullOrWhiteSpace(TxtScriptName.Text))
                 {
-                    MessageBox.Show("Please enter a script name.", "Validation Error",
-                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    ToastManager.ShowWarning("Please enter a script name.");
                     return;
                 }
 
                 if (string.IsNullOrWhiteSpace(TxtScriptContent.Text))
                 {
-                    MessageBox.Show("Please enter script content.", "Validation Error",
-                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    ToastManager.ShowWarning("Please enter script content.");
                     return;
                 }
 
@@ -170,14 +168,12 @@ namespace NecessaryAdminTool
                 }
                 else
                 {
-                    MessageBox.Show("Failed to save script. Check logs for details.", "Save Error",
-                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    ToastManager.ShowError("Failed to save script. Check logs for details.");
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to save script:\n\n{ex.Message}", "Save Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                ToastManager.ShowError($"Failed to save script: {ex.Message}");
             }
         }
 
@@ -231,13 +227,11 @@ namespace NecessaryAdminTool
                     TxtScriptContent.Text = script.ScriptContent;
 
                     TxtStatus.Text = $"📥 Imported: {dialog.FileName}";
-                    MessageBox.Show($"Script imported successfully.\n\nClick 'Save' to add it to the library.",
-                        "Import Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    ToastManager.ShowSuccess("Script imported. Click 'Save' to add it to the library.");
                 }
                 else
                 {
-                    MessageBox.Show("Failed to import script. Check logs for details.", "Import Error",
-                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    ToastManager.ShowError("Failed to import script. Check logs for details.");
                 }
             }
         }
@@ -249,8 +243,7 @@ namespace NecessaryAdminTool
         {
             if (_currentScript == null)
             {
-                MessageBox.Show("No script loaded to export.", "Export Error",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                ToastManager.ShowWarning("No script loaded to export.");
                 return;
             }
 
@@ -266,13 +259,11 @@ namespace NecessaryAdminTool
                 if (ScriptManager.ExportScript(_currentScript, dialog.FileName))
                 {
                     TxtStatus.Text = $"📤 Exported: {dialog.FileName}";
-                    MessageBox.Show($"Script exported successfully to:\n{dialog.FileName}",
-                        "Export Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    ToastManager.ShowSuccess($"Script exported to {dialog.FileName}");
                 }
                 else
                 {
-                    MessageBox.Show("Failed to export script. Check logs for details.", "Export Error",
-                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    ToastManager.ShowError("Failed to export script. Check logs for details.");
                 }
             }
         }
@@ -285,23 +276,20 @@ namespace NecessaryAdminTool
         {
             if (string.IsNullOrWhiteSpace(TxtScriptContent.Text))
             {
-                MessageBox.Show("Please enter script content before executing.", "Validation Error",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                ToastManager.ShowWarning("Please enter script content before executing.");
                 return;
             }
 
             if (_targetComputers == null || _targetComputers.Length == 0)
             {
-                MessageBox.Show("No target computers selected.", "Validation Error",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                ToastManager.ShowWarning("No target computers selected.");
                 return;
             }
 
             // Get max concurrency
             if (!int.TryParse(TxtMaxConcurrency.Text, out int maxConcurrency) || maxConcurrency < 1 || maxConcurrency > 50)
             {
-                MessageBox.Show("Max parallel must be between 1 and 50.", "Validation Error",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                ToastManager.ShowWarning("Max parallel must be between 1 and 50.");
                 return;
             }
 
@@ -371,8 +359,7 @@ namespace NecessaryAdminTool
             catch (Exception ex)
             {
                 TxtStatus.Text = $"❌ Execution failed: {ex.Message}";
-                MessageBox.Show($"Script execution failed:\n\n{ex.Message}", "Execution Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                ToastManager.ShowError($"Script execution failed: {ex.Message}");
                 LogManager.LogError("[ScriptExecutor] Execution failed", ex);
             }
             finally
@@ -397,7 +384,7 @@ namespace NecessaryAdminTool
                 details.AppendLine($"Computer: {result.Hostname}");
                 details.AppendLine($"Status: {result.StatusIcon} {result.StatusText}");
                 details.AppendLine($"Duration: {result.Duration.TotalSeconds:F2}s");
-                details.AppendLine($"Exit Code: {result.ExitCode}");
+                details.AppendLine($"Exit Code: {result.ExitCode} — {result.ExitCodeDescription}");
                 details.AppendLine($"Timestamp: {result.Timestamp:yyyy-MM-dd HH:mm:ss}");
                 details.AppendLine();
                 details.AppendLine("=== OUTPUT ===");
@@ -421,8 +408,7 @@ namespace NecessaryAdminTool
         {
             if (_lastResults == null || _lastResults.Count == 0)
             {
-                MessageBox.Show("No results to export.", "Export Error",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                ToastManager.ShowWarning("No results to export.");
                 return;
             }
 
@@ -438,13 +424,11 @@ namespace NecessaryAdminTool
                 if (ScriptManager.ExportResultsToCsv(_lastResults, dialog.FileName))
                 {
                     TxtStatus.Text = $"📋 Exported to: {dialog.FileName}";
-                    MessageBox.Show($"Results exported successfully to:\n{dialog.FileName}",
-                        "Export Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    ToastManager.ShowSuccess($"Results exported to {dialog.FileName}");
                 }
                 else
                 {
-                    MessageBox.Show("Failed to export results. Check logs for details.", "Export Error",
-                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    ToastManager.ShowError("Failed to export results. Check logs for details.");
                 }
             }
         }
@@ -456,8 +440,7 @@ namespace NecessaryAdminTool
         {
             if (_lastResults == null || _lastResults.Count == 0)
             {
-                MessageBox.Show("No results to export.", "Export Error",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                ToastManager.ShowWarning("No results to export.");
                 return;
             }
 
@@ -473,13 +456,11 @@ namespace NecessaryAdminTool
                 if (ScriptManager.ExportResultsToTxt(_lastResults, dialog.FileName))
                 {
                     TxtStatus.Text = $"📄 Exported to: {dialog.FileName}";
-                    MessageBox.Show($"Results exported successfully to:\n{dialog.FileName}",
-                        "Export Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    ToastManager.ShowSuccess($"Results exported to {dialog.FileName}");
                 }
                 else
                 {
-                    MessageBox.Show("Failed to export results. Check logs for details.", "Export Error",
-                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    ToastManager.ShowError("Failed to export results. Check logs for details.");
                 }
             }
         }

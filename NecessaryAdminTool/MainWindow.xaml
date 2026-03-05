@@ -8,7 +8,7 @@
         Height="900" Width="1500"
         MinHeight="700" MinWidth="1280"
         WindowStartupLocation="CenterScreen"
-        Background="#FF0D0D0D"
+        Background="{DynamicResource BgDarkestBrush}"
         UseLayoutRounding="True"
         SnapsToDevicePixels="True"
         TextOptions.TextFormattingMode="Display"
@@ -105,7 +105,7 @@
                     </StackPanel>
 
                     <!-- Version Badge - TAG: #THEME_COLORS #BRANDING -->
-                    <Border Background="#FF1A1A1A"
+                    <Border Background="{DynamicResource BgDarkBrush}"
                             BorderThickness="1"
                             CornerRadius="3"
                             Padding="6,2"
@@ -295,7 +295,7 @@
 
                 <!-- TAG: #AUTO_UPDATE_UI_ENGINE #DENSITY -->
                 <ComboBox x:Name="ComboDensity" Grid.Column="14" Width="90" FontSize="9"
-                          Background="#FF2A2A2A" Foreground="White" BorderBrush="#FF444444"
+                          Background="{DynamicResource BgLightBrush}" Foreground="White" BorderBrush="{DynamicResource BorderBrightBrush}"
                           Padding="4,4" Margin="4,0,0,0" VerticalAlignment="Center"
                           SelectionChanged="ComboDensity_SelectionChanged"
                           ToolTip="Change display density for data grids: Compact (small rows), Normal (default), Comfortable (large rows)">
@@ -403,7 +403,7 @@
 
                     <!-- Progress Bar (shows during scans/operations) -->
                     <ProgressBar x:Name="ProgressScan" Height="8"
-                                 Background="#FF2A2A2A"
+                                 Background="{DynamicResource BgLightBrush}"
                                  BorderThickness="0"
                                  Value="0" Maximum="100" Visibility="Collapsed">
                         <ProgressBar.Foreground>
@@ -414,7 +414,7 @@
 
                 <!-- Remote Console Input -->
                 <TextBox x:Name="TxtConsoleInput" Grid.Column="2" Width="300"
-                         Background="#FF1A1A1A" Foreground="LimeGreen"
+                         Background="{DynamicResource BgDarkBrush}" Foreground="LimeGreen"
                          FontFamily="Consolas" FontSize="11"
                          Padding="8,5" Margin="0,0,4,0"
                          ToolTip="Remote PowerShell command (Enter to execute)"/>
@@ -469,7 +469,7 @@
                                              Margin="0,0,6,0"
                                              Foreground="White" FontSize="11"
                                              ToolTip="Enter hostname or IP address"
-                                             Background="#FF2A2A2A" BorderBrush="#FF444444"
+                                             Background="{DynamicResource BgLightBrush}" BorderBrush="{DynamicResource BorderBrightBrush}"
                                              Padding="6,4"/>
                                     <!-- TAG: #TOOLTIPS #ACTIONS -->
                                     <Button Grid.Column="1" Content="+ ADD"
@@ -489,23 +489,23 @@
                                           HeadersVisibility="Column"
                                           GridLinesVisibility="Horizontal"
                                           SelectionMode="Single"
-                                          Background="#FF1E1E1E"
-                                          BorderBrush="#FF3C3C3C"
+                                          Background="{DynamicResource BgCardBrush}"
+                                          BorderBrush="{DynamicResource BorderDimBrush}"
                                           BorderThickness="1"
-                                          RowBackground="#FF2A2A2A"
-                                          AlternatingRowBackground="#FF252525"
+                                          RowBackground="{DynamicResource BgLightBrush}"
+                                          AlternatingRowBackground="{DynamicResource BgMediumBrush}"
                                           FontSize="10"
                                           Height="180"
                                           Margin="0,0,0,8"
                                           MouseDoubleClick="GridPinnedDevices_MouseDoubleClick">
                                     <DataGrid.ColumnHeaderStyle>
                                         <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="Background" Value="#FF1A1A1A"/>
+                                            <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
                                             <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                                             <Setter Property="FontWeight" Value="Bold"/>
                                             <Setter Property="FontSize" Value="11"/>
                                             <Setter Property="Padding" Value="8,4"/>
-                                            <Setter Property="BorderBrush" Value="#FF3C3C3C"/>
+                                            <Setter Property="BorderBrush" Value="{DynamicResource BorderDimBrush}"/>
                                             <Setter Property="BorderThickness" Value="0,0,1,1"/>
                                         </Style>
                                     </DataGrid.ColumnHeaderStyle>
@@ -605,23 +605,23 @@
                                           HeadersVisibility="Column"
                                           GridLinesVisibility="Horizontal"
                                           SelectionMode="Single"
-                                          Background="#FF1E1E1E"
-                                          BorderBrush="#FF3C3C3C"
+                                          Background="{DynamicResource BgCardBrush}"
+                                          BorderBrush="{DynamicResource BorderDimBrush}"
                                           BorderThickness="1"
-                                          RowBackground="#FF2A2A2A"
-                                          AlternatingRowBackground="#FF252525"
+                                          RowBackground="{DynamicResource BgLightBrush}"
+                                          AlternatingRowBackground="{DynamicResource BgMediumBrush}"
                                           FontSize="11"
                                           MaxHeight="280"
                                           MinHeight="280"
                                           Margin="0,0,0,8">
                                     <DataGrid.ColumnHeaderStyle>
                                         <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="Background" Value="#FF1A1A1A"/>
+                                            <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
                                             <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                                             <Setter Property="FontWeight" Value="Bold"/>
                                             <Setter Property="FontSize" Value="10"/>
                                             <Setter Property="Padding" Value="8,4"/>
-                                            <Setter Property="BorderBrush" Value="#FF3C3C3C"/>
+                                            <Setter Property="BorderBrush" Value="{DynamicResource BorderDimBrush}"/>
                                             <Setter Property="BorderThickness" Value="0,0,1,1"/>
                                         </Style>
                                     </DataGrid.ColumnHeaderStyle>
@@ -662,8 +662,8 @@
                                                 <DataTemplate>
                                                     <Button Content="🔗 Open Status Page" Tag="{Binding Endpoint}"
                                                             Click="BtnOpenServiceStatusPage_Click"
-                                                            Background="#FF2A2A2A" Foreground="{DynamicResource AccentOrangeBrush}"
-                                                            BorderThickness="1" BorderBrush="#FF3C3C3C"
+                                                            Background="{DynamicResource BgLightBrush}" Foreground="{DynamicResource AccentOrangeBrush}"
+                                                            BorderThickness="1" BorderBrush="{DynamicResource BorderDimBrush}"
                                                             Padding="8,4" Margin="2" FontSize="10" FontWeight="SemiBold"
                                                             Cursor="Hand" HorizontalAlignment="Stretch"
                                                             ToolTip="Opens vendor's official status page in default browser to view detailed service health, incident reports, maintenance schedules, and historical uptime data. Useful for investigating cloud service outages and planned maintenance windows.">
@@ -713,18 +713,18 @@
                                               HeadersVisibility="Column"
                                               GridLinesVisibility="Horizontal"
                                               SelectionMode="Single"
-                                              Background="#FF1E1E1E"
-                                              BorderBrush="#FF3C3C3C"
+                                              Background="{DynamicResource BgCardBrush}"
+                                              BorderBrush="{DynamicResource BorderDimBrush}"
                                               BorderThickness="1"
-                                              RowBackground="#FF2A2A2A"
-                                              AlternatingRowBackground="#FF252525"
+                                              RowBackground="{DynamicResource BgLightBrush}"
+                                              AlternatingRowBackground="{DynamicResource BgMediumBrush}"
                                               FontSize="11"
                                               MaxHeight="280"
                                               MinHeight="280"
                                               Margin="0,4,0,0">
                                         <DataGrid.ColumnHeaderStyle>
                                             <Style TargetType="DataGridColumnHeader">
-                                                <Setter Property="Background" Value="#FF1A1A1A"/>
+                                                <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
                                                 <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                                                 <Setter Property="FontWeight" Value="Bold"/>
                                                 <Setter Property="FontSize" Value="10"/>
@@ -768,8 +768,8 @@
                                                     <DataTemplate>
                                                         <Button Content="🔗 Open Status Page" Tag="{Binding Endpoint}"
                                                                 Click="BtnOpenServiceStatusPage_Click"
-                                                                Background="#FF2A2A2A" Foreground="{DynamicResource AccentOrangeBrush}"
-                                                                BorderThickness="1" BorderBrush="#FF3C3C3C"
+                                                                Background="{DynamicResource BgLightBrush}" Foreground="{DynamicResource AccentOrangeBrush}"
+                                                                BorderThickness="1" BorderBrush="{DynamicResource BorderDimBrush}"
                                                                 Padding="8,4" Margin="2" FontSize="10" FontWeight="SemiBold"
                                                                 Cursor="Hand" HorizontalAlignment="Stretch"
                                                                 ToolTip="Opens vendor's official status page in default browser to view detailed service health, incident reports, maintenance schedules, and historical uptime data. Useful for investigating cloud service outages and planned maintenance windows.">
@@ -820,18 +820,18 @@
                                               HeadersVisibility="Column"
                                               GridLinesVisibility="Horizontal"
                                               SelectionMode="Single"
-                                              Background="#FF1E1E1E"
-                                              BorderBrush="#FF3C3C3C"
+                                              Background="{DynamicResource BgCardBrush}"
+                                              BorderBrush="{DynamicResource BorderDimBrush}"
                                               BorderThickness="1"
-                                              RowBackground="#FF2A2A2A"
-                                              AlternatingRowBackground="#FF252525"
+                                              RowBackground="{DynamicResource BgLightBrush}"
+                                              AlternatingRowBackground="{DynamicResource BgMediumBrush}"
                                               FontSize="11"
                                               MaxHeight="165"
                                               MinHeight="165"
                                               Margin="0,4,0,0">
                                         <DataGrid.ColumnHeaderStyle>
                                             <Style TargetType="DataGridColumnHeader">
-                                                <Setter Property="Background" Value="#FF1A1A1A"/>
+                                                <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
                                                 <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                                                 <Setter Property="FontWeight" Value="Bold"/>
                                                 <Setter Property="FontSize" Value="10"/>
@@ -875,8 +875,8 @@
                                                     <DataTemplate>
                                                         <Button Content="🔗 Open Status Page" Tag="{Binding Endpoint}"
                                                                 Click="BtnOpenServiceStatusPage_Click"
-                                                                Background="#FF2A2A2A" Foreground="{DynamicResource AccentOrangeBrush}"
-                                                                BorderThickness="1" BorderBrush="#FF3C3C3C"
+                                                                Background="{DynamicResource BgLightBrush}" Foreground="{DynamicResource AccentOrangeBrush}"
+                                                                BorderThickness="1" BorderBrush="{DynamicResource BorderDimBrush}"
                                                                 Padding="8,4" Margin="2" FontSize="10" FontWeight="SemiBold"
                                                                 Cursor="Hand" HorizontalAlignment="Stretch"
                                                                 ToolTip="Opens vendor's official status page in default browser to view detailed service health, incident reports, maintenance schedules, and historical uptime data. Useful for investigating cloud service outages and planned maintenance windows.">
@@ -976,7 +976,7 @@
                             </Grid.RowDefinitions>
 
                             <!-- Header -->
-                            <Border Grid.Row="0" Background="#FF1E1E1E" BorderBrush="{DynamicResource AccentOrangeBrush}"
+                            <Border Grid.Row="0" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource AccentOrangeBrush}"
                                     BorderThickness="0,0,0,2" Padding="16,12" Margin="0,0,0,20">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -994,8 +994,8 @@
                                     <!-- TAG: #TOOLTIPS #ACTIONS -->
                                     <Button Grid.Column="1" Content="🔄 REFRESH" x:Name="BtnRefreshDashboard"
                                             Click="BtnRefreshDashboard_Click"
-                                            Background="#FF2A2A2A" Foreground="White" BorderThickness="1"
-                                            BorderBrush="#FF444444" Padding="14,8" FontSize="11" FontWeight="SemiBold"
+                                            Background="{DynamicResource BgLightBrush}" Foreground="White" BorderThickness="1"
+                                            BorderBrush="{DynamicResource BorderBrightBrush}" Padding="14,8" FontSize="11" FontWeight="SemiBold"
                                             Cursor="Hand"
                                             ToolTip="Refreshes fleet health dashboard statistics including total computers, online/offline counts, OS versions, pending updates, and warranty status. Queries database and live network status. (F5)"/>
                                 </Grid>
@@ -1036,7 +1036,7 @@
                                 </Grid.ColumnDefinitions>
 
                                 <!-- OS Distribution -->
-                                <Border Grid.Column="0" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
+                                <Border Grid.Column="0" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                         BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,0,8,0">
                                     <StackPanel>
                                         <TextBlock Text="💿 OS DISTRIBUTION" Foreground="{DynamicResource AccentOrangeBrush}"
@@ -1050,7 +1050,7 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="Windows 11" Foreground="White" FontSize="11" VerticalAlignment="Center"/>
-                                            <ProgressBar Grid.Column="1" x:Name="BarWin11" Height="20" Background="#FF2A2A2A"
+                                            <ProgressBar Grid.Column="1" x:Name="BarWin11" Height="20" Background="{DynamicResource BgLightBrush}"
                                                          Foreground="LimeGreen" Margin="8,0" Maximum="100"/>
                                             <TextBlock Grid.Column="2" x:Name="TxtWin11Count" Text="0 (0%)" Foreground="{DynamicResource TextMutedBrush}"
                                                        FontSize="10" VerticalAlignment="Center" MinWidth="60"/>
@@ -1064,7 +1064,7 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="Windows 10" Foreground="White" FontSize="11" VerticalAlignment="Center"/>
-                                            <ProgressBar Grid.Column="1" x:Name="BarWin10" Height="20" Background="#FF2A2A2A"
+                                            <ProgressBar Grid.Column="1" x:Name="BarWin10" Height="20" Background="{DynamicResource BgLightBrush}"
                                                          Foreground="#FF4FC3F7" Margin="8,0" Maximum="100"/>
                                             <TextBlock Grid.Column="2" x:Name="TxtWin10Count" Text="0 (0%)" Foreground="{DynamicResource TextMutedBrush}"
                                                        FontSize="10" VerticalAlignment="Center" MinWidth="60"/>
@@ -1078,7 +1078,7 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="Windows 7" Foreground="White" FontSize="11" VerticalAlignment="Center"/>
-                                            <ProgressBar Grid.Column="1" x:Name="BarWin7" Height="20" Background="#FF2A2A2A"
+                                            <ProgressBar Grid.Column="1" x:Name="BarWin7" Height="20" Background="{DynamicResource BgLightBrush}"
                                                          Foreground="#FFFF6B6B" Margin="8,0" Maximum="100"/>
                                             <TextBlock Grid.Column="2" x:Name="TxtWin7Count" Text="0 (0%)" Foreground="{DynamicResource TextMutedBrush}"
                                                        FontSize="10" VerticalAlignment="Center" MinWidth="60"/>
@@ -1092,14 +1092,14 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="Legacy/Other" Foreground="White" FontSize="11" VerticalAlignment="Center"/>
-                                            <ProgressBar Grid.Column="1" x:Name="BarLegacy" Height="20" Background="#FF2A2A2A"
+                                            <ProgressBar Grid.Column="1" x:Name="BarLegacy" Height="20" Background="{DynamicResource BgLightBrush}"
                                                          Foreground="#FFFFA726" Margin="8,0" Maximum="100"/>
                                             <TextBlock Grid.Column="2" x:Name="TxtLegacyCount" Text="0 (0%)" Foreground="{DynamicResource TextMutedBrush}"
                                                        FontSize="10" VerticalAlignment="Center" MinWidth="60"/>
                                         </Grid>
 
                                         <!-- Detailed Version Breakdown -->
-                                        <Border Background="#FF2A2A2A" BorderBrush="#FF3C3C3C" BorderThickness="1"
+                                        <Border Background="{DynamicResource BgLightBrush}" BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1"
                                                 CornerRadius="4" Padding="12,10" Margin="0,0,0,0">
                                             <Expander Header="📋 DETAILED VERSION BREAKDOWN" Foreground="{DynamicResource AccentOrangeBrush}"
                                                       FontSize="10" FontWeight="SemiBold" IsExpanded="False">
@@ -1116,7 +1116,7 @@
                                                                     <TextBlock Grid.Column="0" Text="{Binding Version}" Foreground="White"
                                                                                FontSize="9" VerticalAlignment="Center"/>
                                                                     <ProgressBar Grid.Column="1" Value="{Binding Percentage}" Height="12"
-                                                                                 Background="#FF1A1A1A" Foreground="{Binding Color}"
+                                                                                 Background="{DynamicResource BgDarkBrush}" Foreground="{Binding Color}"
                                                                                  Margin="4,0" Maximum="100"/>
                                                                     <TextBlock Grid.Column="2" Text="{Binding CountText}" Foreground="{DynamicResource TextMutedBrush}"
                                                                                FontSize="9" VerticalAlignment="Center" TextAlignment="Right"/>
@@ -1131,7 +1131,7 @@
                                 </Border>
 
                                 <!-- DC Health Monitor - TAG: #DC_HEALTH #DASHBOARD #DOMAIN_CONTROLLERS -->
-                                <Border Grid.Column="1" Background="#FF1E1E1E" BorderBrush="{DynamicResource AccentOrangeBrush}"
+                                <Border Grid.Column="1" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource AccentOrangeBrush}"
                                         BorderThickness="1" CornerRadius="8" Padding="16" Margin="4,0">
                                     <StackPanel>
                                         <!-- Header with Domain Suffix + Rows Selector - TAG: #DC_HEALTH #UI_IMPROVEMENT -->
@@ -1149,8 +1149,8 @@
                                                            FontSize="9" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                                 <ComboBox x:Name="CboCollapsedRows"
                                                           Width="68" FontSize="9" Height="22"
-                                                          Background="#FF2A2A2A" Foreground="{DynamicResource TextMutedBrush}"
-                                                          BorderBrush="#FF4A4A4A" BorderThickness="1"
+                                                          Background="{DynamicResource BgLightBrush}" Foreground="{DynamicResource TextMutedBrush}"
+                                                          BorderBrush="{DynamicResource BorderBrightBrush}" BorderThickness="1"
                                                           SelectionChanged="CboCollapsedRows_SelectionChanged"
                                                           ToolTip="Rows shown when collapsed">
                                                     <ComboBoxItem Content="2 rows" Tag="4"/>
@@ -1178,7 +1178,7 @@
                                         </Grid>
 
                                         <!-- DC Health List - TAG: #DC_HEALTH #UI_IMPROVEMENT #COMPACT_ROWS -->
-                                        <Border Background="#FF2A2A2A" BorderBrush="#FF3C3C3C" BorderThickness="1"
+                                        <Border Background="{DynamicResource BgLightBrush}" BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1"
                                                 CornerRadius="4" Padding="8,6">
                                             <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                                                 <ItemsControl x:Name="ListDCHealth">
@@ -1191,7 +1191,7 @@
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
                                                             <!-- Compact DC Row - TAG: #DC_HEALTH #COMPACT_ROWS #FAVORITES -->
-                                                            <Border Background="#FF2C2C2C" BorderBrush="#FF3A3A3A"
+                                                            <Border Background="{DynamicResource BgLightBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                                                     BorderThickness="0,0,0,1" Padding="6,5"
                                                                     Margin="0,1" Tag="{Binding Hostname}">
                                                                 <Grid>
@@ -1265,7 +1265,7 @@
                                         <!-- Refresh Button -->
                                         <Button x:Name="BtnRefreshDCHealth" Content="🔄 REFRESH DCs"
                                                 Click="BtnRefreshDCHealth_Click"
-                                                Background="#FF2A2A2A" Foreground="White" BorderBrush="#FF444444"
+                                                Background="{DynamicResource BgLightBrush}" Foreground="White" BorderBrush="{DynamicResource BorderBrightBrush}"
                                                 BorderThickness="1" Padding="8,6" FontSize="9" FontWeight="SemiBold"
                                                 Margin="0,10,0,0" HorizontalAlignment="Stretch"
                                                 ToolTip="Refresh domain controller list and health status. Checks connectivity and latency to all detected DCs in the domain."/>
@@ -1273,7 +1273,7 @@
                                 </Border>
 
                                 <!-- Critical Alerts -->
-                                <Border Grid.Column="2" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
+                                <Border Grid.Column="2" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                         BorderThickness="1" CornerRadius="8" Padding="20" Margin="8,0,0,0">
                                     <StackPanel>
                                         <TextBlock Text="⚠️ CRITICAL ALERTS" Foreground="#FFFF6B6B"
@@ -1283,7 +1283,7 @@
                                             <ItemsControl x:Name="ListCriticalAlerts">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
-                                                        <Border Background="#FF2A2A2A" BorderBrush="#FFFF6B6B" BorderThickness="1"
+                                                        <Border Background="{DynamicResource BgLightBrush}" BorderBrush="#FFFF6B6B" BorderThickness="1"
                                                                 CornerRadius="4" Padding="12,8" Margin="0,0,0,8">
                                                             <TextBlock Text="{Binding}" Foreground="White" FontSize="10"
                                                                        TextWrapping="Wrap"/>
@@ -1300,20 +1300,20 @@
                             </Grid>
 
                             <!-- Top Computers by Uptime -->
-                            <Border Grid.Row="3" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
+                            <Border Grid.Row="3" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                     BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,0,0,20">
                                 <StackPanel>
                                     <TextBlock Text="🔝 TOP COMPUTERS BY UPTIME" Foreground="{DynamicResource AccentOrangeBrush}"
                                                FontSize="12" FontWeight="Bold" Margin="0,0,0,12"/>
 
                                     <DataGrid x:Name="GridTopComputers" AutoGenerateColumns="False" IsReadOnly="True"
-                                              Background="#FF1A1A1A" Foreground="White" BorderThickness="0"
-                                              GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#FF2A2A2A"
+                                              Background="{DynamicResource BgDarkBrush}" Foreground="White" BorderThickness="0"
+                                              GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{DynamicResource BgLightBrush}"
                                               HeadersVisibility="Column" MaxHeight="250">
 
                                         <DataGrid.ColumnHeaderStyle>
                                             <Style TargetType="DataGridColumnHeader">
-                                                <Setter Property="Background" Value="#FF2A2A2A"/>
+                                                <Setter Property="Background" Value="{DynamicResource BgLightBrush}"/>
                                                 <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                                                 <Setter Property="FontWeight" Value="Bold"/>
                                                 <Setter Property="FontSize" Value="10"/>
@@ -1333,14 +1333,14 @@
                             </Border>
 
                             <!-- Device Health Heatmap - TAG: #AUTO_UPDATE_UI_ENGINE #DEVICE_HEATMAP -->
-                            <Border Grid.Row="4" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
+                            <Border Grid.Row="4" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                     BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,0,0,20">
                                 <components:DeviceHeatmap x:Name="FleetHeatmap"
                                                           DeviceClicked="FleetHeatmap_DeviceClicked"/>
                             </Border>
 
                             <!-- Activity Feed - TAG: #AUTO_UPDATE_UI_ENGINE #ACTIVITY_FEED -->
-                            <Border Grid.Row="5" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
+                            <Border Grid.Row="5" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                     BorderThickness="1" CornerRadius="8" Padding="20">
                                 <components:ActivityFeed x:Name="DashboardActivityFeed"/>
                             </Border>
@@ -1390,7 +1390,7 @@
                                         <ProgressBar x:Name="StatusProgressBar" Width="100" Height="3"
                                                     IsIndeterminate="True" Margin="10,0,0,0"
                                                     VerticalAlignment="Center" Visibility="Collapsed"
-                                                    Foreground="{DynamicResource AccentOrangeBrush}" Background="#1A1A1A"/>
+                                                    Foreground="{DynamicResource AccentOrangeBrush}" Background="{DynamicResource BgDarkBrush}"/>
                                     </StackPanel>
 
                                     <!-- IDENTITY & ACCESS -->
@@ -1474,11 +1474,11 @@
                         </Border>
 
                         <!-- CENTER COLUMN: CONTROL PANEL -->
-                        <Border Grid.Column="1" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C" BorderThickness="1,0,1,0">
+                        <Border Grid.Column="1" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1,0,1,0">
                             <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12,14">
                                 <StackPanel>
                                     <!-- TARGET SYSTEM SECTION -->
-                                    <Border Background="#FF252525" CornerRadius="6" Padding="14" Margin="0,0,0,14"
+                                    <Border Background="{DynamicResource BgMediumBrush}" CornerRadius="6" Padding="14" Margin="0,0,0,14"
                                             BorderThickness="1">
                                         <Border.BorderBrush>
                                             <DynamicResource ResourceKey="AccentGradientBrush"/>
@@ -1496,7 +1496,7 @@
                                                       SelectionChanged="ComboTarget_SelectionChanged"
                                                       Foreground="White" FontWeight="SemiBold" FontSize="11"
                                                       ToolTip="Enter hostname or IP address"
-                                                      Background="#FF2A2A2A" BorderBrush="#FF555555"
+                                                      Background="{DynamicResource BgLightBrush}" BorderBrush="{DynamicResource BorderBrightBrush}"
                                                       Height="32"/>
 
                                             <!-- TAG: #TOOLTIPS #ACTIONS -->
@@ -1536,7 +1536,7 @@
                                     </Border>
 
                                     <!-- DEPLOYMENT CENTER SECTION -->
-                                    <Border Background="#FF252525" CornerRadius="6" Padding="14" Margin="0,0,0,14"
+                                    <Border Background="{DynamicResource BgMediumBrush}" CornerRadius="6" Padding="14" Margin="0,0,0,14"
                                             BorderThickness="1" BorderBrush="#FF8B0000" x:Name="PanelDeployment">
                                         <StackPanel>
                                             <TextBlock Text="🚀 DEPLOYMENT CENTER" Foreground="#FFFF6B6B"
@@ -1548,7 +1548,7 @@
 
                                             <ComboBox x:Name="ComboScripts" Margin="0,0,0,10"
                                                       Foreground="White" FontWeight="SemiBold" FontSize="10"
-                                                      Background="#FF2A2A2A" BorderBrush="#FF555555" Height="30">
+                                                      Background="{DynamicResource BgLightBrush}" BorderBrush="{DynamicResource BorderBrightBrush}" Height="30">
                                                 <ComboBoxItem Content="General Update (Drivers + Firmware + Patches)" IsSelected="True"/>
                                                 <ComboBoxItem Content="Feature Update (Major OS In-Place Upgrade)"/>
                                             </ComboBox>
@@ -1572,8 +1572,8 @@
                                     </Border>
 
                                     <!-- PRE-FLIGHT SECTION -->
-                                    <Border Background="#FF252525" CornerRadius="6" Padding="14"
-                                            BorderThickness="1" BorderBrush="#FF555555" Margin="0,0,0,8">
+                                    <Border Background="{DynamicResource BgMediumBrush}" CornerRadius="6" Padding="14"
+                                            BorderThickness="1" BorderBrush="{DynamicResource BorderBrightBrush}" Margin="0,0,0,8">
                                         <StackPanel>
                                             <TextBlock Text="&#x2708; PRE-FLIGHT TOOLS" Foreground="#FF6BC5FF"
                                                        FontSize="11" FontWeight="Bold" Margin="0,0,0,4"
@@ -1590,8 +1590,8 @@
                                     </Border>
 
                                     <!-- UTILITIES SECTION -->
-                                    <Border Background="#FF252525" CornerRadius="6" Padding="14"
-                                            BorderThickness="1" BorderBrush="#FF555555">
+                                    <Border Background="{DynamicResource BgMediumBrush}" CornerRadius="6" Padding="14"
+                                            BorderThickness="1" BorderBrush="{DynamicResource BorderBrightBrush}">
                                         <StackPanel>
                                             <!-- TAG: #TOOLTIPS #UTILITIES -->
                                             <TextBlock Text="🔧 UTILITIES" Foreground="{DynamicResource AccentOrangeBrush}"
@@ -1617,8 +1617,8 @@
 
                                     <!-- TAG: #RMM_INTEGRATION #REMOTE_CONTROL #VERSION_7 #PHASE_3 -->
                                     <!-- RMM QUICK LAUNCH SECTION - Moved from right column to left for cleaner UI -->
-                                    <Border Background="#FF252525" CornerRadius="6" Padding="14"
-                                            BorderThickness="1" BorderBrush="#FF555555" Margin="0,14,0,0">
+                                    <Border Background="{DynamicResource BgMediumBrush}" CornerRadius="6" Padding="14"
+                                            BorderThickness="1" BorderBrush="{DynamicResource BorderBrightBrush}" Margin="0,14,0,0">
                                         <StackPanel>
                                             <TextBlock Text="🖥️ RMM QUICK LAUNCH" Foreground="{DynamicResource AccentOrangeBrush}"
                                                        FontSize="11" FontWeight="Bold" Margin="0,0,0,12"
@@ -1822,7 +1822,7 @@
                                                    SegmentClicked="FleetBreadcrumb_SegmentClicked"/>
 
                         <!-- DC Selection Section -->
-                        <Border DockPanel.Dock="Top" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
+                        <Border DockPanel.Dock="Top" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                 BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,15">
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -1921,8 +1921,8 @@
                                     <!-- AD Query Method Selector -->
                                     <TextBlock Text="AD Query Method:" Foreground="{DynamicResource TextMutedBrush}"
                                                FontSize="9" Margin="0,0,0,4"/>
-                                    <ComboBox x:Name="ComboADQueryMethod" Foreground="White" Background="#FF2A2A2A"
-                                              BorderBrush="#FF444444" FontSize="10" Padding="8,4" Margin="0,0,0,8"
+                                    <ComboBox x:Name="ComboADQueryMethod" Foreground="White" Background="{DynamicResource BgLightBrush}"
+                                              BorderBrush="{DynamicResource BorderBrightBrush}" FontSize="10" Padding="8,4" Margin="0,0,0,8"
                                               SelectionChanged="ComboADQueryMethod_SelectionChanged">
                                         <ComboBoxItem Content="DirectorySearcher (Fast)" Tag="DirectorySearcher" IsSelected="True"/>
                                         <ComboBoxItem Content="ActiveDirectoryManager (Detailed)" Tag="ActiveDirectoryManager"/>
@@ -1943,12 +1943,12 @@
                         <!-- OU Scope Selector — collapsible, max 280px, replaces fixed 400px browser -->
                         <!-- Toggled by BtnLoadADObjects; BtnCloseScopePanel collapses it -->
                         <Border x:Name="ScopeSelectorPanel" DockPanel.Dock="Top" Margin="0,0,0,10"
-                                Background="#FF1E1E1E" BorderBrush="{DynamicResource AccentGradientBrush}"
+                                Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource AccentGradientBrush}"
                                 BorderThickness="1" CornerRadius="8" Visibility="Collapsed" MaxHeight="280">
                             <DockPanel>
                                 <!-- Header strip -->
-                                <Border DockPanel.Dock="Top" Background="#FF252525" Padding="12,7"
-                                        BorderBrush="#FF3C3C3C" BorderThickness="0,0,0,1">
+                                <Border DockPanel.Dock="Top" Background="{DynamicResource BgMediumBrush}" Padding="12,7"
+                                        BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="0,0,0,1">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
@@ -2005,7 +2005,7 @@
 
                                 <!-- Progress Bar and Status -->
                                 <Border x:Name="ScanProgressPanel" Visibility="Collapsed" Margin="0,10,0,0"
-                                        Background="#FF1E1E1E" BorderBrush="{DynamicResource BorderDimBrush}"
+                                        Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                         BorderThickness="1" CornerRadius="4" Padding="12,8">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
@@ -2031,7 +2031,7 @@
                                                            Foreground="{StaticResource AccentCyanBrush}" FontSize="11" FontWeight="Bold"/>
                                             </Grid>
                                             <ProgressBar x:Name="ScanProgressBar" Height="8" Minimum="0" Maximum="100" Value="0"
-                                                         Background="#FF2A2A2A" Foreground="{StaticResource AccentCyanBrush}"
+                                                         Background="{DynamicResource BgLightBrush}" Foreground="{StaticResource AccentCyanBrush}"
                                                          BorderThickness="0"/>
                                             <Grid Margin="0,4,0,0">
                                                 <Grid.ColumnDefinitions>
@@ -2204,23 +2204,23 @@
                                                     </Style>
                                                 </StackPanel.Style>
                                                 <Button Content="RDP" FontSize="8" Padding="4,2" Margin="1,0"
-                                                        Background="#FF2A2A2A" Foreground="White" BorderThickness="1"
-                                                        BorderBrush="#FF444444" Cursor="Hand"
+                                                        Background="{DynamicResource BgLightBrush}" Foreground="White" BorderThickness="1"
+                                                        BorderBrush="{DynamicResource BorderBrightBrush}" Cursor="Hand"
                                                         Tag="{Binding Hostname}" Click="BtnHoverRDP_Click"
                                                         ToolTip="Remote Desktop to this computer"/>
                                                 <Button Content="PS" FontSize="8" Padding="4,2" Margin="1,0"
-                                                        Background="#FF2A2A2A" Foreground="#FF4FC3F7" BorderThickness="1"
-                                                        BorderBrush="#FF444444" Cursor="Hand"
+                                                        Background="{DynamicResource BgLightBrush}" Foreground="#FF4FC3F7" BorderThickness="1"
+                                                        BorderBrush="{DynamicResource BorderBrightBrush}" Cursor="Hand"
                                                         Tag="{Binding Hostname}" Click="BtnHoverPowerShell_Click"
                                                         ToolTip="PowerShell remote to this computer"/>
                                                 <Button Content="C$" FontSize="8" Padding="4,2" Margin="1,0"
-                                                        Background="#FF2A2A2A" Foreground="#FFFFA726" BorderThickness="1"
-                                                        BorderBrush="#FF444444" Cursor="Hand"
+                                                        Background="{DynamicResource BgLightBrush}" Foreground="#FFFFA726" BorderThickness="1"
+                                                        BorderBrush="{DynamicResource BorderBrightBrush}" Cursor="Hand"
                                                         Tag="{Binding Hostname}" Click="BtnHoverBrowse_Click"
                                                         ToolTip="Browse C$ admin share"/>
                                                 <Button Content="Pin" FontSize="8" Padding="4,2" Margin="1,0"
-                                                        Background="#FF2A2A2A" Foreground="#FF10B981" BorderThickness="1"
-                                                        BorderBrush="#FF444444" Cursor="Hand"
+                                                        Background="{DynamicResource BgLightBrush}" Foreground="#FF10B981" BorderThickness="1"
+                                                        BorderBrush="{DynamicResource BorderBrightBrush}" Cursor="Hand"
                                                         Tag="{Binding Hostname}" Click="BtnHoverPin_Click"
                                                         ToolTip="Pin this device"/>
                                             </StackPanel>
@@ -2397,34 +2397,34 @@
                                     Visibility="Collapsed">
                                 <StackPanel Margin="20">
                                     <!-- Repeat skeleton rows -->
-                                    <Border Height="40" Background="#1A1A1A" Margin="0,0,0,2" CornerRadius="4">
+                                    <Border Height="40" Background="{DynamicResource BgDarkBrush}" Margin="0,0,0,2" CornerRadius="4">
                                         <Grid Margin="10">
-                                            <Rectangle Fill="#2A2A2A" Width="150" HorizontalAlignment="Left" Height="16" RadiusX="2" RadiusY="2"/>
-                                            <Rectangle Fill="#2A2A2A" Width="80" HorizontalAlignment="Right" Height="16" RadiusX="2" RadiusY="2"/>
+                                            <Rectangle Fill="{DynamicResource BgLightBrush}" Width="150" HorizontalAlignment="Left" Height="16" RadiusX="2" RadiusY="2"/>
+                                            <Rectangle Fill="{DynamicResource BgLightBrush}" Width="80" HorizontalAlignment="Right" Height="16" RadiusX="2" RadiusY="2"/>
                                         </Grid>
                                     </Border>
-                                    <Border Height="40" Background="#1A1A1A" Margin="0,0,0,2" CornerRadius="4">
+                                    <Border Height="40" Background="{DynamicResource BgDarkBrush}" Margin="0,0,0,2" CornerRadius="4">
                                         <Grid Margin="10">
-                                            <Rectangle Fill="#2A2A2A" Width="180" HorizontalAlignment="Left" Height="16" RadiusX="2" RadiusY="2"/>
-                                            <Rectangle Fill="#2A2A2A" Width="100" HorizontalAlignment="Right" Height="16" RadiusX="2" RadiusY="2"/>
+                                            <Rectangle Fill="{DynamicResource BgLightBrush}" Width="180" HorizontalAlignment="Left" Height="16" RadiusX="2" RadiusY="2"/>
+                                            <Rectangle Fill="{DynamicResource BgLightBrush}" Width="100" HorizontalAlignment="Right" Height="16" RadiusX="2" RadiusY="2"/>
                                         </Grid>
                                     </Border>
-                                    <Border Height="40" Background="#1A1A1A" Margin="0,0,0,2" CornerRadius="4">
+                                    <Border Height="40" Background="{DynamicResource BgDarkBrush}" Margin="0,0,0,2" CornerRadius="4">
                                         <Grid Margin="10">
-                                            <Rectangle Fill="#2A2A2A" Width="160" HorizontalAlignment="Left" Height="16" RadiusX="2" RadiusY="2"/>
-                                            <Rectangle Fill="#2A2A2A" Width="90" HorizontalAlignment="Right" Height="16" RadiusX="2" RadiusY="2"/>
+                                            <Rectangle Fill="{DynamicResource BgLightBrush}" Width="160" HorizontalAlignment="Left" Height="16" RadiusX="2" RadiusY="2"/>
+                                            <Rectangle Fill="{DynamicResource BgLightBrush}" Width="90" HorizontalAlignment="Right" Height="16" RadiusX="2" RadiusY="2"/>
                                         </Grid>
                                     </Border>
-                                    <Border Height="40" Background="#1A1A1A" Margin="0,0,0,2" CornerRadius="4">
+                                    <Border Height="40" Background="{DynamicResource BgDarkBrush}" Margin="0,0,0,2" CornerRadius="4">
                                         <Grid Margin="10">
-                                            <Rectangle Fill="#2A2A2A" Width="140" HorizontalAlignment="Left" Height="16" RadiusX="2" RadiusY="2"/>
-                                            <Rectangle Fill="#2A2A2A" Width="110" HorizontalAlignment="Right" Height="16" RadiusX="2" RadiusY="2"/>
+                                            <Rectangle Fill="{DynamicResource BgLightBrush}" Width="140" HorizontalAlignment="Left" Height="16" RadiusX="2" RadiusY="2"/>
+                                            <Rectangle Fill="{DynamicResource BgLightBrush}" Width="110" HorizontalAlignment="Right" Height="16" RadiusX="2" RadiusY="2"/>
                                         </Grid>
                                     </Border>
-                                    <Border Height="40" Background="#1A1A1A" Margin="0,0,0,2" CornerRadius="4">
+                                    <Border Height="40" Background="{DynamicResource BgDarkBrush}" Margin="0,0,0,2" CornerRadius="4">
                                         <Grid Margin="10">
-                                            <Rectangle Fill="#2A2A2A" Width="170" HorizontalAlignment="Left" Height="16" RadiusX="2" RadiusY="2"/>
-                                            <Rectangle Fill="#2A2A2A" Width="95" HorizontalAlignment="Right" Height="16" RadiusX="2" RadiusY="2"/>
+                                            <Rectangle Fill="{DynamicResource BgLightBrush}" Width="170" HorizontalAlignment="Left" Height="16" RadiusX="2" RadiusY="2"/>
+                                            <Rectangle Fill="{DynamicResource BgLightBrush}" Width="95" HorizontalAlignment="Right" Height="16" RadiusX="2" RadiusY="2"/>
                                         </Grid>
                                     </Border>
                                 </StackPanel>
@@ -2433,8 +2433,8 @@
                     </DockPanel>
 
                     <!-- Detail Drawer (Slide-in Panel) - TAG: #AUTO_UPDATE_UI_ENGINE #DETAIL_DRAWER -->
-                    <Border x:Name="DetailDrawer" Grid.Column="1" Background="#FF1A1A1A"
-                            BorderBrush="#FF3C3C3C" BorderThickness="1,0,0,0">
+                    <Border x:Name="DetailDrawer" Grid.Column="1" Background="{DynamicResource BgDarkBrush}"
+                            BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1,0,0,0">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -2442,8 +2442,8 @@
                             </Grid.RowDefinitions>
 
                             <!-- Header -->
-                            <Border Grid.Row="0" Background="#FF252525" Padding="12,8"
-                                    BorderBrush="#FF3C3C3C" BorderThickness="0,0,0,1">
+                            <Border Grid.Row="0" Background="{DynamicResource BgMediumBrush}" Padding="12,8"
+                                    BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="0,0,0,1">
                                 <Grid>
                                     <TextBlock x:Name="TxtDetailHostname" Text="DEVICE DETAILS"
                                                FontSize="13" FontWeight="Bold" Foreground="{DynamicResource AccentOrangeBrush}"
@@ -2600,7 +2600,7 @@
                                 </Grid.ColumnDefinitions>
 
                                 <!-- LEFT: Domain Controller Selection -->
-                                <Border Grid.Column="0" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
+                                <Border Grid.Column="0" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                         BorderThickness="1" CornerRadius="8" Padding="16">
                                     <StackPanel>
                                         <TextBlock Text="🌐 DOMAIN CONTROLLER SELECTION"
@@ -2682,8 +2682,8 @@
 
                                         <!-- TAG: #VERSION_7 #CONNECTION_PROFILES #TOOLTIPS #CONNECTION_PROFILES - Manage Connection Profiles -->
                                         <Button x:Name="BtnManageProfiles" Click="BtnManageProfiles_Click"
-                                                Background="#FF2A2A2A" Foreground="White" FontSize="10" FontWeight="SemiBold"
-                                                Margin="0,0,0,12" Padding="10,7" BorderThickness="1" BorderBrush="#FF444444"
+                                                Background="{DynamicResource BgLightBrush}" Foreground="White" FontSize="10" FontWeight="SemiBold"
+                                                Margin="0,0,0,12" Padding="10,7" BorderThickness="1" BorderBrush="{DynamicResource BorderBrightBrush}"
                                                 Cursor="Hand" ToolTip="Opens Connection Profile Manager to save, load, edit, and delete domain controller connection profiles. Each profile stores preferred DC, credentials, query method, and connection settings. Quickly switch between multiple domains/forests without re-entering credentials. Profiles stored encrypted in database.">
                                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                                 <TextBlock Text="🔗" FontSize="12" Margin="0,0,6,0"/>
@@ -2698,7 +2698,7 @@
                                 </Border>
 
                                 <!-- RIGHT: Domain Information (Compact) -->
-                                <Border Grid.Column="2" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
+                                <Border Grid.Column="2" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                         BorderThickness="1" CornerRadius="8" Padding="16">
                                     <StackPanel>
                                         <TextBlock Text="ℹ️ DOMAIN INFORMATION"
@@ -2744,7 +2744,7 @@
                             </Grid>
 
                             <!-- SECTION 2: Admin Tools (MOVED HERE per user request) - TAG: #VERSION_7 #UI_IMPROVEMENT -->
-                            <Border Grid.Row="1" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
+                            <Border Grid.Row="1" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                     BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,0,0,15">
                                 <StackPanel>
                                     <TextBlock Text="🔧 ADMIN TOOLS"
@@ -2800,7 +2800,7 @@
                             </Border>
 
                             <!-- SECTION 3: DC Health Topology (MUCH BIGGER per user request) - TAG: #VERSION_7 #UI_IMPROVEMENT -->
-                            <Border Grid.Row="2" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
+                            <Border Grid.Row="2" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                     BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,0,0,15">
                                 <StackPanel>
                                     <TextBlock Text="💚 DC HEALTH TOPOLOGY"
@@ -2817,7 +2817,7 @@
                             </Border>
 
                             <!-- SECTION 5: DC Discovery History (moved from Row 4) -->
-                            <Border Grid.Row="3" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
+                            <Border Grid.Row="3" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                     BorderThickness="1" CornerRadius="8" Padding="20">
                                 <StackPanel>
                                     <Grid Margin="0,0,0,14">
@@ -2830,7 +2830,7 @@
                                                    Foreground="{DynamicResource AccentOrangeBrush}"
                                                    FontSize="14" FontWeight="Bold" VerticalAlignment="Center"/>
 
-                                        <Border Grid.Column="1" Background="#FF2A2A2A"
+                                        <Border Grid.Column="1" Background="{DynamicResource BgLightBrush}"
                                                 CornerRadius="4" Padding="8,5" Cursor="Hand"
                                                 MouseLeftButtonDown="DCHistory_Toggle">
                                             <StackPanel Orientation="Horizontal">
@@ -2859,8 +2859,8 @@
                                                 </ItemsControl.ItemsPanel>
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
-                                                        <Border Background="#FF252525" Padding="6,5" Margin="0,1"
-                                                                BorderBrush="#FF3A3A3A" BorderThickness="0,0,0,1">
+                                                        <Border Background="{DynamicResource BgMediumBrush}" Padding="6,5" Margin="0,1"
+                                                                BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="0,0,0,1">
                                                             <Grid>
                                                                 <Grid.ColumnDefinitions>
                                                                     <ColumnDefinition Width="10"/>   <!-- status dot -->
@@ -2918,7 +2918,7 @@
                                                                 </StackPanel>
 
                                                                 <!-- Status badge -->
-                                                                <Border Grid.Column="2" Background="#FF1A1A1A" CornerRadius="4"
+                                                                <Border Grid.Column="2" Background="{DynamicResource BgDarkBrush}" CornerRadius="4"
                                                                         Padding="5,2" VerticalAlignment="Center">
                                                                     <TextBlock FontSize="8" FontWeight="SemiBold">
                                                                         <TextBlock.Style>
@@ -2970,7 +2970,7 @@
                                 </Grid.RowDefinitions>
 
                                 <!-- Header Section -->
-                                <Border Grid.Row="0" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
+                                <Border Grid.Row="0" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                         BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,0,0,15">
                                     <StackPanel>
                                         <TextBlock Text="👥 ACTIVE DIRECTORY MANAGEMENT"
@@ -2984,7 +2984,7 @@
                                 </Border>
 
                                 <!-- AD Browser Section (takes all remaining space) -->
-                                <Border Grid.Row="1" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
+                                <Border Grid.Row="1" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                         BorderThickness="1" CornerRadius="8" Padding="20">
                                     <DockPanel>
                                         <!-- TAG: #TOOLTIPS #ACTIONS - Management Action Buttons (at bottom) -->
@@ -3002,7 +3002,7 @@
                                                     ToolTip="Creates new Active Directory object (User, Computer, Group, OU, Contact) in selected container. Opens creation wizard with object-specific attributes. Requires domain admin or delegated OU creation rights. Changes replicate to all DCs within 15 minutes."/>
 
                                             <Button Grid.Column="1" Content="✏️ EDIT PROPERTIES" x:Name="BtnEditADObject"
-                                                    Background="#FF3C3C3C" Foreground="White"
+                                                    Background="{DynamicResource BorderDimBrush}" Foreground="White"
                                                     Click="BtnEditADObject_Click"
                                                     Padding="12,10" FontSize="11" Margin="4,0" IsEnabled="False"
                                                     ToolTip="Opens property editor for selected AD object. Modify attributes including name, description, group membership, account settings, and custom attributes. Requires appropriate AD permissions for target object. Enabled only when object is selected in tree view."/>
@@ -3013,7 +3013,7 @@
                                                     ToolTip="Permanently deletes selected Active Directory object. WARNING: Cannot be undone unless AD Recycle Bin is enabled. Deleting OUs removes all child objects. Requires domain admin or delegated delete rights. Confirmation prompt displayed before deletion."/>
 
                                             <Button Grid.Column="3" Content="🔄 REFRESH" x:Name="BtnRefreshADObjects"
-                                                    Background="#FF3C3C3C" Foreground="White"
+                                                    Background="{DynamicResource BorderDimBrush}" Foreground="White"
                                                     Click="BtnRefreshADObjects_Click"
                                                     Padding="12,10" FontSize="11" Margin="4,0,0,0"
                                                     ToolTip="Refreshes Active Directory object tree view and reloads all containers, users, groups, computers, and OUs from domain controller. Updates object counts and displays recent changes made by other admins. Clears cached results and performs fresh AD query. (F5)"/>
@@ -3040,7 +3040,7 @@
                     <DockPanel Margin="15">
 
                         <!-- Toolbar -->
-                        <Border DockPanel.Dock="Top" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
+                        <Border DockPanel.Dock="Top" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                 BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,12">
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -3457,7 +3457,7 @@
                 <!-- Progress Bar -->
                 <ProgressBar x:Name="ToolProgressBar"
                              Height="6"
-                             Background="#FF2A2A2A"
+                             Background="{DynamicResource BgLightBrush}"
                              Foreground="{DynamicResource AccentOrangeBrush}"
                              IsIndeterminate="True"
                              Margin="0,0,0,8"/>
@@ -3528,7 +3528,7 @@
         <!-- ═══════════════════════════════════════════════════════════════ -->
         <!-- STATUS BAR (Row 3) - TAG: #AUTO_UPDATE_UI_ENGINE #STATUS_BAR  -->
         <!-- ═══════════════════════════════════════════════════════════════ -->
-        <Border Grid.Row="3" Background="#FF1A1A1A" BorderBrush="#FF3C3C3C"
+        <Border Grid.Row="3" Background="{DynamicResource BgDarkBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                 BorderThickness="0,1,0,0" Padding="12,4">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -3576,7 +3576,7 @@
                            FontSize="9" Foreground="#FFEF4444" VerticalAlignment="Center" Margin="0,0,12,0"/>
 
                 <!-- Separator -->
-                <Border Grid.Column="4" Width="1" Background="#FF3C3C3C" Margin="0,2,12,2"/>
+                <Border Grid.Column="4" Width="1" Background="{DynamicResource BorderDimBrush}" Margin="0,2,12,2"/>
 
                 <!-- Last scan -->
                 <TextBlock Grid.Column="5" x:Name="TxtStatusLastScan" Text="Last scan: Never"
@@ -3588,7 +3588,7 @@
                            ToolTip="Audit trail log entries loaded from CSV files"/>
 
                 <!-- Separator -->
-                <Border Grid.Column="7" Width="1" Background="#FF3C3C3C" Margin="12,2,0,2"/>
+                <Border Grid.Column="7" Width="1" Background="{DynamicResource BorderDimBrush}" Margin="12,2,0,2"/>
 
                 <!-- DB info -->
                 <TextBlock Grid.Column="8" x:Name="TxtStatusDb" Text=""

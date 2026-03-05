@@ -809,11 +809,7 @@ namespace NecessaryAdminTool
             catch (Exception ex)
             {
                 LogManager.LogError("Failed to launch Setup Wizard", ex);
-                MessageBox.Show(
-                    $"Failed to launch Setup Wizard:\n\n{ex.Message}",
-                    "Error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                ToastManager.ShowError($"Failed to launch Setup Wizard: {ex.Message}");
             }
         }
 
@@ -851,12 +847,7 @@ namespace NecessaryAdminTool
 
                     if (!System.IO.File.Exists(scriptPath))
                     {
-                        MessageBox.Show(
-                            $"Build script not found at:\n{scriptPath}\n\n" +
-                            "Make sure build-installer.ps1 is in the project root.",
-                            "Script Not Found",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Warning);
+                        ToastManager.ShowWarning($"Build script not found at: {scriptPath}. Make sure build-installer.ps1 is in the project root.");
                         return;
                     }
 
@@ -870,15 +861,7 @@ namespace NecessaryAdminTool
                         CreateNoWindow = false
                     };
 
-                    MessageBox.Show(
-                        "🚀 Build Started!\n\n" +
-                        "A PowerShell window will open showing the build progress.\n\n" +
-                        "The MSI will be created in:\n" +
-                        "Installer\\Output\\NecessaryAdminTool-{Version}-Setup.msi\n\n" +
-                        "The output folder will open automatically when complete.",
-                        "Build In Progress",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
+                    ToastManager.ShowInfo("Build started! A PowerShell window will open showing the build progress. The MSI will be created in Installer\\Output\\.");
 
                     System.Diagnostics.Process.Start(processInfo);
 
@@ -887,12 +870,7 @@ namespace NecessaryAdminTool
                 catch (Exception ex)
                 {
                     LogManager.LogError("Failed to start MSI build process", ex);
-                    MessageBox.Show(
-                        $"Failed to start build process:\n\n{ex.Message}\n\n" +
-                        "Make sure PowerShell is available and build-installer.ps1 exists in the project root.",
-                        "Build Error",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error);
+                    ToastManager.ShowError($"Failed to start build process: {ex.Message}. Make sure PowerShell is available and build-installer.ps1 exists in the project root.");
                 }
             }
         }

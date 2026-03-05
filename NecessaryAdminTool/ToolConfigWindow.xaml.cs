@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using NecessaryAdminTool.Managers.UI;
 using Microsoft.Win32;
 
 namespace NecessaryAdminTool
@@ -342,13 +343,11 @@ namespace NecessaryAdminTool
 
                 if (success)
                 {
-                    MessageBox.Show($"{_config.ToolName} connection test successful!",
-                        "Test Passed", MessageBoxButton.OK, MessageBoxImage.Information);
+                    ToastManager.ShowSuccess($"{_config.ToolName} connection test successful!");
                 }
                 else
                 {
-                    MessageBox.Show($"{_config.ToolName} connection test failed.\n\nCheck settings and try again.",
-                        "Test Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    ToastManager.ShowError($"{_config.ToolName} connection test failed. Check settings and try again.");
                 }
             }
             finally

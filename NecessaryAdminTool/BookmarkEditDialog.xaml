@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Add to Favorites" Height="350" Width="450"
         WindowStartupLocation="CenterOwner"
-        Background="#FF0D0D0D" ResizeMode="CanResize"
+        Background="{DynamicResource BgDarkestBrush}" ResizeMode="CanResize"
         MinHeight="300" MinWidth="400"
         UseLayoutRounding="True"
         SnapsToDevicePixels="True"
@@ -24,12 +24,12 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Border Grid.Row="0" Background="#FF1E1E1E" BorderBrush="{DynamicResource AccentOrangeBrush}"
+        <Border Grid.Row="0" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource AccentOrangeBrush}"
                 BorderThickness="0,0,0,2" Padding="14,10" Margin="0,0,0,18">
             <StackPanel>
                 <TextBlock Text="⭐ ADD TO FAVORITES" Foreground="{DynamicResource AccentOrangeBrush}"
                            FontSize="14" FontWeight="Bold"/>
-                <TextBlock x:Name="TxtHostname" Text="Computer: " Foreground="{StaticResource TextMuted}"
+                <TextBlock x:Name="TxtHostname" Text="Computer: " Foreground="{DynamicResource TextMutedBrush}"
                            FontSize="10" Margin="0,4,0,0"/>
             </StackPanel>
         </Border>
@@ -37,11 +37,11 @@
         <!-- Form -->
         <StackPanel Grid.Row="1">
             <!-- Category -->
-            <TextBlock Text="Category *" Foreground="{StaticResource TextMuted}"
+            <TextBlock Text="Category *" Foreground="{DynamicResource TextMutedBrush}"
                        FontSize="10" Margin="0,0,0,4"/>
             <ComboBox x:Name="ComboCategory" Padding="10,8" FontSize="11"
-                      Background="#FF1E1E1E" Foreground="White"
-                      BorderBrush="#FF3C3C3C" BorderThickness="1"
+                      Background="{DynamicResource BgCardBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+                      BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1"
                       Margin="0,0,0,14" IsEditable="True">
                 <ComboBoxItem Content="Domain Controllers" IsSelected="True"/>
                 <ComboBoxItem Content="SQL Servers"/>
@@ -53,11 +53,11 @@
             </ComboBox>
 
             <!-- Description -->
-            <TextBlock Text="Description / Notes" Foreground="{StaticResource TextMuted}"
+            <TextBlock Text="Description / Notes" Foreground="{DynamicResource TextMutedBrush}"
                        FontSize="10" Margin="0,0,0,4"/>
             <TextBox x:Name="TxtDescription" Padding="10,8" FontSize="11"
-                     Background="#FF1E1E1E" Foreground="White"
-                     BorderBrush="#FF3C3C3C" BorderThickness="1"
+                     Background="{DynamicResource BgCardBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+                     BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1"
                      TextWrapping="Wrap" AcceptsReturn="True"
                      Height="80" Margin="0,0,0,0"/>
         </StackPanel>
@@ -76,7 +76,7 @@
                     Background="{DynamicResource AccentGradientBrush}"/>
 
             <Button Grid.Column="2" Content="CANCEL" x:Name="BtnCancel" Click="BtnCancel_Click"
-                    Background="#FF3C3C3C" Foreground="White" BorderThickness="0"
+                    Background="{DynamicResource BorderDimBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0"
                     Padding="14,8" FontSize="11" FontWeight="SemiBold"/>
         </Grid>
     </Grid>

@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="{Binding WindowTitle}" Height="500" Width="600"
-        Background="#FF0D0D0D" WindowStartupLocation="CenterOwner" ResizeMode="CanResize"
+        Background="{DynamicResource BgDarkestBrush}" WindowStartupLocation="CenterOwner" ResizeMode="CanResize"
         MinHeight="400" MinWidth="500"
         UseLayoutRounding="True"
         SnapsToDevicePixels="True"
@@ -35,14 +35,14 @@
         <!-- Buttons -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
             <Button Content="TEST CONNECTION" x:Name="BtnTest"
-                    Background="#FF2A2A2A" Foreground="White" BorderThickness="0"
+                    Background="{DynamicResource BgLightBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0"
                     Padding="15,8" Margin="0,0,8,0" FontSize="10" Click="Test_Click"/>
             <Button Content="SAVE" x:Name="BtnSave"
                     Background="{DynamicResource AccentOrangeBrush}" Foreground="White" BorderThickness="0"
                     Padding="15,8" Margin="0,0,8,0" FontSize="10" Click="Save_Click"
                     IsDefault="True"/>
             <Button Content="CANCEL" x:Name="BtnCancel"
-                    Background="#FF2A2A2A" Foreground="White" BorderThickness="0"
+                    Background="{DynamicResource BgLightBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0"
                     Padding="15,8" FontSize="10" Click="Cancel_Click"
                     IsCancel="True"/>
         </StackPanel>

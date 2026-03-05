@@ -21,6 +21,7 @@
 #   27 = ISO file too small -- re-download or check UNC path
 #   28 = ISO setup timed out -- setup.exe did not complete within the allowed window
 #   29 = Win10 fallback update failed (machine is also Win11-incompatible; see log for details)
+#   30 = Cloud upgrade failed; Secure Boot disabled on Win11 -- re-enable in BIOS/UEFI and retry
 # ==============================================================================
 
 # EARLY HEARTBEAT - first executable line; if ME execution log is blank, script never loaded
@@ -39,6 +40,7 @@ $LogDir              = $env:NECESSARYADMINTOOL_LOG_DIR
 $HostnamePattern     = if ($env:NECESSARYADMINTOOL_HOSTNAME_PATTERN) { $env:NECESSARYADMINTOOL_HOSTNAME_PATTERN } else { "*" }
 $DatabaseType        = ""  # NAT_INJECT_DB_TYPE
 $SqlConnectionString = ""  # NAT_INJECT_SQL_CONN
+$AccentColorHex      = "#FF8533"  # NAT_INJECT_ACCENT_COLOR — falls back to default orange if not injected
 
 # Log directory validation with automatic local fallback
 if ([string]::IsNullOrEmpty($LogDir) -or !(Test-Path $LogDir -ErrorAction SilentlyContinue)) {
@@ -627,7 +629,12 @@ if (!$TPM -or !$SecureBoot -or !$RAMOk -or $FreeGB -lt $MIN_DISK_SPACE_GB) {
 
         $NonSuccess = @($Win10Results | Where-Object { $_.Result -notin @('Installed', 'Downloaded', 'NotApplicable') })
         if ($NonSuccess.Count -gt 0) {
-            $FailDetail = ($NonSuccess | ForEach-Object { "$($_.Title): $($_.Result)" }) -join "; "
+            $FailDetail = ($NonSuccess | ForEach-Object {
+                $HRaw  = try { [int]$_.HResult } catch { 0 }
+                $HHex  = if ($HRaw -ne 0) { " (HResult=0x{0:X8}" -f [uint32]$HRaw } else { "" }
+                $HClose = if ($HHex) { ")" } else { "" }
+                "$($_.Title): $($_.Result)${HHex}${HClose}"
+            }) -join "; "
             throw "Install reported non-successful results: $FailDetail"
         }
 
@@ -772,7 +779,26 @@ function Run-CloudUpdate {
         # Check for any non-successful result (Failed, Aborted, Rejected, etc.)
         $NonSuccess = @($Results | Where-Object { $_.Result -notin @('Installed', 'Downloaded', 'NotApplicable') })
         if ($NonSuccess.Count -gt 0) {
-            $FailDetail = ($NonSuccess | ForEach-Object { "$($_.Title): $($_.Result)" }) -join "; "
+            # Known WU HResult codes for Win11 feature update failures (signed int32 keys)
+            $WuHResultMap = @{
+                ([int]0xC1900200) = "Hardware requirements not met (TPM 2.0 / Secure Boot / RAM / Disk)"
+                ([int]0xC1900101) = "Driver or hardware incompatibility during setup"
+                ([int]0xC1900208) = "Incompatible app or driver is blocking the upgrade"
+                ([int]0x8007042B) = "Setup process terminated unexpectedly (AV or driver conflict)"
+                ([int]0x80070070) = "Insufficient disk space"
+                ([int]0x80240022) = "WU_E_ALL_UPDATES_FAILED - all update operations failed"
+                ([int]0x80240034) = "Download failed - check network connectivity"
+                ([int]0x80240020) = "WU_E_NO_INTERACTIVE_USER - requires interactive user session"
+                ([int]0x800705B4) = "Operation timed out"
+                ([int]0x8024200B) = "WU_E_UH_INSTALLERFAILURE - installer failure"
+            }
+            $FailDetail = ($NonSuccess | ForEach-Object {
+                $HRaw  = try { [int]$_.HResult } catch { 0 }
+                $HHex  = if ($HRaw -ne 0) { " (HResult=0x{0:X8}" -f [uint32]$HRaw } else { "" }
+                $HNote = if ($HRaw -ne 0 -and $WuHResultMap.ContainsKey($HRaw)) { " -- $($WuHResultMap[$HRaw])" } else { "" }
+                $HClose = if ($HHex) { ")" } else { "" }
+                "$($_.Title): $($_.Result)${HHex}${HNote}${HClose}"
+            }) -join "; "
             throw "Install reported non-successful results: $FailDetail"
         }
 
@@ -791,6 +817,14 @@ function Run-CloudUpdate {
 
     } catch {
         Write-NecessaryAdminToolLog -Status "CLOUD_WU_FAILED_$($_.Exception.Message)" -ToMaster $false
+        # Exit 30 when Secure Boot is disabled on a Win11 machine -- WU blocks feature updates
+        # without Secure Boot; the advisory was logged earlier but the upgrade was attempted anyway.
+        if ($SecureBoot -eq $false -and $CurrentBuild -ge 22000) {
+            $SbDetail = "Secure Boot disabled (Win11 Build $CurrentBuild) -- WU refused feature update. Re-enable Secure Boot in BIOS/UEFI and retry. Original error: $($_.Exception.Message)"
+            Write-MasterSummary -Status "FAILED" -Method $Method -Details $SbDetail
+            Show-NecessaryAdminToolLogo -Msg "Cloud upgrade failed: Secure Boot disabled -- re-enable in BIOS/UEFI" "Red"
+            exit 30  # Cloud upgrade failed; Secure Boot disabled on Win11
+        }
         Write-MasterSummary -Status "FAILED" -Method $Method -Details $_.Exception.Message
         Show-NecessaryAdminToolLogo -Msg "Cloud upgrade failed: $($_.Exception.Message)" "Red"
         exit 26  # Cloud (Windows Update) upgrade install failed
@@ -836,69 +870,141 @@ Add-Type -AssemblyName System.Drawing
 # which is the correct behaviour for overnight / unattended deployments.
 function Show-UpgradeWarning {
     param(
-        [string]$Title,
+        [string]$TargetName,
         [string]$BodyText,
         [int]$CountdownSeconds,
         [bool]$AllowPostpone,
         [int]$PostponesLeft
     )
 
-    $script:UpgradeChoice  = "Proceed"           # default: proceed when timer expires
-    $script:SecondsLeft    = $CountdownSeconds
+    $script:UpgradeChoice = "Proceed"
+    $script:SecondsLeft   = $CountdownSeconds
+    $script:_isDragging   = $false
+    $script:_dragStart    = [System.Drawing.Point]::new(0, 0)
 
-    $Form                  = New-Object System.Windows.Forms.Form
-    $Form.Text             = $Title
-    $Form.Width            = 560
-    $Form.Height           = 370
-    $Form.TopMost          = $true
-    $Form.StartPosition    = [System.Windows.Forms.FormStartPosition]::CenterScreen
-    $Form.FormBorderStyle  = [System.Windows.Forms.FormBorderStyle]::FixedDialog
-    $Form.MaximizeBox      = $false
-    $Form.MinimizeBox      = $false
-    $Form.ControlBox       = $false   # no X - must use a button
+    # NAT Fluent palette — accent pulled from injected $AccentColorHex (set by NecessaryAdminTool theme engine)
+    $ClrBg      = [System.Drawing.Color]::FromArgb(26, 26, 26)
+    $ClrAccent  = try { [System.Drawing.ColorTranslator]::FromHtml($AccentColorHex) } catch { [System.Drawing.Color]::FromArgb(255, 133, 51) }
+    $ClrText    = [System.Drawing.Color]::FromArgb(230, 230, 230)
+    $ClrSubText = [System.Drawing.Color]::FromArgb(161, 161, 170)
+    $ClrSep     = [System.Drawing.Color]::FromArgb(55, 55, 60)
+    $ClrBtnSec  = [System.Drawing.Color]::FromArgb(48, 48, 52)
 
-    # Body text
-    $LblBody               = New-Object System.Windows.Forms.Label
-    $LblBody.Text          = $BodyText
-    $LblBody.Location      = New-Object System.Drawing.Point(20, 16)
-    $LblBody.Size          = New-Object System.Drawing.Size(510, 215)
-    $LblBody.Font          = New-Object System.Drawing.Font("Segoe UI", 10)
+    # --- Form (no standard chrome) ---
+    $Form                 = New-Object System.Windows.Forms.Form
+    $Form.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::None
+    $Form.Width           = 580
+    $Form.Height          = 420
+    $Form.TopMost         = $true
+    $Form.StartPosition   = [System.Windows.Forms.FormStartPosition]::CenterScreen
+    $Form.BackColor       = $ClrBg
+
+    # Left-edge orange accent bar (4px)
+    $AccentBar           = New-Object System.Windows.Forms.Panel
+    $AccentBar.Dock      = [System.Windows.Forms.DockStyle]::Left
+    $AccentBar.Width     = 4
+    $AccentBar.BackColor = $ClrAccent
+    $Form.Controls.Add($AccentBar)
+
+    # --- Header panel (draggable) ---
+    $PnlHeader           = New-Object System.Windows.Forms.Panel
+    $PnlHeader.Location  = New-Object System.Drawing.Point(4, 0)
+    $PnlHeader.Size      = New-Object System.Drawing.Size(576, 58)
+    $PnlHeader.BackColor = $ClrBg
+
+    $LblBrand            = New-Object System.Windows.Forms.Label
+    $LblBrand.Text       = "NecessaryAdminTool"
+    $LblBrand.Font       = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Bold)
+    $LblBrand.ForeColor  = $ClrAccent
+    $LblBrand.Location   = New-Object System.Drawing.Point(14, 8)
+    $LblBrand.AutoSize   = $true
+    $PnlHeader.Controls.Add($LblBrand)
+
+    $LblSub              = New-Object System.Windows.Forms.Label
+    $LblSub.Text         = "Windows 11 $TargetName — Mandatory Upgrade Notice"
+    $LblSub.Font         = New-Object System.Drawing.Font("Segoe UI", 9)
+    $LblSub.ForeColor    = $ClrSubText
+    $LblSub.Location     = New-Object System.Drawing.Point(14, 34)
+    $LblSub.AutoSize     = $true
+    $PnlHeader.Controls.Add($LblSub)
+
+    # Drag support on header and brand label
+    $DragDown = { if ($_.Button -eq [System.Windows.Forms.MouseButtons]::Left) { $script:_isDragging = $true; $script:_dragStart = [System.Drawing.Point]::new($_.X + 4, $_.Y) } }
+    $DragMove = { if ($script:_isDragging) { $Form.Left += $_.X + 4 - $script:_dragStart.X; $Form.Top += $_.Y - $script:_dragStart.Y } }
+    $DragUp   = { $script:_isDragging = $false }
+    $PnlHeader.Add_MouseDown($DragDown); $PnlHeader.Add_MouseMove($DragMove); $PnlHeader.Add_MouseUp($DragUp)
+    $LblBrand.Add_MouseDown($DragDown);  $LblBrand.Add_MouseMove($DragMove);  $LblBrand.Add_MouseUp($DragUp)
+    $LblSub.Add_MouseDown($DragDown);    $LblSub.Add_MouseMove($DragMove);    $LblSub.Add_MouseUp($DragUp)
+    $Form.Controls.Add($PnlHeader)
+
+    # Separator under header
+    $Sep1            = New-Object System.Windows.Forms.Panel
+    $Sep1.Location   = New-Object System.Drawing.Point(4, 58)
+    $Sep1.Size       = New-Object System.Drawing.Size(576, 1)
+    $Sep1.BackColor  = $ClrSep
+    $Form.Controls.Add($Sep1)
+
+    # --- Body text ---
+    $LblBody             = New-Object System.Windows.Forms.Label
+    $LblBody.Text        = $BodyText
+    $LblBody.Font        = New-Object System.Drawing.Font("Segoe UI", 10)
+    $LblBody.ForeColor   = $ClrText
+    $LblBody.BackColor   = $ClrBg
+    $LblBody.Location    = New-Object System.Drawing.Point(20, 70)
+    $LblBody.Size        = New-Object System.Drawing.Size(548, 216)
     $Form.Controls.Add($LblBody)
 
-    # Countdown label
-    $LblCountdown          = New-Object System.Windows.Forms.Label
-    $Mins0                 = [math]::Floor($CountdownSeconds / 60)
-    $Secs0                 = $CountdownSeconds % 60
-    $LblCountdown.Text     = "Proceeding automatically in  $Mins0`:$($Secs0.ToString('00'))"
-    $LblCountdown.Location = New-Object System.Drawing.Point(20, 238)
-    $LblCountdown.Size     = New-Object System.Drawing.Size(510, 28)
-    $LblCountdown.Font     = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
-    $LblCountdown.ForeColor = [System.Drawing.Color]::DarkOrange
+    # Separator above footer
+    $Sep2            = New-Object System.Windows.Forms.Panel
+    $Sep2.Location   = New-Object System.Drawing.Point(4, 296)
+    $Sep2.Size       = New-Object System.Drawing.Size(576, 1)
+    $Sep2.BackColor  = $ClrSep
+    $Form.Controls.Add($Sep2)
+
+    # --- Countdown ---
+    $Mins0                  = [math]::Floor($CountdownSeconds / 60)
+    $Secs0                  = $CountdownSeconds % 60
+    $LblCountdown           = New-Object System.Windows.Forms.Label
+    $LblCountdown.Text      = "Proceeding automatically in  $Mins0`:$($Secs0.ToString('00'))"
+    $LblCountdown.Font      = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
+    $LblCountdown.ForeColor = $ClrAccent
+    $LblCountdown.BackColor = $ClrBg
+    $LblCountdown.Location  = New-Object System.Drawing.Point(20, 306)
+    $LblCountdown.Size      = New-Object System.Drawing.Size(380, 26)
     $Form.Controls.Add($LblCountdown)
 
-    # "Start Now" button - proceed immediately
-    $BtnNow                = New-Object System.Windows.Forms.Button
-    $BtnNow.Text           = "Start Now"
-    $BtnNow.Location       = New-Object System.Drawing.Point(20, 282)
-    $BtnNow.Size           = New-Object System.Drawing.Size(110, 34)
-    $BtnNow.Font           = New-Object System.Drawing.Font("Segoe UI", 10)
+    # --- Start Now button (orange primary) ---
+    $BtnNow                              = New-Object System.Windows.Forms.Button
+    $BtnNow.Text                         = "Start Now"
+    $BtnNow.FlatStyle                    = [System.Windows.Forms.FlatStyle]::Flat
+    $BtnNow.FlatAppearance.BorderSize    = 0
+    $BtnNow.BackColor                    = $ClrAccent
+    $BtnNow.ForeColor                    = [System.Drawing.Color]::White
+    $BtnNow.Font                         = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
+    $BtnNow.Location                     = New-Object System.Drawing.Point(20, 346)
+    $BtnNow.Size                         = New-Object System.Drawing.Size(130, 38)
     $BtnNow.Add_Click({ $script:UpgradeChoice = "Proceed"; $Form.Close() })
     $Form.Controls.Add($BtnNow)
 
-    # "Postpone" button - only shown when postpones are available
+    # --- Postpone button (zinc secondary) ---
     if ($AllowPostpone) {
-        $BtnPostpone           = New-Object System.Windows.Forms.Button
-        $BtnPostpone.Text      = "Postpone  ($PostponesLeft left)"
-        $BtnPostpone.Location  = New-Object System.Drawing.Point(148, 282)
-        $BtnPostpone.Size      = New-Object System.Drawing.Size(175, 34)
-        $BtnPostpone.Font      = New-Object System.Drawing.Font("Segoe UI", 10)
+        $BtnPostpone                              = New-Object System.Windows.Forms.Button
+        $BtnPostpone.Text                         = "Postpone  ($PostponesLeft left)"
+        $BtnPostpone.FlatStyle                    = [System.Windows.Forms.FlatStyle]::Flat
+        $BtnPostpone.FlatAppearance.BorderSize    = 1
+        $BtnPostpone.FlatAppearance.BorderColor   = $ClrSubText
+        $BtnPostpone.BackColor                    = $ClrBtnSec
+        $BtnPostpone.ForeColor                    = $ClrText
+        $BtnPostpone.Font                         = New-Object System.Drawing.Font("Segoe UI", 10)
+        $BtnPostpone.Location                     = New-Object System.Drawing.Point(166, 346)
+        $BtnPostpone.Size                         = New-Object System.Drawing.Size(175, 38)
         $BtnPostpone.Add_Click({ $script:UpgradeChoice = "Postpone"; $Form.Close() })
         $Form.Controls.Add($BtnPostpone)
     }
 
-    # Timer fires every second - updates countdown label, closes form at zero
-    $Timer                 = New-Object System.Windows.Forms.Timer
-    $Timer.Interval        = 1000
+    # --- Timer: ticks every second, closes at zero ---
+    $Timer          = New-Object System.Windows.Forms.Timer
+    $Timer.Interval = 1000
     $Timer.Add_Tick({
         $script:SecondsLeft--
         $m = [math]::Floor($script:SecondsLeft / 60)
@@ -913,7 +1019,7 @@ function Show-UpgradeWarning {
     $Timer.Start()
 
     try   { [void]$Form.ShowDialog() }
-    catch { <# Session 0 / no desktop - form invisible, default "Proceed" applies #> }
+    catch { <# Session 0 / no desktop — form invisible, default "Proceed" applies #> }
     finally { $Timer.Stop(); $Timer.Dispose(); $Form.Dispose() }
 
     return $script:UpgradeChoice
@@ -981,16 +1087,11 @@ if (Test-Path $PendingFlag) {
         $BaseMsg = "Your IT team is pushing a mandatory Windows OS upgrade to this computer." +
             "`n`n  >>> SAVE ALL YOUR WORK AND CLOSE YOUR APPLICATIONS NOW. <<<" +
             $AppsWarning +
-            "`n`nThe upgrade will begin in $WarningMinutes minutes and your computer will restart." +
-            "`nThe process takes 1-2 hours. You will be unable to use your computer during this time."
+            "`n`nThe upgrade will begin in $WarningMinutes minutes. Your computer will restart" +
+            "`nand be unavailable for 1-2 hours while the installation completes."
 
         if ($PostponeCount -lt $MaxPostpones) {
-            $BodyText = $BaseMsg +
-                "`n`nPostpones remaining: $PostponesLeft of $MaxPostpones" +
-                "`n`n  Start Now  - Begin the $WarningMinutes-minute countdown immediately." +
-                "`n  Postpone   - Delay this upgrade ($PostponesLeft postpone(s) remaining)." +
-                "`n`nIf you do not respond, the upgrade starts automatically when the timer reaches zero."
-            $DialogTitle = "NecessaryAdminTool IT - Windows 11 $WIN11_TARGET_NAME Upgrade in $WarningMinutes Minutes"
+            $BodyText = $BaseMsg + "`n`nPostpones remaining: $PostponesLeft of $MaxPostpones"
             Write-Host ""
             Write-Host "  [WARNING DIALOG] Showing timed upgrade notice ($WarningMinutes-min countdown)..." -ForegroundColor Yellow
             Write-Host "  Postpones remaining: $PostponesLeft of $MaxPostpones" -ForegroundColor Gray
@@ -1000,33 +1101,15 @@ if (Test-Path $PendingFlag) {
             Write-Host "  If no response, upgrade proceeds automatically when timer reaches zero." -ForegroundColor Gray
             Write-NecessaryAdminToolLog -Status "WARNING_DIALOG_SHOWN_${WarningMinutes}MIN_POSTPONES_LEFT_${PostponesLeft}" -ToMaster $false
         } else {
-            $BodyText = $BaseMsg +
-                "`n`n  *** NO FURTHER POSTPONES ARE AVAILABLE ***" +
-                "`n`nIf you do not respond, the upgrade starts automatically when the timer reaches zero."
-            $DialogTitle = "NecessaryAdminTool IT - Windows 11 $WIN11_TARGET_NAME Upgrade (Final Notice)"
+            $BodyText = $BaseMsg + "`n`n  *** NO FURTHER POSTPONES AVAILABLE ***"
             Write-Host ""
             Write-Host "  [FINAL NOTICE] No postpones remaining. Showing final timed warning..." -ForegroundColor Yellow
             Write-Host "  If no response, upgrade proceeds automatically when timer reaches zero." -ForegroundColor Gray
             Write-NecessaryAdminToolLog -Status "FINAL_NOTICE_SHOWN_NO_POSTPONES_REMAINING" -ToMaster $false
         }
 
-        # === msg.exe belt-and-suspenders ===
-        # Fires a cross-session popup BEFORE the WinForms dialog so users in all sessions
-        # (including Remote Desktop) see the alert even if the form doesn't render in Session 0.
-        $MsgText = "Windows 11 $WIN11_TARGET_NAME upgrade starts in $WarningMinutes minutes. SAVE YOUR WORK AND CLOSE APPLICATIONS NOW. Managed by IT."
-        try {
-            $MsgProc = Start-Process "msg.exe" `
-                -ArgumentList "* /TIME:1200 `"$MsgText`"" `
-                -WindowStyle Hidden -PassThru -ErrorAction Stop
-            $MsgProc | Wait-Process -Timeout 10 -ErrorAction SilentlyContinue
-            Write-NecessaryAdminToolLog -Status "MSG_EXE_SENT_TO_ALL_SESSIONS" -ToMaster $false
-        } catch {
-            Write-NecessaryAdminToolLog -Status "MSG_EXE_FAILED_$($_.Exception.Message)" -ToMaster $false
-            # Non-fatal - WinForms dialog is the primary notification path
-        }
-
         $Choice = Show-UpgradeWarning `
-            -Title            $DialogTitle `
+            -TargetName       $WIN11_TARGET_NAME `
             -BodyText         $BodyText `
             -CountdownSeconds ($WarningMinutes * 60) `
             -AllowPostpone    ($PostponeCount -lt $MaxPostpones) `

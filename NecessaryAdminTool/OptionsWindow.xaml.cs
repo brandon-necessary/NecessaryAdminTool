@@ -426,11 +426,7 @@ namespace NecessaryAdminTool
                     LogManager.LogInfo("[Options] DC preferences reset to defaults");
 
                     // Notify user to refresh dashboard
-                    MessageBox.Show(
-                        "DC preferences have been reset. Please refresh the dashboard to see the changes.",
-                        "Reset Complete",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
+                    ToastManager.ShowSuccess("DC preferences have been reset. Please refresh the dashboard to see the changes.");
                 }
             }
             catch (Exception ex)
@@ -3376,8 +3372,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             catch (Exception ex)
             {
                 LogManager.LogError("OptionsWindow - Failed to test toast notifications", ex);
-                MessageBox.Show($"Failed to test toasts:\n\n{ex.Message}", "Test Failed",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                ToastManager.ShowError($"Failed to test toasts: {ex.Message}");
             }
         }
 
@@ -3496,8 +3491,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             catch (Exception ex)
             {
                 LogManager.LogError("OptionsWindow - Failed to edit keyboard shortcut", ex);
-                MessageBox.Show($"Failed to edit shortcut:\n\n{ex.Message}", "Edit Failed",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                ToastManager.ShowError($"Failed to edit shortcut: {ex.Message}");
             }
         }
 
@@ -3543,8 +3537,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             catch (Exception ex)
             {
                 LogManager.LogError("OptionsWindow - Failed to reset keyboard shortcut", ex);
-                MessageBox.Show($"Failed to reset shortcut:\n\n{ex.Message}", "Reset Failed",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                ToastManager.ShowError($"Failed to reset shortcut: {ex.Message}");
             }
         }
 
@@ -3574,8 +3567,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             catch (Exception ex)
             {
                 LogManager.LogError("OptionsWindow - Failed to reset all keyboard shortcuts", ex);
-                MessageBox.Show($"Failed to reset shortcuts:\n\n{ex.Message}", "Reset Failed",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                ToastManager.ShowError($"Failed to reset shortcuts: {ex.Message}");
             }
         }
 

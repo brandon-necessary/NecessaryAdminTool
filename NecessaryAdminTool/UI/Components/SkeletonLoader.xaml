@@ -22,11 +22,11 @@
         </Storyboard>
     </UserControl.Resources>
 
-    <Border Background="#FF1E1E1E"
+    <Border Background="{DynamicResource BgCardBrush}"
             CornerRadius="6"
             Padding="16"
             Margin="0,0,0,8"
-            BorderBrush="#FF3C3C3C"
+            BorderBrush="{DynamicResource BorderDimBrush}"
             BorderThickness="1">
         <Grid>
             <!-- Shimmer overlay with gradient -->

@@ -5,7 +5,7 @@
         Height="700" Width="800"
         MinHeight="500" MinWidth="700"
         WindowStartupLocation="CenterOwner"
-        Background="#FF0D0D0D"
+        Background="{DynamicResource BgDarkestBrush}"
         ResizeMode="CanResize"
         ShowInTaskbar="False"
         UseLayoutRounding="True"
@@ -14,18 +14,10 @@
         TextOptions.TextRenderingMode="ClearType">
 
     <Window.Resources>
-        <!-- Match MainWindow color scheme -->
-        <SolidColorBrush x:Key="BgDarkest" Color="#FF0D0D0D"/>
-        <SolidColorBrush x:Key="BgDark" Color="#FF1A1A1A"/>
-        <SolidColorBrush x:Key="BgLight" Color="#FF2F2F2F"/>
-        <SolidColorBrush x:Key="BgCard" Color="#FF1E1E1E"/>
-        <SolidColorBrush x:Key="BorderDim" Color="#FF3C3C3C"/>
-        <!-- AccentOrange removed — now uses app-level AccentOrangeBrush via DynamicResource for modular accent colors -->
-        <!-- AccentZinc removed — now uses app-level AccentZincBrush via DynamicResource -->
-        <SolidColorBrush x:Key="TextPrimary" Color="#FFFFFFFF"/>
-        <SolidColorBrush x:Key="TextMuted" Color="#FF888888"/>
+        <!-- Local brush aliases removed — using global app-level DynamicResource brushes -->
+        <!-- AccentOrange → AccentOrangeBrush, AccentZinc → AccentZincBrush (both DynamicResource) -->
+        <!-- DangerRed → DangerBrush (global DynamicResource) -->
         <SolidColorBrush x:Key="AccentGreen" Color="#FF16C60C"/>
-        <SolidColorBrush x:Key="DangerRed" Color="#FFE81123"/>
 
         <!-- Button Styles -->
         <Style x:Key="BtnPrimary" TargetType="Button">
@@ -61,7 +53,7 @@
         </Style>
 
         <Style x:Key="BtnDanger" TargetType="Button" BasedOn="{StaticResource BtnPrimary}">
-            <Setter Property="Background" Value="{StaticResource DangerRed}"/>
+            <Setter Property="Background" Value="{DynamicResource DangerBrush}"/>
         </Style>
 
         <Style x:Key="BtnGhost" TargetType="Button">
@@ -71,7 +63,7 @@
             <Setter Property="FontSize" Value="11"/>
             <Setter Property="Padding" Value="12,6"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="{StaticResource BorderDim}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderDimBrush}"/>
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
     </Window.Resources>
@@ -86,7 +78,7 @@
         <!-- ════════════════════════════════ -->
         <!-- HEADER                           -->
         <!-- ════════════════════════════════ -->
-        <Border Grid.Row="0" Background="{StaticResource BgDark}">
+        <Border Grid.Row="0" Background="{DynamicResource BgDarkBrush}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -98,7 +90,7 @@
                     <TextBlock Text="⚙️ APPLICATION OPTIONS" FontSize="22" FontWeight="Bold"
                                Foreground="{DynamicResource AccentOrangeBrush}"/>
                     <TextBlock Text="Configure application settings and preferences"
-                               FontSize="11" Foreground="{StaticResource TextMuted}" Margin="0,4,0,0"/>
+                               FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,4,0,0"/>
                 </StackPanel>
 
                 <!-- TAG: #TOOLTIPS #NAVIGATION -->
@@ -117,7 +109,7 @@
             <StackPanel Margin="30,20" MaxWidth="1000" HorizontalAlignment="Stretch">
 
                 <!-- Status Message (Hidden by default) -->
-                <Border x:Name="StatusMessage" Background="{StaticResource BgCard}"
+                <Border x:Name="StatusMessage" Background="{DynamicResource BgCardBrush}"
                         BorderBrush="{StaticResource AccentGreen}" BorderThickness="1"
                         CornerRadius="4" Padding="12,8" Margin="0,0,0,15"
                         Visibility="Collapsed">
@@ -136,14 +128,14 @@
                                        Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
-                    <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
+                    <Border Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                             BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
                         <StackPanel>
                             <TextBlock Text="ADMIN LAUNCHER SETUP" Foreground="{DynamicResource AccentOrangeBrush}"
                                        FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
 
                             <!-- Create Shortcut Button - TAG: #ADMIN_TOOLS -->
-                            <Border Background="{StaticResource BgDark}" BorderBrush="{DynamicResource AccentOrangeBrush}"
+                            <Border Background="{DynamicResource BgDarkBrush}" BorderBrush="{DynamicResource AccentOrangeBrush}"
                                     BorderThickness="1" CornerRadius="4" Padding="12,10" Margin="0,0,0,8"
                                     Cursor="Hand" MouseEnter="DebugButton_MouseEnter" MouseLeave="DebugButton_MouseLeave"
                                     MouseLeftButtonDown="CreateShortcut_Click">
@@ -157,13 +149,13 @@
                                         <TextBlock x:Name="DebugButtonText" Text="Create Admin Launcher Shortcut"
                                                   Foreground="{DynamicResource AccentOrangeBrush}" FontSize="11" FontWeight="Bold"/>
                                         <TextBlock Text="Creates a desktop shortcut to launch NecessaryAdminTool Suite as domain admin"
-                                                  Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                                                  Foreground="{DynamicResource TextMutedBrush}" FontSize="9" Margin="0,2,0,0" TextWrapping="Wrap"/>
                                     </StackPanel>
                                 </Grid>
                             </Border>
 
                             <TextBlock Text="ℹ️ This tool creates a secure launcher that remembers your admin credentials using Windows Credential Manager. Perfect for testing or if you accidentally deleted the shortcut."
-                                       Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" LineHeight="14"/>
+                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="9" TextWrapping="Wrap" LineHeight="14"/>
                         </StackPanel>
                     </Border>
                 </Expander>
@@ -179,19 +171,19 @@
                                        Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
-                    <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
+                    <Border Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                             BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
                         <StackPanel>
                             <!-- Last Username -->
-                            <TextBlock Text="Cached Username:" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                            <TextBlock Text="Cached Username:" Foreground="{DynamicResource TextMutedBrush}" FontSize="11"/>
                             <Grid Margin="0,4,0,12">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBox x:Name="TxtLastUser" Grid.Column="0" IsReadOnly="True"
-                                         Background="{StaticResource BgDark}" Foreground="White"
-                                         BorderBrush="{StaticResource BorderDim}" Padding="8,6" FontSize="11"/>
+                                         Background="{DynamicResource BgDarkBrush}" Foreground="White"
+                                         BorderBrush="{DynamicResource BorderDimBrush}" Padding="8,6" FontSize="11"/>
                                 <!-- TAG: #TOOLTIPS #ACTIONS -->
                                 <Button Grid.Column="1" Content="CLEAR" Style="{StaticResource BtnDanger}"
                                         Click="BtnClearLastUser_Click" Margin="8,0,0,0" Padding="12,6" FontSize="10"
@@ -204,21 +196,21 @@
                                       Foreground="White" FontSize="11" Margin="0,0,0,12"/>
 
                             <!-- AD Query Method - TAG: #VERSION_7 #AD_QUERY_BACKEND_SELECTION #PERFORMANCE_AUDIT -->
-                            <TextBlock Text="AD Query Method:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <TextBlock Text="AD Query Method:" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" Margin="0,0,0,4"/>
                             <ComboBox x:Name="ComboADQueryMethod" Margin="0,0,0,12"
-                                      Background="{StaticResource BgDark}" Foreground="White"
-                                      BorderBrush="{StaticResource BorderDim}" Padding="8,6" FontSize="11"
+                                      Background="{DynamicResource BgDarkBrush}" Foreground="White"
+                                      BorderBrush="{DynamicResource BorderDimBrush}" Padding="8,6" FontSize="11"
                                       SelectedValuePath="Tag">
                                 <ComboBoxItem Content="DirectorySearcher (Fast)" Tag="DirectorySearcher" IsSelected="True"/>
                                 <ComboBoxItem Content="ActiveDirectoryManager (Detailed)" Tag="ActiveDirectoryManager"/>
                             </ComboBox>
                             <TextBlock Text="💡 DirectorySearcher is faster for large environments. ActiveDirectoryManager provides richer AD object properties."
-                                       Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="14"/>
+                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="14"/>
 
                             <!-- Target History -->
-                            <TextBlock Text="Recent Targets:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,6"/>
-                            <ListBox x:Name="ListTargetHistory" Height="120" Background="{StaticResource BgDark}"
-                                     BorderBrush="{StaticResource BorderDim}" Foreground="White" FontSize="11" Margin="0,0,0,8"/>
+                            <TextBlock Text="Recent Targets:" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" Margin="0,0,0,6"/>
+                            <ListBox x:Name="ListTargetHistory" Height="120" Background="{DynamicResource BgDarkBrush}"
+                                     BorderBrush="{DynamicResource BorderDimBrush}" Foreground="White" FontSize="11" Margin="0,0,0,8"/>
                             <!-- TAG: #TOOLTIPS #ACTIONS -->
                             <Button Content="CLEAR HISTORY" Style="{StaticResource BtnDanger}"
                                     Click="BtnClearHistory_Click" Padding="12,6" FontSize="10"
@@ -238,7 +230,7 @@
                                        Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
-                    <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
+                    <Border Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                             BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
                         <StackPanel>
                             <!-- TAG: #SECURITY #AUTHENTICATION #CREDENTIAL_STORAGE -->
@@ -262,23 +254,23 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="Warn when password expires within:"
-                                           Foreground="{StaticResource TextMuted}" FontSize="10" VerticalAlignment="Center"/>
+                                           Foreground="{DynamicResource TextMutedBrush}" FontSize="10" VerticalAlignment="Center"/>
                                 <TextBox x:Name="TxtPasswordWarningDays" Grid.Column="1"
-                                         Background="{StaticResource BgDark}" Foreground="White"
-                                         BorderBrush="{StaticResource BorderDim}" Padding="6,4" FontSize="10"
+                                         Background="{DynamicResource BgDarkBrush}" Foreground="White"
+                                         BorderBrush="{DynamicResource BorderDimBrush}" Padding="6,4" FontSize="10"
                                          Margin="8,0,8,0" HorizontalContentAlignment="Center"
                                          ToolTip="Number of days before password expiration to show warnings (1-90 days)"/>
                                 <TextBlock Grid.Column="2" Text="days"
-                                           Foreground="{StaticResource TextMuted}" FontSize="10" VerticalAlignment="Center"/>
+                                           Foreground="{DynamicResource TextMutedBrush}" FontSize="10" VerticalAlignment="Center"/>
                             </Grid>
 
                             <!-- Credential Storage Info -->
-                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                            <Border Background="{DynamicResource BgDarkBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                     BorderThickness="1" CornerRadius="4" Padding="12,10" Margin="0,0,0,16">
                                 <StackPanel>
                                     <TextBlock Text="🔐 Credential Storage Information"
                                                Foreground="{DynamicResource AccentOrangeBrush}" FontSize="10" FontWeight="Bold" Margin="0,0,0,6"/>
-                                    <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextMuted}" FontSize="9" LineHeight="14">
+                                    <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextMutedBrush}" FontSize="9" LineHeight="14">
                                         <Run Text="• Credentials are encrypted using Windows Data Protection API (DPAPI)"/>
                                         <LineBreak/>
                                         <Run Text="• Stored in Windows Credential Manager (same as RDP, Edge passwords)"/>
@@ -305,7 +297,7 @@
 
                             <!-- Favorite DCs Info -->
                             <TextBlock Text="💡 To favorite a domain controller, click the star (⭐) button on its health card in the dashboard. Favorited DCs will be displayed first in the widget."
-                                       Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,8" LineHeight="14"/>
+                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,8" LineHeight="14"/>
 
                             <!-- Clear DC Preferences -->
                             <Button Content="RESET DC PREFERENCES" Style="{StaticResource BtnDanger}"
@@ -326,11 +318,11 @@
                                        Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
-                    <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
+                    <Border Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                             BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
                         <StackPanel>
                             <TextBlock Text="Configure which cloud services to monitor for status and uptime. You can use the visual editor or edit the raw JSON configuration."
-                                       Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="14"/>
+                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="14"/>
 
                             <!-- TAG: #TOOLTIPS #CONFIGURATION -->
                             <!-- Tab Selector - TAG: #THEME_COLORS -->
@@ -345,7 +337,7 @@
                                         Click="BtnVisualEditor_Click" Cursor="Hand"
                                         ToolTip="Switches to visual editor mode with grid-based service configuration. Easier to use for adding, editing, and removing cloud services. Recommended for most users. Changes are synchronized with JSON editor."/>
                                 <Button x:Name="BtnJsonEditor" Content="{}{} JSON EDITOR" Grid.Column="1"
-                                        Background="#FF2A2A2A" Foreground="{StaticResource TextMuted}" BorderThickness="0"
+                                        Background="{DynamicResource BgLightBrush}" Foreground="{DynamicResource TextMutedBrush}" BorderThickness="0"
                                         Padding="8,6" FontSize="10" FontWeight="Bold" Margin="2,0,0,0"
                                         Click="BtnJsonEditor_Click" Cursor="Hand"
                                         ToolTip="Switches to raw JSON editor mode for advanced users. Allows direct editing of service configuration JSON. Useful for bulk imports, complex configurations, or troubleshooting. Invalid JSON will be rejected on save."/>
@@ -363,18 +355,18 @@
                                           CanUserDeleteRows="True"
                                           HeadersVisibility="Column"
                                           GridLinesVisibility="Horizontal"
-                                          Background="{StaticResource BgCard}"
-                                          Foreground="#FFE0E0E0"
-                                          BorderBrush="{StaticResource BorderDim}"
+                                          Background="{DynamicResource BgCardBrush}"
+                                          Foreground="{DynamicResource TextSecondaryBrush}"
+                                          BorderBrush="{DynamicResource BorderDimBrush}"
                                           BorderThickness="1"
-                                          RowBackground="#FF2A2A2A"
-                                          AlternatingRowBackground="#FF252525"
+                                          RowBackground="{DynamicResource BgLightBrush}"
+                                          AlternatingRowBackground="{DynamicResource BgMediumBrush}"
                                           FontSize="10"
                                           Height="200"
                                           Margin="0,0,0,12">
                                     <DataGrid.ColumnHeaderStyle>
                                         <Style TargetType="DataGridColumnHeader">
-                                            <Setter Property="Background" Value="{StaticResource BgDark}"/>
+                                            <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
                                             <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                                             <Setter Property="FontWeight" Value="Bold"/>
                                             <Setter Property="FontSize" Value="10"/>
@@ -383,7 +375,7 @@
                                     </DataGrid.ColumnHeaderStyle>
                                     <DataGrid.CellStyle>
                                         <Style TargetType="DataGridCell">
-                                            <Setter Property="Foreground" Value="#FFE0E0E0"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
                                             <Setter Property="Background" Value="Transparent"/>
                                             <Setter Property="BorderThickness" Value="0"/>
                                             <Setter Property="Padding" Value="8,4"/>
@@ -397,7 +389,7 @@
                                     </DataGrid.CellStyle>
                                     <DataGrid.RowStyle>
                                         <Style TargetType="DataGridRow">
-                                            <Setter Property="Foreground" Value="#FFE0E0E0"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
                                             <Style.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">
                                                     <Setter Property="Background" Value="#FF353535"/>
@@ -412,14 +404,14 @@
                                         <DataGridTextColumn Header="Service Name" Binding="{Binding ServiceName}" Width="140">
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="TextBlock">
-                                                    <Setter Property="Foreground" Value="#FFE0E0E0"/>
+                                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
                                                     <Setter Property="Padding" Value="4,2"/>
                                                 </Style>
                                             </DataGridTextColumn.ElementStyle>
                                             <DataGridTextColumn.EditingElementStyle>
                                                 <Style TargetType="TextBox">
-                                                    <Setter Property="Foreground" Value="#FFE0E0E0"/>
-                                                    <Setter Property="Background" Value="#FF1A1A1A"/>
+                                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                                    <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
                                                     <Setter Property="BorderBrush" Value="{DynamicResource AccentOrangeBrush}"/>
                                                 </Style>
                                             </DataGridTextColumn.EditingElementStyle>
@@ -427,14 +419,14 @@
                                         <DataGridTextColumn Header="API Endpoint / IP" Binding="{Binding Endpoint}" Width="*">
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="TextBlock">
-                                                    <Setter Property="Foreground" Value="#FFE0E0E0"/>
+                                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
                                                     <Setter Property="Padding" Value="4,2"/>
                                                 </Style>
                                             </DataGridTextColumn.ElementStyle>
                                             <DataGridTextColumn.EditingElementStyle>
                                                 <Style TargetType="TextBox">
-                                                    <Setter Property="Foreground" Value="#FFE0E0E0"/>
-                                                    <Setter Property="Background" Value="#FF1A1A1A"/>
+                                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                                    <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
                                                     <Setter Property="BorderBrush" Value="{DynamicResource AccentOrangeBrush}"/>
                                                 </Style>
                                             </DataGridTextColumn.EditingElementStyle>
@@ -455,9 +447,9 @@
                                          AcceptsReturn="True"
                                          TextWrapping="Wrap"
                                          VerticalScrollBarVisibility="Auto"
-                                         Background="{StaticResource BgDark}"
+                                         Background="{DynamicResource BgDarkBrush}"
                                          Foreground="#FF00FF00"
-                                         BorderBrush="{StaticResource BorderDim}"
+                                         BorderBrush="{DynamicResource BorderDimBrush}"
                                          BorderThickness="1"
                                          Padding="10"
                                          FontFamily="Consolas"
@@ -512,26 +504,26 @@
                                        Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
-                    <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
+                    <Border Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                             BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
                         <StackPanel>
                             <TextBlock Text="Manage devices pinned for quick status monitoring (max 10)"
-                                       Foreground="{StaticResource TextMuted}" FontSize="10" Margin="0,0,0,12"/>
+                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="10" Margin="0,0,0,12"/>
 
                             <!-- Pinned Devices DataGrid -->
                             <DataGrid x:Name="GridPinnedDevicesManager" AutoGenerateColumns="False"
                                       CanUserAddRows="False" Height="200" Margin="0,0,0,12"
-                                      Background="{StaticResource BgDark}"
-                                      Foreground="#FFE0E0E0"
-                                      BorderBrush="{StaticResource BorderDim}"
+                                      Background="{DynamicResource BgDarkBrush}"
+                                      Foreground="{DynamicResource TextSecondaryBrush}"
+                                      BorderBrush="{DynamicResource BorderDimBrush}"
                                       BorderThickness="1"
-                                      RowBackground="#FF2A2A2A"
-                                      AlternatingRowBackground="#FF252525"
+                                      RowBackground="{DynamicResource BgLightBrush}"
+                                      AlternatingRowBackground="{DynamicResource BgMediumBrush}"
                                       FontSize="10"
                                       HeadersVisibility="Column" GridLinesVisibility="Horizontal">
                                 <DataGrid.ColumnHeaderStyle>
                                     <Style TargetType="DataGridColumnHeader">
-                                        <Setter Property="Background" Value="{StaticResource BgDark}"/>
+                                        <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
                                         <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                                         <Setter Property="FontWeight" Value="Bold"/>
                                         <Setter Property="FontSize" Value="10"/>
@@ -540,7 +532,7 @@
                                 </DataGrid.ColumnHeaderStyle>
                                 <DataGrid.CellStyle>
                                     <Style TargetType="DataGridCell">
-                                        <Setter Property="Foreground" Value="#FFE0E0E0"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
                                         <Setter Property="Background" Value="Transparent"/>
                                         <Setter Property="BorderThickness" Value="0"/>
                                         <Setter Property="Padding" Value="8,4"/>
@@ -554,7 +546,7 @@
                                 </DataGrid.CellStyle>
                                 <DataGrid.RowStyle>
                                     <Style TargetType="DataGridRow">
-                                        <Setter Property="Foreground" Value="#FFE0E0E0"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
                                         <Style.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
                                                 <Setter Property="Background" Value="#FF353535"/>
@@ -569,7 +561,7 @@
                                     <DataGridTextColumn Header="Device" Binding="{Binding Input}" Width="*" IsReadOnly="True">
                                         <DataGridTextColumn.ElementStyle>
                                             <Style TargetType="TextBlock">
-                                                <Setter Property="Foreground" Value="#FFE0E0E0"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
                                                 <Setter Property="Padding" Value="4,2"/>
                                             </Style>
                                         </DataGridTextColumn.ElementStyle>
@@ -577,7 +569,7 @@
                                     <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100" IsReadOnly="True">
                                         <DataGridTextColumn.ElementStyle>
                                             <Style TargetType="TextBlock">
-                                                <Setter Property="Foreground" Value="#FFE0E0E0"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
                                                 <Setter Property="Padding" Value="4,2"/>
                                             </Style>
                                         </DataGridTextColumn.ElementStyle>
@@ -585,7 +577,7 @@
                                     <DataGridTextColumn Header="Last Checked" Binding="{Binding LastChecked}" Width="120" IsReadOnly="True">
                                         <DataGridTextColumn.ElementStyle>
                                             <Style TargetType="TextBlock">
-                                                <Setter Property="Foreground" Value="#FFE0E0E0"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
                                                 <Setter Property="Padding" Value="4,2"/>
                                             </Style>
                                         </DataGridTextColumn.ElementStyle>
@@ -637,7 +629,7 @@
                                        Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
-                    <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
+                    <Border Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                             BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -648,7 +640,7 @@
                             <!-- Left Column -->
                             <StackPanel Grid.Column="0" Margin="0,0,10,0">
                                 <!-- Max Parallel Scans -->
-                                <TextBlock Text="Max Parallel Scans:" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                <TextBlock Text="Max Parallel Scans:" Foreground="{DynamicResource TextMutedBrush}" FontSize="11"/>
                                 <Grid Margin="0,4,0,12">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -658,39 +650,39 @@
                                             Value="30" TickFrequency="10" IsSnapToTickEnabled="False"
                                             ValueChanged="SliderMaxParallel_ValueChanged"/>
                                     <TextBox x:Name="TxtMaxParallel" Grid.Column="1" Text="30" TextAlignment="Center"
-                                             Background="{StaticResource BgDark}" Foreground="White"
-                                             BorderBrush="{StaticResource BorderDim}" Padding="4" Margin="8,0,0,0"/>
+                                             Background="{DynamicResource BgDarkBrush}" Foreground="White"
+                                             BorderBrush="{DynamicResource BorderDimBrush}" Padding="4" Margin="8,0,0,0"/>
                                 </Grid>
 
                                 <!-- WMI Timeout -->
-                                <TextBlock Text="WMI Timeout (ms):" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                <TextBlock Text="WMI Timeout (ms):" Foreground="{DynamicResource TextMutedBrush}" FontSize="11"/>
                                 <TextBox x:Name="TxtWmiTimeout" Text="15000" Margin="0,4,0,12"
-                                         Background="{StaticResource BgDark}" Foreground="White"
-                                         BorderBrush="{StaticResource BorderDim}" Padding="8,6"/>
+                                         Background="{DynamicResource BgDarkBrush}" Foreground="White"
+                                         BorderBrush="{DynamicResource BorderDimBrush}" Padding="8,6"/>
                             </StackPanel>
 
                             <!-- Right Column -->
                             <StackPanel Grid.Column="1" Margin="10,0,0,0">
                                 <!-- Ping Timeout -->
-                                <TextBlock Text="Ping Timeout (ms):" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                <TextBlock Text="Ping Timeout (ms):" Foreground="{DynamicResource TextMutedBrush}" FontSize="11"/>
                                 <TextBox x:Name="TxtPingTimeout" Text="1200" Margin="0,4,0,12"
-                                         Background="{StaticResource BgDark}" Foreground="White"
-                                         BorderBrush="{StaticResource BorderDim}" Padding="8,6"/>
+                                         Background="{DynamicResource BgDarkBrush}" Foreground="White"
+                                         BorderBrush="{DynamicResource BorderDimBrush}" Padding="8,6"/>
 
                                 <!-- Max Retry Attempts -->
-                                <TextBlock Text="Max Retry Attempts:" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                <TextBlock Text="Max Retry Attempts:" Foreground="{DynamicResource TextMutedBrush}" FontSize="11"/>
                                 <TextBox x:Name="TxtMaxRetry" Text="3" Margin="0,4,0,12"
-                                         Background="{StaticResource BgDark}" Foreground="White"
-                                         BorderBrush="{StaticResource BorderDim}" Padding="8,6"/>
+                                         Background="{DynamicResource BgDarkBrush}" Foreground="White"
+                                         BorderBrush="{DynamicResource BorderDimBrush}" Padding="8,6"/>
 
                                 <!-- TAG: #TOOLTIPS #ACTIONS -->
                                 <!-- Cache Cleanup - TAG: #VERSION_7 #CACHE #PERFORMANCE_AUDIT -->
-                                <TextBlock Text="Failure Cache:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,8,0,4"/>
+                                <TextBlock Text="Failure Cache:" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" Margin="0,8,0,4"/>
                                 <Button Content="🗑 CLEAR FAILURE CACHE" Style="{StaticResource BtnGhost}"
                                         Click="BtnClearFailureCache_Click" Padding="12,6" FontSize="10" HorizontalAlignment="Stretch"
                                         ToolTip="Clears the cache of computers that previously failed WMI or network connectivity checks. After clearing, all computers will be re-tested on next scan. Cache automatically sizes based on domain size (2× computer count, max 10,000 entries). Useful after network changes or troubleshooting connectivity issues."/>
                                 <TextBlock Text="💡 Cache automatically sizes based on AD computer count (2× limit, max 10000)"
-                                           Foreground="{StaticResource TextMuted}" FontSize="8" TextWrapping="Wrap" Margin="0,4,0,0" LineHeight="12"/>
+                                           Foreground="{DynamicResource TextMutedBrush}" FontSize="8" TextWrapping="Wrap" Margin="0,4,0,0" LineHeight="12"/>
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -707,12 +699,12 @@
                                        Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
-                    <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
+                    <Border Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                             BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
                         <StackPanel>
 
                             <!-- Preset Themes Row (Quick Apply) - TAG: #THEME_COLORS -->
-                            <TextBlock Text="Theme Presets:" Foreground="{StaticResource TextMuted}" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
+                            <TextBlock Text="Theme Presets:" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
                             <ItemsControl x:Name="PresetSwatches" Margin="0,0,0,16">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
@@ -736,15 +728,15 @@
                                 <!-- Left Column: Logo & Colors -->
                                 <StackPanel Grid.Column="0" Margin="0,0,10,0">
                                     <!-- Custom Logo - TAG: #LOGO_PLACEMENT #BRANDING -->
-                                    <TextBlock Text="Custom Logo:" Foreground="{StaticResource TextMuted}" FontSize="11" FontWeight="Bold"/>
+                                    <TextBlock Text="Custom Logo:" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" FontWeight="Bold"/>
                                     <Grid Margin="0,4,0,12">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
                                         <TextBox x:Name="TxtLogoPath" Grid.Column="0" IsReadOnly="True"
-                                                 Background="{StaticResource BgDark}" Foreground="White"
-                                                 BorderBrush="{StaticResource BorderDim}" Padding="8,6" FontSize="10"
+                                                 Background="{DynamicResource BgDarkBrush}" Foreground="White"
+                                                 BorderBrush="{DynamicResource BorderDimBrush}" Padding="8,6" FontSize="10"
                                                  Text="(Using default NecessaryAdmin logo)"/><!-- TAG: #DYNAMIC_BRANDING -->
                                         <Button Grid.Column="1" Content="BROWSE" Style="{StaticResource BtnPrimary}"
                                                 Click="BtnBrowseLogo_Click" Margin="8,0,0,0" Padding="12,6" FontSize="10"
@@ -752,7 +744,7 @@
                                     </Grid>
 
                                     <!-- Logo Preview -->
-                                    <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                                    <Border Background="{DynamicResource BgDarkBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                             BorderThickness="1" Padding="10" Margin="0,0,0,12" Height="80">
                                         <Viewbox x:Name="LogoPreview" Stretch="Uniform" HorizontalAlignment="Center">
                                             <TextBlock Text="A" FontSize="48" FontWeight="Bold"
@@ -761,7 +753,7 @@
                                     </Border>
 
                                     <!-- Logo Size -->
-                                    <TextBlock Text="Logo Size:" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                    <TextBlock Text="Logo Size:" Foreground="{DynamicResource TextMutedBrush}" FontSize="11"/>
                                     <Grid Margin="0,4,0,12">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
@@ -770,12 +762,12 @@
                                         <Slider x:Name="SliderLogoSize" Grid.Column="0" Minimum="32" Maximum="128"
                                                 Value="64" TickFrequency="16" IsSnapToTickEnabled="False"/>
                                         <TextBox x:Name="TxtLogoSize" Grid.Column="1" Text="64" TextAlignment="Center"
-                                                 Background="{StaticResource BgDark}" Foreground="White"
-                                                 BorderBrush="{StaticResource BorderDim}" Padding="4" Margin="8,0,0,0"/>
+                                                 Background="{DynamicResource BgDarkBrush}" Foreground="White"
+                                                 BorderBrush="{DynamicResource BorderDimBrush}" Padding="4" Margin="8,0,0,0"/>
                                     </Grid>
 
                                     <!-- Primary Accent Color - TAG: #THEME_COLORS -->
-                                    <TextBlock Text="Primary Accent Color:" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                    <TextBlock Text="Primary Accent Color:" Foreground="{DynamicResource TextMutedBrush}" FontSize="11"/>
                                     <Grid Margin="0,4,0,4">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
@@ -785,19 +777,19 @@
                                                   SelectionChanged="CmbPrimaryColor_SelectionChanged"
                                                   ToolTip="Choose a primary accent color or select Custom"/>
                                         <Border x:Name="PrimaryColorPreview" Grid.Column="1" Width="30" Height="24"
-                                                Background="#FFFF8533" BorderBrush="{StaticResource BorderDim}"
+                                                Background="#FFFF8533" BorderBrush="{DynamicResource BorderDimBrush}"
                                                 BorderThickness="1" Margin="8,0,0,0" Cursor="Hand" CornerRadius="3"
                                                 MouseLeftButtonDown="PrimaryColorPreview_Click"
                                                 ToolTip="Click to open color picker"/>
                                     </Grid>
                                     <TextBox x:Name="TxtPrimaryColor" Text="#FFFF8533" Margin="0,0,0,12"
-                                             Background="{StaticResource BgDark}" Foreground="White"
-                                             BorderBrush="{StaticResource BorderDim}" Padding="8,6" FontSize="10"
+                                             Background="{DynamicResource BgDarkBrush}" Foreground="White"
+                                             BorderBrush="{DynamicResource BorderDimBrush}" Padding="8,6" FontSize="10"
                                              TextChanged="TxtPrimaryColor_TextChanged"
                                              ToolTip="Enter custom hex color (#RRGGBB or #AARRGGBB)"/>
 
                                     <!-- Secondary Accent Color -->
-                                    <TextBlock Text="Secondary Accent Color:" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                    <TextBlock Text="Secondary Accent Color:" Foreground="{DynamicResource TextMutedBrush}" FontSize="11"/>
                                     <Grid Margin="0,4,0,4">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
@@ -807,14 +799,14 @@
                                                   SelectionChanged="CmbSecondaryColor_SelectionChanged"
                                                   ToolTip="Choose a secondary accent color or select Custom"/>
                                         <Border x:Name="SecondaryColorPreview" Grid.Column="1" Width="30" Height="24"
-                                                Background="#FFA1A1AA" BorderBrush="{StaticResource BorderDim}"
+                                                Background="#FFA1A1AA" BorderBrush="{DynamicResource BorderDimBrush}"
                                                 BorderThickness="1" Margin="8,0,0,0" Cursor="Hand" CornerRadius="3"
                                                 MouseLeftButtonDown="SecondaryColorPreview_Click"
                                                 ToolTip="Click to open color picker"/>
                                     </Grid>
                                     <TextBox x:Name="TxtSecondaryColor" Text="#FFA1A1AA" Margin="0,0,0,12"
-                                             Background="{StaticResource BgDark}" Foreground="White"
-                                             BorderBrush="{StaticResource BorderDim}" Padding="8,6" FontSize="10"
+                                             Background="{DynamicResource BgDarkBrush}" Foreground="White"
+                                             BorderBrush="{DynamicResource BorderDimBrush}" Padding="8,6" FontSize="10"
                                              TextChanged="TxtSecondaryColor_TextChanged"
                                              ToolTip="Enter custom hex color (#RRGGBB or #AARRGGBB)"/>
                                 </StackPanel>
@@ -822,8 +814,8 @@
                                 <!-- Right Column: Preview & Actions -->
                                 <StackPanel Grid.Column="1" Margin="10,0,0,0">
                                     <!-- Preview Panel -->
-                                    <TextBlock Text="Preview:" Foreground="{StaticResource TextMuted}" FontSize="11" FontWeight="Bold"/>
-                                    <Border Background="{StaticResource BgDarkest}" BorderBrush="{StaticResource BorderDim}"
+                                    <TextBlock Text="Preview:" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" FontWeight="Bold"/>
+                                    <Border Background="{DynamicResource BgDarkestBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                             BorderThickness="1" Padding="15" Margin="0,4,0,12" Height="200">
                                         <StackPanel>
                                             <TextBlock Text="NecessaryAdmin" FontSize="18" FontWeight="Bold" Margin="0,0,0,8">
@@ -836,7 +828,7 @@
                                             </TextBlock>
                                             <TextBlock Text="I T   M A N A G E M E N T   S U I T E" FontSize="7"
                                                        Foreground="{DynamicResource AccentOrangeBrush}" FontWeight="Bold" Opacity="0.8"/>
-                                            <Border Height="1" Background="{StaticResource BorderDim}" Margin="0,10"/>
+                                            <Border Height="1" Background="{DynamicResource BorderDimBrush}" Margin="0,10"/>
                                             <Button Content="Sample Button" Padding="12,6" FontSize="11" Margin="0,10,0,0">
                                                 <Button.Background>
                                                     <SolidColorBrush x:Name="PreviewButtonBg" Color="#FFFF8533"/>
@@ -849,10 +841,10 @@
                                     </Border>
 
                                     <!-- Font Settings -->
-                                    <TextBlock Text="Font Family:" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                    <TextBlock Text="Font Family:" Foreground="{DynamicResource TextMutedBrush}" FontSize="11"/>
                                     <ComboBox x:Name="CmbFontFamily" Margin="0,4,0,12"
-                                              Background="{StaticResource BgDark}" Foreground="White"
-                                              BorderBrush="{StaticResource BorderDim}" Padding="8,6" FontSize="10">
+                                              Background="{DynamicResource BgDarkBrush}" Foreground="White"
+                                              BorderBrush="{DynamicResource BorderDimBrush}" Padding="8,6" FontSize="10">
                                         <ComboBoxItem Content="Segoe UI (Default)" IsSelected="True"/>
                                         <ComboBoxItem Content="Arial"/>
                                         <ComboBoxItem Content="Calibri"/>
@@ -881,11 +873,11 @@
                                        Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
-                    <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
+                    <Border Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                             BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
                         <StackPanel>
                             <TextBlock Text="Adjust the font size multiplier for the entire application (0.8x - 2.0x)"
-                                       Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="14"/>
+                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="14"/>
 
                             <!-- Font Size Slider -->
                             <Grid Margin="0,0,0,12">
@@ -909,7 +901,7 @@
                             </Grid>
 
                             <!-- Preview Text -->
-                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                            <Border Background="{DynamicResource BgDarkBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                     BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,12">
                                 <TextBlock x:Name="TxtFontPreview" Text="The quick brown fox jumps over the lazy dog. 0123456789"
                                            Foreground="White" FontSize="12" TextWrapping="Wrap"/>
@@ -940,11 +932,11 @@
                                        Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
-                    <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
+                    <Border Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                             BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
                         <StackPanel>
                             <TextBlock Text="Automatically save inventory backups at regular intervals. Backups are stored in %AppData%\NecessaryAdminTool\AutoSave\"
-                                       Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="14"/>
+                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="14"/>
 
                             <!-- Enable/Disable Auto-Save -->
                             <CheckBox x:Name="ChkAutoSaveEnabled" Content="Enable automatic backups"
@@ -963,18 +955,18 @@
                                     <TextBlock Grid.Column="0" Text="Save interval:" Foreground="White" FontSize="11"
                                                VerticalAlignment="Center" Margin="0,0,12,0"/>
                                     <TextBox x:Name="TxtAutoSaveInterval" Grid.Column="1" Text="5"
-                                             Background="{StaticResource BgDark}" Foreground="White"
-                                             BorderBrush="{StaticResource BorderDim}" Padding="8,6" FontSize="11"/>
-                                    <TextBlock Grid.Column="2" Text="minutes (1-60)" Foreground="{StaticResource TextMuted}" FontSize="11"
+                                             Background="{DynamicResource BgDarkBrush}" Foreground="White"
+                                             BorderBrush="{DynamicResource BorderDimBrush}" Padding="8,6" FontSize="11"/>
+                                    <TextBlock Grid.Column="2" Text="minutes (1-60)" Foreground="{DynamicResource TextMutedBrush}" FontSize="11"
                                                VerticalAlignment="Center" Margin="8,0,0,0"/>
                                 </Grid>
 
                                 <TextBlock Text="💡 Backups are automatically cleaned up (last 10 kept)"
-                                           Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,0,0,0"/>
+                                           Foreground="{DynamicResource TextMutedBrush}" FontSize="9" Margin="0,0,0,0"/>
                             </StackPanel>
 
                             <!-- Manual Backup Button -->
-                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                            <Border Background="{DynamicResource BgDarkBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                     BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,12">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -985,7 +977,7 @@
                                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                         <TextBlock Text="Manual Backup" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
                                         <TextBlock Text="Create a backup of the current inventory right now"
-                                                   Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,0"/>
+                                                   Foreground="{DynamicResource TextMutedBrush}" FontSize="9" Margin="0,2,0,0"/>
                                     </StackPanel>
 
                                     <!-- TAG: #TOOLTIPS #FILE_OPERATIONS -->
@@ -1015,24 +1007,24 @@
                                        Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
-                    <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
+                    <Border Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                             BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
                         <StackPanel>
                             <TextBlock Text="Save frequently used domain controller configurations for quick access"
-                                       Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="14"/>
+                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="14"/>
 
                             <!-- Profiles List -->
                             <DataGrid x:Name="GridConnectionProfiles" AutoGenerateColumns="False"
                                       CanUserAddRows="False" CanUserDeleteRows="False"
                                       HeadersVisibility="Column" GridLinesVisibility="Horizontal"
-                                      Background="{StaticResource BgDark}" Foreground="#FFE0E0E0"
-                                      BorderBrush="{StaticResource BorderDim}" BorderThickness="1"
-                                      RowBackground="#FF1A1A1A" AlternatingRowBackground="#FF151515"
+                                      Background="{DynamicResource BgDarkBrush}" Foreground="{DynamicResource TextSecondaryBrush}"
+                                      BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1"
+                                      RowBackground="{DynamicResource BgDarkBrush}" AlternatingRowBackground="{DynamicResource BgDarkestBrush}"
                                       FontSize="10" Height="180" Margin="0,0,0,12">
 
                                 <DataGrid.ColumnHeaderStyle>
                                     <Style TargetType="DataGridColumnHeader">
-                                        <Setter Property="Background" Value="{StaticResource BgDark}"/>
+                                        <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
                                         <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                                         <Setter Property="FontWeight" Value="Bold"/>
                                         <Setter Property="FontSize" Value="10"/>
@@ -1042,7 +1034,7 @@
 
                                 <DataGrid.CellStyle>
                                     <Style TargetType="DataGridCell">
-                                        <Setter Property="Foreground" Value="#FFE0E0E0"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
                                         <Setter Property="Background" Value="Transparent"/>
                                         <Setter Property="BorderThickness" Value="0"/>
                                         <Setter Property="Padding" Value="8,4"/>
@@ -1062,11 +1054,11 @@
                                                             BorderThickness="0" Padding="10,4" Margin="0,0,8,0" FontSize="9"
                                                             Click="BtnLoadProfile_Click" Cursor="Hand"
                                                             ToolTip="Loads this connection profile as the active configuration. Sets domain/server address and username for Active Directory scans. Credentials are securely stored in Windows Credential Manager. Changes apply immediately."/>
-                                                    <Button Content="✏ EDIT" Tag="{Binding}" Background="#FF2A2A2A" Foreground="White"
+                                                    <Button Content="✏ EDIT" Tag="{Binding}" Background="{DynamicResource BgLightBrush}" Foreground="White"
                                                             BorderThickness="0" Padding="10,4" Margin="0,0,8,0" FontSize="9"
                                                             Click="BtnEditProfile_Click" Cursor="Hand"
                                                             ToolTip="Opens dialog to edit this connection profile. Modify profile name, server/domain address, or username. Password can be updated separately via Windows Credential Manager. Changes are saved immediately."/>
-                                                    <Button Content="🗑 DELETE" Tag="{Binding}" Background="{StaticResource DangerRed}" Foreground="White"
+                                                    <Button Content="🗑 DELETE" Tag="{Binding}" Background="{DynamicResource DangerBrush}" Foreground="White"
                                                             BorderThickness="0" Padding="10,4" FontSize="9"
                                                             Click="BtnDeleteProfile_Click" Cursor="Hand"
                                                             ToolTip="Permanently deletes this connection profile. Associated credentials are removed from Windows Credential Manager. This action cannot be undone. You will be asked to confirm."/>
@@ -1078,7 +1070,7 @@
                             </DataGrid>
 
                             <!-- Add New Profile -->
-                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                            <Border Background="{DynamicResource BgDarkBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                     BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,12">
                                 <Grid>
                                     <Grid.RowDefinitions>
@@ -1099,19 +1091,19 @@
                                     <TextBlock Grid.Row="1" Grid.Column="0" Text="Profile Name:" Foreground="White" FontSize="10"
                                                VerticalAlignment="Center" Margin="0,0,8,4"/>
                                     <TextBox Grid.Row="1" Grid.Column="1" x:Name="TxtNewProfileName"
-                                             Background="#FF0D0D0D" Foreground="White" BorderBrush="{StaticResource BorderDim}"
+                                             Background="{DynamicResource BgDarkestBrush}" Foreground="White" BorderBrush="{DynamicResource BorderDimBrush}"
                                              Padding="6,4" FontSize="10" Margin="0,0,0,4"/>
 
                                     <TextBlock Grid.Row="2" Grid.Column="0" Text="Server/Domain:" Foreground="White" FontSize="10"
                                                VerticalAlignment="Center" Margin="0,0,8,4"/>
                                     <TextBox Grid.Row="2" Grid.Column="1" x:Name="TxtNewProfileServer"
-                                             Background="#FF0D0D0D" Foreground="White" BorderBrush="{StaticResource BorderDim}"
+                                             Background="{DynamicResource BgDarkestBrush}" Foreground="White" BorderBrush="{DynamicResource BorderDimBrush}"
                                              Padding="6,4" FontSize="10" Margin="0,0,0,4"/>
 
                                     <TextBlock Grid.Row="3" Grid.Column="0" Text="Username:" Foreground="White" FontSize="10"
                                                VerticalAlignment="Center" Margin="0,0,8,4"/>
                                     <TextBox Grid.Row="3" Grid.Column="1" x:Name="TxtNewProfileUsername"
-                                             Background="#FF0D0D0D" Foreground="White" BorderBrush="{StaticResource BorderDim}"
+                                             Background="{DynamicResource BgDarkestBrush}" Foreground="White" BorderBrush="{DynamicResource BorderDimBrush}"
                                              Padding="6,4" FontSize="10"/>
                                 </Grid>
                             </Border>
@@ -1123,7 +1115,7 @@
                                     ToolTip="Creates a new connection profile with the information entered above. Profiles store domain/server address and username for quick switching between different Active Directory environments. Credentials are securely stored in Windows Credential Manager. Requires all fields to be filled."/>
 
                             <TextBlock Text="💡 Profiles are stored locally. Credentials are saved securely in Windows Credential Manager."
-                                       Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,12,0,0" TextWrapping="Wrap"/>
+                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="9" Margin="0,12,0,0" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Border>
                 </Expander>
@@ -1139,24 +1131,24 @@
                                        Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
-                    <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
+                    <Border Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                             BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
                         <StackPanel>
                             <TextBlock Text="Save frequently accessed servers and devices for quick access"
-                                       Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="14"/>
+                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="14"/>
 
                             <!-- Bookmarks List -->
                             <DataGrid x:Name="GridBookmarks" AutoGenerateColumns="False"
                                       CanUserAddRows="False" CanUserDeleteRows="False"
                                       HeadersVisibility="Column" GridLinesVisibility="Horizontal"
-                                      Background="{StaticResource BgDark}" Foreground="#FFE0E0E0"
-                                      BorderBrush="{StaticResource BorderDim}" BorderThickness="1"
-                                      RowBackground="#FF1A1A1A" AlternatingRowBackground="#FF151515"
+                                      Background="{DynamicResource BgDarkBrush}" Foreground="{DynamicResource TextSecondaryBrush}"
+                                      BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1"
+                                      RowBackground="{DynamicResource BgDarkBrush}" AlternatingRowBackground="{DynamicResource BgDarkestBrush}"
                                       FontSize="10" Height="200" Margin="0,0,0,12">
 
                                 <DataGrid.ColumnHeaderStyle>
                                     <Style TargetType="DataGridColumnHeader">
-                                        <Setter Property="Background" Value="{StaticResource BgDark}"/>
+                                        <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
                                         <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                                         <Setter Property="FontWeight" Value="Bold"/>
                                         <Setter Property="FontSize" Value="10"/>
@@ -1166,7 +1158,7 @@
 
                                 <DataGrid.CellStyle>
                                     <Style TargetType="DataGridCell">
-                                        <Setter Property="Foreground" Value="#FFE0E0E0"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
                                         <Setter Property="Background" Value="Transparent"/>
                                         <Setter Property="BorderThickness" Value="0"/>
                                         <Setter Property="Padding" Value="8,4"/>
@@ -1190,15 +1182,15 @@
                                             <DataTemplate>
                                                 <!-- TAG: #TOOLTIPS #BOOKMARKS -->
                                                 <StackPanel Orientation="Horizontal">
-                                                    <Button Content="📋 COPY" Tag="{Binding}" Background="#FF2A2A2A" Foreground="White"
+                                                    <Button Content="📋 COPY" Tag="{Binding}" Background="{DynamicResource BgLightBrush}" Foreground="White"
                                                             BorderThickness="0" Padding="8,4" Margin="0,0,6,0" FontSize="9"
                                                             Click="BtnCopyBookmark_Click" Cursor="Hand"
                                                             ToolTip="Copies the computer name/hostname to clipboard for quick use in other applications or search boxes. Does not modify the bookmark."/>
-                                                    <Button Content="✏ EDIT" Tag="{Binding}" Background="#FF2A2A2A" Foreground="White"
+                                                    <Button Content="✏ EDIT" Tag="{Binding}" Background="{DynamicResource BgLightBrush}" Foreground="White"
                                                             BorderThickness="0" Padding="8,4" Margin="0,0,6,0" FontSize="9"
                                                             Click="BtnEditBookmark_Click" Cursor="Hand"
                                                             ToolTip="Opens dialog to edit this bookmark. Modify display name, hostname/IP, folder organization, or notes. Changes are saved immediately and sync across all devices using the same database."/>
-                                                    <Button Content="🗑 DELETE" Tag="{Binding}" Background="{StaticResource DangerRed}" Foreground="White"
+                                                    <Button Content="🗑 DELETE" Tag="{Binding}" Background="{DynamicResource DangerBrush}" Foreground="White"
                                                             BorderThickness="0" Padding="8,4" FontSize="9"
                                                             Click="BtnDeleteBookmark_Click" Cursor="Hand"
                                                             ToolTip="Permanently deletes this bookmark. This action cannot be undone. The actual computer record in the database is not affected - only the bookmark reference is removed. You will be asked to confirm."/>
@@ -1210,7 +1202,7 @@
                             </DataGrid>
 
                             <!-- Add New Bookmark -->
-                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                            <Border Background="{DynamicResource BgDarkBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                     BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,12">
                                 <Grid>
                                     <Grid.RowDefinitions>
@@ -1232,25 +1224,25 @@
                                     <TextBlock Grid.Row="1" Grid.Column="0" Text="Display Name:" Foreground="White" FontSize="10"
                                                VerticalAlignment="Center" Margin="0,0,8,4"/>
                                     <TextBox Grid.Row="1" Grid.Column="1" x:Name="TxtNewBookmarkName"
-                                             Background="#FF0D0D0D" Foreground="White" BorderBrush="{StaticResource BorderDim}"
+                                             Background="{DynamicResource BgDarkestBrush}" Foreground="White" BorderBrush="{DynamicResource BorderDimBrush}"
                                              Padding="6,4" FontSize="10" Margin="0,0,0,4"/>
 
                                     <TextBlock Grid.Row="2" Grid.Column="0" Text="Hostname/IP:" Foreground="White" FontSize="10"
                                                VerticalAlignment="Center" Margin="0,0,8,4"/>
                                     <TextBox Grid.Row="2" Grid.Column="1" x:Name="TxtNewBookmarkHost"
-                                             Background="#FF0D0D0D" Foreground="White" BorderBrush="{StaticResource BorderDim}"
+                                             Background="{DynamicResource BgDarkestBrush}" Foreground="White" BorderBrush="{DynamicResource BorderDimBrush}"
                                              Padding="6,4" FontSize="10" Margin="0,0,0,4"/>
 
                                     <TextBlock Grid.Row="3" Grid.Column="0" Text="Folder (optional):" Foreground="White" FontSize="10"
                                                VerticalAlignment="Center" Margin="0,0,8,4"/>
                                     <TextBox Grid.Row="3" Grid.Column="1" x:Name="TxtNewBookmarkFolder"
-                                             Background="#FF0D0D0D" Foreground="White" BorderBrush="{StaticResource BorderDim}"
+                                             Background="{DynamicResource BgDarkestBrush}" Foreground="White" BorderBrush="{DynamicResource BorderDimBrush}"
                                              Padding="6,4" FontSize="10" Margin="0,0,0,4"/>
 
                                     <TextBlock Grid.Row="4" Grid.Column="0" Text="Notes (optional):" Foreground="White" FontSize="10"
                                                VerticalAlignment="Center" Margin="0,0,8,0"/>
                                     <TextBox Grid.Row="4" Grid.Column="1" x:Name="TxtNewBookmarkNotes"
-                                             Background="#FF0D0D0D" Foreground="White" BorderBrush="{StaticResource BorderDim}"
+                                             Background="{DynamicResource BgDarkestBrush}" Foreground="White" BorderBrush="{DynamicResource BorderDimBrush}"
                                              Padding="6,4" FontSize="10"/>
                                 </Grid>
                             </Border>
@@ -1270,7 +1262,7 @@
                             </StackPanel>
 
                             <TextBlock Text="💡 Use folders to organize bookmarks (e.g., 'Production', 'Development', 'Critical')"
-                                       Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,0,0,0" TextWrapping="Wrap"/>
+                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="9" Margin="0,0,0,0" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Border>
                 </Expander>
@@ -1286,11 +1278,11 @@
                                        Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
-                    <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
+                    <Border Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                             BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
                         <StackPanel>
                             <TextBlock Text="Manage persistent storage of computer inventory data"
-                                       Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="14"/>
+                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,12" LineHeight="14"/>
 
                             <!-- Current Configuration -->
                             <TextBlock Text="CURRENT CONFIGURATION" Foreground="{DynamicResource AccentOrangeBrush}"
@@ -1306,12 +1298,12 @@
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
 
-                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Database Type:" Foreground="{StaticResource TextMuted}"
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Database Type:" Foreground="{DynamicResource TextMutedBrush}"
                                            FontSize="10" Margin="0,0,12,4"/>
                                 <TextBlock Grid.Row="0" Grid.Column="1" x:Name="TxtDbType" Text="SQLite (AES-256 Encrypted)"
                                            Foreground="White" FontSize="10" FontWeight="SemiBold" Margin="0,0,0,4"/>
 
-                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Location:" Foreground="{StaticResource TextMuted}"
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Location:" Foreground="{DynamicResource TextMutedBrush}"
                                            FontSize="10" Margin="0,0,12,0"/>
                                 <TextBlock Grid.Row="1" Grid.Column="1" x:Name="TxtDbPath" Text="C:\ProgramData\NecessaryAdminTool"
                                            Foreground="White" FontSize="10" TextWrapping="Wrap"/>
@@ -1321,7 +1313,7 @@
                             <TextBlock Text="DATABASE STATISTICS" Foreground="{DynamicResource AccentOrangeBrush}"
                                        FontSize="10" FontWeight="Bold" Margin="0,12,0,8"/>
 
-                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                            <Border Background="{DynamicResource BgDarkBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                     BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,12">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -1336,7 +1328,7 @@
                                         <TextBlock Text="💻" FontSize="18" HorizontalAlignment="Center" Margin="0,0,0,4"/>
                                         <TextBlock x:Name="TxtDbComputers" Text="0" FontSize="20" FontWeight="Bold"
                                                    Foreground="{DynamicResource AccentOrangeBrush}" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="Computers" FontSize="9" Foreground="{StaticResource TextMuted}"
+                                        <TextBlock Text="Computers" FontSize="9" Foreground="{DynamicResource TextMutedBrush}"
                                                    HorizontalAlignment="Center"/>
                                     </StackPanel>
 
@@ -1345,7 +1337,7 @@
                                         <TextBlock Text="🔍" FontSize="18" HorizontalAlignment="Center" Margin="0,0,0,4"/>
                                         <TextBlock x:Name="TxtDbScans" Text="0" FontSize="20" FontWeight="Bold"
                                                    Foreground="{DynamicResource AccentOrangeBrush}" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="Scans" FontSize="9" Foreground="{StaticResource TextMuted}"
+                                        <TextBlock Text="Scans" FontSize="9" Foreground="{DynamicResource TextMutedBrush}"
                                                    HorizontalAlignment="Center"/>
                                     </StackPanel>
 
@@ -1354,7 +1346,7 @@
                                         <TextBlock Text="📜" FontSize="18" HorizontalAlignment="Center" Margin="0,0,0,4"/>
                                         <TextBlock x:Name="TxtDbScripts" Text="0" FontSize="20" FontWeight="Bold"
                                                    Foreground="{DynamicResource AccentOrangeBrush}" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="Scripts" FontSize="9" Foreground="{StaticResource TextMuted}"
+                                        <TextBlock Text="Scripts" FontSize="9" Foreground="{DynamicResource TextMutedBrush}"
                                                    HorizontalAlignment="Center"/>
                                     </StackPanel>
 
@@ -1363,7 +1355,7 @@
                                         <TextBlock Text="💾" FontSize="18" HorizontalAlignment="Center" Margin="0,0,0,4"/>
                                         <TextBlock x:Name="TxtDbSize" Text="0 MB" FontSize="20" FontWeight="Bold"
                                                    Foreground="{DynamicResource AccentOrangeBrush}" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="Size" FontSize="9" Foreground="{StaticResource TextMuted}"
+                                        <TextBlock Text="Size" FontSize="9" Foreground="{DynamicResource TextMutedBrush}"
                                                    HorizontalAlignment="Center"/>
                                     </StackPanel>
                                 </Grid>
@@ -1374,7 +1366,7 @@
                                        FontSize="10" FontWeight="Bold" Margin="0,12,0,8"/>
 
                             <!-- Refresh Stats -->
-                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                            <Border Background="{DynamicResource BgDarkBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                     BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,8">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -1385,7 +1377,7 @@
                                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                         <TextBlock Text="Refresh Statistics" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
                                         <TextBlock Text="Update the database statistics shown above"
-                                                   Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,0"/>
+                                                   Foreground="{DynamicResource TextMutedBrush}" FontSize="9" Margin="0,2,0,0"/>
                                     </StackPanel>
 
                                     <!-- TAG: #TOOLTIPS #ACTIONS -->
@@ -1396,7 +1388,7 @@
                             </Border>
 
                             <!-- Backup Database -->
-                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                            <Border Background="{DynamicResource BgDarkBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                     BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,8">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -1407,7 +1399,7 @@
                                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                         <TextBlock Text="Backup Database" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
                                         <TextBlock Text="Create a complete backup of the database"
-                                                   Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,0"/>
+                                                   Foreground="{DynamicResource TextMutedBrush}" FontSize="9" Margin="0,2,0,0"/>
                                     </StackPanel>
 
                                     <!-- TAG: #TOOLTIPS #FILE_OPERATIONS -->
@@ -1418,7 +1410,7 @@
                             </Border>
 
                             <!-- Restore Database -->
-                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                            <Border Background="{DynamicResource BgDarkBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                     BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,8">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -1429,7 +1421,7 @@
                                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                         <TextBlock Text="Restore Database" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
                                         <TextBlock Text="Restore database from a backup file"
-                                                   Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,0"/>
+                                                   Foreground="{DynamicResource TextMutedBrush}" FontSize="9" Margin="0,2,0,0"/>
                                     </StackPanel>
 
                                     <!-- TAG: #TOOLTIPS #FILE_OPERATIONS -->
@@ -1440,7 +1432,7 @@
                             </Border>
 
                             <!-- Optimize Database -->
-                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                            <Border Background="{DynamicResource BgDarkBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                     BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,8">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -1451,7 +1443,7 @@
                                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                         <TextBlock Text="Optimize/Vacuum Database" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
                                         <TextBlock Text="Reclaim disk space and improve performance"
-                                                   Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,0"/>
+                                                   Foreground="{DynamicResource TextMutedBrush}" FontSize="9" Margin="0,2,0,0"/>
                                     </StackPanel>
 
                                     <!-- TAG: #TOOLTIPS #ACTIONS -->
@@ -1462,7 +1454,7 @@
                             </Border>
 
                             <!-- Re-run Setup Wizard -->
-                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                            <Border Background="{DynamicResource BgDarkBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                     BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,8">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -1473,7 +1465,7 @@
                                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                         <TextBlock Text="Change Database Configuration" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
                                         <TextBlock Text="Re-run the setup wizard to change database type or location"
-                                                   Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,0"/>
+                                                   Foreground="{DynamicResource TextMutedBrush}" FontSize="9" Margin="0,2,0,0"/>
                                     </StackPanel>
 
                                     <!-- TAG: #TOOLTIPS #CONFIGURATION -->
@@ -1484,10 +1476,10 @@
                             </Border>
 
                             <TextBlock Text="⚠️ Always backup your database before making configuration changes"
-                                       Foreground="{StaticResource DangerRed}" FontSize="9" Margin="0,8,0,0" TextWrapping="Wrap"/>
+                                       Foreground="{DynamicResource DangerBrush}" FontSize="9" Margin="0,8,0,0" TextWrapping="Wrap"/>
 
                             <!-- TAG: #FIRST_RUN_RESET - Reset setup wizard flag -->
-                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                            <Border Background="{DynamicResource BgDarkBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                     BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,10,0,0">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -1498,7 +1490,7 @@
                                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                         <TextBlock Text="Reset Database Setup" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
                                         <TextBlock Text="Re-run the database setup wizard (you can choose to restart immediately or manually)"
-                                                   Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,0"/>
+                                                   Foreground="{DynamicResource TextMutedBrush}" FontSize="9" Margin="0,2,0,0"/>
                                     </StackPanel>
 
                                     <Button x:Name="BtnResetSetup" Grid.Column="1" VerticalAlignment="Center"
@@ -1524,7 +1516,7 @@
                                        Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
-                    <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
+                    <Border Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                             BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
                         <StackPanel>
                             <!-- TAG: #CONFIGURABLE_OPTIONS #DEPLOYMENT #POWERSHELL_SCRIPTS -->
@@ -1533,12 +1525,12 @@
                                        FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
 
                             <!-- Deployment Log Directory -->
-                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                            <Border Background="{DynamicResource BgDarkBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                     BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,8">
                                 <StackPanel>
                                     <TextBlock Text="Deployment Log Directory" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
                                     <TextBlock Text="Network or local path for PowerShell deployment script logs (e.g., \\server\share\Logs)"
-                                               Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,8"/>
+                                               Foreground="{DynamicResource TextMutedBrush}" FontSize="9" Margin="0,2,0,8"/>
 
                                     <Grid>
                                         <Grid.ColumnDefinitions>
@@ -1547,15 +1539,15 @@
                                         </Grid.ColumnDefinitions>
 
                                         <TextBox x:Name="TxtLogDirectory" Grid.Column="0"
-                                                 Background="{StaticResource BgLight}" Foreground="White"
-                                                 BorderBrush="{StaticResource BorderDim}" BorderThickness="1"
+                                                 Background="{DynamicResource BgLightBrush}" Foreground="White"
+                                                 BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1"
                                                  Padding="8,6" FontSize="10" Margin="0,0,8,0"
                                                  ToolTip="Directory where PowerShell deployment scripts save update logs. Defaults to database directory + '\DeploymentLogs'. Leave empty to use local temp directory with automatic fallback if network unavailable."/>
 
                                         <!-- TAG: #TOOLTIPS #FILE_OPERATIONS -->
                                         <Button Grid.Column="1" Content="📁" Width="36" Height="32"
-                                                Background="{StaticResource BgLight}" Foreground="{DynamicResource AccentOrangeBrush}"
-                                                BorderBrush="{StaticResource BorderDim}" BorderThickness="1"
+                                                Background="{DynamicResource BgLightBrush}" Foreground="{DynamicResource AccentOrangeBrush}"
+                                                BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1"
                                                 Click="BtnBrowseLogDir_Click" FontSize="14"
                                                 ToolTip="Opens folder browser to select deployment log directory. Choose a network share for centralized logging or local path for single-machine scenarios."/>
                                     </Grid>
@@ -1566,12 +1558,12 @@
                             </Border>
 
                             <!-- Windows Update ISO Path -->
-                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                            <Border Background="{DynamicResource BgDarkBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                     BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,8">
                                 <StackPanel>
                                     <TextBlock Text="Windows Update ISO Path" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
                                     <TextBlock Text="Network path or local path to Windows Feature Update ISO (e.g., \\server\share\Win11.iso)"
-                                               Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,8"/>
+                                               Foreground="{DynamicResource TextMutedBrush}" FontSize="9" Margin="0,2,0,8"/>
 
                                     <Grid>
                                         <Grid.ColumnDefinitions>
@@ -1580,15 +1572,15 @@
                                         </Grid.ColumnDefinitions>
 
                                         <TextBox x:Name="TxtISOPath" Grid.Column="0"
-                                                 Background="{StaticResource BgLight}" Foreground="White"
-                                                 BorderBrush="{StaticResource BorderDim}" BorderThickness="1"
+                                                 Background="{DynamicResource BgLightBrush}" Foreground="White"
+                                                 BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1"
                                                  Padding="8,6" FontSize="10" Margin="0,0,8,0"
                                                  ToolTip="Path to Windows Feature Update ISO file for offline/local upgrades. Leave empty to use cloud-based Windows Update (downloads directly from Microsoft). Network paths (\\server\share) are recommended for fleet deployments."/>
 
                                         <!-- TAG: #TOOLTIPS #FILE_OPERATIONS -->
                                         <Button Grid.Column="1" Content="📁" Width="36" Height="32"
-                                                Background="{StaticResource BgLight}" Foreground="{DynamicResource AccentOrangeBrush}"
-                                                BorderBrush="{StaticResource BorderDim}" BorderThickness="1"
+                                                Background="{DynamicResource BgLightBrush}" Foreground="{DynamicResource AccentOrangeBrush}"
+                                                BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1"
                                                 Click="BtnBrowseISO_Click" FontSize="14"
                                                 ToolTip="Opens file browser to select Windows Update ISO file (.iso). Typically used for Feature Updates (e.g., Windows 11 version upgrades). ISO path is passed to PowerShell scripts via environment variables."/>
                                     </Grid>
@@ -1596,12 +1588,12 @@
                             </Border>
 
                             <!-- Local ISO Hostname Pattern -->
-                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                            <Border Background="{DynamicResource BgDarkBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                     BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,8">
                                 <StackPanel>
                                     <TextBlock Text="Local ISO Deployment Pattern" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
                                     <TextBlock Text="Configure which computers use local ISO vs cloud update based on hostname"
-                                               Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,8"/>
+                                               Foreground="{DynamicResource TextMutedBrush}" FontSize="9" Margin="0,2,0,8"/>
 
                                     <Grid>
                                         <Grid.ColumnDefinitions>
@@ -1611,11 +1603,11 @@
                                         </Grid.ColumnDefinitions>
 
                                         <TextBlock Grid.Column="0" Text="If hostname" VerticalAlignment="Center"
-                                                   Foreground="{StaticResource TextMuted}" FontSize="10" Margin="0,0,8,0"/>
+                                                   Foreground="{DynamicResource TextMutedBrush}" FontSize="10" Margin="0,0,8,0"/>
 
                                         <ComboBox x:Name="CmbHostnameMatchMode" Grid.Column="1"
-                                                  Background="{StaticResource BgLight}" Foreground="White"
-                                                  BorderBrush="{StaticResource BorderDim}" BorderThickness="1"
+                                                  Background="{DynamicResource BgLightBrush}" Foreground="White"
+                                                  BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1"
                                                   Padding="8,6" FontSize="10" Margin="0,0,8,0">
                                             <ComboBoxItem Content="Starts With" Tag="StartsWith"/>
                                             <ComboBoxItem Content="Equals" Tag="Equals"/>
@@ -1624,8 +1616,8 @@
                                         </ComboBox>
 
                                         <TextBox x:Name="TxtHostnamePattern" Grid.Column="2"
-                                                 Background="{StaticResource BgLight}" Foreground="White"
-                                                 BorderBrush="{StaticResource BorderDim}" BorderThickness="1"
+                                                 Background="{DynamicResource BgLightBrush}" Foreground="White"
+                                                 BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1"
                                                  Padding="8,6" FontSize="10"
                                                  ToolTip="e.g., 'TN' for computers starting with TN-"/>
                                     </Grid>
@@ -1640,7 +1632,7 @@
                                        FontSize="10" FontWeight="Bold" Margin="0,20,0,8"/>
 
                             <!-- Service Status -->
-                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                            <Border Background="{DynamicResource BgDarkBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                     BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,8">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -1653,17 +1645,17 @@
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
 
-                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Status:" Foreground="{StaticResource TextMuted}"
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Status:" Foreground="{DynamicResource TextMutedBrush}"
                                                FontSize="10" Margin="0,0,12,4"/>
                                     <TextBlock Grid.Row="0" Grid.Column="1" x:Name="TxtServiceStatus" Text="Not Installed"
                                                Foreground="White" FontSize="10" FontWeight="SemiBold" Margin="0,0,0,4"/>
 
-                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Last Run:" Foreground="{StaticResource TextMuted}"
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Last Run:" Foreground="{DynamicResource TextMutedBrush}"
                                                FontSize="10" Margin="0,0,12,4"/>
                                     <TextBlock Grid.Row="1" Grid.Column="1" x:Name="TxtServiceLastRun" Text="Never"
                                                Foreground="White" FontSize="10" Margin="0,0,0,4"/>
 
-                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Next Run:" Foreground="{StaticResource TextMuted}"
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Next Run:" Foreground="{DynamicResource TextMutedBrush}"
                                                FontSize="10" Margin="0,0,12,0"/>
                                     <TextBlock Grid.Row="2" Grid.Column="1" x:Name="TxtServiceNextRun" Text="N/A"
                                                Foreground="White" FontSize="10"/>
@@ -1688,7 +1680,7 @@
                             </StackPanel>
 
                             <TextBlock Text="ℹ️ The background service uses Windows Task Scheduler to run automatic scans"
-                                       Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,0,0,0" TextWrapping="Wrap"/>
+                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="9" Margin="0,0,0,0" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Border>
                 </Expander>
@@ -1704,11 +1696,11 @@
                                        Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
-                    <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
+                    <Border Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                             BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
                         <StackPanel>
                             <TextBlock Text="Configure which toast notifications you want to see. Toasts provide non-blocking feedback for actions and events."
-                                       Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,16" LineHeight="14"/>
+                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,16" LineHeight="14"/>
 
                             <!-- Master Toggle -->
                             <CheckBox x:Name="ChkEnableToasts" Content="Enable Toast Notifications (Master Toggle)"
@@ -1746,7 +1738,7 @@
                             </StackPanel>
 
                             <!-- Preview Button -->
-                            <Border Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+                            <Border Background="{DynamicResource BgDarkBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                                     BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,12">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -1757,7 +1749,7 @@
                                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                         <TextBlock Text="Test Toast Notifications" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
                                         <TextBlock Text="Preview what toasts will look like with current settings"
-                                                   Foreground="{StaticResource TextMuted}" FontSize="9" Margin="0,2,0,0"/>
+                                                   Foreground="{DynamicResource TextMutedBrush}" FontSize="9" Margin="0,2,0,0"/>
                                     </StackPanel>
 
                                     <Button Grid.Column="1" Content="🧪 TEST TOASTS" Style="{StaticResource BtnPrimary}"
@@ -1766,7 +1758,7 @@
                             </Border>
 
                             <TextBlock Text="💡 TIP: Disable categories you find distracting while keeping critical error notifications enabled"
-                                       Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,0" LineHeight="14"/>
+                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,0" LineHeight="14"/>
                         </StackPanel>
                     </Border>
                 </Expander>
@@ -1782,24 +1774,24 @@
                                        Foreground="{DynamicResource AccentOrangeBrush}"/>
                         </DataTemplate>
                     </Expander.HeaderTemplate>
-                    <Border Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderDim}"
+                    <Border Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                             BorderThickness="1" CornerRadius="0,0,6,6" Padding="20">
                         <StackPanel>
                             <TextBlock Text="Customize keyboard shortcuts for quick access to common commands. Click on a shortcut to record a new key combination."
-                                       Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,16" LineHeight="14"/>
+                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,16" LineHeight="14"/>
 
                             <!-- Shortcuts DataGrid -->
                             <DataGrid x:Name="DgShortcuts" AutoGenerateColumns="False"
                                       CanUserAddRows="False" CanUserDeleteRows="False"
                                       HeadersVisibility="Column" GridLinesVisibility="Horizontal"
-                                      Background="{StaticResource BgDark}" Foreground="#FFE0E0E0"
-                                      BorderBrush="{StaticResource BorderDim}" BorderThickness="1"
-                                      RowBackground="#FF1A1A1A" AlternatingRowBackground="#FF151515"
+                                      Background="{DynamicResource BgDarkBrush}" Foreground="{DynamicResource TextSecondaryBrush}"
+                                      BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1"
+                                      RowBackground="{DynamicResource BgDarkBrush}" AlternatingRowBackground="{DynamicResource BgDarkestBrush}"
                                       FontSize="10" Height="300" Margin="0,0,0,16">
 
                                 <DataGrid.ColumnHeaderStyle>
                                     <Style TargetType="DataGridColumnHeader">
-                                        <Setter Property="Background" Value="{StaticResource BgDark}"/>
+                                        <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
                                         <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                                         <Setter Property="FontWeight" Value="Bold"/>
                                         <Setter Property="FontSize" Value="10"/>
@@ -1809,7 +1801,7 @@
 
                                 <DataGrid.CellStyle>
                                     <Style TargetType="DataGridCell">
-                                        <Setter Property="Foreground" Value="#FFE0E0E0"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
                                         <Setter Property="Background" Value="Transparent"/>
                                         <Setter Property="BorderThickness" Value="0"/>
                                         <Setter Property="Padding" Value="8,4"/>
@@ -1818,7 +1810,7 @@
 
                                 <DataGrid.RowStyle>
                                     <Style TargetType="DataGridRow">
-                                        <Setter Property="Foreground" Value="#FFE0E0E0"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
                                         <Style.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
                                                 <Setter Property="Background" Value="#FF252525"/>
@@ -1831,7 +1823,7 @@
                                     <DataGridTextColumn Header="Command" Binding="{Binding Value.Command}" Width="*" IsReadOnly="True">
                                         <DataGridTextColumn.ElementStyle>
                                             <Style TargetType="TextBlock">
-                                                <Setter Property="Foreground" Value="#FFE0E0E0"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
                                                 <Setter Property="Padding" Value="4,2"/>
                                             </Style>
                                         </DataGridTextColumn.ElementStyle>
@@ -1849,10 +1841,10 @@
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <StackPanel Orientation="Horizontal">
-                                                    <Button Content="✏ EDIT" Tag="{Binding Key}" Background="#FF2A2A2A" Foreground="White"
+                                                    <Button Content="✏ EDIT" Tag="{Binding Key}" Background="{DynamicResource BgLightBrush}" Foreground="White"
                                                             BorderThickness="0" Padding="10,4" Margin="0,0,8,0" FontSize="9"
                                                             Click="BtnEditShortcut_Click" Cursor="Hand"/>
-                                                    <Button Content="↺ RESET" Tag="{Binding Key}" Background="#FF444444" Foreground="White"
+                                                    <Button Content="↺ RESET" Tag="{Binding Key}" Background="{DynamicResource BorderBrightBrush}" Foreground="White"
                                                             BorderThickness="0" Padding="10,4" FontSize="9"
                                                             Click="BtnResetShortcut_Click" Cursor="Hand"/>
                                                 </StackPanel>
@@ -1869,7 +1861,7 @@
                             </StackPanel>
 
                             <TextBlock Text="💡 TIP: Conflicts will be detected automatically. Press Escape while editing to cancel changes."
-                                       Foreground="{StaticResource TextMuted}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,0" LineHeight="14"/>
+                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="9" TextWrapping="Wrap" Margin="0,0,0,0" LineHeight="14"/>
                         </StackPanel>
                     </Border>
                 </Expander>
@@ -1880,7 +1872,7 @@
         <!-- ════════════════════════════════ -->
         <!-- FOOTER BUTTONS                   -->
         <!-- ════════════════════════════════ -->
-        <Border Grid.Row="2" Background="{StaticResource BgDark}" BorderBrush="{StaticResource BorderDim}"
+        <Border Grid.Row="2" Background="{DynamicResource BgDarkBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                 BorderThickness="0,1,0,0" Padding="20,15">
             <Grid>
                 <Grid.ColumnDefinitions>

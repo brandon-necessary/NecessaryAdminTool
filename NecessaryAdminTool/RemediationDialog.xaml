@@ -4,7 +4,7 @@
         xmlns:local="clr-namespace:NecessaryAdminTool"
         Title="Automated Remediation" Height="600" Width="800"
         WindowStartupLocation="CenterOwner"
-        Background="#FF0D0D0D" ResizeMode="CanResize"
+        Background="{DynamicResource BgDarkestBrush}" ResizeMode="CanResize"
         UseLayoutRounding="True"
         SnapsToDevicePixels="True"
         TextOptions.TextFormattingMode="Display"
@@ -32,7 +32,7 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Border Grid.Row="0" Background="#FF1E1E1E" BorderBrush="{DynamicResource AccentOrangeBrush}"
+        <Border Grid.Row="0" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource AccentOrangeBrush}"
                 BorderThickness="0,0,0,2" Padding="16,12" Margin="0,0,0,16">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -44,15 +44,15 @@
                     <TextBlock Text="🔧 AUTOMATED REMEDIATION" Foreground="{DynamicResource AccentOrangeBrush}"
                                FontSize="16" FontWeight="Bold"/>
                     <TextBlock x:Name="TxtActionName" Text="Action: Restart Windows Update"
-                               Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,4,0,0"/>
+                               Foreground="{DynamicResource TextMutedBrush}" FontSize="11" Margin="0,4,0,0"/>
                 </StackPanel>
 
-                <Border Grid.Column="1" Background="#FF2A2A2A" BorderBrush="#FF3C3C3C"
+                <Border Grid.Column="1" Background="{DynamicResource BgLightBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                         BorderThickness="1" CornerRadius="4" Padding="12,8">
                     <StackPanel>
-                        <TextBlock Text="PROGRESS" Foreground="{StaticResource TextMuted}"
+                        <TextBlock Text="PROGRESS" Foreground="{DynamicResource TextMutedBrush}"
                                    FontSize="9" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                        <TextBlock x:Name="TxtProgress" Text="0 / 0" Foreground="White"
+                        <TextBlock x:Name="TxtProgress" Text="0 / 0" Foreground="{DynamicResource TextPrimaryBrush}"
                                    FontSize="14" FontWeight="Bold" TextAlignment="Center"/>
                     </StackPanel>
                 </Border>
@@ -60,7 +60,7 @@
         </Border>
 
         <!-- Overall Progress Bar -->
-        <Border Grid.Row="1" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
+        <Border Grid.Row="1" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                 BorderThickness="1" CornerRadius="8" Padding="16,12" Margin="0,0,0,16">
             <StackPanel>
                 <Grid Margin="0,0,0,8">
@@ -68,50 +68,50 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="Overall Progress" Foreground="White"
+                    <TextBlock Grid.Column="0" Text="Overall Progress" Foreground="{DynamicResource TextPrimaryBrush}"
                                FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" x:Name="TxtPercentage" Text="0%"
                                Foreground="{DynamicResource AccentOrangeBrush}" FontSize="12" FontWeight="Bold"/>
                 </Grid>
 
-                <ProgressBar x:Name="ProgressBarOverall" Height="24" Background="#FF2A2A2A"
-                             BorderBrush="#FF3C3C3C" BorderThickness="1" Maximum="100">
+                <ProgressBar x:Name="ProgressBarOverall" Height="24" Background="{DynamicResource BgLightBrush}"
+                             BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1" Maximum="100">
                     <ProgressBar.Foreground>
                         <SolidColorBrush Color="{DynamicResource AccentOrange}"/>
                     </ProgressBar.Foreground>
                 </ProgressBar>
 
                 <TextBlock x:Name="TxtCurrentStatus" Text="Ready to start..."
-                           Foreground="{StaticResource TextMuted}" FontSize="10"
+                           Foreground="{DynamicResource TextMutedBrush}" FontSize="10"
                            FontStyle="Italic" Margin="0,8,0,0"/>
             </StackPanel>
         </Border>
 
         <!-- Results List -->
-        <Border Grid.Row="2" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
+        <Border Grid.Row="2" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                 BorderThickness="1" CornerRadius="8" Padding="0" Margin="0,0,0,16">
             <DataGrid x:Name="GridResults" AutoGenerateColumns="False" IsReadOnly="True"
-                      Background="#FF1A1A1A" Foreground="White"
-                      GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#FF2A2A2A"
+                      Background="{DynamicResource BgDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+                      GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{DynamicResource BgLightBrush}"
                       BorderThickness="0" HeadersVisibility="Column"
                       SelectionMode="Single">
 
                 <DataGrid.ColumnHeaderStyle>
                     <Style TargetType="DataGridColumnHeader">
-                        <Setter Property="Background" Value="#FF2A2A2A"/>
+                        <Setter Property="Background" Value="{DynamicResource BgLightBrush}"/>
                         <Setter Property="Foreground" Value="{DynamicResource AccentOrangeBrush}"/>
                         <Setter Property="FontWeight" Value="Bold"/>
                         <Setter Property="FontSize" Value="10"/>
                         <Setter Property="Padding" Value="12,10"/>
-                        <Setter Property="BorderBrush" Value="#FF3C3C3C"/>
+                        <Setter Property="BorderBrush" Value="{DynamicResource BorderDimBrush}"/>
                         <Setter Property="BorderThickness" Value="0,0,1,1"/>
                     </Style>
                 </DataGrid.ColumnHeaderStyle>
 
                 <DataGrid.RowStyle>
                     <Style TargetType="DataGridRow">
-                        <Setter Property="Background" Value="#FF1A1A1A"/>
-                        <Setter Property="Foreground" Value="White"/>
+                        <Setter Property="Background" Value="{DynamicResource BgDarkBrush}"/>
+                        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                         <Style.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter Property="Background" Value="#FF252525"/>
@@ -139,7 +139,7 @@
         </Border>
 
         <!-- Summary Statistics -->
-        <Border Grid.Row="3" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
+        <Border Grid.Row="3" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
                 BorderThickness="1" CornerRadius="8" Padding="16,12" Margin="0,0,0,16">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -151,9 +151,9 @@
 
                 <!-- Total -->
                 <StackPanel Grid.Column="0">
-                    <TextBlock Text="TOTAL" Foreground="{StaticResource TextMuted}"
+                    <TextBlock Text="TOTAL" Foreground="{DynamicResource TextMutedBrush}"
                                FontSize="9" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                    <TextBlock x:Name="TxtTotalCount" Text="0" Foreground="White"
+                    <TextBlock x:Name="TxtTotalCount" Text="0" Foreground="{DynamicResource TextPrimaryBrush}"
                                FontSize="20" FontWeight="Bold"/>
                 </StackPanel>
 
@@ -167,15 +167,15 @@
 
                 <!-- Failed -->
                 <StackPanel Grid.Column="2">
-                    <TextBlock Text="FAILED" Foreground="{StaticResource ErrorBrush}"
+                    <TextBlock Text="FAILED" Foreground="{DynamicResource ErrorBrush}"
                                FontSize="9" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                    <TextBlock x:Name="TxtFailedCount" Text="0" Foreground="{StaticResource ErrorBrush}"
+                    <TextBlock x:Name="TxtFailedCount" Text="0" Foreground="{DynamicResource ErrorBrush}"
                                FontSize="20" FontWeight="Bold"/>
                 </StackPanel>
 
                 <!-- Avg Duration -->
                 <StackPanel Grid.Column="3">
-                    <TextBlock Text="AVG TIME" Foreground="{StaticResource TextMuted}"
+                    <TextBlock Text="AVG TIME" Foreground="{DynamicResource TextMutedBrush}"
                                FontSize="9" FontWeight="SemiBold" Margin="0,0,0,4"/>
                     <TextBlock x:Name="TxtAvgDuration" Text="0s" Foreground="{DynamicResource AccentOrangeBrush}"
                                FontSize="20" FontWeight="Bold"/>
@@ -193,13 +193,13 @@
 
             <Button Grid.Column="1" Content="⏸️ CANCEL" x:Name="BtnCancel"
                     Click="BtnCancel_Click"
-                    Background="{StaticResource ErrorBrush}" Foreground="White" BorderThickness="0"
+                    Background="{DynamicResource ErrorBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0"
                     Padding="20,10" FontSize="11" FontWeight="SemiBold"
                     Margin="0,0,8,0" Visibility="Collapsed"/>
 
             <Button Grid.Column="2" Content="✅ CLOSE" x:Name="BtnClose"
                     Click="BtnClose_Click"
-                    BorderThickness="0" Foreground="White"
+                    BorderThickness="0" Foreground="{DynamicResource TextPrimaryBrush}"
                     Padding="20,10" FontSize="11" FontWeight="SemiBold"
                     Background="{DynamicResource AccentOrangeBrush}"/>
         </Grid>

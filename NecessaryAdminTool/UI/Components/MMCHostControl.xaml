@@ -6,12 +6,12 @@
              xmlns:wfi="clr-namespace:System.Windows.Forms.Integration;assembly=WindowsFormsIntegration"
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="800"
-             Background="#FF1A1A1A">
+             Background="{DynamicResource BgDarkBrush}">
     <!-- TAG: #MMC_EMBEDDING #WIN32_INTEROP #EXTERNAL_PROCESS -->
 
     <Grid>
         <!-- Loading indicator (hidden until tab is active) -->
-        <Border x:Name="LoadingPanel" Background="#FF1E1E1E" Visibility="Collapsed">
+        <Border x:Name="LoadingPanel" Background="{DynamicResource BgCardBrush}" Visibility="Collapsed">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                 <TextBlock Text="⏳" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,16"/>
                 <TextBlock x:Name="TxtLoadingMessage" Text="Loading MMC console..."
@@ -22,11 +22,11 @@
         </Border>
 
         <!-- Error panel -->
-        <Border x:Name="ErrorPanel" Background="#FF1E1E1E" Visibility="Collapsed">
+        <Border x:Name="ErrorPanel" Background="{DynamicResource BgCardBrush}" Visibility="Collapsed">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="500">
                 <TextBlock Text="❌" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,16"/>
                 <TextBlock Text="Failed to Load Console"
-                           Foreground="#EF4444" FontSize="16" FontWeight="Bold"
+                           Foreground="{DynamicResource ErrorBrush}" FontSize="16" FontWeight="Bold"
                            HorizontalAlignment="Center" Margin="0,0,0,12"/>
                 <TextBlock x:Name="TxtErrorMessage" Text=""
                            Foreground="White" FontSize="12" TextWrapping="Wrap"

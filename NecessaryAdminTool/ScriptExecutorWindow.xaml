@@ -4,7 +4,7 @@
         Title="📜 PowerShell Script Executor"
         Height="700" Width="1200"
         WindowStartupLocation="CenterOwner"
-        Background="#0D0D0D"
+        Background="{DynamicResource BgDarkestBrush}"
         FontFamily="Segoe UI"
         Loaded="Window_Loaded"
         UseLayoutRounding="True"
@@ -35,23 +35,35 @@
         </Style>
 
         <Style x:Key="BtnSecondary" TargetType="Button">
-            <Setter Property="Background" Value="#2A2A2A"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="{DynamicResource BgLightBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
             <Setter Property="FontWeight" Value="Normal"/>
             <Setter Property="Padding" Value="12,6"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="#444"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrightBrush}"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="4"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FF333340"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FF444450"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -66,12 +78,12 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Border Grid.Row="0" Background="#1A1A1A" Padding="16" CornerRadius="6" Margin="0,0,0,12">
+        <Border Grid.Row="0" Background="{DynamicResource BgDarkBrush}" Padding="16" CornerRadius="6" Margin="0,0,0,12">
             <StackPanel>
                 <TextBlock Text="📜 PowerShell Script Executor"
-                           FontSize="20" FontWeight="Bold" Foreground="White"/>
+                           FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                 <TextBlock Text="Run PowerShell scripts on multiple computers simultaneously"
-                           FontSize="12" Foreground="#AAA" Margin="0,4,0,0"/>
+                           FontSize="12" Foreground="{DynamicResource TextMutedBrush}" Margin="0,4,0,0"/>
             </StackPanel>
         </Border>
 
@@ -83,7 +95,7 @@
             </Grid.ColumnDefinitions>
 
             <!-- Left Panel: Script Library -->
-            <Border Grid.Column="0" Background="#1A1A1A" Padding="12" CornerRadius="6" Margin="0,0,8,0">
+            <Border Grid.Column="0" Background="{DynamicResource BgDarkBrush}" Padding="12" CornerRadius="6" Margin="0,0,8,0">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -93,15 +105,15 @@
 
                     <!-- Library Header -->
                     <StackPanel Grid.Row="0" Margin="0,0,0,12">
-                        <TextBlock Text="📚 Script Library" FontSize="14" FontWeight="SemiBold" Foreground="White"/>
-                        <TextBlock x:Name="TxtScriptCount" Text="0 scripts" FontSize="10" Foreground="#888" Margin="0,2,0,0"/>
+                        <TextBlock Text="📚 Script Library" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock x:Name="TxtScriptCount" Text="0 scripts" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" Margin="0,2,0,0"/>
                     </StackPanel>
 
                     <!-- Script List -->
                     <ListBox x:Name="ListScripts" Grid.Row="1"
-                             Background="#0D0D0D"
-                             BorderBrush="#333" BorderThickness="1"
-                             Foreground="White"
+                             Background="{DynamicResource BgDarkestBrush}"
+                             BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
                              SelectionChanged="ListScripts_SelectionChanged">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
@@ -113,7 +125,7 @@
                                     </TextBlock>
                                     <TextBlock Text="{Binding Description}"
                                                FontSize="10"
-                                               Foreground="#888"
+                                               Foreground="{DynamicResource TextMutedBrush}"
                                                TextWrapping="Wrap"
                                                Margin="0,2,0,0"/>
                                 </StackPanel>
@@ -123,12 +135,15 @@
 
                     <!-- Library Actions -->
                     <StackPanel Grid.Row="2" Margin="0,12,0,0">
-                        <Button Content="➕ New Script" Style="{StaticResource BtnPrimary}"
+                        <Button x:Name="BtnNewScript" Content="➕ New Script" Style="{StaticResource BtnPrimary}"
+                                ToolTip="Create a new empty PowerShell script"
                                 Click="BtnNewScript_Click" Margin="0,0,0,6"/>
-                        <Button Content="📥 Import .ps1" Style="{StaticResource BtnSecondary}"
+                        <Button x:Name="BtnImportScript" Content="📥 Import .ps1" Style="{StaticResource BtnSecondary}"
+                                ToolTip="Import a .ps1 file from disk into the library"
                                 Click="BtnImportScript_Click" Margin="0,0,0,6"/>
                         <Button Content="🗑️ Delete" Style="{StaticResource BtnSecondary}"
                                 x:Name="BtnDeleteScript"
+                                ToolTip="Delete the selected script from the library"
                                 Click="BtnDeleteScript_Click" IsEnabled="False"/>
                     </StackPanel>
                 </Grid>
@@ -144,7 +159,7 @@
                 </Grid.RowDefinitions>
 
                 <!-- Script Details -->
-                <Border Grid.Row="0" Background="#1A1A1A" Padding="12" CornerRadius="6" Margin="0,0,0,8">
+                <Border Grid.Row="0" Background="{DynamicResource BgDarkBrush}" Padding="12" CornerRadius="6" Margin="0,0,0,8">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -156,26 +171,28 @@
                         </Grid.ColumnDefinitions>
 
                         <StackPanel Grid.Row="0" Grid.Column="0">
-                            <TextBlock Text="Script Name:" FontSize="10" Foreground="#888"/>
+                            <TextBlock Text="Script Name:" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"/>
                             <TextBox x:Name="TxtScriptName"
-                                     Background="#0D0D0D" Foreground="White"
-                                     BorderBrush="#444" Padding="6"
+                                     Background="{DynamicResource BgDarkestBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+                                     BorderBrush="{DynamicResource BorderBrightBrush}" Padding="6"
                                      FontSize="14" FontWeight="SemiBold"/>
                         </StackPanel>
 
                         <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,8,0,0">
-                            <TextBlock Text="Description:" FontSize="10" Foreground="#888"/>
+                            <TextBlock Text="Description:" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"/>
                             <TextBox x:Name="TxtScriptDescription"
-                                     Background="#0D0D0D" Foreground="White"
-                                     BorderBrush="#444" Padding="6"/>
+                                     Background="{DynamicResource BgDarkestBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+                                     BorderBrush="{DynamicResource BorderBrightBrush}" Padding="6"/>
                         </StackPanel>
 
                         <StackPanel Grid.Row="0" Grid.Column="1" Grid.RowSpan="2"
                                     Margin="12,0,0,0" VerticalAlignment="Center">
-                            <Button Content="💾 Save" Style="{StaticResource BtnPrimary}"
+                            <Button x:Name="BtnSaveScript" Content="💾 Save" Style="{StaticResource BtnPrimary}"
+                                    ToolTip="Save changes to the current script"
                                     Width="100" Margin="0,0,0,6"
                                     Click="BtnSaveScript_Click"/>
-                            <Button Content="📤 Export .ps1" Style="{StaticResource BtnSecondary}"
+                            <Button x:Name="BtnExportScript" Content="📤 Export .ps1" Style="{StaticResource BtnSecondary}"
+                                    ToolTip="Export the current script as a .ps1 file"
                                     Width="100"
                                     Click="BtnExportScript_Click"/>
                         </StackPanel>
@@ -183,7 +200,7 @@
                 </Border>
 
                 <!-- Script Editor -->
-                <Border Grid.Row="1" Background="#1A1A1A" Padding="12" CornerRadius="6" Margin="0,0,0,8">
+                <Border Grid.Row="1" Background="{DynamicResource BgDarkBrush}" Padding="12" CornerRadius="6" Margin="0,0,0,8">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -191,12 +208,12 @@
                         </Grid.RowDefinitions>
 
                         <TextBlock Grid.Row="0" Text="📝 Script Content (PowerShell)"
-                                   FontSize="12" FontWeight="SemiBold" Foreground="White"
+                                   FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"
                                    Margin="0,0,0,8"/>
 
                         <TextBox x:Name="TxtScriptContent" Grid.Row="1"
-                                 Background="#0D0D0D" Foreground="#00FF00"
-                                 BorderBrush="#444" BorderThickness="1"
+                                 Background="{DynamicResource BgDarkestBrush}" Foreground="#00FF00"
+                                 BorderBrush="{DynamicResource BorderBrightBrush}" BorderThickness="1"
                                  FontFamily="Consolas" FontSize="12"
                                  AcceptsReturn="True" TextWrapping="NoWrap"
                                  VerticalScrollBarVisibility="Auto"
@@ -205,7 +222,7 @@
                 </Border>
 
                 <!-- Execution Controls -->
-                <Border Grid.Row="2" Background="#1A1A1A" Padding="12" CornerRadius="6" Margin="0,0,0,8">
+                <Border Grid.Row="2" Background="{DynamicResource BgDarkBrush}" Padding="12" CornerRadius="6" Margin="0,0,0,8">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -214,27 +231,29 @@
                         </Grid.ColumnDefinitions>
 
                         <StackPanel Grid.Column="0">
-                            <TextBlock Text="🎯 Target Computers" FontSize="12" FontWeight="SemiBold" Foreground="White"/>
-                            <TextBlock x:Name="TxtTargetCount" Text="0 selected" FontSize="10" Foreground="#888"/>
+                            <TextBlock Text="🎯 Target Computers" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <TextBlock x:Name="TxtTargetCount" Text="0 selected" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"/>
                         </StackPanel>
 
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
-                            <TextBlock Text="Max Parallel:" FontSize="10" Foreground="#888" VerticalAlignment="Center"/>
+                            <TextBlock Text="Max Parallel:" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
                             <TextBox x:Name="TxtMaxConcurrency" Text="10" Width="50"
-                                     Background="#0D0D0D" Foreground="White" BorderBrush="#444"
+                                     Background="{DynamicResource BgDarkestBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource BorderBrightBrush}"
+                                     ToolTip="Maximum number of computers to target simultaneously (1–50)"
                                      Margin="8,0,0,0" Padding="4" TextAlignment="Center"/>
                         </StackPanel>
 
                         <Button Grid.Column="2" Content="▶️ Execute Script"
                                 Style="{StaticResource BtnPrimary}"
                                 x:Name="BtnExecute"
+                                ToolTip="Execute the script on all selected target computers"
                                 Click="BtnExecute_Click"
                                 Padding="24,8" FontSize="14"/>
                     </Grid>
                 </Border>
 
                 <!-- Results Grid -->
-                <Border Grid.Row="3" Background="#1A1A1A" Padding="12" CornerRadius="6">
+                <Border Grid.Row="3" Background="{DynamicResource BgDarkBrush}" Padding="12" CornerRadius="6">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -250,31 +269,33 @@
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0">
-                                <TextBlock Text="📊 Execution Results" FontSize="12" FontWeight="SemiBold" Foreground="White"/>
-                                <TextBlock x:Name="TxtResultSummary" Text="No results yet" FontSize="10" Foreground="#888"/>
+                                <TextBlock Text="📊 Execution Results" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <TextBlock x:Name="TxtResultSummary" Text="No results yet" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"/>
                             </StackPanel>
 
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Button Content="📋 Export CSV" Style="{StaticResource BtnSecondary}"
                                         x:Name="BtnExportCsv"
+                                        ToolTip="Export execution results to CSV"
                                         Click="BtnExportCsv_Click" Margin="0,0,6,0" IsEnabled="False"/>
                                 <Button Content="📄 Export TXT" Style="{StaticResource BtnSecondary}"
                                         x:Name="BtnExportTxt"
+                                        ToolTip="Export execution results to plain text"
                                         Click="BtnExportTxt_Click" IsEnabled="False"/>
                             </StackPanel>
                         </Grid>
 
                         <!-- Results DataGrid -->
                         <DataGrid x:Name="GridResults" Grid.Row="1"
-                                  Background="#0D0D0D"
-                                  Foreground="White"
-                                  BorderBrush="#333" BorderThickness="1"
+                                  Background="{DynamicResource BgDarkestBrush}"
+                                  Foreground="{DynamicResource TextPrimaryBrush}"
+                                  BorderBrush="{DynamicResource BorderDimBrush}" BorderThickness="1"
                                   AutoGenerateColumns="False"
                                   IsReadOnly="True"
-                                  RowBackground="#1A1A1A"
-                                  AlternatingRowBackground="#0D0D0D"
+                                  RowBackground="{DynamicResource BgDarkBrush}"
+                                  AlternatingRowBackground="{DynamicResource BgDarkestBrush}"
                                   GridLinesVisibility="Horizontal"
-                                  HorizontalGridLinesBrush="#333"
+                                  HorizontalGridLinesBrush="{DynamicResource BorderDimBrush}"
                                   SelectionChanged="GridResults_SelectionChanged">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Status" Binding="{Binding StatusIcon}" Width="60"/>
@@ -286,8 +307,8 @@
                         </DataGrid>
 
                         <!-- Output Details -->
-                        <Border Grid.Row="2" Background="#0D0D0D"
-                                BorderBrush="#444" BorderThickness="1"
+                        <Border Grid.Row="2" Background="{DynamicResource BgDarkestBrush}"
+                                BorderBrush="{DynamicResource BorderBrightBrush}" BorderThickness="1"
                                 Padding="8" Margin="0,8,0,0" MaxHeight="150">
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <TextBlock x:Name="TxtOutputDetails"
@@ -303,13 +324,13 @@
         </Grid>
 
         <!-- Status Bar -->
-        <Border Grid.Row="2" Background="#1A1A1A" Padding="12,8" CornerRadius="6" Margin="0,12,0,0">
+        <Border Grid.Row="2" Background="{DynamicResource BgDarkBrush}" Padding="12,8" CornerRadius="6" Margin="0,12,0,0">
             <Grid>
-                <TextBlock x:Name="TxtStatus" Text="Ready" Foreground="#888" FontSize="11"/>
+                <TextBlock x:Name="TxtStatus" Text="Ready" Foreground="{DynamicResource TextMutedBrush}" FontSize="11"/>
                 <ProgressBar x:Name="ProgressExecution"
                              Height="4" VerticalAlignment="Bottom"
                              Visibility="Collapsed"
-                             Foreground="{DynamicResource AccentOrangeBrush}" Background="#333"/>
+                             Foreground="{DynamicResource AccentOrangeBrush}" Background="{DynamicResource BorderDimBrush}"/>
             </Grid>
         </Border>
     </Grid>

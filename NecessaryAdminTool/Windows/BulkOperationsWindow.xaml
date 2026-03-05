@@ -5,7 +5,7 @@
         Height="800" Width="1200"
         MinHeight="600" MinWidth="900"
         WindowStartupLocation="CenterScreen"
-        Background="#FF0D0D0D"
+        Background="{DynamicResource BgDarkestBrush}"
         Loaded="Window_Loaded"
         UseLayoutRounding="True"
         SnapsToDevicePixels="True"
@@ -15,18 +15,11 @@
     <!-- TAG: #FEATURE_BULK_OPERATIONS #FLUENT_DESIGN #WINDOW_UI -->
 
     <Window.Resources>
-        <!-- Fluent Design Colors -->
-        <SolidColorBrush x:Key="BgDarkBrush" Color="#FF0D0D0D"/>
-        <SolidColorBrush x:Key="BgMediumBrush" Color="#FF1E1E1E"/>
-        <SolidColorBrush x:Key="BgLightBrush" Color="#FF2D2D2D"/>
-        <SolidColorBrush x:Key="BorderDimBrush" Color="#FF3C3C3C"/>
-        <!-- AccentOrangeBrush removed — uses app-level via DynamicResource -->
+        <!-- Local accent colors not in app-level resources -->
         <SolidColorBrush x:Key="AccentBlueBrush" Color="#FF3B82F6"/>
         <SolidColorBrush x:Key="SuccessGreenBrush" Color="#FF10B981"/>
         <SolidColorBrush x:Key="ErrorRedBrush" Color="#FFEF4444"/>
         <SolidColorBrush x:Key="WarningAmberBrush" Color="#FFF59E0B"/>
-        <SolidColorBrush x:Key="TextPrimaryBrush" Color="White"/>
-        <!-- TextSecondaryBrush shadow removed — uses app-level resource -->
 
         <!-- Fluent Corner Radius -->
         <CornerRadius x:Key="FluentCornerRadius">6</CornerRadius>

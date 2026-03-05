@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:components="clr-namespace:NecessaryAdminTool.UI.Components">
     <!-- TAG: #AUTO_UPDATE_UI_ENGINE #KPI_CARD #DASHBOARD -->
-    <Border x:Name="CardBorder" Background="#FF1E1E1E" BorderBrush="#FF3C3C3C"
+    <Border x:Name="CardBorder" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderDimBrush}"
             BorderThickness="1" CornerRadius="8" Padding="16" Margin="4">
         <Grid>
             <Grid.ColumnDefinitions>
@@ -24,12 +24,14 @@
             <!-- Label -->
             <TextBlock x:Name="TxtLabel" Grid.Row="0" Grid.ColumnSpan="2"
                        FontSize="10" FontWeight="SemiBold" Margin="0,0,0,6"
-                       Foreground="{DynamicResource AccentZincBrush}"/>
+                       Foreground="{DynamicResource AccentZincBrush}"
+                       ToolTip="Dashboard metric — click to refresh"/>
 
             <!-- Big number -->
             <TextBlock x:Name="TxtValue" Grid.Row="1"
-                       FontSize="32" FontWeight="Bold" Foreground="White"
-                       Margin="0,0,0,2"/>
+                       FontSize="32" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"
+                       Margin="0,0,0,2"
+                       ToolTip="Dashboard metric — click to refresh"/>
 
             <!-- Delta indicator -->
             <StackPanel x:Name="DeltaPanel" Grid.Row="1" Grid.Column="1"
@@ -39,7 +41,7 @@
 
             <!-- Subtitle -->
             <TextBlock x:Name="TxtSubtitle" Grid.Row="2" Grid.ColumnSpan="2"
-                       FontSize="9" Foreground="#FF6B7280" Margin="0,0,0,4"/>
+                       FontSize="9" Foreground="{DynamicResource MutedBrush}" Margin="0,0,0,4"/>
 
             <!-- Sparkline -->
             <components:SparklineControl x:Name="Sparkline" Grid.Row="3" Grid.ColumnSpan="2"

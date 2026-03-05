@@ -1,6 +1,7 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using NecessaryAdminTool.Managers.UI;
 
 namespace NecessaryAdminTool
 {
@@ -55,24 +56,21 @@ namespace NecessaryAdminTool
             // Validate required fields
             if (string.IsNullOrWhiteSpace(TxtProfileName.Text))
             {
-                MessageBox.Show("Profile Name is required.", "Validation Error",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                ToastManager.ShowWarning("Profile Name is required.");
                 TxtProfileName.Focus();
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(TxtDomainController.Text))
             {
-                MessageBox.Show("Domain Controller is required.", "Validation Error",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                ToastManager.ShowWarning("Domain Controller is required.");
                 TxtDomainController.Focus();
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(TxtUsername.Text))
             {
-                MessageBox.Show("Username is required.", "Validation Error",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                ToastManager.ShowWarning("Username is required.");
                 TxtUsername.Focus();
                 return;
             }
@@ -83,8 +81,7 @@ namespace NecessaryAdminTool
             {
                 if (ConnectionProfileManager.ProfileExists(newName))
                 {
-                    MessageBox.Show($"A profile named '{newName}' already exists.\n\nPlease choose a different name.",
-                        "Duplicate Profile", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    ToastManager.ShowWarning($"A profile named '{newName}' already exists. Please choose a different name.");
                     TxtProfileName.Focus();
                     return;
                 }
