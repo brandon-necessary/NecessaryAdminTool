@@ -3110,16 +3110,21 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 {
                     ShowStatus("Background service enabled", MessageType.Success);
                     LoadServiceStatus();
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                    ToastManager.ShowSuccess("Background service enabled successfully.");
                 }
                 else
                 {
                     ShowStatus("Failed to enable service", MessageType.Error);
+                    ToastManager.ShowError("Failed to enable background service. Check logs for details.");
                 }
             }
             catch (Exception ex)
             {
                 LogManager.LogError("Failed to enable service", ex);
                 ShowStatus($"Error enabling service: {ex.Message}", MessageType.Error);
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                ToastManager.ShowError($"Failed to enable background service:\n\n{ex.Message}");
             }
         }
 
@@ -3136,16 +3141,21 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 {
                     ShowStatus("Background service disabled", MessageType.Success);
                     LoadServiceStatus();
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                    ToastManager.ShowSuccess("Background service disabled successfully.");
                 }
                 else
                 {
                     ShowStatus("Failed to disable service", MessageType.Error);
+                    ToastManager.ShowError("Failed to disable background service. Check logs for details.");
                 }
             }
             catch (Exception ex)
             {
                 LogManager.LogError("Failed to disable service", ex);
                 ShowStatus($"Error disabling service: {ex.Message}", MessageType.Error);
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                ToastManager.ShowError($"Failed to disable background service:\n\n{ex.Message}");
             }
         }
 

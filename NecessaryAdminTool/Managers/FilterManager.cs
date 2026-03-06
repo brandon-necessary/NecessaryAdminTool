@@ -522,6 +522,15 @@ namespace NecessaryAdminTool.Managers
                 // Add to history
                 AddToHistory(criteria, filtered.Count);
 
+                // Notify user when the filter produces no results so they don't assume the list is broken
+                if (filtered.Count == 0 && computers.Count > 0)
+                {
+                    System.Windows.Application.Current?.Dispatcher?.InvokeAsync(() =>
+                        ToastManager.ShowWarning(
+                            $"No devices match the current filter ({criteria.GetDescription()})",
+                            category: "filter"));
+                }
+
                 return filtered;
             }
             catch (Exception ex)

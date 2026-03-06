@@ -4338,6 +4338,31 @@ namespace NecessaryAdminTool
 
                         await Task.WhenAll(tasks);
                         AppendTerminal(">>> FLEET SCAN COMPLETE.");
+
+                        // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                        // Show scan completion summary toast
+                        int finalOnline  = onlineCount;
+                        int finalOffline = offlineCount;
+                        int finalTotal   = computers.Count;
+                        _ = Dispatcher.InvokeAsync(() =>
+                        {
+                            if (finalTotal == 0)
+                            {
+                                Managers.UI.ToastManager.ShowWarning("Fleet scan complete — no computers were found.");
+                            }
+                            else if (finalOnline == 0)
+                            {
+                                Managers.UI.ToastManager.ShowWarning(
+                                    $"Fleet scan complete — {finalTotal} computers scanned, all offline.",
+                                    category: "scan");
+                            }
+                            else
+                            {
+                                Managers.UI.ToastManager.ShowSuccess(
+                                    $"Fleet scan complete — {finalOnline} online, {finalOffline} offline ({finalTotal} total)",
+                                    category: "scan");
+                            }
+                        });
                     }
                     catch (OperationCanceledException)
                     {

@@ -23,6 +23,32 @@ namespace NecessaryAdminTool
         {
             base.OnStartup(e);
 
+            // TAG: #APPLICATION_STARTUP #UNHANDLED_EXCEPTIONS
+            // Hook unhandled WPF dispatcher exceptions so the user sees a Toast (and the app
+            // stays alive) rather than a silent crash for non-fatal dispatcher faults.
+            // Fatal errors that cannot be recovered still terminate via e.Handled = false.
+            DispatcherUnhandledException += (sender, args) =>
+            {
+                LogManager.LogError("[App] Unhandled dispatcher exception", args.Exception);
+
+                // Show a toast if the main window is up; otherwise let the default handler run
+                if (MainWindow != null)
+                {
+                    try
+                    {
+                        Managers.UI.ToastManager.ShowError(
+                            $"An unexpected error occurred: {args.Exception.Message}",
+                            category: "error");
+                        args.Handled = true; // keep the app alive for non-fatal dispatcher faults
+                    }
+                    catch
+                    {
+                        // Toast itself failed (e.g. UI tear-down in progress) — let WPF handle it
+                        args.Handled = false;
+                    }
+                }
+            };
+
             // TAG: #DPI_COMPREHENSIVE_FIX - Industry-standard WPF DPI fix for high-DPI displays
             // Addresses issues with non-integer scaling (125%, 175%, etc.)
 

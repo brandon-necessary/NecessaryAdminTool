@@ -195,9 +195,10 @@ namespace NecessaryAdminTool
                     DeleteCredential(tool.ToString(), "Password");
                     DeleteCredential(tool.ToString(), "AccessToken");
                 }
-                catch
+                catch (Exception ex)
                 {
                     // Continue deleting others even if one fails
+                    LogManager.LogWarning($"DeleteAllCredentials: Failed to delete credentials for {tool}: {ex.Message}");
                 }
             }
 

@@ -42,6 +42,7 @@ namespace NecessaryAdminTool
             {
                 ConnectionProfileManager.SaveProfile(dialog.Profile);
                 LoadProfiles();
+                ToastManager.ShowSuccess($"Profile '{dialog.Profile.Name}' created successfully.");
             }
         }
 
@@ -54,6 +55,7 @@ namespace NecessaryAdminTool
                 {
                     ConnectionProfileManager.SaveProfile(dialog.Profile);
                     LoadProfiles();
+                    ToastManager.ShowSuccess($"Profile '{dialog.Profile.Name}' updated successfully.");
                 }
             }
         }
@@ -66,6 +68,7 @@ namespace NecessaryAdminTool
                 {
                     ConnectionProfileManager.DeleteProfile(profile.Name);
                     LoadProfiles();
+                    ToastManager.ShowSuccess($"Profile '{profile.Name}' deleted.");
                 });
             }
         }

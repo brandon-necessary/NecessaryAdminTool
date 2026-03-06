@@ -108,10 +108,18 @@ namespace NecessaryAdminTool
                 {
                     ToastManager.ShowWarning($"Launch {toolType} remote session to {target}?", "Launch", () =>
                     {
-                        RemoteControlManager.LaunchSession(toolType, target);
-                        AddToHistory(toolType, target, true, null);
-                        TxtLastConnection.Text = $"Last: {toolType} → {target} (just now)";
-                        ToastManager.ShowSuccess($"Remote session launched: {toolType} → {target}");
+                        try
+                        {
+                            RemoteControlManager.LaunchSession(toolType, target);
+                            AddToHistory(toolType, target, true, null);
+                            TxtLastConnection.Text = $"Last: {toolType} → {target} (just now)";
+                            ToastManager.ShowSuccess($"Remote session launched: {toolType} → {target}");
+                        }
+                        catch (Exception launchEx)
+                        {
+                            AddToHistory(toolType, target, false, launchEx.Message);
+                            ToastManager.ShowError($"Failed to launch remote session: {launchEx.Message}");
+                        }
                     });
                     return;
                 }

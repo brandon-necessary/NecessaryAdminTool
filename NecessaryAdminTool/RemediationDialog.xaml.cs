@@ -104,6 +104,14 @@ namespace NecessaryAdminTool
                     TxtCurrentStatus.Text = "Remediation complete!";
                     BtnCancel.Visibility = Visibility.Collapsed;
                     BtnClose.Visibility = Visibility.Visible;
+
+                    int successCount = _results.Count(r => r.Success);
+                    int failCount = _results.Count(r => !r.Success);
+                    string actionName = RemediationManager.GetActionName(action);
+                    if (failCount == 0)
+                        ToastManager.ShowSuccess($"{actionName} completed: {successCount}/{hostnames.Length} succeeded.");
+                    else
+                        ToastManager.ShowWarning($"{actionName} completed with errors: {successCount} succeeded, {failCount} failed.");
                 });
 
                 LogManager.LogInfo($"[Remediation] Completed {RemediationManager.GetActionName(action)} on {hostnames.Length} computers");
@@ -117,6 +125,7 @@ namespace NecessaryAdminTool
                     TxtCurrentStatus.Text = "Remediation cancelled by user";
                     BtnCancel.Visibility = Visibility.Collapsed;
                     BtnClose.Visibility = Visibility.Visible;
+                    ToastManager.ShowWarning($"{RemediationManager.GetActionName(action)} was cancelled.");
                 });
 
                 LogManager.LogWarning($"[Remediation] Cancelled {RemediationManager.GetActionName(action)}");
@@ -130,6 +139,7 @@ namespace NecessaryAdminTool
                     TxtCurrentStatus.Text = $"Error: {ex.Message}";
                     BtnCancel.Visibility = Visibility.Collapsed;
                     BtnClose.Visibility = Visibility.Visible;
+                    ToastManager.ShowError($"Remediation failed: {ex.Message}");
                 });
 
                 LogManager.LogError($"[Remediation] Failed to execute {RemediationManager.GetActionName(action)}", ex);

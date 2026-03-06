@@ -289,6 +289,7 @@ namespace NecessaryAdminTool
             {
                 TxtStatusMessage.Text = $"Error loading objects: {ex.Message}";
                 LogManager.LogError("[AD Browser] Failed to load objects", ex);
+                ToastManager.ShowError($"Failed to load AD objects: {ex.Message}");
             }
         }
 
@@ -503,6 +504,9 @@ namespace NecessaryAdminTool
             TxtObjectCount.Text = isFiltered
                 ? $"({results.Count} of {_allObjects.Count} objects)"
                 : $"({results.Count} objects)";
+
+            if (isFiltered && results.Count == 0 && _allObjects.Count > 0)
+                ToastManager.ShowInfo("No objects match the current search or filter.");
 
             UpdateObjectCounts();
         }

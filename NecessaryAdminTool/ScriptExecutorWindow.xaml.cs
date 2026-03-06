@@ -165,6 +165,8 @@ namespace NecessaryAdminTool
                     {
                         ListScripts.SelectedItem = savedScript;
                     }
+
+                    ToastManager.ShowSuccess($"Script '{_currentScript.Name}' saved to library.");
                 }
                 else
                 {
@@ -351,6 +353,12 @@ namespace NecessaryAdminTool
                 // Enable export buttons
                 BtnExportCsv.IsEnabled = true;
                 BtnExportTxt.IsEnabled = true;
+
+                // Notify completion via toast
+                if (failCount == 0)
+                    ToastManager.ShowSuccess($"Script executed on {_lastResults.Count} computer{(_lastResults.Count == 1 ? "" : "s")} — all succeeded.");
+                else
+                    ToastManager.ShowWarning($"Script execution complete: {successCount} succeeded, {failCount} failed.");
 
                 // Log completion
                 LogManager.LogInfo($"[ScriptExecutor] Executed on {_targetComputers.Length} computers • {successCount} succeeded");

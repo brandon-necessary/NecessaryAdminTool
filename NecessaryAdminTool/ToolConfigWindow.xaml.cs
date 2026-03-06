@@ -316,15 +316,22 @@ namespace NecessaryAdminTool
             }
 
             // Save credentials
+            bool credentialSaveFailed = false;
             foreach (var kvp in _credentialControls)
             {
                 if (!string.IsNullOrEmpty(kvp.Value.Password))
                 {
-                    SecureCredentialManager.StoreCredential(_config.ToolName, kvp.Key, kvp.Value.Password);
+                    bool stored = SecureCredentialManager.StoreCredential(_config.ToolName, kvp.Key, kvp.Value.Password);
+                    if (!stored)
+                        credentialSaveFailed = true;
                 }
             }
 
             _config.IsConfigured = true;
+            if (credentialSaveFailed)
+                ToastManager.ShowWarning($"{_config.ToolName} settings saved, but one or more credentials could not be stored in Windows Credential Manager.");
+            else
+                ToastManager.ShowSuccess($"{_config.ToolName} configuration saved.");
             DialogResult = true;
             Close();
         }
