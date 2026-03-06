@@ -123,5 +123,5 @@ using System.Windows;
 // - Remove duplicate WarningBrush from Fluent.xaml
 // - Command palette highlight fix
 //
-[assembly: AssemblyVersion("3.2602.5.0")]
-[assembly: AssemblyFileVersion("3.2602.5.0")]
+[assembly: AssemblyVersion("3.2603.0.0")]
+[assembly: AssemblyFileVersion("3.2603.0.0")]

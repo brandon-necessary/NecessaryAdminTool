@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 $candle = 'C:\Program Files (x86)\WiX Toolset v3.11\bin\candle.exe'
 $light  = 'C:\Program Files (x86)\WiX Toolset v3.11\bin\light.exe'
-$version = '3.0.5'
+$version = '3.1.0'
 
 Set-Location (Join-Path $PSScriptRoot 'Installer')
 
