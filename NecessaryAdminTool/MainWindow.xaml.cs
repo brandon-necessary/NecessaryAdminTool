@@ -1493,11 +1493,14 @@ namespace NecessaryAdminTool
                         {
                             _txtStatus.Text = "Ready";
                             _txtStatus.Foreground = new SolidColorBrush(Color.FromRgb(22, 198, 12)); // Back to green
-                            timer.Stop();
                         }
                         catch (Exception tickEx)
                         {
                             LogManager.LogError("Terminal status reset timer tick failed", tickEx);
+                        }
+                        finally
+                        {
+                            timer.Stop();
                         }
                     };
                     timer.Start();
@@ -3570,7 +3573,8 @@ namespace NecessaryAdminTool
             catch (Exception ex) { LogManager.LogError("AddLog failed", ex); }
         }
 
-        private void LoadAuditLogs()
+        // TAG: #PERFORMANCE_AUDIT #ASYNC_OPTIMIZATION - Made async to prevent UI lag when reading up to 7 CSV files
+        private async void LoadAuditLogs()
         {
             try
             {
@@ -3581,7 +3585,7 @@ namespace NecessaryAdminTool
                     return;
                 }
 
-                // Find all audit CSV files, most recent first
+                // Find all audit CSV files, most recent first (directory enumeration is fast, keep on UI thread)
                 var csvFiles = Directory.GetFiles(auditDir, "NAT_Audit_*.csv")
                     .OrderByDescending(f => f)
                     .Take(7) // Load last 7 days
@@ -3593,41 +3597,45 @@ namespace NecessaryAdminTool
                     return;
                 }
 
-                var entries = new System.Collections.Generic.List<AuditLog>();
-                foreach (var csvFile in csvFiles)
+                // TAG: #PERFORMANCE_AUDIT - Offload all file reads to thread pool; audit CSVs can be large
+                var entries = await Task.Run(() =>
                 {
-                    try
+                    var list = new System.Collections.Generic.List<AuditLog>();
+                    foreach (var csvFile in csvFiles)
                     {
-                        var lines = File.ReadAllLines(csvFile);
-                        foreach (var line in lines)
+                        try
                         {
-                            if (string.IsNullOrWhiteSpace(line)) continue;
-                            // Skip header row
-                            if (line.StartsWith("\"Timestamp\"")) continue;
-
-                            var fields = ParseCsvLine(line);
-                            if (fields.Length >= 6)
+                            var lines = File.ReadAllLines(csvFile);
+                            foreach (var line in lines)
                             {
-                                entries.Add(new AuditLog
+                                if (string.IsNullOrWhiteSpace(line)) continue;
+                                // Skip header row
+                                if (line.StartsWith("\"Timestamp\"")) continue;
+
+                                var fields = ParseCsvLine(line);
+                                if (fields.Length >= 6)
                                 {
-                                    Time = fields[0],
-                                    User = fields[1],
-                                    Target = fields[2],
-                                    Action = fields[3],
-                                    Status = fields[4],
-                                    Details = fields[5]
-                                });
+                                    list.Add(new AuditLog
+                                    {
+                                        Time = fields[0],
+                                        User = fields[1],
+                                        Target = fields[2],
+                                        Action = fields[3],
+                                        Status = fields[4],
+                                        Details = fields[5]
+                                    });
+                                }
                             }
                         }
+                        catch (Exception ex)
+                        {
+                            LogManager.LogWarning($"Failed to read audit file {Path.GetFileName(csvFile)}: {ex.Message}");
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        LogManager.LogWarning($"Failed to read audit file {Path.GetFileName(csvFile)}: {ex.Message}");
-                    }
-                }
 
-                // Sort newest first, cap at 2000
-                entries = entries.OrderByDescending(e => e.Time).Take(2000).ToList();
+                    // Sort newest first, cap at 2000
+                    return list.OrderByDescending(e => e.Time).Take(2000).ToList();
+                }).ConfigureAwait(true); // true = resume on UI thread to update _logs + UI labels
 
                 lock (_logLock)
                 {
@@ -10542,28 +10550,36 @@ if ($rebootPending) {
                 ShowDetailDrawer(pc);
             }
         }
-        private void BtnExportInventory_Click(object sender, RoutedEventArgs e)
+        // TAG: #PERFORMANCE_AUDIT #ASYNC_OPTIMIZATION - Made async: PLINQ + file write offloaded to thread pool
+        private async void BtnExportInventory_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                // MULTICORE OPTIMIZATION: Process CSV rows in parallel using PLINQ
+                // Snapshot inventory on UI thread before offloading
                 List<PCInventory> inventoryCopy;
                 lock (_inventoryLock)
                     inventoryCopy = _inventory.ToList();
 
-                var csvLines = inventoryCopy
-                    .AsParallel()
-                    .WithDegreeOfParallelism(Environment.ProcessorCount)
-                    .AsOrdered() // Maintain order
-                    .Select(pc => $"\"{SecurityValidator.EscapeCsv(pc.Hostname)}\",\"{SecurityValidator.EscapeCsv(pc.Status)}\",\"{SecurityValidator.EscapeCsv(pc.CurrentUser)}\",\"{SecurityValidator.EscapeCsv(pc.DisplayOS)}\",\"{SecurityValidator.EscapeCsv(pc.WindowsVersion ?? "N/A")}\",\"{SecurityValidator.EscapeCsv(pc.Chassis)}\",\"{SecurityValidator.EscapeCsv(pc.BitLockerStatus)}\"")
-                    .ToList();
+                string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+                    $"NecessaryAdminTool_Inventory_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
 
-                var sb = new StringBuilder();
-                sb.AppendLine("Hostname,Status,User,OS,Version,Chassis,BitLocker");
-                foreach (var line in csvLines) sb.AppendLine(line);
+                // MULTICORE OPTIMIZATION: PLINQ row formatting + file write on thread pool
+                await Task.Run(() =>
+                {
+                    var csvLines = inventoryCopy
+                        .AsParallel()
+                        .WithDegreeOfParallelism(Environment.ProcessorCount)
+                        .AsOrdered() // Maintain order
+                        .Select(pc => $"\"{SecurityValidator.EscapeCsv(pc.Hostname)}\",\"{SecurityValidator.EscapeCsv(pc.Status)}\",\"{SecurityValidator.EscapeCsv(pc.CurrentUser)}\",\"{SecurityValidator.EscapeCsv(pc.DisplayOS)}\",\"{SecurityValidator.EscapeCsv(pc.WindowsVersion ?? "N/A")}\",\"{SecurityValidator.EscapeCsv(pc.Chassis)}\",\"{SecurityValidator.EscapeCsv(pc.BitLockerStatus)}\"")
+                        .ToList();
 
-                string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), $"NecessaryAdminTool_Inventory_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
-                File.WriteAllText(path, sb.ToString());
+                    var sb = new StringBuilder();
+                    sb.AppendLine("Hostname,Status,User,OS,Version,Chassis,BitLocker");
+                    foreach (var line in csvLines) sb.AppendLine(line);
+
+                    File.WriteAllText(path, sb.ToString());
+                }).ConfigureAwait(true);
+
                 Managers.UI.ToastManager.ShowSuccess($"Exported to:\n{path}");
                 AddLog("local", "EXPORT", path, "OK");
             }
@@ -11330,7 +11346,8 @@ if ($rebootPending) {
             catch (Exception ex) { LogManager.LogError("DeploymentSearch filter failed", ex); }
         }
 
-        private void BtnExportDeploymentResults_Click(object sender, RoutedEventArgs e)
+        // TAG: #PERFORMANCE_AUDIT #ASYNC_OPTIMIZATION - Made async to offload large CSV build + file write off UI thread
+        private async void BtnExportDeploymentResults_Click(object sender, RoutedEventArgs e)
         {
             try
             {
@@ -11338,17 +11355,25 @@ if ($rebootPending) {
                 var rows = view?.Cast<DeploymentResult>().ToList() ?? _deploymentResults.ToList();
                 if (rows.Count == 0) { Managers.UI.ToastManager.ShowWarning("No records to export. Load data first."); return; }
 
-                var sb = new System.Text.StringBuilder();
-                sb.AppendLine("Hostname,Script,Timestamp,OSVersion,BuildNumber,UptimeDays,TotalRAMGB,DiskFreeGB,SerialNumber,Manufacturer,Model,IPAddress,LoggedInUser,TPMPresent,SecureBoot,Status,Method,UpdateCount,Details,DurationSeconds");
-                foreach (var r in rows)
-                    sb.AppendLine($"\"{r.Hostname}\",\"{r.Script}\",\"{r.Timestamp}\",\"{r.OSVersion}\",\"{r.BuildNumber}\",\"{r.UptimeDays}\",\"{r.TotalRAMGB}\",\"{r.DiskFreeGB}\",\"{r.SerialNumber}\",\"{r.Manufacturer}\",\"{r.Model}\",\"{r.IPAddress}\",\"{r.LoggedInUser}\",\"{r.TPMPresent}\",\"{r.SecureBoot}\",\"{r.Status}\",\"{r.Method}\",\"{r.UpdateCount}\",\"{r.Details}\",\"{r.DurationSeconds}\"");
-
                 string outPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
                     $"NecessaryAdminTool_DeploymentResults_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
-                File.WriteAllText(outPath, sb.ToString(), System.Text.Encoding.UTF8);
-                Managers.UI.ToastManager.ShowSuccess($"Exported {rows.Count:N0} records to Desktop:\n{Path.GetFileName(outPath)}");
+
+                // Capture row count before leaving UI thread context
+                int rowCount = rows.Count;
+
+                // Offload CSV serialisation + file write to thread pool (can be thousands of rows)
+                await Task.Run(() =>
+                {
+                    var sb = new System.Text.StringBuilder();
+                    sb.AppendLine("Hostname,Script,Timestamp,OSVersion,BuildNumber,UptimeDays,TotalRAMGB,DiskFreeGB,SerialNumber,Manufacturer,Model,IPAddress,LoggedInUser,TPMPresent,SecureBoot,Status,Method,UpdateCount,Details,DurationSeconds");
+                    foreach (var r in rows)
+                        sb.AppendLine($"\"{r.Hostname}\",\"{r.Script}\",\"{r.Timestamp}\",\"{r.OSVersion}\",\"{r.BuildNumber}\",\"{r.UptimeDays}\",\"{r.TotalRAMGB}\",\"{r.DiskFreeGB}\",\"{r.SerialNumber}\",\"{r.Manufacturer}\",\"{r.Model}\",\"{r.IPAddress}\",\"{r.LoggedInUser}\",\"{r.TPMPresent}\",\"{r.SecureBoot}\",\"{r.Status}\",\"{r.Method}\",\"{r.UpdateCount}\",\"{r.Details}\",\"{r.DurationSeconds}\"");
+                    File.WriteAllText(outPath, sb.ToString(), System.Text.Encoding.UTF8);
+                }).ConfigureAwait(true);
+
+                Managers.UI.ToastManager.ShowSuccess($"Exported {rowCount:N0} records to Desktop:\n{Path.GetFileName(outPath)}");
                 AddLog("local", "EXPORT_DEPLOYMENT_RESULTS", outPath, "OK");
-                LogManager.LogInfo($"BtnExportDeploymentResults_Click() - Exported {rows.Count} rows to {outPath}");
+                LogManager.LogInfo($"BtnExportDeploymentResults_Click() - Exported {rowCount} rows to {outPath}");
             }
             catch (Exception ex)
             {
@@ -11911,7 +11936,7 @@ if ($rebootPending) {
         }
 
         /// <summary>Auto-save timer tick - backup current data</summary>
-        private void AutoSaveTimer_Tick(object sender, EventArgs e)
+        private async void AutoSaveTimer_Tick(object sender, EventArgs e)
         {
             try
             {
@@ -11921,15 +11946,14 @@ if ($rebootPending) {
                     "NecessaryAdminTool",
                     "AutoSave");
 
-                Directory.CreateDirectory(backupDir);
-
-                // Save inventory
+                // Snapshot inventory on UI thread before offloading I/O — TAG: #PERFORMANCE_AUDIT #ASYNC_OPTIMIZATION
                 List<PCInventory> inventoryCopy;
                 lock (_inventoryLock)
                     inventoryCopy = _inventory.ToList();
 
                 if (inventoryCopy.Count > 0)
                 {
+                    // Build CSV content on UI thread (cheap string work), then do all file I/O off-thread
                     var sb = new StringBuilder();
                     sb.AppendLine("Hostname,Status,User,OS,Version,Chassis,BitLocker");
                     foreach (var pc in inventoryCopy)
@@ -11937,28 +11961,34 @@ if ($rebootPending) {
                         sb.AppendLine($"\"{SecurityValidator.EscapeCsv(pc.Hostname)}\",\"{SecurityValidator.EscapeCsv(pc.Status)}\",\"{SecurityValidator.EscapeCsv(pc.CurrentUser)}\",\"{SecurityValidator.EscapeCsv(pc.DisplayOS)}\",\"{SecurityValidator.EscapeCsv(pc.WindowsVersion ?? "N/A")}\",\"{SecurityValidator.EscapeCsv(pc.Chassis)}\",\"{SecurityValidator.EscapeCsv(pc.BitLockerStatus)}\"");
                     }
 
+                    string csvContent = sb.ToString();
                     string backupPath = Path.Combine(backupDir, $"AutoSave_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
-                    File.WriteAllText(backupPath, sb.ToString());
+                    int deviceCount = inventoryCopy.Count;
 
-                    // Clean up old backups (keep last 10)
-                    var backupFiles = Directory.GetFiles(backupDir, "AutoSave_*.csv")
-                        .OrderByDescending(f => new FileInfo(f).CreationTime)
-                        .Skip(10)
-                        .ToList();
+                    // TAG: #PERFORMANCE_AUDIT #ASYNC_OPTIMIZATION - Offload all file I/O to thread pool
+                    // (DispatcherTimer Tick fires on the UI thread — never block it with disk writes)
+                    await Task.Run(() =>
+                    {
+                        Directory.CreateDirectory(backupDir);
+                        File.WriteAllText(backupPath, csvContent);
 
-                    foreach (var oldFile in backupFiles)
-                        File.Delete(oldFile);
+                        // Clean up old backups (keep last 10)
+                        var backupFiles = Directory.GetFiles(backupDir, "AutoSave_*.csv")
+                            .OrderByDescending(f => new FileInfo(f).CreationTime)
+                            .Skip(10)
+                            .ToList();
 
-                    LogManager.LogInfo($"Auto-save completed: {backupPath}");
+                        foreach (var oldFile in backupFiles)
+                            File.Delete(oldFile);
+
+                        LogManager.LogInfo($"Auto-save completed: {backupPath}");
+                    }).ConfigureAwait(true); // true = resume on UI thread for the status bar update below
 
                     if (Properties.Settings.Default.NotificationsEnabled)
                     {
                         // TAG: #VERSION_7 #AUTO_SAVE - Show auto-save notification in status bar
-                        Dispatcher.Invoke(() =>
-                        {
-                            StatusMessage.Text = $"✅ Auto-saved {inventoryCopy.Count} devices";
-                            StatusMessage.Foreground = new SolidColorBrush(Colors.LimeGreen);
-                        });
+                        StatusMessage.Text = $"✅ Auto-saved {deviceCount} devices";
+                        StatusMessage.Foreground = new SolidColorBrush(Colors.LimeGreen);
                     }
                 }
             }
@@ -14530,6 +14560,11 @@ if ($rebootPending) {
                 // Check device status in background
                 await CheckPinnedDeviceStatus(device);
             }
+            catch (Exception ex)
+            {
+                LogManager.LogError("BtnAddPinnedDevice_Click - FAILED", ex);
+                Managers.UI.ToastManager.ShowError($"Failed to add pinned device: {ex.Message}");
+            }
             finally
             {
                 if (btnAddPinned != null) btnAddPinned.IsEnabled = true;
@@ -14563,20 +14598,30 @@ if ($rebootPending) {
             BtnRefreshPinnedDevices.IsEnabled = false;
             BtnRefreshPinnedDevices.Content = "REFRESHING...";
             ShowBottomProgress($"Refreshing {_pinnedDevices.Count} pinned devices...");
-
-            var tasks = new List<Task>();
-            foreach (var device in _pinnedDevices.ToList())
+            try
             {
-                tasks.Add(CheckPinnedDeviceStatus(device));
+                var tasks = new List<Task>();
+                foreach (var device in _pinnedDevices.ToList())
+                {
+                    tasks.Add(CheckPinnedDeviceStatus(device));
+                }
+
+                await Task.WhenAll(tasks);
+                UpdateBottomProgress(100, "Refresh complete");
+                await Task.Delay(800);
+                HideBottomProgress($"Ready → {_pinnedDevices.Count} devices refreshed");
             }
-
-            await Task.WhenAll(tasks);
-            UpdateBottomProgress(100, "Refresh complete");
-            await Task.Delay(800);
-
-            BtnRefreshPinnedDevices.Content = "🔄 REFRESH ALL";
-            BtnRefreshPinnedDevices.IsEnabled = true;
-            HideBottomProgress($"Ready → {_pinnedDevices.Count} devices refreshed");
+            catch (Exception ex)
+            {
+                LogManager.LogError("BtnRefreshPinnedDevices_Click - FAILED", ex);
+                Managers.UI.ToastManager.ShowError($"Failed to refresh pinned devices: {ex.Message}");
+                HideBottomProgress("Refresh failed");
+            }
+            finally
+            {
+                BtnRefreshPinnedDevices.Content = "🔄 REFRESH ALL";
+                BtnRefreshPinnedDevices.IsEnabled = true;
+            }
         }
 
         /// <summary>

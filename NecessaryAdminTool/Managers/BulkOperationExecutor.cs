@@ -150,10 +150,13 @@ namespace NecessaryAdminTool.Managers
                     lastException = ex;
                 }
 
-                // Wait before retry (exponential backoff)
+                // Wait before retry (exponential backoff, cancellation-aware)
                 if (attempt < operation.MaxRetryAttempts - 1)
                 {
-                    Thread.Sleep(Math.Min(1000 * (int)Math.Pow(2, attempt), 10000));
+                    int delayMs = Math.Min(1000 * (int)Math.Pow(2, attempt), 10000);
+                    cancellationToken.WaitHandle.WaitOne(delayMs);
+                    if (cancellationToken.IsCancellationRequested)
+                        break;
                 }
             }
 
@@ -246,7 +249,9 @@ namespace NecessaryAdminTool.Managers
                 bool forced = parameters.ContainsKey("Forced") && (bool)parameters["Forced"];
                 int flags = forced ? 6 : 2; // 6 = forced reboot, 2 = graceful reboot
 
-                var scope = new ManagementScope($"\\\\{computerName}\\root\\cimv2");
+                // TAG: #PERFORMANCE_AUDIT #WMI_TIMEOUT - ConnectionOptions.Timeout prevents indefinite hang on unreachable hosts
+                var connOpts = new ConnectionOptions { Timeout = TimeSpan.FromSeconds(30), EnablePrivileges = true, Impersonation = ImpersonationLevel.Impersonate };
+                var scope = new ManagementScope($"\\\\{computerName}\\root\\cimv2", connOpts);
                 scope.Connect();
 
                 var query = new ObjectQuery("SELECT * FROM Win32_OperatingSystem");
@@ -294,7 +299,9 @@ namespace NecessaryAdminTool.Managers
                 }
 
                 // Execute using WMI Win32_Process
-                var scope = new ManagementScope($"\\\\{computerName}\\root\\cimv2");
+                // TAG: #PERFORMANCE_AUDIT #WMI_TIMEOUT
+                var connOpts = new ConnectionOptions { Timeout = TimeSpan.FromSeconds(30), EnablePrivileges = true, Impersonation = ImpersonationLevel.Impersonate };
+                var scope = new ManagementScope($"\\\\{computerName}\\root\\cimv2", connOpts);
                 scope.Connect();
 
                 var processClass = new ManagementClass(scope, new ManagementPath("Win32_Process"), null);
@@ -364,7 +371,9 @@ namespace NecessaryAdminTool.Managers
             // Strategy 1: WMI fallback
             try
             {
-                var scope = new ManagementScope($"\\\\{computerName}\\root\\cimv2");
+                // TAG: #PERFORMANCE_AUDIT #WMI_TIMEOUT
+                var connOpts = new ConnectionOptions { Timeout = TimeSpan.FromSeconds(30), EnablePrivileges = true, Impersonation = ImpersonationLevel.Impersonate };
+                var scope = new ManagementScope($"\\\\{computerName}\\root\\cimv2", connOpts);
                 scope.Connect();
 
                 var result = ComputerOperationResult.Succeeded(computerName, "Inventory collected");
@@ -421,7 +430,9 @@ namespace NecessaryAdminTool.Managers
                 // TAG: #SECURITY_CRITICAL - Sanitize service name
                 serviceName = SecurityValidator.SanitizeForPowerShell(serviceName);
 
-                var scope = new ManagementScope($"\\\\{computerName}\\root\\cimv2");
+                // TAG: #PERFORMANCE_AUDIT #WMI_TIMEOUT
+                var connOpts = new ConnectionOptions { Timeout = TimeSpan.FromSeconds(30), EnablePrivileges = true, Impersonation = ImpersonationLevel.Impersonate };
+                var scope = new ManagementScope($"\\\\{computerName}\\root\\cimv2", connOpts);
                 scope.Connect();
 
                 var query = new ObjectQuery($"SELECT * FROM Win32_Service WHERE Name = '{serviceName}'");
@@ -461,7 +472,9 @@ namespace NecessaryAdminTool.Managers
         {
             try
             {
-                var scope = new ManagementScope($"\\\\{computerName}\\root\\cimv2");
+                // TAG: #PERFORMANCE_AUDIT #WMI_TIMEOUT
+                var connOpts = new ConnectionOptions { Timeout = TimeSpan.FromSeconds(30), EnablePrivileges = true, Impersonation = ImpersonationLevel.Impersonate };
+                var scope = new ManagementScope($"\\\\{computerName}\\root\\cimv2", connOpts);
                 scope.Connect();
 
                 var result = ComputerOperationResult.Succeeded(computerName, "WMI scan completed");

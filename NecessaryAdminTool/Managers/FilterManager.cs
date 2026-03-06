@@ -316,40 +316,43 @@ namespace NecessaryAdminTool.Managers
         #region Persistence
 
         /// <summary>
-        /// Save presets to disk
+        /// Save presets to disk — fire-and-forget on thread pool to avoid blocking UI thread.
         /// TAG: #SECURITY_CRITICAL - Validates file path before writing
+        /// TAG: #PERFORMANCE_AUDIT #ASYNC_OPTIMIZATION
         /// </summary>
         private static void SavePresets()
         {
-            try
-            {
-                // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
-                // Validate file path
-                string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                string allowedBasePath = Path.Combine(appDataPath, "NecessaryAdminTool");
+            // TAG: #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
+            // Validate path on calling thread (fast — no I/O) before launching background task
+            string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string allowedBasePath = Path.Combine(appDataPath, "NecessaryAdminTool");
 
-                if (!SecurityValidator.IsValidFilePath(PresetsPath, allowedBasePath))
+            if (!SecurityValidator.IsValidFilePath(PresetsPath, allowedBasePath))
+            {
+                LogManager.LogWarning("[FilterManager] Blocked save to invalid path");
+                return;
+            }
+
+            // Snapshot the user presets before leaving the calling context
+            var userPresets = _presets.Where(p => !p.IsBuiltIn).ToList();
+            string presetsPath = PresetsPath; // capture static for lambda
+
+            // Fire-and-forget: JSON serialisation + file write on thread pool, never on UI thread
+            _ = System.Threading.Tasks.Task.Run(() =>
+            {
+                try
                 {
-                    LogManager.LogWarning("[FilterManager] Blocked save to invalid path");
-                    return;
+                    Directory.CreateDirectory(Path.GetDirectoryName(presetsPath));
+                    var serializer = new JavaScriptSerializer();
+                    string json = serializer.Serialize(userPresets);
+                    File.WriteAllText(presetsPath, json);
+                    LogManager.LogInfo($"[FilterManager] Saved {userPresets.Count} presets to disk");
                 }
-
-                // Ensure directory exists
-                Directory.CreateDirectory(Path.GetDirectoryName(PresetsPath));
-
-                // Filter out built-in presets (don't save them)
-                var userPresets = _presets.Where(p => !p.IsBuiltIn).ToList();
-
-                var serializer = new JavaScriptSerializer();
-                string json = serializer.Serialize(userPresets);
-                File.WriteAllText(PresetsPath, json);
-
-                LogManager.LogInfo($"[FilterManager] Saved {userPresets.Count} presets to disk");
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError("[FilterManager] Failed to save presets", ex);
-            }
+                catch (Exception ex)
+                {
+                    LogManager.LogError("[FilterManager] Failed to save presets", ex);
+                }
+            });
         }
 
         /// <summary>

@@ -2545,8 +2545,10 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 "Import", async () =>
                 {
                     await DoImportAllSettingsAsync();
-                    if (button != null) button.IsEnabled = true;
                 });
+            // Re-enable immediately — ShowWarning is fire-and-forget; the callback handles
+            // the actual import. Button must not stay disabled if user dismisses the toast.
+            if (button != null) button.IsEnabled = true;
         }
 
         // TAG: #ASYNC_OPTIMIZATION - Run file I/O on background thread
