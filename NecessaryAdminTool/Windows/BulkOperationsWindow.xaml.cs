@@ -149,22 +149,27 @@ namespace NecessaryAdminTool.Windows
 
                 // TAG: #SECURITY_CRITICAL #USER_CONFIRMATION
                 // Confirmation dialog
-                var confirmResult = MessageBox.Show(
-                    $"Execute {operationType} on {targets.Count} computers?\n\n" +
-                    $"Threads: {threads}\n" +
-                    $"Timeout: {timeoutSeconds}s\n" +
-                    $"Retries: {retryAttempts}\n\n" +
-                    "This operation will begin immediately.",
-                    "Confirm Bulk Operation",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
+                ToastManager.ShowWarning(
+                    $"Execute {operationType} on {targets.Count} computers? Threads: {threads}, Timeout: {timeoutSeconds}s, Retries: {retryAttempts}.",
+                    "Execute",
+                    async () => await ExecuteBulkOperationConfirmedAsync(operationType, targets, threads, timeoutSeconds, retryAttempts));
+                return;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("[BulkOperationsWindow] Bulk operation execution error", ex);
+                ToastManager.ShowError($"Execution error: {ex.Message}");
+            }
+        }
 
-                if (confirmResult != MessageBoxResult.Yes)
-                {
-                    LogManager.LogInfo("[BulkOperationsWindow] Bulk operation cancelled by user");
-                    return;
-                }
-
+        /// <summary>
+        /// Performs the actual bulk operation execution after user confirms
+        /// TAG: #BULK_OPERATIONS #ASYNC_OPERATIONS
+        /// </summary>
+        private async Task ExecuteBulkOperationConfirmedAsync(BulkOperationType operationType, List<string> targets, int threads, int timeoutSeconds, int retryAttempts)
+        {
+            try
+            {
                 // Create operation
                 var operation = new BulkOperation
                 {

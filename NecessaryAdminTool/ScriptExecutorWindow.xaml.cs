@@ -185,10 +185,7 @@ namespace NecessaryAdminTool
             if (_currentScript == null || _currentScript.IsBuiltIn)
                 return;
 
-            var result = MessageBox.Show($"Delete script '{_currentScript.Name}'?",
-                "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Question);
-
-            if (result == MessageBoxResult.Yes)
+            ToastManager.ShowWarning($"Delete script '{_currentScript.Name}'?", "Delete", () =>
             {
                 if (ScriptManager.DeleteScript(_currentScript.Name))
                 {
@@ -201,7 +198,7 @@ namespace NecessaryAdminTool
                     TxtScriptContent.Text = "";
                     _currentScript = null;
                 }
-            }
+            });
         }
 
         /// <summary>
@@ -298,12 +295,14 @@ namespace NecessaryAdminTool
                 ? $"Execute script on {_targetComputers[0]}?"
                 : $"Execute script on {_targetComputers.Length} computers in parallel (max {maxConcurrency} concurrent)?";
 
-            var result = MessageBox.Show(confirmMsg, "Confirm Execution",
-                MessageBoxButton.YesNo, MessageBoxImage.Question);
+            ToastManager.ShowWarning(confirmMsg, "Execute", async () => await ExecuteScriptAsync(maxConcurrency));
+        }
 
-            if (result != MessageBoxResult.Yes)
-                return;
-
+        /// <summary>
+        /// Performs the actual script execution after user confirms
+        /// </summary>
+        private async Task ExecuteScriptAsync(int maxConcurrency)
+        {
             try
             {
                 // Disable UI during execution

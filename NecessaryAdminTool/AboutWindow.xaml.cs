@@ -941,22 +941,14 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         /// </summary>
         private void BtnResetServicesConfig_Click(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show(
-                "This will reset your global services configuration to the default settings.\n\n" +
-                "All custom services and API endpoints will be lost.\n\n" +
-                "Do you want to continue?",
-                "Reset to Defaults",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
-
-            if (result == MessageBoxResult.Yes)
+            ToastManager.ShowWarning("This will reset your global services configuration to defaults. All custom services and API endpoints will be lost.", "Reset", () =>
             {
                 LoadDefaultServices();
                 TxtConfigStatus.Text = "🔄 Configuration reset to defaults";
                 TxtConfigStatus.SetResourceReference(TextBlock.ForegroundProperty, "AccentOrangeBrush");
                 TxtConfigStatus.Visibility = Visibility.Visible;
                 LogManager.LogInfo("Global services configuration reset to defaults");
-            }
+            });
         }
 
         /// <summary>

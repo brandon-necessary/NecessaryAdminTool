@@ -407,34 +407,30 @@ namespace NecessaryAdminTool
         {
             try
             {
-                var result = MessageBox.Show(
+                Managers.UI.ToastManager.ShowWarning(
                     "This will reset all domain controller preferences including:\n\n" +
                     "• Favorite DCs\n" +
                     "• DC display order\n" +
                     "• DC Health widget expansion state\n\n" +
                     "Are you sure you want to continue?",
-                    "Reset DC Preferences",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
+                    "Reset", () =>
+                    {
+                        // Clear all DC preferences
+                        Properties.Settings.Default.FavoriteDCs = "";
+                        Properties.Settings.Default.DCDisplayOrder = "";
+                        Properties.Settings.Default.DCHealthExpanded = false;
+                        Properties.Settings.Default.Save();
 
-                if (result == MessageBoxResult.Yes)
-                {
-                    // Clear all DC preferences
-                    Properties.Settings.Default.FavoriteDCs = "";
-                    Properties.Settings.Default.DCDisplayOrder = "";
-                    Properties.Settings.Default.DCHealthExpanded = false;
-                    Properties.Settings.Default.Save();
+                        // Update UI
+                        if (ChkDCHealthExpanded != null)
+                            ChkDCHealthExpanded.IsChecked = false;
 
-                    // Update UI
-                    if (ChkDCHealthExpanded != null)
-                        ChkDCHealthExpanded.IsChecked = false;
+                        ShowStatus("DC preferences have been reset to defaults", MessageType.Success);
+                        LogManager.LogInfo("[Options] DC preferences reset to defaults");
 
-                    ShowStatus("DC preferences have been reset to defaults", MessageType.Success);
-                    LogManager.LogInfo("[Options] DC preferences reset to defaults");
-
-                    // Notify user to refresh dashboard
-                    ToastManager.ShowSuccess("DC preferences have been reset. Please refresh the dashboard to see the changes.");
-                }
+                        // Notify user to refresh dashboard
+                        ToastManager.ShowSuccess("DC preferences have been reset. Please refresh the dashboard to see the changes.");
+                    });
             }
             catch (Exception ex)
             {
@@ -448,20 +444,16 @@ namespace NecessaryAdminTool
         /// </summary>
         private void BtnClearLastUser_Click(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show(
+            Managers.UI.ToastManager.ShowWarning(
                 "Clear the cached username?\n\nYou will need to enter your username again at next login.",
-                "Clear Username",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-
-            if (result == MessageBoxResult.Yes)
-            {
-                Properties.Settings.Default.LastUser = "";
-                Properties.Settings.Default.Save();
-                TxtLastUser.Text = "";
-                _hasUnsavedChanges = true;
-                ShowStatus("Cached username cleared", MessageType.Success);
-            }
+                "Clear", () =>
+                {
+                    Properties.Settings.Default.LastUser = "";
+                    Properties.Settings.Default.Save();
+                    TxtLastUser.Text = "";
+                    _hasUnsavedChanges = true;
+                    ShowStatus("Cached username cleared", MessageType.Success);
+                });
         }
 
         /// <summary>
@@ -469,19 +461,15 @@ namespace NecessaryAdminTool
         /// </summary>
         private void BtnClearHistory_Click(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show(
+            Managers.UI.ToastManager.ShowWarning(
                 "Clear all recent target history?",
-                "Clear History",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-
-            if (result == MessageBoxResult.Yes)
-            {
-                _targetHistory.Clear();
-                ListTargetHistory.Items.Refresh();
-                _hasUnsavedChanges = true;
-                ShowStatus("Target history cleared", MessageType.Success);
-            }
+                "Clear", () =>
+                {
+                    _targetHistory.Clear();
+                    ListTargetHistory.Items.Refresh();
+                    _hasUnsavedChanges = true;
+                    ShowStatus("Target history cleared", MessageType.Success);
+                });
         }
 
         /// <summary>
@@ -506,18 +494,14 @@ namespace NecessaryAdminTool
         /// </summary>
         private void BtnClearAllPinned_Click(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show(
+            Managers.UI.ToastManager.ShowWarning(
                 $"Remove all {_pinnedDevices.Count} pinned devices?",
-                "Clear All Pinned Devices",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
-
-            if (result == MessageBoxResult.Yes)
-            {
-                _pinnedDevices.Clear();
-                SavePinnedDevices();
-                ShowStatus("All pinned devices removed", MessageType.Success);
-            }
+                "Remove All", () =>
+                {
+                    _pinnedDevices.Clear();
+                    SavePinnedDevices();
+                    ShowStatus("All pinned devices removed", MessageType.Success);
+                });
         }
 
         /// <summary>
@@ -741,14 +725,14 @@ namespace NecessaryAdminTool
         {
             if (_hasUnsavedChanges)
             {
-                var result = MessageBox.Show(
+                Managers.UI.ToastManager.ShowWarning(
                     "You have unsaved changes. Discard them?",
-                    "Unsaved Changes",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Warning);
-
-                if (result == MessageBoxResult.No)
-                    return;
+                    "Discard", () =>
+                    {
+                        DialogResult = false;
+                        Close();
+                    });
+                return;
             }
 
             DialogResult = false;
@@ -1179,46 +1163,42 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         /// </summary>
         private void BtnResetAppearance_Click(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show(
+            Managers.UI.ToastManager.ShowWarning(
                 "Reset all appearance settings to default NecessaryAdmin branding?\n\n" +
                 "• Logo: NecessaryAdmin \"A\" icon\n" +
                 "• Primary Color: Orange (#FFFF8533)\n" +
                 "• Secondary Color: Zinc (#FFA1A1AA)\n" +
                 "• Font: Segoe UI\n" +
                 "• Dark Mode: On",
-                "Reset Appearance",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+                "Reset", () =>
+                {
+                    TxtLogoPath.Text = "(Using default NecessaryAdmin logo)";
+                    SliderLogoSize.Value = 64;
+                    TxtLogoSize.Text = "64";
+                    CmbFontFamily.SelectedIndex = 0;
 
-            if (result == MessageBoxResult.Yes)
-            {
-                TxtLogoPath.Text = "(Using default NecessaryAdmin logo)";
-                SliderLogoSize.Value = 64;
-                TxtLogoSize.Text = "64";
-                CmbFontFamily.SelectedIndex = 0;
+                    // Reset accent colors via ThemeHelper (applies immediately)
+                    Helpers.ThemeHelper.ResetToDefaults();
 
-                // Reset accent colors via ThemeHelper (applies immediately)
-                Helpers.ThemeHelper.ResetToDefaults();
+                    // Reset dropdowns to index 0 (Orange, Zinc)
+                    _suppressColorEvents = true;
+                    if (CmbPrimaryColor != null) CmbPrimaryColor.SelectedIndex = 0;
+                    if (CmbSecondaryColor != null) CmbSecondaryColor.SelectedIndex = 0;
+                    TxtPrimaryColor.Text = "#FFFF8533";
+                    TxtSecondaryColor.Text = "#FFA1A1AA";
+                    PrimaryColorPreview.Background = new SolidColorBrush(Helpers.ThemeHelper.DefaultPrimary);
+                    SecondaryColorPreview.Background = new SolidColorBrush(Helpers.ThemeHelper.DefaultSecondary);
+                    if (PreviewPrimaryStop != null) PreviewPrimaryStop.Color = Helpers.ThemeHelper.DefaultPrimary;
+                    if (PreviewSecondaryStop != null) PreviewSecondaryStop.Color = Helpers.ThemeHelper.DefaultSecondary;
+                    if (PreviewButtonBg != null) PreviewButtonBg.Color = Helpers.ThemeHelper.DefaultPrimary;
+                    _suppressColorEvents = false;
 
-                // Reset dropdowns to index 0 (Orange, Zinc)
-                _suppressColorEvents = true;
-                if (CmbPrimaryColor != null) CmbPrimaryColor.SelectedIndex = 0;
-                if (CmbSecondaryColor != null) CmbSecondaryColor.SelectedIndex = 0;
-                TxtPrimaryColor.Text = "#FFFF8533";
-                TxtSecondaryColor.Text = "#FFA1A1AA";
-                PrimaryColorPreview.Background = new SolidColorBrush(Helpers.ThemeHelper.DefaultPrimary);
-                SecondaryColorPreview.Background = new SolidColorBrush(Helpers.ThemeHelper.DefaultSecondary);
-                if (PreviewPrimaryStop != null) PreviewPrimaryStop.Color = Helpers.ThemeHelper.DefaultPrimary;
-                if (PreviewSecondaryStop != null) PreviewSecondaryStop.Color = Helpers.ThemeHelper.DefaultSecondary;
-                if (PreviewButtonBg != null) PreviewButtonBg.Color = Helpers.ThemeHelper.DefaultPrimary;
-                _suppressColorEvents = false;
+                    // Reset dark mode
+                    if (ChkDarkMode != null) ChkDarkMode.IsChecked = true;
 
-                // Reset dark mode
-                if (ChkDarkMode != null) ChkDarkMode.IsChecked = true;
-
-                ShowStatus("Appearance reset to defaults", MessageType.Success);
-                _hasUnsavedChanges = true;
-            }
+                    ShowStatus("Appearance reset to defaults", MessageType.Success);
+                    _hasUnsavedChanges = true;
+                });
         }
 
         // Prevents infinite loops when programmatically setting color controls
@@ -1598,22 +1578,18 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         /// </summary>
         private void BtnResetServicesConfig_Click(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show(
+            Managers.UI.ToastManager.ShowWarning(
                 "This will reset your global services configuration to the default settings.\n\n" +
                 "All custom services and API endpoints will be lost.\n\n" +
                 "Do you want to continue?",
-                "Reset to Defaults",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
-
-            if (result == MessageBoxResult.Yes)
-            {
-                LoadDefaultServices();
-                TxtConfigStatus.Text = "🔄 Configuration reset to defaults";
-                TxtConfigStatus.SetResourceReference(TextBlock.ForegroundProperty, "AccentOrangeBrush");
-                TxtConfigStatus.Visibility = Visibility.Visible;
-                ShowStatus("Reset to default services", MessageType.Success);
-            }
+                "Reset", () =>
+                {
+                    LoadDefaultServices();
+                    TxtConfigStatus.Text = "🔄 Configuration reset to defaults";
+                    TxtConfigStatus.SetResourceReference(TextBlock.ForegroundProperty, "AccentOrangeBrush");
+                    TxtConfigStatus.Visibility = Visibility.Visible;
+                    ShowStatus("Reset to default services", MessageType.Success);
+                });
         }
 
         /// <summary>
@@ -2204,19 +2180,15 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
                 if (profile == null) return;
 
-                var result = MessageBox.Show(
+                Managers.UI.ToastManager.ShowWarning(
                     $"Delete connection profile '{profile.Name}'?",
-                    "Confirm Delete",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Warning);
-
-                if (result == MessageBoxResult.Yes)
-                {
-                    _connectionProfiles.Remove(profile);
-                    SaveConnectionProfiles();
-                    ShowStatus($"✅ Profile '{profile.Name}' deleted", MessageType.Success);
-                    _hasUnsavedChanges = true;
-                }
+                    "Delete", () =>
+                    {
+                        _connectionProfiles.Remove(profile);
+                        SaveConnectionProfiles();
+                        ShowStatus($"✅ Profile '{profile.Name}' deleted", MessageType.Success);
+                        _hasUnsavedChanges = true;
+                    });
             }
             catch (Exception ex)
             {
@@ -2374,19 +2346,15 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
                 if (bookmark == null) return;
 
-                var result = MessageBox.Show(
+                Managers.UI.ToastManager.ShowWarning(
                     $"Delete bookmark '{bookmark.DisplayName}'?",
-                    "Confirm Delete",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Warning);
-
-                if (result == MessageBoxResult.Yes)
-                {
-                    _bookmarks.Remove(bookmark);
-                    SaveBookmarks();
-                    ShowStatus($"✅ Bookmark '{bookmark.DisplayName}' deleted", MessageType.Success);
-                    _hasUnsavedChanges = true;
-                }
+                    "Delete", () =>
+                    {
+                        _bookmarks.Remove(bookmark);
+                        SaveBookmarks();
+                        ShowStatus($"✅ Bookmark '{bookmark.DisplayName}' deleted", MessageType.Success);
+                        _hasUnsavedChanges = true;
+                    });
             }
             catch (Exception ex)
             {
@@ -2536,22 +2504,25 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         }
 
         // TAG: #ASYNC_OPTIMIZATION - Made async to prevent UI blocking on file read
-        private async void BtnImportAllSettings_Click(object sender, RoutedEventArgs e)
+        private void BtnImportAllSettings_Click(object sender, RoutedEventArgs e)
+        {
+            Managers.UI.ToastManager.ShowWarning(
+                "Import settings from a backup file?\n\n" +
+                "⚠️ WARNING: This will REPLACE your current settings!\n\n" +
+                "Current settings will be overwritten. Make sure you have\n" +
+                "a backup of your current configuration if needed.\n\n" +
+                "Continue with import?",
+                "Import", async () =>
+                {
+                    await DoImportAllSettingsAsync();
+                });
+        }
+
+        // TAG: #ASYNC_OPTIMIZATION - Run file I/O on background thread
+        private async Task DoImportAllSettingsAsync()
         {
             try
             {
-                var result = MessageBox.Show(
-                    "Import settings from a backup file?\n\n" +
-                    "⚠️ WARNING: This will REPLACE your current settings!\n\n" +
-                    "Current settings will be overwritten. Make sure you have\n" +
-                    "a backup of your current configuration if needed.\n\n" +
-                    "Continue with import?",
-                    "Confirm Import",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Warning);
-
-                if (result != MessageBoxResult.Yes) return;
-
                 var dialog = new OpenFileDialog
                 {
                     Filter = "JSON Files (*.json)|*.json|All Files (*.*)|*.*",
@@ -2560,7 +2531,6 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
                 if (dialog.ShowDialog() == true)
                 {
-                    // TAG: #ASYNC_OPTIMIZATION - Run file I/O on background thread
                     string json = await Task.Run(() => File.ReadAllText(dialog.FileName));
                     var serializer = new JavaScriptSerializer();
                     var backupData = serializer.Deserialize<Dictionary<string, object>>(json);
@@ -2896,55 +2866,51 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         {
             try
             {
-                var result = MessageBox.Show(
+                Managers.UI.ToastManager.ShowWarning(
                     "⚠️ WARNING: Restoring from a backup will REPLACE all current data!\n\n" +
                     "Make sure you have a recent backup before proceeding.\n\n" +
                     "Do you want to continue?",
-                    "Confirm Database Restore",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Warning);
-
-                if (result != MessageBoxResult.Yes)
-                    return;
-
-                var dialog = new OpenFileDialog
-                {
-                    Filter = "Database Backup|*.bak;*.db;*.accdb;*.zip|All Files|*.*",
-                    Title = "Select Database Backup to Restore"
-                };
-
-                if (dialog.ShowDialog() == true)
-                {
-                    var dbPath = Properties.Settings.Default.DatabasePath;
-                    var dbType = Properties.Settings.Default.DatabaseType;
-
-                    // Restore database file(s) from backup
-                    if (dbType == "SQLite")
+                    "Restore", () =>
                     {
-                        var targetFile = Path.Combine(dbPath, "NecessaryAdminTool.db");
-                        File.Copy(dialog.FileName, targetFile, true);
-                    }
-                    else if (dbType == "Access")
-                    {
-                        var targetFile = Path.Combine(dbPath, "NecessaryAdminTool.accdb");
-                        File.Copy(dialog.FileName, targetFile, true);
-                    }
-                    else if (dbType == "CSV" || dbType == "JSON")
-                    {
-                        // Extract ZIP to directory
-                        if (Directory.Exists(dbPath))
+                        var dialog = new OpenFileDialog
                         {
-                            Directory.Delete(dbPath, true);
-                        }
-                        System.IO.Compression.ZipFile.ExtractToDirectory(dialog.FileName, dbPath);
-                    }
+                            Filter = "Database Backup|*.bak;*.db;*.accdb;*.zip|All Files|*.*",
+                            Title = "Select Database Backup to Restore"
+                        };
 
-                    ShowStatus("Database restored successfully", MessageType.Success);
-                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
-                    ToastManager.ShowSuccess(
-                        "Database restored successfully!\n\n" +
-                        "Restart the application to use the restored database.");
-                }
+                        if (dialog.ShowDialog() == true)
+                        {
+                            var dbPath = Properties.Settings.Default.DatabasePath;
+                            var dbType = Properties.Settings.Default.DatabaseType;
+
+                            // Restore database file(s) from backup
+                            if (dbType == "SQLite")
+                            {
+                                var targetFile = Path.Combine(dbPath, "NecessaryAdminTool.db");
+                                File.Copy(dialog.FileName, targetFile, true);
+                            }
+                            else if (dbType == "Access")
+                            {
+                                var targetFile = Path.Combine(dbPath, "NecessaryAdminTool.accdb");
+                                File.Copy(dialog.FileName, targetFile, true);
+                            }
+                            else if (dbType == "CSV" || dbType == "JSON")
+                            {
+                                // Extract ZIP to directory
+                                if (Directory.Exists(dbPath))
+                                {
+                                    Directory.Delete(dbPath, true);
+                                }
+                                System.IO.Compression.ZipFile.ExtractToDirectory(dialog.FileName, dbPath);
+                            }
+
+                            ShowStatus("Database restored successfully", MessageType.Success);
+                            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                            ToastManager.ShowSuccess(
+                                "Database restored successfully!\n\n" +
+                                "Restart the application to use the restored database.");
+                        }
+                    });
             }
             catch (Exception ex)
             {
@@ -3023,31 +2989,27 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         {
             try
             {
-                var result = MessageBox.Show(
+                Managers.UI.ToastManager.ShowWarning(
                     "This will launch the setup wizard to reconfigure your database.\n\n" +
                     "⚠️ Make sure you have a backup before changing database configuration!\n\n" +
                     "Do you want to continue?",
-                    "Reconfigure Database",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
+                    "Continue", () =>
+                    {
+                        var setupWizard = new SetupWizardWindow();
+                        var wizardResult = setupWizard.ShowDialog();
 
-                if (result != MessageBoxResult.Yes)
-                    return;
+                        if (wizardResult == true)
+                        {
+                            // Reload database configuration
+                            LoadDatabaseConfiguration();
 
-                var setupWizard = new SetupWizardWindow();
-                var wizardResult = setupWizard.ShowDialog();
-
-                if (wizardResult == true)
-                {
-                    // Reload database configuration
-                    LoadDatabaseConfiguration();
-
-                    ShowStatus("Database configuration updated", MessageType.Success);
-                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
-                    ToastManager.ShowSuccess(
-                        "Database configuration updated successfully!\n\n" +
-                        "Restart the application to use the new configuration.");
-                }
+                            ShowStatus("Database configuration updated", MessageType.Success);
+                            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                            ToastManager.ShowSuccess(
+                                "Database configuration updated successfully!\n\n" +
+                                "Restart the application to use the new configuration.");
+                        }
+                    });
             }
             catch (Exception ex)
             {
@@ -3160,19 +3122,14 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             {
                 if (!ScheduledTaskManager.TaskExists())
                 {
-                    var result = MessageBox.Show(
+                    Managers.UI.ToastManager.ShowWarning(
                         "Background service is not installed.\n\n" +
                         "Would you like to install it now?",
-                        "Service Not Installed",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Question);
-
-                    if (result == MessageBoxResult.Yes)
-                    {
-                        // Re-run setup wizard
-                        BtnRerunSetup_Click(sender, e);
-                    }
-
+                        "Install", () =>
+                        {
+                            // Re-run setup wizard
+                            BtnRerunSetup_Click(sender, e);
+                        });
                     return;
                 }
 
@@ -3207,34 +3164,30 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         {
             try
             {
-                var result = MessageBox.Show(
+                Managers.UI.ToastManager.ShowWarning(
                     "This will remove the background scanning service.\n\n" +
                     "You can reinstall it later from the setup wizard.\n\n" +
                     "Do you want to continue?",
-                    "Uninstall Background Service",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Warning);
+                    "Uninstall", () =>
+                    {
+                        bool success = ScheduledTaskManager.DeleteTask();
 
-                if (result != MessageBoxResult.Yes)
-                    return;
+                        if (success)
+                        {
+                            Properties.Settings.Default.ServiceEnabled = false;
+                            Properties.Settings.Default.Save();
 
-                bool success = ScheduledTaskManager.DeleteTask();
+                            ShowStatus("Background service uninstalled", MessageType.Success);
+                            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                            ToastManager.ShowSuccess("Background service has been uninstalled successfully.");
 
-                if (success)
-                {
-                    Properties.Settings.Default.ServiceEnabled = false;
-                    Properties.Settings.Default.Save();
-
-                    ShowStatus("Background service uninstalled", MessageType.Success);
-                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
-                    ToastManager.ShowSuccess("Background service has been uninstalled successfully.");
-
-                    LoadServiceStatus();
-                }
-                else
-                {
-                    ShowStatus("Failed to uninstall service", MessageType.Error);
-                }
+                            LoadServiceStatus();
+                        }
+                        else
+                        {
+                            ShowStatus("Failed to uninstall service", MessageType.Error);
+                        }
+                    });
             }
             catch (Exception ex)
             {
@@ -3253,41 +3206,42 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         {
             try
             {
-                var result = MessageBox.Show(
+                // Show "Restart Now" option (Yes branch)
+                Managers.UI.ToastManager.ShowWarning(
                     "⚠️ Reset Database Setup?\n\n" +
                     "This will mark the application as 'not configured' so the database setup wizard " +
                     "will run when you next launch the application.\n\n" +
                     "Current database settings will NOT be deleted, but you'll need to complete " +
                     "the setup wizard again.\n\n" +
-                    "Would you like to restart NOW and run the setup wizard?",
-                    "Reset Setup Wizard",
-                    MessageBoxButton.YesNoCancel,
-                    MessageBoxImage.Question);
+                    "Click 'Restart Now' to reset and restart immediately, or 'Reset Only' to reset without restarting.",
+                    "Restart Now", () =>
+                    {
+                        // Reset flag and restart immediately
+                        Properties.Settings.Default.SetupCompleted = false;
+                        Properties.Settings.Default.Save();
+                        LogManager.LogInfo("First-run setup flag reset - restarting application");
 
-                if (result == MessageBoxResult.Yes)
-                {
-                    // Reset flag and restart immediately
-                    Properties.Settings.Default.SetupCompleted = false;
-                    Properties.Settings.Default.Save();
-                    LogManager.LogInfo("First-run setup flag reset - restarting application");
+                        // Restart the application
+                        System.Diagnostics.Process.Start(Application.ResourceAssembly.Location);
+                        Application.Current.Shutdown();
+                    });
 
-                    // Restart the application
-                    System.Diagnostics.Process.Start(Application.ResourceAssembly.Location);
-                    Application.Current.Shutdown();
-                }
-                else if (result == MessageBoxResult.No)
-                {
-                    // Reset flag but don't restart - let user do it manually
-                    Properties.Settings.Default.SetupCompleted = false;
-                    Properties.Settings.Default.Save();
-                    LogManager.LogInfo("First-run setup flag reset - setup wizard will run on next manual launch");
+                // Show "Reset Only" option (No branch)
+                Managers.UI.ToastManager.ShowInfo(
+                    "Or reset setup flag without restarting — setup wizard will run on next launch.",
+                    "Reset Only", () =>
+                    {
+                        // Reset flag but don't restart - let user do it manually
+                        Properties.Settings.Default.SetupCompleted = false;
+                        Properties.Settings.Default.Save();
+                        LogManager.LogInfo("First-run setup flag reset - setup wizard will run on next manual launch");
 
-                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
-                    ToastManager.ShowSuccess(
-                        "✓ Setup wizard will run on next launch\n\n" +
-                        $"The database setup wizard will appear when you restart {LogoConfig.PRODUCT_NAME}.");
-                }
-                // If Cancel, do nothing
+                        // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                        ToastManager.ShowSuccess(
+                            "✓ Setup wizard will run on next launch\n\n" +
+                            $"The database setup wizard will appear when you restart {LogoConfig.PRODUCT_NAME}.");
+                    });
+                // Dismiss both toasts to cancel
             }
             catch (Exception ex)
             {
@@ -3599,20 +3553,16 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         {
             try
             {
-                var result = MessageBox.Show(
+                Managers.UI.ToastManager.ShowWarning(
                     "Are you sure you want to reset ALL keyboard shortcuts to their default values?\n\nThis cannot be undone.",
-                    "Reset All Shortcuts",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
+                    "Reset All", () =>
+                    {
+                        var defaults = KeyboardShortcutSettings.GetDefaultShortcuts();
+                        DgShortcuts.ItemsSource = defaults.ToList();
 
-                if (result == MessageBoxResult.Yes)
-                {
-                    var defaults = KeyboardShortcutSettings.GetDefaultShortcuts();
-                    DgShortcuts.ItemsSource = defaults.ToList();
-
-                    LogManager.LogInfo("OptionsWindow - All keyboard shortcuts reset to defaults");
-                    ToastManager.ShowSuccess("All keyboard shortcuts have been reset to defaults.");
-                }
+                        LogManager.LogInfo("OptionsWindow - All keyboard shortcuts reset to defaults");
+                        ToastManager.ShowSuccess("All keyboard shortcuts have been reset to defaults.");
+                    });
             }
             catch (Exception ex)
             {

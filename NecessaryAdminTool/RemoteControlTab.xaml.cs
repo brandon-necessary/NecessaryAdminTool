@@ -106,15 +106,14 @@ namespace NecessaryAdminTool
                 // Show confirmation if enabled
                 if (config.ShowConfirmationDialog)
                 {
-                    var result = MessageBox.Show(
-                        $"Launch {toolType} remote session to {target}?\n\n" +
-                        $"This will initiate a remote control connection.",
-                        "Confirm Remote Connection",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Question);
-
-                    if (result != MessageBoxResult.Yes)
-                        return;
+                    ToastManager.ShowWarning($"Launch {toolType} remote session to {target}?", "Launch", () =>
+                    {
+                        RemoteControlManager.LaunchSession(toolType, target);
+                        AddToHistory(toolType, target, true, null);
+                        TxtLastConnection.Text = $"Last: {toolType} → {target} (just now)";
+                        ToastManager.ShowSuccess($"Remote session launched: {toolType} → {target}");
+                    });
+                    return;
                 }
 
                 // Launch session
@@ -317,15 +316,7 @@ namespace NecessaryAdminTool
         /// </summary>
         private void ResetAll_Click(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show(
-                "This will reset ALL remote control configurations to defaults.\n\n" +
-                "All tool settings and credentials will be cleared.\n\n" +
-                "Continue?",
-                "Confirm Reset",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
-
-            if (result == MessageBoxResult.Yes)
+            ToastManager.ShowWarning("This will reset ALL remote control configurations to defaults. All tool settings and credentials will be cleared.", "Reset", () =>
             {
                 // Clear credentials
                 SecureCredentialManager.DeleteAllCredentials();
@@ -339,7 +330,7 @@ namespace NecessaryAdminTool
                 Initialize();
 
                 ToastManager.ShowInfo("All configurations have been reset.");
-            }
+            });
         }
 
         /// <summary>

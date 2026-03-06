@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using Microsoft.Win32;
+using NecessaryAdminTool.Managers.UI;
 // TAG: #AUTO_UPDATE_DATABASE_INSTALLER #DATABASE_SETUP #VERSION_1_0
 
 namespace NecessaryAdminTool
@@ -546,20 +547,11 @@ namespace NecessaryAdminTool
                     UseShellExecute = true
                 });
 
-                MessageBox.Show(
-                    "Download page opened in your browser.\n\n" +
-                    "1. Download 'AccessDatabaseEngine_X64.exe' (64-bit)\n" +
-                    "2. Run the installer\n" +
-                    "3. Click 'Check Dependencies' again after installation",
-                    "ACE Database Engine Installation",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                ToastManager.ShowInfo("Download page opened in your browser. Download 'AccessDatabaseEngine_X64.exe' (64-bit), run the installer, then click 'Check Dependencies' again.");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Could not open download page: {ex.Message}\n\n" +
-                              "Please visit: https://www.microsoft.com/en-us/download/details.aspx?id=54920",
-                              "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ToastManager.ShowError($"Could not open download page: {ex.Message}. Please visit: https://www.microsoft.com/en-us/download/details.aspx?id=54920");
             }
         }
 
@@ -577,21 +569,11 @@ namespace NecessaryAdminTool
                     UseShellExecute = true
                 });
 
-                MessageBox.Show(
-                    "Download page opened in your browser.\n\n" +
-                    "1. Download SQL Server Express (Free)\n" +
-                    "2. Run the installer (choose 'Basic' installation)\n" +
-                    "3. Note the server name shown after installation\n" +
-                    "4. Update the server name in Step 2 and test connection",
-                    "SQL Server Express Installation",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                ToastManager.ShowInfo("Download page opened in your browser. Download SQL Server Express (Free), run the installer (choose 'Basic'), note the server name, then update Step 2 and test connection.");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Could not open download page: {ex.Message}\n\n" +
-                              "Please visit: https://www.microsoft.com/en-us/sql-server/sql-server-downloads",
-                              "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ToastManager.ShowError($"Could not open download page: {ex.Message}. Please visit: https://www.microsoft.com/en-us/sql-server/sql-server-downloads");
             }
         }
 
@@ -604,8 +586,7 @@ namespace NecessaryAdminTool
             // Validate current step before proceeding
             if (_currentStep == 1 && string.IsNullOrEmpty(_selectedDatabaseType))
             {
-                MessageBox.Show("Please select a database type.", "Validation Error",
-                              MessageBoxButton.OK, MessageBoxImage.Warning);
+                ToastManager.ShowWarning("Please select a database type.");
                 return;
             }
 
@@ -707,8 +688,7 @@ namespace NecessaryAdminTool
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to save configuration: {ex.Message}",
-                              "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ToastManager.ShowError($"Failed to save configuration: {ex.Message}");
                 LogManager.LogError("Database setup failed", ex);
             }
             finally
@@ -724,19 +704,12 @@ namespace NecessaryAdminTool
         /// </summary>
         private void BtnCancel_Click(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show(
-                "Are you sure you want to cancel database setup?\n" +
-                "The application requires a database to function.",
-                "Cancel Setup",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-
-            if (result == MessageBoxResult.Yes)
+            ToastManager.ShowWarning("Are you sure you want to cancel database setup? The application requires a database to function.", "Yes, Cancel", () =>
             {
                 SetupCompleted = false;
                 DialogResult = false;
                 Close();
-            }
+            });
         }
     }
 }

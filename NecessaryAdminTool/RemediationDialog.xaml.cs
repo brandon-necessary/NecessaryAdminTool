@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media.Animation;
+using NecessaryAdminTool.Managers.UI;
 
 namespace NecessaryAdminTool
 {
@@ -176,18 +177,12 @@ namespace NecessaryAdminTool
         {
             if (_isRunning)
             {
-                var result = MessageBox.Show(
-                    "Are you sure you want to cancel the remediation?",
-                    "Cancel Remediation",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
-
-                if (result == MessageBoxResult.Yes)
+                ToastManager.ShowWarning("Are you sure you want to cancel the remediation?", "Yes, Cancel", () =>
                 {
                     _cts.Cancel();
                     BtnCancel.IsEnabled = false;
                     BtnCancel.Content = "⏸️ CANCELLING...";
-                }
+                });
             }
         }
 
@@ -208,19 +203,13 @@ namespace NecessaryAdminTool
         {
             if (_isRunning)
             {
-                var result = MessageBox.Show(
-                    "Remediation is still running. Are you sure you want to close?",
-                    "Remediation In Progress",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Warning);
-
-                if (result == MessageBoxResult.No)
+                e.Cancel = true;
+                ToastManager.ShowWarning("Remediation is still running.", "Close Anyway", () =>
                 {
-                    e.Cancel = true;
-                    return;
-                }
-
-                _cts.Cancel();
+                    _cts.Cancel();
+                    Close();
+                });
+                return;
             }
 
             base.OnClosing(e);

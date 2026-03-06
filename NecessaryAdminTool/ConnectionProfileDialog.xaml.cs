@@ -2,6 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
+using NecessaryAdminTool.Managers.UI;
 
 namespace NecessaryAdminTool
 {
@@ -61,18 +62,11 @@ namespace NecessaryAdminTool
         {
             if (GridProfiles.SelectedItem is ConnectionProfile profile)
             {
-                var result = MessageBox.Show(
-                    $"Are you sure you want to delete the profile '{profile.Name}'?\n\n" +
-                    "This cannot be undone.",
-                    "Delete Profile",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
-
-                if (result == MessageBoxResult.Yes)
+                ToastManager.ShowWarning($"Are you sure you want to delete the profile '{profile.Name}'? This cannot be undone.", "Delete", () =>
                 {
                     ConnectionProfileManager.DeleteProfile(profile.Name);
                     LoadProfiles();
-                }
+                });
             }
         }
 

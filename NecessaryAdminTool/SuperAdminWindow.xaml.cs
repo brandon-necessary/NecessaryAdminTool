@@ -136,60 +136,50 @@ namespace NecessaryAdminTool
             }
 
             // Confirmation
-            var result = MessageBox.Show(
-                $"Apply white-label changes?\n\n" +
-                $"Company: {companyName}\n" +
-                $"Domain: {domain}\n" +
-                $"Support Email: support@{domain}\n\n" +
-                $"Backups will be created automatically.\n\n" +
-                $"Files to be modified:\n" +
-                $"  • AboutWindow.xaml\n" +
-                $"  • AboutWindow.xaml.cs\n\n" +
-                $"Continue?",
-                "Confirm White-Label Changes",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+            ToastManager.ShowWarning(
+                $"Apply white-label changes? Company: {companyName} | Domain: {domain} | Backups will be created automatically.",
+                "Apply Changes",
+                () =>
+                {
+                    try
+                    {
+                        BtnApplyWhiteLabel.IsEnabled = false;
+                        TxtWhiteLabelStatus.Text = "⏳ Applying changes...";
+                        TxtWhiteLabelStatus.Foreground = System.Windows.Media.Brushes.Orange;
+                        TxtWhiteLabelStatus.Visibility = Visibility.Visible;
 
-            if (result != MessageBoxResult.Yes) return;
+                        // Create backups
+                        CreateBackups();
 
-            try
-            {
-                BtnApplyWhiteLabel.IsEnabled = false;
-                TxtWhiteLabelStatus.Text = "⏳ Applying changes...";
-                TxtWhiteLabelStatus.Foreground = System.Windows.Media.Brushes.Orange;
-                TxtWhiteLabelStatus.Visibility = Visibility.Visible;
+                        // Apply changes to files
+                        int filesModified = ApplyWhiteLabelChanges(companyName, domain, phone);
 
-                // Create backups
-                CreateBackups();
+                        // Success
+                        TxtWhiteLabelStatus.Text = $"✓ Changes applied successfully! {filesModified} files modified.";
+                        TxtWhiteLabelStatus.Foreground = System.Windows.Media.Brushes.LimeGreen;
 
-                // Apply changes to files
-                int filesModified = ApplyWhiteLabelChanges(companyName, domain, phone);
+                        // Log the change
+                        LogWhiteLabelChange(companyName, domain);
 
-                // Success
-                TxtWhiteLabelStatus.Text = $"✓ Changes applied successfully! {filesModified} files modified.";
-                TxtWhiteLabelStatus.Foreground = System.Windows.Media.Brushes.LimeGreen;
+                        // TAG: #AUTO_UPDATE_UI_ENGINE #STATUS_TOASTS
+                        ToastManager.ShowSuccess($"White-label configuration applied! {filesModified} files modified. Restart to see changes.");
+                    }
+                    catch (Exception ex)
+                    {
+                        TxtWhiteLabelStatus.Text = "✗ Error applying changes!";
+                        TxtWhiteLabelStatus.Foreground = System.Windows.Media.Brushes.Red;
 
-                // Log the change
-                LogWhiteLabelChange(companyName, domain);
+                        // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                        ToastManager.ShowError($"Error applying white-label changes: {ex.Message}. Files restored from backup.");
 
-                // TAG: #AUTO_UPDATE_UI_ENGINE #STATUS_TOASTS
-                ToastManager.ShowSuccess($"White-label configuration applied! {filesModified} files modified. Restart to see changes.");
-            }
-            catch (Exception ex)
-            {
-                TxtWhiteLabelStatus.Text = "✗ Error applying changes!";
-                TxtWhiteLabelStatus.Foreground = System.Windows.Media.Brushes.Red;
-
-                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
-                ToastManager.ShowError($"Error applying white-label changes: {ex.Message}. Files restored from backup.");
-
-                // Restore from backup on error
-                RestoreFromBackup();
-            }
-            finally
-            {
-                BtnApplyWhiteLabel.IsEnabled = true;
-            }
+                        // Restore from backup on error
+                        RestoreFromBackup();
+                    }
+                    finally
+                    {
+                        BtnApplyWhiteLabel.IsEnabled = true;
+                    }
+                });
         }
 
         /// <summary>
@@ -244,27 +234,21 @@ namespace NecessaryAdminTool
         /// </summary>
         private void BtnResetWhiteLabel_Click(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show(
-                "Reset all white-label settings to default placeholders?\n\n" +
-                "This will restore:\n" +
-                "  • Company Name: {{COMPANY_NAME}}\n" +
-                "  • Domain: {{COMPANY_DOMAIN}}\n\n" +
-                "Continue?",
-                "Confirm Reset",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+            ToastManager.ShowWarning(
+                "Reset all white-label settings to default placeholders ({{COMPANY_NAME}}, {{COMPANY_DOMAIN}})?",
+                "Reset",
+                () =>
+                {
+                    TxtCompanyName.Text = "{{COMPANY_NAME}}";
+                    TxtCompanyDomain.Text = "{{COMPANY_DOMAIN}}";
+                    TxtSupportPhone.Text = "Contact your authorized representative";
 
-            if (result != MessageBoxResult.Yes) return;
+                    UpdatePreview();
 
-            TxtCompanyName.Text = "{{COMPANY_NAME}}";
-            TxtCompanyDomain.Text = "{{COMPANY_DOMAIN}}";
-            TxtSupportPhone.Text = "Contact your authorized representative";
-
-            UpdatePreview();
-
-            TxtWhiteLabelStatus.Text = "✓ Reset to defaults";
-            TxtWhiteLabelStatus.Foreground = System.Windows.Media.Brushes.LimeGreen;
-            TxtWhiteLabelStatus.Visibility = Visibility.Visible;
+                    TxtWhiteLabelStatus.Text = "✓ Reset to defaults";
+                    TxtWhiteLabelStatus.Foreground = System.Windows.Media.Brushes.LimeGreen;
+                    TxtWhiteLabelStatus.Visibility = Visibility.Visible;
+                });
         }
 
         #endregion
@@ -386,62 +370,50 @@ namespace NecessaryAdminTool
         /// </summary>
         private void BtnResetSettings_Click(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show(
-                "⚠️ DANGER: Reset ALL application settings?\n\n" +
-                "This will delete:\n" +
-                "  • All configuration files\n" +
-                "  • Connection profiles\n" +
-                "  • Bookmarks\n" +
-                "  • Recent targets\n" +
-                "  • User preferences\n\n" +
-                "The database and inventory will NOT be affected.\n\n" +
-                "Are you absolutely sure?",
-                "Confirm Settings Reset",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
-
-            if (result != MessageBoxResult.Yes) return;
-
-            // Second confirmation
-            result = MessageBox.Show(
-                "This cannot be undone!\n\nType 'DELETE' to confirm:",
-                "Final Confirmation",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Stop);
-
-            if (result != MessageBoxResult.Yes) return;
-
-            try
-            {
-                // Delete config files
-                var configFiles = new[]
+            ToastManager.ShowWarning(
+                "DANGER: Reset ALL application settings? This will delete all config files, profiles, bookmarks, and preferences. The database will NOT be affected.",
+                "Reset Settings",
+                () =>
                 {
-                    "NecessaryAdmin_Config_v2.xml",
-                    "NecessaryAdmin_UserConfig.xml",
-                    "NecessaryAdmin_DCConfiguration.xml"
-                };
+                    // Second confirmation
+                    ToastManager.ShowWarning(
+                        "This cannot be undone! Click Confirm to permanently delete all settings.",
+                        "Confirm",
+                        () =>
+                        {
+                            try
+                            {
+                                // Delete config files
+                                var configFiles = new[]
+                                {
+                                    "NecessaryAdmin_Config_v2.xml",
+                                    "NecessaryAdmin_UserConfig.xml",
+                                    "NecessaryAdmin_DCConfiguration.xml"
+                                };
 
-                int deleted = 0;
-                foreach (var file in configFiles)
-                {
-                    string path = Path.Combine(_appDataPath, file);
-                    if (File.Exists(path))
-                    {
-                        File.Delete(path);
-                        deleted++;
-                    }
-                }
+                                int deleted = 0;
+                                foreach (var file in configFiles)
+                                {
+                                    string path = Path.Combine(_appDataPath, file);
+                                    if (File.Exists(path))
+                                    {
+                                        File.Delete(path);
+                                        deleted++;
+                                    }
+                                }
 
-                // TAG: #AUTO_UPDATE_UI_ENGINE #STATUS_TOASTS
-                ToastManager.ShowSuccess($"Settings reset! {deleted} files deleted. Application will close.");
+                                // TAG: #AUTO_UPDATE_UI_ENGINE #STATUS_TOASTS
+                                ToastManager.ShowSuccess($"Settings reset! {deleted} files deleted. Application will close.");
 
-                Application.Current.Shutdown();
-            }
-            catch (Exception ex)
-            {
-                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
-                ToastManager.ShowError($"Error resetting settings: {ex.Message}");
-            }
+                                Application.Current.Shutdown();
+                            }
+                            catch (Exception ex)
+                            {
+                                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                                ToastManager.ShowError($"Error resetting settings: {ex.Message}");
+                            }
+                        });
+                });
         }
 
         /// <summary>
@@ -579,22 +551,14 @@ namespace NecessaryAdminTool
         /// </summary>
         private void BtnClearDb_Click(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show(
-                "⚠️ DANGER: Delete ALL inventory data?\n\n" +
-                "This will permanently delete:\n" +
-                "  • All computer records\n" +
-                "  • All scan history\n" +
-                "  • All asset tags\n\n" +
-                "This CANNOT be undone!\n\n" +
-                "Are you sure?",
-                "Confirm Database Clear",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
-
-            if (result != MessageBoxResult.Yes) return;
-
-            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
-            ToastManager.ShowInfo("Production: DELETE FROM Computers/ScanHistory/AssetTags. Function not implemented in preview.");
+            ToastManager.ShowWarning(
+                "DANGER: Delete ALL inventory data? This will permanently delete all computer records, scan history, and asset tags. This CANNOT be undone!",
+                "Clear Database",
+                () =>
+                {
+                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                    ToastManager.ShowInfo("Production: DELETE FROM Computers/ScanHistory/AssetTags. Function not implemented in preview.");
+                });
         }
 
         #endregion
@@ -786,25 +750,19 @@ namespace NecessaryAdminTool
         {
             try
             {
-                var result = MessageBox.Show(
-                    "⚠️ Launch Initial Setup Wizard?\n\n" +
-                    "This will open the first-run configuration wizard for testing purposes.\n\n" +
-                    "Current database settings will not be affected unless you complete the wizard.\n\n" +
-                    "Continue?",
-                    "Debug Testing - Setup Wizard",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
+                ToastManager.ShowWarning(
+                    "Launch Initial Setup Wizard for testing? Current database settings will not be affected unless you complete the wizard.",
+                    "Launch Wizard",
+                    () =>
+                    {
+                        LogManager.LogInfo("Setup Wizard launched from SuperAdmin (debug testing)");
 
-                if (result == MessageBoxResult.Yes)
-                {
-                    LogManager.LogInfo("Setup Wizard launched from SuperAdmin (debug testing)");
+                        var setupWizard = new SetupWizardWindow();
+                        setupWizard.Owner = this;
+                        setupWizard.ShowDialog();
 
-                    var setupWizard = new SetupWizardWindow();
-                    setupWizard.Owner = this;
-                    setupWizard.ShowDialog();
-
-                    LogManager.LogInfo("Setup Wizard closed");
-                }
+                        LogManager.LogInfo("Setup Wizard closed");
+                    });
             }
             catch (Exception ex)
             {
@@ -819,60 +777,46 @@ namespace NecessaryAdminTool
         /// </summary>
         private void BtnBuildInstaller_Click(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show(
-                "📦 Build MSI Installer?\n\n" +
-                "This will run build-installer.ps1 to create the MSI installer package.\n\n" +
-                "Prerequisites:\n" +
-                "• WiX Toolset 3.11+ (run install-wix.ps1 if needed)\n" +
-                "• Visual Studio with MSBuild\n" +
-                "• ACE Database Engine installer in Installer\\Dependencies\\\n\n" +
-                "The build process will:\n" +
-                "1. Build the application in Release mode\n" +
-                "2. Compile WiX installer source\n" +
-                "3. Create MSI in Installer\\Output\\\n" +
-                "4. Open output folder\n\n" +
-                "This may take 1-2 minutes. Continue?",
-                "Build MSI Installer",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-
-            if (result == MessageBoxResult.Yes)
-            {
-                try
+            ToastManager.ShowWarning(
+                "Build MSI Installer? This will run build-installer.ps1. Requires WiX Toolset 3.11+, Visual Studio with MSBuild, and ACE Engine installer. May take 1-2 minutes.",
+                "Build",
+                () =>
                 {
-                    // Get project root directory (2 levels up from bin\Release or bin\Debug)
-                    string appDir = AppDomain.CurrentDomain.BaseDirectory;
-                    string projectRoot = System.IO.Path.GetFullPath(System.IO.Path.Combine(appDir, @"..\..\"));
-                    string scriptPath = System.IO.Path.Combine(projectRoot, "build-installer.ps1");
-
-                    if (!System.IO.File.Exists(scriptPath))
+                    try
                     {
-                        ToastManager.ShowWarning($"Build script not found at: {scriptPath}. Make sure build-installer.ps1 is in the project root.");
-                        return;
+                        // Get project root directory (2 levels up from bin\Release or bin\Debug)
+                        string appDir = AppDomain.CurrentDomain.BaseDirectory;
+                        string projectRoot = System.IO.Path.GetFullPath(System.IO.Path.Combine(appDir, @"..\..\"));
+                        string scriptPath = System.IO.Path.Combine(projectRoot, "build-installer.ps1");
+
+                        if (!System.IO.File.Exists(scriptPath))
+                        {
+                            ToastManager.ShowWarning($"Build script not found at: {scriptPath}. Make sure build-installer.ps1 is in the project root.");
+                            return;
+                        }
+
+                        // Create PowerShell process to run the build script
+                        var processInfo = new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = "powershell.exe",
+                            Arguments = $"-ExecutionPolicy Bypass -File \"{scriptPath}\" -Verbose",
+                            WorkingDirectory = projectRoot,
+                            UseShellExecute = true, // Show console window
+                            CreateNoWindow = false
+                        };
+
+                        ToastManager.ShowInfo("Build started! A PowerShell window will open showing the build progress. The MSI will be created in Installer\\Output\\.");
+
+                        System.Diagnostics.Process.Start(processInfo);
+
+                        LogManager.LogInfo($"MSI build process started from SuperAdmin panel: {scriptPath}");
                     }
-
-                    // Create PowerShell process to run the build script
-                    var processInfo = new System.Diagnostics.ProcessStartInfo
+                    catch (Exception ex)
                     {
-                        FileName = "powershell.exe",
-                        Arguments = $"-ExecutionPolicy Bypass -File \"{scriptPath}\" -Verbose",
-                        WorkingDirectory = projectRoot,
-                        UseShellExecute = true, // Show console window
-                        CreateNoWindow = false
-                    };
-
-                    ToastManager.ShowInfo("Build started! A PowerShell window will open showing the build progress. The MSI will be created in Installer\\Output\\.");
-
-                    System.Diagnostics.Process.Start(processInfo);
-
-                    LogManager.LogInfo($"MSI build process started from SuperAdmin panel: {scriptPath}");
-                }
-                catch (Exception ex)
-                {
-                    LogManager.LogError("Failed to start MSI build process", ex);
-                    ToastManager.ShowError($"Failed to start build process: {ex.Message}. Make sure PowerShell is available and build-installer.ps1 exists in the project root.");
-                }
-            }
+                        LogManager.LogError("Failed to start MSI build process", ex);
+                        ToastManager.ShowError($"Failed to start build process: {ex.Message}. Make sure PowerShell is available and build-installer.ps1 exists in the project root.");
+                    }
+                });
         }
 
         #endregion

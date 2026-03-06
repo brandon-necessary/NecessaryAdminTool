@@ -60,8 +60,8 @@ namespace NecessaryAdminTool
             catch (Exception ex)
             {
                 LogManager.LogError("SettingsManager.LoadAllSettings() - FAILED - Error loading settings, returning defaults", ex);
-                MessageBox.Show($"Error loading settings: {ex.Message}", "Settings Error",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                System.Windows.Application.Current?.Dispatcher?.InvokeAsync(() =>
+                    NecessaryAdminTool.Managers.UI.ToastManager.ShowWarning($"Error loading settings: {ex.Message}"));
                 return GetDefaultSettings();
             }
         }

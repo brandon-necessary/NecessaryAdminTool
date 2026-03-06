@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Win32;
+using NecessaryAdminTool.Managers.UI;
 using NecessaryAdminTool.Security;
 // TAG: #AUTO_UPDATE_INSTALLER #SQUIRREL #UPDATE_CONTROL #VERSION_1_0 #SECURITY_CRITICAL #PATH_TRAVERSAL_PREVENTION
 
@@ -222,31 +223,26 @@ namespace NecessaryAdminTool
                         }
                         else
                         {
-                            // Interactive update
-                            var result = MessageBox.Show(
-                                $"A new version is available!\n\n" +
-                                $"Current: v{GetCurrentVersion()}\n" +
-                                $"Latest:  v{latestVersion}\n\n" +
-                                $"Download and install update?\n" +
-                                $"(Application will restart)",
-                                "Update Available",
-                                MessageBoxButton.YesNo,
-                                MessageBoxImage.Information);
+                            // Interactive update — toast action callback creates its own manager scope
+                            // to avoid using a disposed Squirrel UpdateManager from the outer using block
+                            string latestVersionStr = latestVersion.ToString();
+                            Application.Current.Dispatcher.Invoke(() =>
+                                ToastManager.ShowInfo(
+                                    $"Update available! Current: v{GetCurrentVersion()} → Latest: v{latestVersionStr}. Download and install?",
+                                    "Install Update",
+                                    async () =>
+                                    {
+                                        using (var updateManager = new Squirrel.UpdateManager(UPDATE_URL))
+                                        {
+                                            await updateManager.UpdateApp();
+                                        }
 
-                            if (result == MessageBoxResult.Yes)
-                            {
-                                await manager.UpdateApp();
+                                        Application.Current.Dispatcher.Invoke(() =>
+                                            ToastManager.ShowSuccess("Update downloaded successfully! The application will now restart to apply the update."));
 
-                                MessageBox.Show(
-                                    "Update downloaded successfully!\n\n" +
-                                    "The application will now restart to apply the update.",
-                                    "Update Ready",
-                                    MessageBoxButton.OK,
-                                    MessageBoxImage.Information);
-
-                                // Restart application
-                                Squirrel.UpdateManager.RestartApp();
-                            }
+                                        // Restart application
+                                        Squirrel.UpdateManager.RestartApp();
+                                    }));
                         }
                     }
                     else
@@ -255,11 +251,8 @@ namespace NecessaryAdminTool
 
                         if (!silent)
                         {
-                            MessageBox.Show(
-                                $"You are running the latest version!\n\nVersion: {GetCurrentVersion()}",
-                                "No Updates Available",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Information);
+                            await Application.Current.Dispatcher.InvokeAsync(() =>
+                                ToastManager.ShowInfo($"You are running the latest version! v{GetCurrentVersion()}"));
                         }
                     }
                 }
@@ -268,21 +261,15 @@ namespace NecessaryAdminTool
 
                 if (!silent)
                 {
-                    var result = MessageBox.Show(
-                        "Auto-update system is not configured.\n\n" +
-                        "Would you like to visit the download page to check for updates manually?",
-                        "Manual Update Required",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Information);
-
-                    if (result == MessageBoxResult.Yes)
-                    {
-                        Process.Start(new ProcessStartInfo
-                        {
-                            FileName = "https://github.com/brandon-necessary/NecessaryAdminTool/releases",
-                            UseShellExecute = true
-                        });
-                    }
+                    await Application.Current.Dispatcher.InvokeAsync(() =>
+                        ToastManager.ShowInfo(
+                            "Auto-update system is not configured. Visit the download page to check for updates manually.",
+                            "Open Download Page",
+                            () => Process.Start(new ProcessStartInfo
+                            {
+                                FileName = "https://github.com/brandon-necessary/NecessaryAdminTool/releases",
+                                UseShellExecute = true
+                            })));
                 }
                 #endif
 
@@ -295,11 +282,8 @@ namespace NecessaryAdminTool
 
                 if (!silent)
                 {
-                    MessageBox.Show(
-                        $"Failed to check for updates:\n\n{ex.Message}",
-                        "Update Error",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
+                    await Application.Current.Dispatcher.InvokeAsync(() =>
+                        ToastManager.ShowWarning($"Failed to check for updates: {ex.Message}"));
                 }
             }
         }
@@ -361,12 +345,8 @@ namespace NecessaryAdminTool
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    MessageBox.Show(
-                        $"A new version (v{version}) has been downloaded in the background.\n\n" +
-                        $"Click 'Help → Check for Updates' to install and restart.",
-                        "Update Ready",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
+                    ToastManager.ShowSuccess(
+                        $"Update Ready! v{version} has been downloaded in the background. Click Help → Check for Updates to install and restart.");
                 });
             }
             catch (Exception ex)

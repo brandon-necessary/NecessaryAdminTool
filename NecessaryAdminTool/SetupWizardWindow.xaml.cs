@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
+using NecessaryAdminTool.Managers.UI;
 // TAG: #SETUP_WIZARD #VERSION_1_0 #DATABASE_TESTING
 
 namespace NecessaryAdminTool
@@ -134,25 +135,15 @@ namespace NecessaryAdminTool
 
                         if (result.Success)
                         {
-                            System.Windows.MessageBox.Show(
-                                $"✓ All database tests passed!\n\n" +
-                                $"Tests: {result.PassedTests}/{result.TotalTests}\n" +
-                                $"Duration: {result.Duration.TotalSeconds:F2} seconds\n\n" +
-                                $"The {dbType} provider is working correctly.",
-                                "Database Test - SUCCESS",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Information);
+                            ToastManager.ShowSuccess(
+                                $"All database tests passed! Tests: {result.PassedTests}/{result.TotalTests} | " +
+                                $"Duration: {result.Duration.TotalSeconds:F2}s | The {dbType} provider is working correctly.");
                         }
                         else
                         {
-                            System.Windows.MessageBox.Show(
-                                $"⚠ Some database tests failed!\n\n" +
-                                $"Passed: {result.PassedTests}/{result.TotalTests}\n" +
-                                $"Failed: {result.FailedTests}/{result.TotalTests}\n\n" +
-                                $"Review the test log for details.",
-                                "Database Test - WARNING",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Warning);
+                            ToastManager.ShowWarning(
+                                $"Some database tests failed! Passed: {result.PassedTests}/{result.TotalTests}, " +
+                                $"Failed: {result.FailedTests}/{result.TotalTests}. Review the test log for details.");
                         }
                     }
                 }
@@ -167,60 +158,25 @@ namespace NecessaryAdminTool
             catch (NotImplementedException ex) when (ex.Message.Contains("SQLite"))
             {
                 LogManager.LogWarning($"SQLite provider not enabled: {ex.Message}");
-                var result = System.Windows.MessageBox.Show(
-                    "❌ SQLite Provider Not Configured\n\n" +
-                    "SQLite requires System.Data.SQLite NuGet package.\n\n" +
-                    "OPTION 1 (Recommended): Use CSV/JSON provider instead\n" +
-                    "• Select CSV/JSON (Fallback) option above\n" +
-                    "• Works immediately without installation\n\n" +
-                    "OPTION 2: Install SQLite support\n" +
-                    "• In Visual Studio: Tools → NuGet Package Manager\n" +
-                    "• Install-Package System.Data.SQLite.Core\n" +
-                    "• Define SQLITE_ENABLED in project properties\n\n" +
-                    "Would you like to switch to CSV/JSON now?",
-                    "Database Test - SQLite Not Enabled",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Warning);
-
-                if (result == MessageBoxResult.Yes)
-                {
-                    RbCsv.IsChecked = true;
-                }
+                ToastManager.ShowWarning(
+                    "SQLite Provider Not Configured. SQLite requires System.Data.SQLite NuGet package. Switch to CSV/JSON?",
+                    "Switch to CSV/JSON",
+                    () => RbCsv.IsChecked = true);
             }
             catch (System.Data.OleDb.OleDbException ex) when (ex.Message.Contains("Syntax error"))
             {
                 LogManager.LogWarning($"Access database schema error (expected for new databases): {ex.Message}");
-                System.Windows.MessageBox.Show(
-                    "⚠️ Access Database Test - Partial Success\n\n" +
-                    "The Access provider encountered a schema error, but this is NORMAL for new databases.\n\n" +
-                    "✅ ACE Database Engine: Detected and working\n" +
-                    "✅ Database file path: Valid\n" +
-                    "⚠️ Database schema: Will be created on first use\n\n" +
-                    "This error is expected and will not affect normal operation.\n" +
-                    "The database schema will be automatically created when you finish setup.",
-                    "Database Test - Access (Expected Warning)",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                ToastManager.ShowInfo(
+                    "Access Database Test - Partial Success. Schema error is NORMAL for new databases. " +
+                    "ACE Engine is working and schema will be created automatically on first use.");
             }
             catch (System.Data.OleDb.OleDbException ex) when (ex.Message.Contains("not registered"))
             {
                 LogManager.LogError("ACE Database Engine not installed", ex);
-                var result = System.Windows.MessageBox.Show(
-                    "❌ Microsoft Access Database Engine Not Found\n\n" +
-                    "The Access provider requires the ACE Database Engine.\n\n" +
-                    "Download and install:\n" +
-                    "• Microsoft Access Database Engine 2016 (64-bit)\n" +
-                    "• https://www.microsoft.com/en-us/download/details.aspx?id=54920\n\n" +
-                    "After installation, restart NecessaryAdminTool and try again.\n\n" +
-                    "Would you like to use CSV/JSON instead?",
-                    "Database Test - ACE Not Installed",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Error);
-
-                if (result == MessageBoxResult.Yes)
-                {
-                    RbCsv.IsChecked = true;
-                }
+                ToastManager.ShowError(
+                    "Microsoft Access Database Engine Not Found. Install ACE Database Engine 2016 (64-bit) from microsoft.com, or switch to CSV/JSON.",
+                    "Switch to CSV/JSON",
+                    () => RbCsv.IsChecked = true);
             }
             catch (System.Data.SqlClient.SqlException ex)
             {
@@ -235,30 +191,14 @@ namespace NecessaryAdminTool
                     hint = "\n\n💡 Hint: Authentication failed. Check credentials.";
                 }
 
-                System.Windows.MessageBox.Show(
-                    $"❌ SQL Server Connection Failed\n\n" +
-                    $"Error: {ex.Message}{hint}\n\n" +
-                    $"Check the following:\n" +
-                    $"• SQL Server is installed and running\n" +
-                    $"• Server name is correct\n" +
-                    $"• Network connectivity is available\n" +
-                    $"• Credentials are valid",
-                    "Database Test - SQL Server Error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                ToastManager.ShowError(
+                    $"SQL Server Connection Failed: {ex.Message}{hint} — Check server name, network, and credentials.");
             }
             catch (Exception ex)
             {
                 LogManager.LogError("Database test failed", ex);
-                System.Windows.MessageBox.Show(
-                    $"❌ Database Test Error\n\n" +
-                    $"{ex.Message}\n\n" +
-                    $"Type: {ex.GetType().Name}\n\n" +
-                    $"Check the log for details:\n" +
-                    $"%AppData%\\NecessaryAdminTool\\NecessaryAdmin_Debug.log",
-                    "Database Test - ERROR",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                ToastManager.ShowError(
+                    $"Database Test Error: {ex.Message} ({ex.GetType().Name}). Check the log for details.");
             }
         }
 
@@ -280,8 +220,7 @@ namespace NecessaryAdminTool
             catch (Exception ex)
             {
                 LogManager.LogError("Folder browser error", ex);
-                System.Windows.MessageBox.Show($"Error selecting folder: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                ToastManager.ShowError($"Error selecting folder: {ex.Message}");
             }
         }
 
@@ -342,45 +281,18 @@ namespace NecessaryAdminTool
                                                  ScanIntervalHours == 24 ? "day" :
                                                  $"{ScanIntervalHours} hours";
 
-                            System.Windows.MessageBox.Show(
-                                $"✅ Background Service Configured Successfully!\n\n" +
-                                $"📅 Automatic Scanning Schedule:\n" +
-                                $"   • Runs every {intervalText}\n" +
-                                $"   • Scans all domain computers\n" +
-                                $"   • Logs results to: {DatabasePath}\\DeploymentLogs\n\n" +
-                                $"🔒 Security:\n" +
-                                $"   • Running as: {(isAdmin ? "Administrator (HIGHEST privileges)" : "Current User (LIMITED privileges)")}\n" +
-                                $"   • Task Name: NecessaryAdminTool_AutoScan\n" +
-                                $"   • Location: Task Scheduler → \\NecessaryAdminTool\\\n\n" +
-                                $"⚙️ You can change these settings anytime in:\n" +
-                                $"   Options → Background Service",
-                                "Background Service Enabled",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Information);
+                            ToastManager.ShowSuccess(
+                                $"Background Service configured! Runs every {intervalText} as " +
+                                $"{(isAdmin ? "Administrator" : "Current User")}. Manage in Options → Background Service.");
                         }
                         else
                         {
                             LogManager.LogWarning("Failed to create scheduled task during setup");
 
                             // Enhanced failure message with actionable guidance
-                            System.Windows.MessageBox.Show(
-                                "⚠️ Background Service Setup Failed\n\n" +
-                                "The scheduled task could not be created.\n\n" +
-                                "🔍 Common Causes:\n" +
-                                "   • Task Scheduler service is not running\n" +
-                                "   • Group Policy restrictions prevent task creation\n" +
-                                "   • Antivirus software blocked the operation\n" +
-                                "   • Insufficient system permissions\n\n" +
-                                "✅ What You Can Do:\n" +
-                                "   1. Try manually enabling in: Options → Background Service\n" +
-                                "   2. Run the application as Administrator\n" +
-                                "   3. Check Windows Event Viewer → Task Scheduler logs\n" +
-                                "   4. Contact your IT administrator if in a managed environment\n\n" +
-                                "💡 The application will still work normally, but automatic scanning\n" +
-                                "   will not be enabled. You can scan manually anytime.",
-                                "Service Setup Warning",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Warning);
+                            ToastManager.ShowWarning(
+                                "Background Service Setup Failed. The scheduled task could not be created. " +
+                                "Try enabling manually in Options → Background Service, or run as Administrator.");
                         }
                     }
                     catch (Exception taskEx)
@@ -388,21 +300,9 @@ namespace NecessaryAdminTool
                         LogManager.LogError("Exception creating scheduled task during setup", taskEx);
 
                         // Enhanced exception message with technical details
-                        System.Windows.MessageBox.Show(
-                            $"❌ Background Service Setup Error\n\n" +
-                            $"An error occurred while creating the scheduled task:\n\n" +
-                            $"Error: {taskEx.Message}\n\n" +
-                            $"📋 Technical Details:\n" +
-                            $"   • Exception Type: {taskEx.GetType().Name}\n" +
-                            $"   • Check logs at: %APPDATA%\\NecessaryAdminTool\\Logs\\\n\n" +
-                            $"✅ Next Steps:\n" +
-                            $"   1. The application will work without background scanning\n" +
-                            $"   2. Try enabling manually in: Options → Background Service\n" +
-                            $"   3. If problem persists, run as Administrator\n\n" +
-                            $"💡 You can still use all other features normally.",
-                            "Service Configuration Error",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Error);
+                        ToastManager.ShowError(
+                            $"Background Service Setup Error: {taskEx.Message} ({taskEx.GetType().Name}). " +
+                            $"Enable manually in Options → Background Service or run as Administrator.");
                     }
                 }
 
@@ -412,8 +312,7 @@ namespace NecessaryAdminTool
             catch (Exception ex)
             {
                 LogManager.LogError("Setup wizard finish error", ex);
-                System.Windows.MessageBox.Show($"Error saving configuration: {ex.Message}",
-                    "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ToastManager.ShowError($"Error saving configuration: {ex.Message}");
             }
         }
 
@@ -461,25 +360,15 @@ namespace NecessaryAdminTool
                 else
                 {
                     LogManager.LogWarning($"DATABASE_SETUP_GUIDE.md not found in application directory");
-                    System.Windows.MessageBox.Show(
-                        "Database Setup Guide not found.\n\n" +
-                        "Expected location:\n" +
-                        $"{appDir}DATABASE_SETUP_GUIDE.md\n\n" +
-                        "The guide should be included with the installer.\n" +
-                        "You can download it from the GitHub repository.",
-                        "Guide Not Found",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
+                    ToastManager.ShowWarning(
+                        $"Database Setup Guide not found at {appDir}DATABASE_SETUP_GUIDE.md. " +
+                        "It should be included with the installer, or download from the GitHub repository.");
                 }
             }
             catch (Exception ex)
             {
                 LogManager.LogError("Failed to open Database Setup Guide", ex);
-                System.Windows.MessageBox.Show(
-                    $"Error opening guide: {ex.Message}",
-                    "Error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                ToastManager.ShowError($"Error opening guide: {ex.Message}");
             }
         }
 
@@ -516,16 +405,8 @@ namespace NecessaryAdminTool
                 Properties.Settings.Default.SetupCompleted = true;
                 Properties.Settings.Default.Save();
 
-                System.Windows.MessageBox.Show(
-                    "🔓 DEBUG MODE: Setup Bypassed!\n\n" +
-                    "Default configuration applied:\n" +
-                    "• Database: CSV/JSON (fallback)\n" +
-                    "• Location: %AppData%\\NecessaryAdminTool\n" +
-                    "• Background Service: Disabled\n\n" +
-                    "This bypass is only available in DEBUG builds.",
-                    "Debug Bypass Active",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                ToastManager.ShowWarning(
+                    "DEBUG MODE: Setup Bypassed! Default CSV/JSON config applied. This bypass is only available in DEBUG builds.");
 
                 DialogResult = true;
                 Close();
@@ -548,13 +429,8 @@ namespace NecessaryAdminTool
 
                 if (RbSqlServer.IsChecked == true)
                 {
-                    System.Windows.MessageBox.Show(
-                        "SQL Server databases are created on the server.\n\n" +
-                        "Use SQL Server Management Studio to create a new database,\n" +
-                        "then configure the connection string in NecessaryAdminTool.",
-                        "SQL Server Template",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
+                    ToastManager.ShowInfo(
+                        "SQL Server databases are created on the server. Use SQL Server Management Studio to create a new database, then configure the connection string in NecessaryAdminTool.");
                     return;
                 }
                 else if (RbAccess.IsChecked == true)
@@ -565,13 +441,8 @@ namespace NecessaryAdminTool
                 }
                 else if (RbCsv.IsChecked == true)
                 {
-                    System.Windows.MessageBox.Show(
-                        "CSV/JSON databases are created automatically as text files.\n\n" +
-                        "Just specify a folder location - NecessaryAdminTool will\n" +
-                        "create the necessary CSV files when you start using it.",
-                        "CSV Template",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
+                    ToastManager.ShowInfo(
+                        "CSV/JSON databases are created automatically as text files. Just specify a folder location and NecessaryAdminTool will create the necessary files on first use.");
                     return;
                 }
 
@@ -642,14 +513,8 @@ namespace NecessaryAdminTool
 
                         LogManager.LogInfo($"Template exported successfully: {templatePath}");
 
-                        System.Windows.MessageBox.Show(
-                            $"✓ Database template exported successfully!\n\n" +
-                            $"Location: {templatePath}\n\n" +
-                            $"You can now copy this template file to any location\n" +
-                            $"and use it as your database.",
-                            "Template Exported",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
+                        ToastManager.ShowSuccess(
+                            $"Database template exported successfully to: {templatePath}");
 
                         // Open folder containing template
                         System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{templatePath}\"");
@@ -666,11 +531,7 @@ namespace NecessaryAdminTool
             catch (Exception ex)
             {
                 LogManager.LogError("Failed to export database template", ex);
-                System.Windows.MessageBox.Show(
-                    $"❌ Failed to export database template:\n\n{ex.Message}",
-                    "Export Error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                ToastManager.ShowError($"Failed to export database template: {ex.Message}");
             }
         }
     }

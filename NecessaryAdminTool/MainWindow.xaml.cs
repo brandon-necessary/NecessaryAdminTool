@@ -3871,7 +3871,8 @@ namespace NecessaryAdminTool
         {
             string host = _currentTarget;
             if (string.IsNullOrEmpty(host) || !SecurityValidator.IsValidHostname(host)) { AppendTerminal("ERROR: Invalid hostname", true); return; }
-            if (MessageBox.Show($"Reboot {host}?", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
+            Managers.UI.ToastManager.ShowWarning($"Reboot {host}?", "Reboot", async () =>
+            {
             AppendTerminal($"\n>>> REBOOT → {host}...");
             await Task.Run(() =>
             {
@@ -3893,6 +3894,7 @@ namespace NecessaryAdminTool
                     AppendTerminal($"Reboot failed: {ex.Message}", true);
                     _ = Application.Current.Dispatcher.InvokeAsync(() => AddLog(host, "REBOOT", ex.Message, "FAIL"));
                 }
+            });
             });
         }
 
@@ -5429,94 +5431,15 @@ namespace NecessaryAdminTool
                 // Warn if scanning in read-only mode
                 if (!_isLoggedIn)
                 {
-                    var result = MessageBox.Show(
-                        "⚠️ Running in READ-ONLY Mode\n\n" +
-                        "Remote WMI queries require admin credentials.\n" +
-                        "Scanning may fail or show limited information.\n\n" +
-                        "For full access:\n" +
-                        $"• Use the desktop shortcut: \"{LogoConfig.PRODUCT_FULL_NAME} (Admin)\"\n" +
-                        "• Or create it via: About → Debugging & Admin Tools\n\n" +
-                        "Continue anyway with current user credentials?",
-                        "Admin Credentials Recommended",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Warning);
-
-                    if (result != MessageBoxResult.Yes)
-                    {
-                        Mouse.OverrideCursor = null;
-                        return;
-                    }
+                    Mouse.OverrideCursor = null;
+                    Managers.UI.ToastManager.ShowWarning(
+                        "Running in READ-ONLY Mode — remote WMI queries require admin credentials. Scanning may show limited information.",
+                        "Continue Anyway",
+                        async () => await BtnScan_ExecuteScan(hostname));
+                    return;
                 }
 
-                _currentTarget = hostname;
-                AddToRecentTargets(hostname); // Track last 10 scanned targets
-                TxtTargetName.Text = hostname.ToUpper(); TxtStatus.Text = "Probing..."; StatusDot.Fill = Brushes.Yellow;
-                StkDrives.Children.Clear(); StkDrives.Children.Add(new TextBlock { Text = "Scanning...", Foreground = Brushes.Gray });
-                BtnManualScan.IsEnabled = false;
-
-                try
-                {
-                    UpdateBottomProgress(25, $"Pinging {hostname}...");
-                    await Task.Run(async () =>
-                    {
-                        using (var p = new Ping()) { var reply = await p.SendPingAsync(hostname, SecureConfig.PingTimeoutMs); if (reply.Status != IPStatus.Success) throw new Exception($"Offline ({reply.Status})"); }
-                        // In read-only mode, pass null credentials to use current Windows user (passthrough authentication)
-                        _ = Dispatcher.InvokeAsync(() => UpdateBottomProgress(50, $"Querying {hostname}..."));
-                        var specs = await GetSystemSpecsAsync(hostname, _authUser, _authPass);
-                        _ = Application.Current.Dispatcher.InvokeAsync(async () =>
-                        {
-                            UpdateBottomProgress(90, $"Processing {hostname} data...");
-                            if (specs.Protocol == "FAILED" || specs.Protocol == "TIMEOUT") { TxtStatus.Text = specs.Protocol == "TIMEOUT" ? "TIMEOUT" : "ACCESS DENIED"; StatusDot.Fill = Brushes.Red; AddLog(hostname, "SCAN_FAIL", specs.Protocol, "FAIL"); HideBottomProgress("Scan Failed"); return; }
-                            TxtStatus.Text = "ONLINE"; StatusDot.Fill = Brushes.Lime;
-                            TxtServiceTag.Text = specs.Serial; TxtUser.Text = specs.User;
-                            TxtModel.Text = specs.Manufacturer != "N/A" ? $"{specs.Manufacturer} {specs.Model}" : specs.Model;
-                            TxtCPU.Text = specs.CPU; TxtCores.Text = specs.Cores; TxtRAM.Text = specs.RAM;
-
-                            // Show OS with colored version indicator
-                            TxtOS.Text = $"{specs.OS} [{specs.WindowsVersion}]";
-                            TxtOS.Foreground = GetWindowsVersionColor(specs.WindowsVersion);
-
-                            TxtUptime.Text = specs.Uptime; TxtBattery.Text = specs.Battery;
-                            TxtIP1.Text = specs.IP; TxtMAC.Text = specs.MAC; TxtDNS.Text = specs.DNS;
-                            _currentServiceTag = specs.Serial;
-                            GridTools.IsEnabled = true; BtnPush.IsEnabled = _isDomainAdmin; BtnGP.IsEnabled = true; BtnReboot.IsEnabled = true;
-                            BtnWarranty.IsEnabled = specs.Serial != "N/A";
-
-                            // Build drives panel
-                            StkDrives.Children.Clear();
-                            AddSectionToPanel("SYSTEM INFORMATION:", new[] { $"Domain: {specs.Domain}", $"Last Boot: {specs.LastBoot}", $"TimeZone: {specs.TimeZone}", $"TPM: {specs.TPMEnabled}" });
-
-                            var hdr = new TextBlock { Text = "LOCAL STORAGE:", Foreground = new SolidColorBrush(Color.FromRgb(0, 120, 215)), FontWeight = FontWeights.Bold, FontSize = 11, Margin = new Thickness(0, 10, 0, 8) };
-                            StkDrives.Children.Add(hdr);
-
-                            foreach (string d in specs.Drives)
-                            {
-                                var parts = d.Split('|'); if (parts.Length != 4) continue;
-                                if (!double.TryParse(parts[2], out double free) || !double.TryParse(parts[3], out double size)) continue;
-                                double pct = ((size - free) / size) * 100;
-                                var dp = new StackPanel { Margin = new Thickness(0, 0, 0, 10) };
-                                var hg = new Grid(); hg.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); hg.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                                var tn = new TextBlock { Text = $"{parts[0]} ({parts[1]})", Foreground = Brushes.White, FontWeight = FontWeights.Bold };
-                                var ts = new TextBlock { Text = $"{free:F1} GB Free / {size:F1} GB", Foreground = Brushes.Gray, HorizontalAlignment = HorizontalAlignment.Right, FontSize = 10 };
-                                Grid.SetColumn(tn, 0); Grid.SetColumn(ts, 1); hg.Children.Add(tn); hg.Children.Add(ts);
-                                var pb = new ProgressBar { Height = 6, Value = pct, Maximum = 100, Margin = new Thickness(0, 2, 0, 0), Background = new SolidColorBrush(Color.FromRgb(50, 50, 50)), BorderThickness = new Thickness(0), Foreground = pct > 90 ? Brushes.Red : Brushes.SteelBlue };
-                                dp.Children.Add(hg); dp.Children.Add(pb); StkDrives.Children.Add(dp);
-                            }
-                            AddLog(hostname, "PROBE_SUCCESS", specs.Protocol, "OK");
-                            UpdateBottomProgress(100, $"Scan Complete");
-                            await Task.Delay(1000); // Show completion briefly
-                            HideBottomProgress($"Ready → {hostname.ToUpper()}");
-                        });
-                    });
-                }
-                catch (Exception ex)
-                {
-                    // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
-                    Managers.UI.ToastManager.ShowError($"Scan failed: {ex.Message}");
-                    LogManager.LogError($"Scan failed: {hostname}", ex);
-                    _ = Dispatcher.InvokeAsync(() => { TxtStatus.Text = "UNREACHABLE"; StatusDot.Fill = Brushes.Red; GridTools.IsEnabled = false; HideBottomProgress("Scan Failed"); });
-                }
-                finally { BtnManualScan.IsEnabled = true; Mouse.OverrideCursor = null; }
+                await BtnScan_ExecuteScan(hostname);
             }
             catch (Exception ex)
             {
@@ -5525,6 +5448,79 @@ namespace NecessaryAdminTool
                 LogManager.LogError("BtnScan outer", ex);
             }
             finally { Mouse.OverrideCursor = null; }
+        }
+
+        private async Task BtnScan_ExecuteScan(string hostname)
+        {
+            _currentTarget = hostname;
+            AddToRecentTargets(hostname); // Track last 10 scanned targets
+            TxtTargetName.Text = hostname.ToUpper(); TxtStatus.Text = "Probing..."; StatusDot.Fill = Brushes.Yellow;
+            StkDrives.Children.Clear(); StkDrives.Children.Add(new TextBlock { Text = "Scanning...", Foreground = Brushes.Gray });
+            BtnManualScan.IsEnabled = false;
+
+            try
+            {
+                UpdateBottomProgress(25, $"Pinging {hostname}...");
+                await Task.Run(async () =>
+                {
+                    using (var p = new Ping()) { var reply = await p.SendPingAsync(hostname, SecureConfig.PingTimeoutMs); if (reply.Status != IPStatus.Success) throw new Exception($"Offline ({reply.Status})"); }
+                    // In read-only mode, pass null credentials to use current Windows user (passthrough authentication)
+                    _ = Dispatcher.InvokeAsync(() => UpdateBottomProgress(50, $"Querying {hostname}..."));
+                    var specs = await GetSystemSpecsAsync(hostname, _authUser, _authPass);
+                    _ = Application.Current.Dispatcher.InvokeAsync(async () =>
+                    {
+                        UpdateBottomProgress(90, $"Processing {hostname} data...");
+                        if (specs.Protocol == "FAILED" || specs.Protocol == "TIMEOUT") { TxtStatus.Text = specs.Protocol == "TIMEOUT" ? "TIMEOUT" : "ACCESS DENIED"; StatusDot.Fill = Brushes.Red; AddLog(hostname, "SCAN_FAIL", specs.Protocol, "FAIL"); HideBottomProgress("Scan Failed"); return; }
+                        TxtStatus.Text = "ONLINE"; StatusDot.Fill = Brushes.Lime;
+                        TxtServiceTag.Text = specs.Serial; TxtUser.Text = specs.User;
+                        TxtModel.Text = specs.Manufacturer != "N/A" ? $"{specs.Manufacturer} {specs.Model}" : specs.Model;
+                        TxtCPU.Text = specs.CPU; TxtCores.Text = specs.Cores; TxtRAM.Text = specs.RAM;
+
+                        // Show OS with colored version indicator
+                        TxtOS.Text = $"{specs.OS} [{specs.WindowsVersion}]";
+                        TxtOS.Foreground = GetWindowsVersionColor(specs.WindowsVersion);
+
+                        TxtUptime.Text = specs.Uptime; TxtBattery.Text = specs.Battery;
+                        TxtIP1.Text = specs.IP; TxtMAC.Text = specs.MAC; TxtDNS.Text = specs.DNS;
+                        _currentServiceTag = specs.Serial;
+                        GridTools.IsEnabled = true; BtnPush.IsEnabled = _isDomainAdmin; BtnGP.IsEnabled = true; BtnReboot.IsEnabled = true;
+                        BtnWarranty.IsEnabled = specs.Serial != "N/A";
+
+                        // Build drives panel
+                        StkDrives.Children.Clear();
+                        AddSectionToPanel("SYSTEM INFORMATION:", new[] { $"Domain: {specs.Domain}", $"Last Boot: {specs.LastBoot}", $"TimeZone: {specs.TimeZone}", $"TPM: {specs.TPMEnabled}" });
+
+                        var hdr = new TextBlock { Text = "LOCAL STORAGE:", Foreground = new SolidColorBrush(Color.FromRgb(0, 120, 215)), FontWeight = FontWeights.Bold, FontSize = 11, Margin = new Thickness(0, 10, 0, 8) };
+                        StkDrives.Children.Add(hdr);
+
+                        foreach (string d in specs.Drives)
+                        {
+                            var parts = d.Split('|'); if (parts.Length != 4) continue;
+                            if (!double.TryParse(parts[2], out double free) || !double.TryParse(parts[3], out double size)) continue;
+                            double pct = ((size - free) / size) * 100;
+                            var dp = new StackPanel { Margin = new Thickness(0, 0, 0, 10) };
+                            var hg = new Grid(); hg.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); hg.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                            var tn = new TextBlock { Text = $"{parts[0]} ({parts[1]})", Foreground = Brushes.White, FontWeight = FontWeights.Bold };
+                            var ts = new TextBlock { Text = $"{free:F1} GB Free / {size:F1} GB", Foreground = Brushes.Gray, HorizontalAlignment = HorizontalAlignment.Right, FontSize = 10 };
+                            Grid.SetColumn(tn, 0); Grid.SetColumn(ts, 1); hg.Children.Add(tn); hg.Children.Add(ts);
+                            var pb = new ProgressBar { Height = 6, Value = pct, Maximum = 100, Margin = new Thickness(0, 2, 0, 0), Background = new SolidColorBrush(Color.FromRgb(50, 50, 50)), BorderThickness = new Thickness(0), Foreground = pct > 90 ? Brushes.Red : Brushes.SteelBlue };
+                            dp.Children.Add(hg); dp.Children.Add(pb); StkDrives.Children.Add(dp);
+                        }
+                        AddLog(hostname, "PROBE_SUCCESS", specs.Protocol, "OK");
+                        UpdateBottomProgress(100, $"Scan Complete");
+                        await Task.Delay(1000); // Show completion briefly
+                        HideBottomProgress($"Ready → {hostname.ToUpper()}");
+                    });
+                });
+            }
+            catch (Exception ex)
+            {
+                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                Managers.UI.ToastManager.ShowError($"Scan failed: {ex.Message}");
+                LogManager.LogError($"Scan failed: {hostname}", ex);
+                _ = Dispatcher.InvokeAsync(() => { TxtStatus.Text = "UNREACHABLE"; StatusDot.Fill = Brushes.Red; GridTools.IsEnabled = false; HideBottomProgress("Scan Failed"); });
+            }
+            finally { BtnManualScan.IsEnabled = true; Mouse.OverrideCursor = null; }
         }
 
         private void AddSectionToPanel(string header, string[] items)
@@ -5840,32 +5836,30 @@ if ($connection) {{
 
             if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target selected"); return; }
 
-            try
-            {
-                Mouse.OverrideCursor = Cursors.Wait;
-
-                if (MessageBox.Show($"This will release and renew the IP address on {_currentTarget}.\n\nThe system may lose network connectivity briefly. Continue?",
-                    "Confirm IP Renewal", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            Managers.UI.ToastManager.ShowWarning(
+                $"Release and renew the IP address on {_currentTarget}? The system may lose network connectivity briefly.",
+                "Renew IP",
+                async () =>
                 {
-                    Mouse.OverrideCursor = null;
-                    return;
-                }
-
-                AppendTerminal($"\n>>> IP RENEWAL: {_currentTarget}...");
-                await WMIExecute("cmd.exe /c ipconfig /release && ipconfig /renew", "IP_RENEWAL");
-                AppendTerminal("IP renewal complete. Check network connectivity.");
-            }
-            catch (Exception ex)
-            {
-                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
-                Managers.UI.ToastManager.ShowError($"IP renewal failed: {ex.Message}");
-                LogManager.LogError("IP renewal failed", ex);
-                AppendTerminal($"IP renewal error: {ex.Message}", true);
-            }
-            finally
-            {
-                Mouse.OverrideCursor = null;
-            }
+                    try
+                    {
+                        Mouse.OverrideCursor = Cursors.Wait;
+                        AppendTerminal($"\n>>> IP RENEWAL: {_currentTarget}...");
+                        await WMIExecute("cmd.exe /c ipconfig /release && ipconfig /renew", "IP_RENEWAL");
+                        AppendTerminal("IP renewal complete. Check network connectivity.");
+                    }
+                    catch (Exception ex)
+                    {
+                        // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_ERROR
+                        Managers.UI.ToastManager.ShowError($"IP renewal failed: {ex.Message}");
+                        LogManager.LogError("IP renewal failed", ex);
+                        AppendTerminal($"IP renewal error: {ex.Message}", true);
+                    }
+                    finally
+                    {
+                        Mouse.OverrideCursor = null;
+                    }
+                });
         }
 
         private async void Tool_DiskCleanup_Click(object sender, RoutedEventArgs e)
@@ -6345,24 +6339,22 @@ if ($connection) {{
 
                             if (output == "0" || string.IsNullOrEmpty(output))
                             {
-                                var result = MessageBox.Show(
-                                    "RSAT (Remote Server Administration Tools) is not installed.\n\n" +
-                                    "Would you like to install it now? This requires administrator privileges and may take 5-10 minutes.",
-                                    "RSAT Not Found", MessageBoxButton.YesNo, MessageBoxImage.Question);
-
-                                if (result == MessageBoxResult.Yes)
-                                {
-                                    AppendTerminal("Installing RSAT via Windows Features...");
-                                    var installPsi = new ProcessStartInfo
+                                Managers.UI.ToastManager.ShowWarning(
+                                    "RSAT (Remote Server Administration Tools) is not installed. Install it now? This requires administrator privileges and may take 5-10 minutes.",
+                                    "Install RSAT",
+                                    () =>
                                     {
-                                        FileName = PowerShellExe,
-                                        Arguments = "-Command \"Get-WindowsCapability -Online | Where-Object Name -like 'Rsat*' | Add-WindowsCapability -Online\"",
-                                        UseShellExecute = true,
-                                        Verb = "runas" // Run as admin
-                                    };
-                                    Process.Start(installPsi);
-                                    Managers.UI.ToastManager.ShowInfo("RSAT installation started. Please wait for it to complete, then try launching the tool again.");
-                                }
+                                        AppendTerminal("Installing RSAT via Windows Features...");
+                                        var installPsi = new ProcessStartInfo
+                                        {
+                                            FileName = PowerShellExe,
+                                            Arguments = "-Command \"Get-WindowsCapability -Online | Where-Object Name -like 'Rsat*' | Add-WindowsCapability -Online\"",
+                                            UseShellExecute = true,
+                                            Verb = "runas" // Run as admin
+                                        };
+                                        Process.Start(installPsi);
+                                        Managers.UI.ToastManager.ShowInfo("RSAT installation started. Please wait for it to complete, then try launching the tool again.");
+                                    });
                                 return;
                             }
                         }
@@ -7074,7 +7066,8 @@ if ($connection) {{
                 // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
 
                 if (string.IsNullOrEmpty(_currentTarget)) { Managers.UI.ToastManager.ShowWarning("No target"); return; }
-                if (MessageBox.Show("Run SFC + DISM repair? (15-30 min)", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
+                Managers.UI.ToastManager.ShowWarning("Run SFC + DISM repair on this computer? This takes 15-30 minutes.", "Run Repair", async () =>
+                {
                 ShowBottomProgress($"Starting OS repair on {_currentTarget}...");
                 AppendTerminal($"OS Repair → {_currentTarget}...");
                 await Task.Run(async () =>
@@ -7103,6 +7096,7 @@ if ($connection) {{
                         AppendTerminal($"Repair failed: {ex.Message}", true);
                         _ = Dispatcher.InvokeAsync(() => HideBottomProgress("Repair failed"));
                     }
+                });
                 });
             }
             catch (Exception ex)
@@ -7199,20 +7193,10 @@ if ($connection) {{
                             {
                                 Dispatcher.Invoke(() =>
                                 {
-                                    var result = MessageBox.Show(
-                                        "PsExec auto-download failed. Download it manually?\n\n" +
-                                        "PsExec is needed to enable WinRM when WMI is unavailable.\n" +
-                                        "Download URL: https://live.sysinternals.com/psexec.exe\n\n" +
-                                        "Save it to: " + psexecPath,
-                                        "PsExec Required",
-                                        MessageBoxButton.YesNo,
-                                        MessageBoxImage.Question
-                                    );
-
-                                    if (result == MessageBoxResult.Yes)
-                                    {
-                                        Process.Start("https://live.sysinternals.com/psexec.exe");
-                                    }
+                                    Managers.UI.ToastManager.ShowWarning(
+                                        $"PsExec auto-download failed. Open browser to download it manually? Save it to: {psexecPath}",
+                                        "Open Download Page",
+                                        () => Process.Start("https://live.sysinternals.com/psexec.exe"));
                                 });
                                 AppendTerminal("PsExec not available - cannot enable WinRM remotely", true);
                                 return;
@@ -7317,8 +7301,8 @@ if ($connection) {{
         {
             try
             {
-                if (MessageBox.Show("Disable firewall?", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
-                    await WMIExecute("netsh advfirewall set allprofiles state off", "FIREWALL_DISABLE");
+                Managers.UI.ToastManager.ShowWarning("Disable the Windows Firewall on this computer?", "Disable Firewall",
+                    async () => await WMIExecute("netsh advfirewall set allprofiles state off", "FIREWALL_DISABLE"));
             }
             catch (Exception ex)
             {
@@ -7444,11 +7428,11 @@ if ($connection) {{
         {
             if (GridInventory.SelectedItem is PCInventory pc && pc.Status == "ONLINE")
             {
-                if (MessageBox.Show($"Reboot {pc.Hostname}?", "Confirm Reboot", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                Managers.UI.ToastManager.ShowWarning($"Reboot {pc.Hostname}?", "Reboot", () =>
                 {
                     _currentTarget = pc.Hostname;
                     Tool_Reboot_Click(sender, e);
-                }
+                });
             }
         }
 
@@ -7561,18 +7545,12 @@ if ($connection) {{
             {
                 if (GridInventory.SelectedItem is PCInventory pc)
                 {
-                    var result = MessageBox.Show(
-                        $"Remove {pc.Hostname} from favorites?",
-                        "Remove Favorite",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Question);
-
-                    if (result == MessageBoxResult.Yes)
+                    Managers.UI.ToastManager.ShowWarning($"Remove {pc.Hostname} from favorites?", "Remove", () =>
                     {
                         BookmarkManager.RemoveBookmark(pc.Hostname);
                         AppendTerminal($"⭐ Removed from favorites: {pc.Hostname}");
                         Managers.UI.ToastManager.ShowSuccess($"⭐ {pc.Hostname} removed from favorites");
-                    }
+                    });
                 }
             }
             catch (Exception ex)
@@ -8213,38 +8191,43 @@ if ($rebootPending) {
                     ? $"Execute {actionIcon} {actionName} on {hostnames[0]}?"
                     : $"Execute {actionIcon} {actionName} on {selectedComputers.Length} computers?";
 
-                var result = MessageBox.Show(confirmMsg, "Confirm Quick Fix",
-                    MessageBoxButton.YesNo, MessageBoxImage.Question);
-
-                if (result != MessageBoxResult.Yes)
-                    return;
-
-                // Get credentials from current session
-                string username = Properties.Settings.Default.LastUser;
-                string password = null;
-
-                string targetDC = ComboDC?.Text;
-                if (!string.IsNullOrEmpty(targetDC))
+                Managers.UI.ToastManager.ShowWarning(confirmMsg, "Execute", () =>
                 {
-                    password = SecureCredentialManager.RetrieveCredential(targetDC, "password");
-                }
+                    try
+                    {
+                        // Get credentials from current session
+                        string username = Properties.Settings.Default.LastUser;
+                        string password = null;
 
-                // Show remediation dialog
-                var dialog = new RemediationDialog
-                {
-                    Owner = this,
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner
-                };
+                        string targetDC = ComboDC?.Text;
+                        if (!string.IsNullOrEmpty(targetDC))
+                        {
+                            password = SecureCredentialManager.RetrieveCredential(targetDC, "password");
+                        }
 
-                // Execute remediation asynchronously
-                var _ = dialog.ExecuteRemediationAsync(action, hostnames, username, password);
+                        // Show remediation dialog
+                        var dialog = new RemediationDialog
+                        {
+                            Owner = this,
+                            WindowStartupLocation = WindowStartupLocation.CenterOwner
+                        };
 
-                // Show dialog
-                dialog.ShowDialog();
+                        // Execute remediation asynchronously
+                        var _ = dialog.ExecuteRemediationAsync(action, hostnames, username, password);
 
-                // Log completion
-                AppendTerminal($"✅ Completed Quick Fix: {actionIcon} {actionName} on {selectedComputers.Length} computer(s)");
-                LogManager.LogInfo($"[Quick Fix] Executed {actionName} on {selectedComputers.Length} computers");
+                        // Show dialog
+                        dialog.ShowDialog();
+
+                        // Log completion
+                        AppendTerminal($"✅ Completed Quick Fix: {actionIcon} {actionName} on {selectedComputers.Length} computer(s)");
+                        LogManager.LogInfo($"[Quick Fix] Executed {actionName} on {selectedComputers.Length} computers");
+                    }
+                    catch (Exception ex)
+                    {
+                        LogManager.LogError($"[Quick Fix] Failed to execute remediation", ex);
+                        Managers.UI.ToastManager.ShowError($"Quick Fix failed: {ex.Message}");
+                    }
+                });
             }
             catch (Exception ex)
             {
@@ -10960,16 +10943,13 @@ if ($rebootPending) {
                         .Count(f => File.GetLastWriteTime(f) < cutoff30);
                 }
 
-                var confirm = MessageBox.Show(
-                    "This will archive:\n\n" +
-                    $"  \u2022 Master CSV entries older than 90 days\n" +
-                    $"      \u2192 Archives/Master_Update_Log_Archive_{dateStamp}.csv\n\n" +
-                    $"  \u2022 Individual PC logs older than 30 days ({oldPCLogCount} files)\n" +
-                    $"      \u2192 Archives/PC_Logs_Archived_{dateStamp}/\n\n" +
-                    "Continue?",
-                    "Archive Old Deployment Data",
-                    MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.Yes);
-                if (confirm != MessageBoxResult.Yes) return;
+                Managers.UI.ToastManager.ShowWarning(
+                    $"Archive CSV entries older than 90 days and PC logs older than 30 days ({oldPCLogCount} files)?",
+                    "Archive",
+                    () =>
+                    {
+                    try
+                    {
 
                 // Ensure Archives/ subfolder exists
                 if (!Directory.Exists(archiveDir))
@@ -11061,6 +11041,13 @@ if ($rebootPending) {
                 LogManager.LogInfo($"BtnArchiveDeploymentLog_Click() - CSV archived: {archivedCsvRows}, PC logs moved: {archivedPCLogs}, kept: {keep.Count}");
                 Managers.UI.ToastManager.ShowSuccess(summary.ToString().Trim());
                 _ = LoadDeploymentResultsAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        Managers.UI.ToastManager.ShowError($"Archive failed:\n{ex.Message}");
+                        LogManager.LogError("BtnArchiveDeploymentLog_Click() - FAILED", ex);
+                    }
+                    });
             }
             catch (Exception ex)
             {
@@ -11349,65 +11336,56 @@ if ($rebootPending) {
                     return;
                 }
 
-                // Step 1: Offer backup before deleting
-                var backupResult = MessageBox.Show(
-                    $"Do you want to save a backup of Master_Update_Log.csv before clearing it?\n\n" +
-                    $"Source: {csvPath}\n\nClick YES to backup first (recommended)\nClick NO to delete without backup\nClick CANCEL to abort.",
-                    "Backup Before Clearing?",
-                    MessageBoxButton.YesNoCancel,
-                    MessageBoxImage.Warning,
-                    MessageBoxResult.Yes);
-
-                if (backupResult == MessageBoxResult.Cancel)
-                {
-                    LogManager.LogInfo("BtnClearDeploymentLog_Click() - Cancelled by user");
-                    return;
-                }
-
-                if (backupResult == MessageBoxResult.Yes)
-                {
-                    // Ask where to save backup
-                    var dlg = new Microsoft.Win32.SaveFileDialog
+                // Step 1: Offer backup before deleting — show second confirmation inside callback
+                Managers.UI.ToastManager.ShowWarning(
+                    $"Save a backup of Master_Update_Log.csv before clearing? (Recommended)",
+                    "Backup First",
+                    () =>
                     {
-                        Title            = "Save Backup of Master_Update_Log.csv",
-                        Filter           = "CSV files (*.csv)|*.csv|All files (*.*)|*.*",
-                        FileName         = $"Master_Update_Log_Backup_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
-                        InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
-                    };
+                        // Ask where to save backup
+                        var dlg = new Microsoft.Win32.SaveFileDialog
+                        {
+                            Title            = "Save Backup of Master_Update_Log.csv",
+                            Filter           = "CSV files (*.csv)|*.csv|All files (*.*)|*.*",
+                            FileName         = $"Master_Update_Log_Backup_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
+                            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
+                        };
 
-                    if (dlg.ShowDialog() != true)
-                    {
-                        LogManager.LogInfo("BtnClearDeploymentLog_Click() - Backup save dialog cancelled");
-                        return; // User cancelled the save dialog → abort the whole operation
-                    }
+                        if (dlg.ShowDialog() != true)
+                        {
+                            LogManager.LogInfo("BtnClearDeploymentLog_Click() - Backup save dialog cancelled");
+                            return; // User cancelled the save dialog → abort the whole operation
+                        }
 
-                    File.Copy(csvPath, dlg.FileName, overwrite: true);
-                    Managers.UI.ToastManager.ShowSuccess($"Backup saved:\n{Path.GetFileName(dlg.FileName)}");
-                    LogManager.LogInfo($"BtnClearDeploymentLog_Click() - Backup saved to {dlg.FileName}");
-                }
+                        File.Copy(csvPath, dlg.FileName, overwrite: true);
+                        Managers.UI.ToastManager.ShowSuccess($"Backup saved: {Path.GetFileName(dlg.FileName)}");
+                        LogManager.LogInfo($"BtnClearDeploymentLog_Click() - Backup saved to {dlg.FileName}");
 
-                // Step 2: Confirm deletion
-                var confirmResult = MessageBox.Show(
-                    $"Are you sure you want to permanently delete Master_Update_Log.csv?\n\n{csvPath}",
-                    "Confirm Clear",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question,
-                    MessageBoxResult.No);
-
-                if (confirmResult != MessageBoxResult.Yes)
-                {
-                    LogManager.LogInfo("BtnClearDeploymentLog_Click() - Delete confirmation declined");
-                    return;
-                }
-
-                File.Delete(csvPath);
-                _deploymentResults.Clear();
-                _allDeploymentResults.Clear();
-                UpdateDeploymentTally(new System.Collections.Generic.List<DeploymentResult>());
-                TxtDeploymentCount.Text = "0 records → cleared";
-                Managers.UI.ToastManager.ShowSuccess("Master_Update_Log.csv deleted. Grid cleared.");
-                AddLog("local", "CLEAR_DEPLOYMENT_LOG", csvPath, "OK");
-                LogManager.LogInfo($"BtnClearDeploymentLog_Click() - SUCCESS - Deleted {csvPath}");
+                        // Step 2: Confirm deletion after backup
+                        Managers.UI.ToastManager.ShowWarning(
+                            $"Permanently delete Master_Update_Log.csv?\n{csvPath}",
+                            "Delete",
+                            () =>
+                            {
+                                try
+                                {
+                                    File.Delete(csvPath);
+                                    _deploymentResults.Clear();
+                                    _allDeploymentResults.Clear();
+                                    UpdateDeploymentTally(new System.Collections.Generic.List<DeploymentResult>());
+                                    TxtDeploymentCount.Text = "0 records → cleared";
+                                    Managers.UI.ToastManager.ShowSuccess("Master_Update_Log.csv deleted. Grid cleared.");
+                                    AddLog("local", "CLEAR_DEPLOYMENT_LOG", csvPath, "OK");
+                                    LogManager.LogInfo($"BtnClearDeploymentLog_Click() - SUCCESS - Deleted {csvPath}");
+                                }
+                                catch (Exception ex)
+                                {
+                                    Managers.UI.ToastManager.ShowError($"Failed to clear log:\n{ex.Message}");
+                                    LogManager.LogError("BtnClearDeploymentLog_Click() - FAILED", ex);
+                                }
+                            });
+                    });
+                return; // Dismiss — no further action (user can dismiss toast to cancel)
             }
             catch (Exception ex)
             {
@@ -11475,16 +11453,16 @@ if ($rebootPending) {
                 var config = RemoteControlManager.GetConfiguration();
                 if (config.ShowConfirmationDialog)
                 {
-                    var result = MessageBox.Show(
-                        $"Connect to {targetHost} using {toolType}?",
-                        "Confirm Remote Connection",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Question);
-
-                    if (result != MessageBoxResult.Yes) return;
+                    Managers.UI.ToastManager.ShowWarning($"Connect to {targetHost} using {toolType}?", "Connect", () =>
+                    {
+                        RemoteControlManager.LaunchSession(toolType, targetHost);
+                        AddRecentTarget(targetHost); // Track in recent targets
+                        Managers.UI.ToastManager.ShowSuccess($"Remote session initiated to {targetHost}");
+                    });
+                    return;
                 }
 
-                // Launch session
+                // Launch session (no confirmation required)
                 RemoteControlManager.LaunchSession(toolType, targetHost);
                 AddRecentTarget(targetHost); // Track in recent targets
 
@@ -11553,16 +11531,16 @@ if ($rebootPending) {
                 var config = RemoteControlManager.GetConfiguration();
                 if (config.ShowConfirmationDialog)
                 {
-                    var result = MessageBox.Show(
-                        $"Connect to {targetHost} using {toolType}?",
-                        "Confirm Remote Connection",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Question);
-
-                    if (result != MessageBoxResult.Yes) return;
+                    Managers.UI.ToastManager.ShowWarning($"Connect to {targetHost} using {toolType}?", "Connect", () =>
+                    {
+                        RemoteControlManager.LaunchSession(toolType, targetHost);
+                        AddRecentTarget(targetHost);
+                        Managers.UI.ToastManager.ShowSuccess($"Remote session initiated to {targetHost}");
+                    });
+                    return;
                 }
 
-                // Launch session
+                // Launch session (no confirmation required)
                 RemoteControlManager.LaunchSession(toolType, targetHost);
                 AddRecentTarget(targetHost);
 
@@ -12083,20 +12061,16 @@ if ($rebootPending) {
 
                 // For now, show a message that this will launch AD Users & Computers
                 // In a future version, we could build a custom dialog
-                var result = MessageBox.Show(
-                    "Creating AD objects requires AD Users & Computers (RSAT).\n\n" +
-                    $"Launch AD Users & Computers for {dc}?",
-                    "Create AD Object",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
-
-                if (result == MessageBoxResult.Yes)
-                {
-                    // Launch AD Users & Computers with cached credentials
-                    _ = LaunchMMCWithCredsAsync("mmc", $"dsa.msc /server={dc}", "AD_CREATE_OBJECT");
-                    AppendTerminal($"[AD Management] Launched AD Users & Computers for object creation");
-                    AddLog(dc, "AD_CREATE_OBJECT", "ADUC", "OK");
-                }
+                Managers.UI.ToastManager.ShowWarning(
+                    $"Creating AD objects requires AD Users & Computers (RSAT). Launch it for {dc}?",
+                    "Launch ADUC",
+                    () =>
+                    {
+                        // Launch AD Users & Computers with cached credentials
+                        _ = LaunchMMCWithCredsAsync("mmc", $"dsa.msc /server={dc}", "AD_CREATE_OBJECT");
+                        AppendTerminal($"[AD Management] Launched AD Users & Computers for object creation");
+                        AddLog(dc, "AD_CREATE_OBJECT", "ADUC", "OK");
+                    });
             }
             catch (Exception ex)
             {
@@ -12140,21 +12114,16 @@ if ($rebootPending) {
                 AppendTerminal($"[AD Management] Edit Object requested for {dc}");
 
                 // For now, show a message that this will launch AD Users & Computers
-                var result = MessageBox.Show(
-                    "Editing AD objects requires AD Users & Computers (RSAT).\n\n" +
-                    $"Launch AD Users & Computers for {dc}?\n\n" +
-                    "Once launched, you can find and edit the selected object manually.",
-                    "Edit AD Object",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
-
-                if (result == MessageBoxResult.Yes)
-                {
-                    // Launch AD Users & Computers with cached credentials
-                    _ = LaunchMMCWithCredsAsync("mmc", $"dsa.msc /server={dc}", "AD_EDIT_OBJECT");
-                    AppendTerminal($"[AD Management] Launched AD Users & Computers for object editing");
-                    AddLog(dc, "AD_EDIT_OBJECT", "ADUC", "OK");
-                }
+                Managers.UI.ToastManager.ShowWarning(
+                    $"Editing AD objects requires AD Users & Computers (RSAT). Launch it for {dc}? Once opened, find and edit the selected object manually.",
+                    "Launch ADUC",
+                    () =>
+                    {
+                        // Launch AD Users & Computers with cached credentials
+                        _ = LaunchMMCWithCredsAsync("mmc", $"dsa.msc /server={dc}", "AD_EDIT_OBJECT");
+                        AppendTerminal($"[AD Management] Launched AD Users & Computers for object editing");
+                        AddLog(dc, "AD_EDIT_OBJECT", "ADUC", "OK");
+                    });
             }
             catch (Exception ex)
             {
@@ -12196,24 +12165,18 @@ if ($rebootPending) {
                 }
 
                 // Warn about destructive operation
-                var confirmResult = MessageBox.Show(
-                    "⚠️ WARNING: Deleting AD objects is a destructive operation!\n\n" +
-                    "Deleted objects may be recoverable from the AD Recycle Bin,\n" +
-                    "but this requires careful administration.\n\n" +
-                    $"Launch AD Users & Computers for {dc} to delete objects?",
-                    "Delete AD Object",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Warning);
+                Managers.UI.ToastManager.ShowWarning(
+                    $"Deleting AD objects is destructive. Deleted objects may be recoverable from the AD Recycle Bin. Launch AD Users & Computers for {dc} to delete objects?",
+                    "Launch ADUC",
+                    () =>
+                    {
+                        AppendTerminal($"[AD Management] Delete Object requested for {dc}", isError: false);
 
-                if (confirmResult == MessageBoxResult.Yes)
-                {
-                    AppendTerminal($"[AD Management] Delete Object requested for {dc}", isError: false);
-
-                    // Launch AD Users & Computers with cached credentials
-                    _ = LaunchMMCWithCredsAsync("mmc", $"dsa.msc /server={dc}", "AD_DELETE_OBJECT");
-                    AppendTerminal($"[AD Management] Launched AD Users & Computers for object deletion");
-                    AddLog(dc, "AD_DELETE_OBJECT", "ADUC", "OK");
-                }
+                        // Launch AD Users & Computers with cached credentials
+                        _ = LaunchMMCWithCredsAsync("mmc", $"dsa.msc /server={dc}", "AD_DELETE_OBJECT");
+                        AppendTerminal($"[AD Management] Launched AD Users & Computers for object deletion");
+                        AddLog(dc, "AD_DELETE_OBJECT", "ADUC", "OK");
+                    });
             }
             catch (Exception ex)
             {
@@ -13461,48 +13424,48 @@ if ($rebootPending) {
                                         $"Click YES to open Event Viewer manually (like ADUC).\n" +
                                         $"Click NO to cancel.";
 
-                                    var result = MessageBox.Show(errorMsg, "Event Log Access Failed - Open Event Viewer?",
-                                        MessageBoxButton.YesNo, MessageBoxImage.Error);
-
-                                    if (result == MessageBoxResult.Yes)
-                                    {
-                                        try
+                                    Managers.UI.ToastManager.ShowError(
+                                        "All event log access methods failed. Open Event Viewer manually to view lockouts?",
+                                        "Open Event Viewer",
+                                        () =>
                                         {
-                                            // Launch Event Viewer connected to remote DC
-                                            AppendTerminal($"Launching Event Viewer for {dc}...");
-
-                                            var psi = new System.Diagnostics.ProcessStartInfo
+                                            try
                                             {
-                                                FileName = "eventvwr.msc",
-                                                Arguments = $"/computer={dc}",
-                                                UseShellExecute = true,
-                                                ErrorDialog = true
-                                            };
+                                                // Launch Event Viewer connected to remote DC
+                                                AppendTerminal($"Launching Event Viewer for {dc}...");
 
-                                            var proc = System.Diagnostics.Process.Start(psi);
+                                                var psi = new System.Diagnostics.ProcessStartInfo
+                                                {
+                                                    FileName = "eventvwr.msc",
+                                                    Arguments = $"/computer={dc}",
+                                                    UseShellExecute = true,
+                                                    ErrorDialog = true
+                                                };
 
-                                            if (proc != null)
-                                            {
-                                                AppendTerminal($"✅ Event Viewer launched (PID: {proc.Id})");
-                                                AppendTerminal($"Navigate to: Windows Logs > Security");
-                                                AppendTerminal($"Filter: Event ID 4740 (Account Lockout)");
-                                                Managers.UI.ToastManager.ShowInfo("Event Viewer opened successfully!\n\n" +"Steps to view lockouts:\n" +"1. Navigate to: Windows Logs ? Security\n" +"2. Right-click Security ? Filter Current Log\n" +"3. Enter Event ID: 4740\n" +"4. Click OK");
+                                                var proc = System.Diagnostics.Process.Start(psi);
+
+                                                if (proc != null)
+                                                {
+                                                    AppendTerminal($"✅ Event Viewer launched (PID: {proc.Id})");
+                                                    AppendTerminal($"Navigate to: Windows Logs > Security");
+                                                    AppendTerminal($"Filter: Event ID 4740 (Account Lockout)");
+                                                    Managers.UI.ToastManager.ShowInfo("Event Viewer opened successfully!\n\n" +"Steps to view lockouts:\n" +"1. Navigate to: Windows Logs ? Security\n" +"2. Right-click Security ? Filter Current Log\n" +"3. Enter Event ID: 4740\n" +"4. Click OK");
+                                                }
+                                                else
+                                                {
+                                                    AppendTerminal($"❌ Event Viewer launch returned null", true);
+                                                }
                                             }
-                                            else
+                                            catch (Exception evtEx)
                                             {
-                                                AppendTerminal($"❌ Event Viewer launch returned null", true);
+                                                AppendTerminal($"❌ Failed to launch Event Viewer: {evtEx.Message}", true);
+                                                LogManager.LogError("Event Viewer launch failed", evtEx);
+                                                // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
+                                                Managers.UI.ToastManager.ShowError(
+                                                    $"Could not launch Event Viewer:\n{evtEx.Message}\n\n" +
+                                                    $"Try manually opening Event Viewer and connecting to: {dc}");
                                             }
-                                        }
-                                        catch (Exception evtEx)
-                                        {
-                                            AppendTerminal($"❌ Failed to launch Event Viewer: {evtEx.Message}", true);
-                                            LogManager.LogError("Event Viewer launch failed", evtEx);
-                                            // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
-                                            Managers.UI.ToastManager.ShowError(
-                                                $"Could not launch Event Viewer:\n{evtEx.Message}\n\n" +
-                                                $"Try manually opening Event Viewer and connecting to: {dc}");
-                                        }
-                                    }
+                                        });
                                 });
                             }
                         }
@@ -13806,76 +13769,71 @@ if ($rebootPending) {
                     LogManager.LogWarning($"[MMC] App is ELEVATED - domain admin credentials will NOT be used due to Windows security");
                     LogManager.LogWarning($"[MMC] MMC will run with current Windows user ({Environment.UserName}), not {domain}\\{username}");
 
-                    // Show warning dialog with options
-                    var result = MessageBox.Show(
-                        $"⚠️ CREDENTIAL LIMITATION DETECTED\n\n" +
-                        $"{LogoConfig.PRODUCT_NAME} is running as Administrator (elevated).\n\n" +
-                        $"Windows security prevents elevated apps from using your domain admin credentials ({domain}\\{username}) to launch MMC.\n\n" +
-                        $"MMC will run with your Windows login credentials ({Environment.UserName}@{Environment.UserDomainName}), which may have limited permissions.\n\n" +
-                        $"⚠️ You may get 'Access Denied' errors when:\n" +
-                        $"   → Deleting computers\n" +
-                        $"   → Modifying group policies\n" +
-                        $"   → Changing AD objects\n\n" +
-                        $"Options:\n" +
-                        $"   → Click YES to launch MMC anyway (embedded, limited permissions)\n" +
-                        $"   → Click NO to cancel\n" +
-                        $"   → To use domain admin credentials: Restart NecessaryAdminTool as a normal user (not Administrator)\n\n" +
-                        $"Continue with limited permissions?",
-                        "MMC Credential Warning",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Warning
-                    );
-
-                    if (result == MessageBoxResult.No)
-                    {
-                        LogManager.LogInfo($"[MMC] User cancelled MMC launch due to elevation/credential conflict");
-                        Managers.UI.ToastManager.ShowInfo("MMC launch cancelled");
-                        return;
-                    }
-
-                    LogManager.LogInfo($"[MMC] User chose to continue with limited permissions despite elevation");
+                    // Show warning toast with options
+                    Managers.UI.ToastManager.ShowWarning(
+                        $"{LogoConfig.PRODUCT_NAME} is running as Administrator. Windows security prevents using domain admin credentials ({domain}\\{username}) for MMC. MMC will run as {Environment.UserName}@{Environment.UserDomainName} with limited permissions. To use domain admin creds, restart as a normal user.",
+                        "Launch Anyway",
+                        async () =>
+                        {
+                            LogManager.LogInfo($"[MMC] User chose to continue with limited permissions despite elevation");
+                            await LaunchMMCWithCredsAsync_Continue(mmcHost, consoleName, mmcFile, username, domain, password, hasCredentials);
+                        });
+                    LogManager.LogInfo($"[MMC] User cancelled MMC launch due to elevation/credential conflict");
+                    Managers.UI.ToastManager.ShowInfo("MMC launch cancelled — click 'Launch Anyway' to proceed with limited permissions");
+                    return;
                 }
 
-                if (hasCredentials)
-                {
-                    LogManager.LogInfo($"[MMC] Using cached admin credentials: {domain}\\{username} (password length: {password.Length})");
-                }
-                else
-                {
-                    LogManager.LogWarning($"[MMC] No cached credentials available - MMC will use current user context");
-                    LogManager.LogWarning($"[MMC]   - Username check: {(string.IsNullOrEmpty(username) ? "FAIL" : "PASS")}");
-                    LogManager.LogWarning($"[MMC]   - Domain check: {(string.IsNullOrEmpty(domain) ? "FAIL" : "PASS")}");
-                    LogManager.LogWarning($"[MMC]   - Password check: {(password == null ? "FAIL (NULL)" : "PASS")}");
-                    username = null;
-                    domain = null;
-                    password = null;
-                }
-
-                // Get selected domain controller for DC targeting
-                // TAG: #DC_TARGETING #MMC_EMBEDDING
-                string targetDC = null;
-                if (ComboDC != null && ComboDC.SelectedItem is ComboBoxItem dcItem && dcItem.Tag != null)
-                {
-                    targetDC = dcItem.Tag.ToString();
-                    LogManager.LogInfo($"[MMC] Selected DC for targeting: {targetDC}");
-                }
-                else
-                {
-                    LogManager.LogWarning($"[MMC] No DC selected - snap-in will use default DC discovery");
-                }
-
-                // Load the MMC console with credential passthrough and DC targeting
-                await mmcHost.LoadConsoleAsync(consoleName, mmcFile, username, domain, password, targetDC);
-
-                Managers.UI.ToastManager.ShowSuccess($"Opened {consoleName}");
-                AppendTerminal($"[MMC] Opened {consoleName} in new tab" + (targetDC != null ? $" (targeting {targetDC})" : ""));
-                LogManager.LogInfo($"[MMC] Successfully created and loaded tab for {consoleName}");
+                await LaunchMMCWithCredsAsync_Continue(mmcHost, consoleName, mmcFile, username, domain, password, hasCredentials);
             }
             catch (Exception ex)
             {
                 LogManager.LogError($"[MMC] Failed to create tab for {consoleName}", ex);
                 Managers.UI.ToastManager.ShowError($"Failed to open {consoleName}: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Continuation helper for LaunchMMCWithCredsAsync — loads console after optional elevation warning.
+        /// TAG: #MMC_EMBEDDING #ELEVATION_WARNING
+        /// </summary>
+        private async Task LaunchMMCWithCredsAsync_Continue(
+            UI.Components.MMCHostControl mmcHost, string consoleName, string mmcFile,
+            string username, string domain, System.Security.SecureString password, bool hasCredentials)
+        {
+            if (hasCredentials)
+            {
+                LogManager.LogInfo($"[MMC] Using cached admin credentials: {domain}\\{username} (password length: {password.Length})");
+            }
+            else
+            {
+                LogManager.LogWarning($"[MMC] No cached credentials available - MMC will use current user context");
+                LogManager.LogWarning($"[MMC]   - Username check: {(string.IsNullOrEmpty(username) ? "FAIL" : "PASS")}");
+                LogManager.LogWarning($"[MMC]   - Domain check: {(string.IsNullOrEmpty(domain) ? "FAIL" : "PASS")}");
+                LogManager.LogWarning($"[MMC]   - Password check: {(password == null ? "FAIL (NULL)" : "PASS")}");
+                username = null;
+                domain = null;
+                password = null;
+            }
+
+            // Get selected domain controller for DC targeting
+            // TAG: #DC_TARGETING #MMC_EMBEDDING
+            string targetDC = null;
+            if (ComboDC != null && ComboDC.SelectedItem is ComboBoxItem dcItem && dcItem.Tag != null)
+            {
+                targetDC = dcItem.Tag.ToString();
+                LogManager.LogInfo($"[MMC] Selected DC for targeting: {targetDC}");
+            }
+            else
+            {
+                LogManager.LogWarning($"[MMC] No DC selected - snap-in will use default DC discovery");
+            }
+
+            // Load the MMC console with credential passthrough and DC targeting
+            await mmcHost.LoadConsoleAsync(consoleName, mmcFile, username, domain, password, targetDC);
+
+            Managers.UI.ToastManager.ShowSuccess($"Opened {consoleName}");
+            AppendTerminal($"[MMC] Opened {consoleName} in new tab" + (targetDC != null ? $" (targeting {targetDC})" : ""));
+            LogManager.LogInfo($"[MMC] Successfully created and loaded tab for {consoleName}");
         }
 
         /// <summary>
