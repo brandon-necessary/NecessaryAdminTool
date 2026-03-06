@@ -29,6 +29,7 @@ using System.Text.RegularExpressions;
 using System.Web.Script.Serialization;
 using System.Xml.Serialization;
 using System.Xml.Linq;
+using Microsoft.Win32;
 using System.DirectoryServices;
 using System.DirectoryServices.ActiveDirectory;
 using System.ComponentModel;
@@ -4520,6 +4521,311 @@ namespace NecessaryAdminTool
             return "N/A";
         }
 
+        // ── FALLBACK STRATEGIES (when Agent + CIM + WMI all fail) ─────────────────
+
+        /// <summary>
+        /// Orchestrates lightweight fallback strategies when DCOM/RPC is blocked.
+        /// Order: LDAP (no target ports) → Remote Registry (SMB 445) → WinRM (port 5985).
+        /// TAG: #NAT_AGENT #FALLBACK
+        /// </summary>
+        private async Task<HardwareSpec> TryFallbackStrategiesAsync(string hostname, HardwareSpec spec, string username, SecureString password, CancellationToken ct)
+        {
+            LogManager.LogInfo($"TryFallbackStrategiesAsync() - START - {hostname}");
+            AppendTerminal("[FALLBACK] Agent+CIM+WMI all failed — trying lightweight fallbacks...");
+
+            // Strategy 3: LDAP/AD — zero ports to target, uses existing domain connection
+            await EnrichFromLdapAsync(hostname, spec);
+
+            // Strategy 4: Remote Registry — SMB port 445 (usually open in domain environments)
+            if (!ct.IsCancellationRequested)
+                await EnrichFromRemoteRegistryAsync(hostname, spec);
+
+            // Strategy 5: WinRM — port 5985; runs CIM locally on target, bypasses DCOM entirely
+            if (!ct.IsCancellationRequested)
+                await EnrichFromWinRmAsync(hostname, username, password, spec);
+
+            LogManager.LogInfo($"TryFallbackStrategiesAsync() - DONE - Protocol={spec.Protocol}");
+            return spec;
+        }
+
+        /// <summary>
+        /// Strategy 3: Read OS, domain, last logon from the AD computer object.
+        /// Requires zero ports to the target machine — uses the already-connected DC.
+        /// </summary>
+        private async Task EnrichFromLdapAsync(string hostname, HardwareSpec spec)
+        {
+            LogManager.LogInfo($"EnrichFromLdapAsync() - START - {hostname}");
+            var sw = Stopwatch.StartNew();
+            try
+            {
+                AppendTerminal($"[LDAP] Querying AD computer object for {hostname}...");
+                string shortName = hostname.Split('.')[0];
+
+                SearchResult adResult = await Task.Run(() =>
+                {
+                    using (var root = new DirectoryEntry())
+                    using (var searcher = new DirectorySearcher(root))
+                    {
+                        searcher.Filter = $"(&(objectClass=computer)(|(dNSHostName={hostname})(cn={shortName})))";
+                        searcher.PropertiesToLoad.AddRange(new[]
+                        {
+                            "operatingSystem", "operatingSystemVersion",
+                            "lastLogonTimestamp", "dNSHostName",
+                            "description", "distinguishedName", "location"
+                        });
+                        searcher.ServerPageTimeLimit = TimeSpan.FromSeconds(10);
+                        searcher.ClientTimeout = TimeSpan.FromSeconds(10);
+                        return searcher.FindOne();
+                    }
+                }).ConfigureAwait(false);
+
+                if (adResult == null)
+                {
+                    AppendTerminal("[LDAP] No computer object found");
+                    return;
+                }
+
+                string Get(string prop) =>
+                    adResult.Properties[prop]?.Count > 0 ? adResult.Properties[prop][0]?.ToString() : null;
+
+                if (spec.OS == "N/A") { var v = Get("operatingSystem"); if (v != null) spec.OS = v; }
+
+                if (spec.Domain == "N/A")
+                {
+                    var dn = Get("distinguishedName");
+                    if (!string.IsNullOrEmpty(dn))
+                    {
+                        var dcParts = dn.Split(',')
+                            .Where(p => p.TrimStart().StartsWith("DC=", StringComparison.OrdinalIgnoreCase))
+                            .Select(p => p.Split('=').Last());
+                        var domain = string.Join(".", dcParts);
+                        if (!string.IsNullOrEmpty(domain)) spec.Domain = domain;
+                    }
+                }
+
+                if (spec.LastBoot == "N/A" && adResult.Properties["lastLogonTimestamp"]?.Count > 0)
+                {
+                    var raw = adResult.Properties["lastLogonTimestamp"][0];
+                    long ticks = raw is long l ? l : (raw is int i ? i : 0L);
+                    if (ticks > 0)
+                        spec.LastBoot = DateTime.FromFileTime(ticks).ToString("yyyy-MM-dd HH:mm") + " (last AD logon)";
+                }
+
+                spec.Protocol = "LDAP";
+                AppendTerminal($"[LDAP] SUCCESS — OS={spec.OS}, Domain={spec.Domain}");
+                LogManager.LogInfo($"EnrichFromLdapAsync() - SUCCESS - {sw.ElapsedMilliseconds}ms");
+            }
+            catch (Exception ex)
+            {
+                AppendTerminal($"[LDAP] Failed: {ex.Message.Substring(0, Math.Min(80, ex.Message.Length))}", true);
+                LogManager.LogError("EnrichFromLdapAsync() - FAILED", ex);
+            }
+        }
+
+        /// <summary>
+        /// Strategy 4: Read CPU, manufacturer/model, OS build, timezone via remote registry.
+        /// Uses SMB (port 445) + the Remote Registry service — no DCOM/RPC required.
+        /// </summary>
+        private async Task EnrichFromRemoteRegistryAsync(string hostname, HardwareSpec spec)
+        {
+            LogManager.LogInfo($"EnrichFromRemoteRegistryAsync() - START - {hostname}");
+            var sw = Stopwatch.StartNew();
+            try
+            {
+                AppendTerminal($"[REG] Attempting remote registry on {hostname} (SMB 445)...");
+                await Task.Run(() =>
+                {
+                    using (var hklm = RegistryKey.OpenRemoteBaseKey(RegistryHive.LocalMachine, hostname))
+                    {
+                        // OS name, build, install date
+                        using (var vk = hklm.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion"))
+                        {
+                            if (vk != null)
+                            {
+                                if (spec.OS == "N/A")
+                                {
+                                    var prod = vk.GetValue("ProductName")?.ToString();
+                                    if (!string.IsNullOrEmpty(prod)) spec.OS = prod;
+                                }
+                                if (spec.WindowsVersion == "N/A")
+                                {
+                                    var dv = vk.GetValue("DisplayVersion")?.ToString();
+                                    if (!string.IsNullOrEmpty(dv)) spec.WindowsVersion = dv;
+                                }
+                                if (spec.InstallDate == "N/A")
+                                {
+                                    var it = vk.GetValue("InstallTime");
+                                    if (it is long ticks && ticks > 0)
+                                        spec.InstallDate = DateTime.FromFileTime(ticks).ToString("yyyy-MM-dd");
+                                }
+                            }
+                        }
+
+                        // CPU
+                        if (spec.CPU == "N/A")
+                        {
+                            using (var ck = hklm.OpenSubKey(@"HARDWARE\DESCRIPTION\System\CentralProcessor\0"))
+                            {
+                                var cpuName = ck?.GetValue("ProcessorNameString")?.ToString()?.Trim();
+                                if (!string.IsNullOrEmpty(cpuName)) spec.CPU = cpuName;
+                            }
+                        }
+
+                        // Manufacturer + Model from BIOS table
+                        if (spec.Manufacturer == "N/A" || spec.Model == "N/A")
+                        {
+                            using (var bk = hklm.OpenSubKey(@"HARDWARE\DESCRIPTION\System\BIOS"))
+                            {
+                                if (bk != null)
+                                {
+                                    if (spec.Manufacturer == "N/A")
+                                    {
+                                        var mfr = bk.GetValue("SystemManufacturer")?.ToString();
+                                        if (!string.IsNullOrEmpty(mfr)) spec.Manufacturer = mfr;
+                                    }
+                                    if (spec.Model == "N/A")
+                                    {
+                                        var mdl = bk.GetValue("SystemProductName")?.ToString();
+                                        if (!string.IsNullOrEmpty(mdl)) spec.Model = mdl;
+                                    }
+                                }
+                            }
+                        }
+
+                        // Domain from TCP/IP parameters
+                        if (spec.Domain == "N/A")
+                        {
+                            using (var tk = hklm.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"))
+                            {
+                                if (tk != null)
+                                {
+                                    var dom = tk.GetValue("Domain")?.ToString()
+                                           ?? tk.GetValue("NV Domain")?.ToString();
+                                    if (!string.IsNullOrEmpty(dom)) spec.Domain = dom;
+                                }
+                            }
+                        }
+
+                        // Timezone
+                        if (spec.TimeZone == "N/A" || spec.TimeZone == "ERROR")
+                        {
+                            using (var tzk = hklm.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\TimeZoneInformation"))
+                            {
+                                var tz = tzk?.GetValue("TimeZoneKeyName")?.ToString();
+                                if (!string.IsNullOrEmpty(tz)) spec.TimeZone = tz;
+                            }
+                        }
+                    }
+                }).ConfigureAwait(false);
+
+                spec.Protocol = spec.Protocol == "LDAP" ? "LDAP+Registry" : "Registry";
+                AppendTerminal($"[REG] SUCCESS — CPU={spec.CPU}, Manufacturer={spec.Manufacturer}, Model={spec.Model}");
+                LogManager.LogInfo($"EnrichFromRemoteRegistryAsync() - SUCCESS - {sw.ElapsedMilliseconds}ms");
+            }
+            catch (Exception ex)
+            {
+                AppendTerminal($"[REG] Failed: {ex.Message.Substring(0, Math.Min(80, ex.Message.Length))}", true);
+                LogManager.LogError("EnrichFromRemoteRegistryAsync() - FAILED", ex);
+            }
+        }
+
+        /// <summary>
+        /// Strategy 5: Run Get-CimInstance locally on the remote machine via WinRM (port 5985).
+        /// Bypasses DCOM entirely — CIM runs on the remote machine against localhost.
+        /// </summary>
+        private async Task EnrichFromWinRmAsync(string hostname, string username, SecureString password, HardwareSpec spec)
+        {
+            LogManager.LogInfo($"EnrichFromWinRmAsync() - START - {hostname}");
+            var sw = Stopwatch.StartNew();
+            try
+            {
+                AppendTerminal($"[WINRM] Attempting WinRM fallback on {hostname} (port 5985)...");
+
+                const string script = @"
+$os  = Get-CimInstance Win32_OperatingSystem  -ErrorAction SilentlyContinue
+$cs  = Get-CimInstance Win32_ComputerSystem   -ErrorAction SilentlyContinue
+$bio = Get-CimInstance Win32_Bios             -ErrorAction SilentlyContinue
+$cpu = Get-CimInstance Win32_Processor        -ErrorAction SilentlyContinue | Select-Object -First 1
+$dsk = Get-CimInstance Win32_LogicalDisk -Filter ""DeviceID='C:'"" -ErrorAction SilentlyContinue
+$tz  = try { (Get-TimeZone).Id } catch { 'N/A' }
+[PSCustomObject]@{
+    OS          = $os.Caption
+    Build       = $os.BuildNumber
+    Serial      = $bio.SerialNumber
+    Manufacturer= $cs.Manufacturer
+    Model       = $cs.Model
+    User        = $cs.UserName
+    RAM         = [math]::Round($cs.TotalPhysicalMemory / 1GB)
+    CPU         = $cpu.Name
+    Cores       = $cpu.NumberOfCores
+    Domain      = $cs.Domain
+    LastBoot    = if ($os.LastBootUpTime) { $os.LastBootUpTime.ToString('yyyy-MM-dd HH:mm') } else { 'N/A' }
+    TimeZone    = $tz
+    DiskFree    = [math]::Round($dsk.FreeSpace / 1GB)
+    DiskTotal   = [math]::Round($dsk.Size / 1GB)
+    InstallDate = if ($os.InstallDate) { $os.InstallDate.ToString('yyyy-MM-dd') } else { 'N/A' }
+} | ConvertTo-Json -Compress";
+
+                var result = await Managers.RemoteScriptManager.ExecuteAsync(
+                    hostname, script, username, password,
+                    progressCallback: msg => AppendTerminal($"[WINRM] {msg}"),
+                    timeoutMs: 30000).ConfigureAwait(false);
+
+                if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
+                {
+                    var err = result.Errors?.FirstOrDefault() ?? "No output";
+                    AppendTerminal($"[WINRM] Failed: {err.Substring(0, Math.Min(80, err.Length))}", true);
+                    LogManager.LogWarning($"EnrichFromWinRmAsync() - no data - {sw.ElapsedMilliseconds}ms");
+                    return;
+                }
+
+                string json = result.Output.Trim();
+
+                // Robust JSON field extractor — handles quoted strings and bare numbers
+                string GetStr(string key)
+                {
+                    var m = Regex.Match(json, $"\"{Regex.Escape(key)}\"\\s*:\\s*\"([^\"]*)\"");
+                    return m.Success ? m.Groups[1].Value : null;
+                }
+                int GetInt(string key)
+                {
+                    var m = Regex.Match(json, $"\"{Regex.Escape(key)}\"\\s*:\\s*([0-9]+)");
+                    return m.Success && int.TryParse(m.Groups[1].Value, out int n) ? n : 0;
+                }
+
+                if (spec.OS           == "N/A") { var v = GetStr("OS");           if (v != null) spec.OS           = v; }
+                if (spec.Serial       == "N/A") { var v = GetStr("Serial");       if (v != null) spec.Serial       = v; }
+                if (spec.Manufacturer == "N/A") { var v = GetStr("Manufacturer"); if (v != null) spec.Manufacturer = v; }
+                if (spec.Model        == "N/A") { var v = GetStr("Model");        if (v != null) spec.Model        = v; }
+                if (spec.CPU          == "N/A") { var v = GetStr("CPU");          if (v != null) spec.CPU          = v; }
+                if (spec.User         == "N/A") { var v = GetStr("User");         if (v != null) spec.User         = v; }
+                if (spec.Domain       == "N/A") { var v = GetStr("Domain");       if (v != null) spec.Domain       = v; }
+                if (spec.LastBoot     == "N/A") { var v = GetStr("LastBoot");     if (v != null) spec.LastBoot     = v; }
+                if (spec.InstallDate  == "N/A") { var v = GetStr("InstallDate");  if (v != null) spec.InstallDate  = v; }
+                if (spec.TimeZone == "N/A" || spec.TimeZone == "ERROR")
+                                                { var v = GetStr("TimeZone");     if (v != null) spec.TimeZone     = v; }
+
+                int ram = GetInt("RAM");
+                if (spec.RAM   == "N/A" && ram   > 0) spec.RAM   = $"{ram} GB";
+                int cores = GetInt("Cores");
+                if (spec.Cores == "N/A" && cores > 0) spec.Cores = cores.ToString();
+                int diskFree  = GetInt("DiskFree");
+                int diskTotal = GetInt("DiskTotal");
+                if (spec.Disk  == "N/A" && diskTotal > 0) spec.Disk = $"{diskFree} GB free / {diskTotal} GB";
+
+                spec.Protocol = "WinRM";
+                AppendTerminal($"[WINRM] SUCCESS — OS={spec.OS}, CPU={spec.CPU}, RAM={spec.RAM}");
+                LogManager.LogInfo($"EnrichFromWinRmAsync() - SUCCESS - {sw.ElapsedMilliseconds}ms");
+            }
+            catch (Exception ex)
+            {
+                AppendTerminal($"[WINRM] Failed: {ex.Message.Substring(0, Math.Min(80, ex.Message.Length))}", true);
+                LogManager.LogError("EnrichFromWinRmAsync() - FAILED", ex);
+            }
+        }
+
+        // ── END FALLBACK STRATEGIES ────────────────────────────────────────────────
+
         private async Task<HardwareSpec> GetSystemSpecsAsync(string hostname, string username, SecureString password, CancellationToken ct = default)
         {
             var spec = new HardwareSpec { Protocol = "WMI" };
@@ -4608,7 +4914,6 @@ namespace NecessaryAdminTool
                             LogManager.LogDebug($"WMI connection failed for {hostname}: {failureReason} (HRESULT: 0x{comEx.HResult:X})");
                             spec.Protocol = "CONNECTION_FAILED";
                             spec.Serial = failureReason;
-                            return spec;
                         }
                         catch (UnauthorizedAccessException)
                         {
@@ -4617,7 +4922,6 @@ namespace NecessaryAdminTool
                             spec.Serial = "Access Denied";
                             AppendTerminal($"[BOTH FAILED] Access Denied - check credentials", true);
                             LogWarning($"Access Denied", $"{hostname}");
-                            return spec;
                         }
                         catch (Exception ex)
                         {
@@ -4626,11 +4930,10 @@ namespace NecessaryAdminTool
                             LogCriticalError($"Connection Error", $"{hostname}: {ex.GetType().Name}");
                             spec.Protocol = "ERROR";
                             spec.Serial = ex.Message;
-                            return spec;
                         }
                     }
 
-                    if (connectionFailed) return spec;
+                    if (connectionFailed) return await TryFallbackStrategiesAsync(hostname, spec, username, password, ct);
 
                         // --------------------------------------------------------------
                         // MULTICORE OPTIMIZATION: Parallel WMI queries using Task.WhenAll
