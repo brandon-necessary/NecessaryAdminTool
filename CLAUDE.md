@@ -1,6 +1,6 @@
 # NecessaryAdminTool - Claude Code Instructions
 <!-- TAG: #PROJECT_INSTRUCTIONS #CLAUDE_AI #VERSION_3_0 #AUTO_UPDATE_VERSION -->
-**Version:** 3.1.0 (3.2603.0.0)
+**Version:** 3.1.0 (3.2603.6.0)
 **Last Updated:** March 6, 2026
 
 ---
@@ -49,9 +49,9 @@ AssemblyInfo.cs → LogoConfig → MainWindow / SetupWizard / AboutWindow / All 
 ```
 
 ```csharp
-LogoConfig.VERSION              // "v3.2602.0" (CalVer: Major.YYMM.Minor)
-LogoConfig.FULL_VERSION         // "v3.2602.0.0"
-LogoConfig.USER_AGENT_VERSION   // "3.2602.0"
+LogoConfig.VERSION              // "v3.2603.6" (CalVer: Major.YYMM.DD)
+LogoConfig.FULL_VERSION         // "v3.2603.6.0"
+LogoConfig.USER_AGENT_VERSION   // "3.2603.6"
 LogoConfig.COMPILED_DATE_SHORT  // from assembly timestamp
 LogoConfig.COMPANY_NAME         // "NecessaryAdmin"
 LogoConfig.PRODUCT_NAME         // "NecessaryAdminTool"
@@ -59,9 +59,16 @@ LogoConfig.COPYRIGHT            // Full copyright string with year
 ```
 
 **To update version:** Edit `AssemblyInfo.cs` — that's it. All UI updates automatically.
-**CalVer format:** `Major.YYMM.Minor.Build` (e.g., 3.2602.0.0 = v3.0, February 2026)
+**CalVer format:** `Major.YYMM.DD.Rev` — e.g., `3.2603.6.0` = v3, March 6 2026, revision 0
+  - `Major` = product major version (3)
+  - `YYMM` = two-digit year + two-digit month (2603 = March 2026)
+  - `DD` = two-digit day of month (06 → stored as 6)
+  - `Rev` = incrementing revision on same day (0, 1, 2...)
+  - All components stay within .NET 16-bit limit (max 65535) ✓
 
-**When bumping version, also update:** `Product.wxs` (WiX format: `3.0.0`), `build-msi-direct.ps1`, `build-installer.ps1`, `README.md`, `AboutWindow.xaml` comment, and all `*.md` docs with version headers. Use `Grep pattern="VERSION_[0-9]" glob="*.{md,wxs}"` to find them.
+**WiX version** is a separate simplified format (`Major.Minor.Patch`, each < 256) — increment Patch for fixes, Minor for features or new month. WiX cannot use CalVer directly due to the 255 Minor/Major limit.
+
+**When bumping version, also update:** `Product.wxs` (WiX format: `3.1.0`), `build-msi-direct.ps1`, `build-installer.ps1`, `CLAUDE.md` (both header + footer), and any `*.md` docs with version headers.
 
 ---
 
@@ -342,7 +349,7 @@ TextOptions.SetTextRenderingMode(this, TextRenderingMode.ClearType);
 
 ---
 
-**Project Status:** Production (v3.1.0) | **Architecture Score:** 89/100
+**Project Status:** Production (v3.1.0 / 3.2603.6.0) | **Architecture Score:** 89/100
 **Last Updated:** March 6, 2026
 
 **Built with Claude Code**
