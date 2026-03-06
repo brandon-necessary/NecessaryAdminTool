@@ -27,6 +27,7 @@
                         <TextBox x:Name="TxtRemoteTarget" Grid.Column="0"
                                  Background="{DynamicResource BgDarkestBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
                                  BorderBrush="{DynamicResource BgLightBrush}" Padding="10,8" FontSize="12"
+                                 ToolTip="Enter the hostname or IP address of the target computer"
                                  Text="{Binding CurrentTarget, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
                             <TextBox.Style>
                                 <Style TargetType="TextBox">
@@ -51,6 +52,7 @@
                         <Button x:Name="BtnRecentTargets" Grid.Column="1" Content="📋 RECENT ▼"
                                 Background="{DynamicResource BgLightBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0"
                                 Padding="12,8" Margin="8,0,0,0" FontSize="10" Cursor="Hand"
+                                ToolTip="Show recently connected target computers"
                                 Click="BtnRecentTargets_Click"/>
                     </Grid>
 
@@ -146,10 +148,12 @@
                                             <Button Content="⚙️ CONFIGURE" Tag="{Binding}"
                                                     Background="{DynamicResource BgLightBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0"
                                                     Padding="10,4" Margin="0,0,8,0" FontSize="9"
+                                                    ToolTip="Configure this RMM tool's connection settings"
                                                     Click="Configure_Click" Cursor="Hand"/>
                                             <Button Content="🧪 TEST" Tag="{Binding}"
                                                     Background="{DynamicResource BgLightBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0"
                                                     Padding="10,4" FontSize="9"
+                                                    ToolTip="Test the connection to this RMM tool"
                                                     Click="Test_Click" Cursor="Hand"/>
                                         </StackPanel>
                                     </DataTemplate>
@@ -182,7 +186,8 @@
                                    VerticalAlignment="Center" Margin="0,0,8,0"/>
                         <TextBox x:Name="TxtTimeout" Text="30" Width="50"
                                  Background="{DynamicResource BgDarkestBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
-                                 BorderBrush="{DynamicResource BgLightBrush}" Padding="6,4" FontSize="10"/>
+                                 BorderBrush="{DynamicResource BgLightBrush}" Padding="6,4" FontSize="10"
+                                 ToolTip="Maximum seconds to wait when establishing a remote connection before timing out"/>
                         <TextBlock Text="seconds" Foreground="{DynamicResource TextMutedBrush}" FontSize="10"
                                    VerticalAlignment="Center" Margin="8,0,0,0"/>
                     </StackPanel>
@@ -192,21 +197,25 @@
                                    VerticalAlignment="Center" Margin="0,0,8,0"/>
                         <TextBox x:Name="TxtRetries" Text="2" Width="50"
                                  Background="{DynamicResource BgDarkestBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
-                                 BorderBrush="{DynamicResource BgLightBrush}" Padding="6,4" FontSize="10"/>
+                                 BorderBrush="{DynamicResource BgLightBrush}" Padding="6,4" FontSize="10"
+                                 ToolTip="Number of times to retry a failed connection attempt before giving up"/>
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal">
                         <Button Content="📤 EXPORT CONFIG" x:Name="BtnExportConfig"
                                 Background="{DynamicResource BgLightBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0"
                                 Padding="12,8" Margin="0,0,8,0" FontSize="10" Cursor="Hand"
+                                ToolTip="Export all RMM tool configuration settings to a file"
                                 Click="ExportConfig_Click"/>
                         <Button Content="📥 IMPORT CONFIG" x:Name="BtnImportConfig"
                                 Background="{DynamicResource BgLightBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0"
                                 Padding="12,8" Margin="0,0,8,0" FontSize="10" Cursor="Hand"
+                                ToolTip="Import RMM tool configuration settings from a previously exported file"
                                 Click="ImportConfig_Click"/>
                         <Button Content="🔄 RESET ALL" x:Name="BtnResetAll"
                                 Background="{DynamicResource DangerBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0"
                                 Padding="12,8" FontSize="10" Cursor="Hand"
+                                ToolTip="Reset all RMM tool configurations to their defaults (cannot be undone)"
                                 Click="ResetAll_Click"/>
                     </StackPanel>
                 </StackPanel>
@@ -243,10 +252,12 @@
                     <StackPanel Orientation="Horizontal">
                         <Button Content="📊 VIEW FULL HISTORY" x:Name="BtnViewHistory"
                                 Background="{DynamicResource BgLightBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0"
-                                Padding="12,8" Margin="0,0,8,0" FontSize="10" Cursor="Hand"/>
+                                Padding="12,8" Margin="0,0,8,0" FontSize="10" Cursor="Hand"
+                                ToolTip="View the complete remote connection history log"/>
                         <Button Content="🗑️ CLEAR HISTORY" x:Name="BtnClearHistory"
                                 Background="{DynamicResource BgLightBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0"
                                 Padding="12,8" FontSize="10" Cursor="Hand"
+                                ToolTip="Clear connection history"
                                 Click="ClearHistory_Click"/>
                     </StackPanel>
                 </StackPanel>

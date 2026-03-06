@@ -208,7 +208,7 @@
     <Style x:Key="FilterToggleButton" TargetType="ToggleButton">
         <Setter Property="Background" Value="#FF2A2A2A"/>
         <Setter Property="Foreground" Value="White"/>
-        <Setter Property="BorderBrush" Value="#FF444"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrightBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Padding" Value="12,6"/>
         <Setter Property="FontSize" Value="12"/>

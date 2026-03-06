@@ -71,7 +71,7 @@ namespace NecessaryAdminTool
         {
             if (sender is System.Windows.Controls.Border border)
             {
-                border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF252525"));
+                border.Background = Application.Current.Resources["BgMediumBrush"] as SolidColorBrush ?? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF252525"));
             }
         }
 
@@ -79,7 +79,7 @@ namespace NecessaryAdminTool
         {
             if (sender is System.Windows.Controls.Border border)
             {
-                border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF1A1A1A"));
+                border.Background = Application.Current.Resources["BgDarkBrush"] as SolidColorBrush ?? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF1A1A1A"));
             }
         }
 
@@ -142,7 +142,7 @@ namespace NecessaryAdminTool
         {
             if (sender is System.Windows.Controls.Border border)
             {
-                border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF252525"));
+                border.Background = Application.Current.Resources["BgMediumBrush"] as SolidColorBrush ?? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF252525"));
             }
         }
 
@@ -150,7 +150,7 @@ namespace NecessaryAdminTool
         {
             if (sender is System.Windows.Controls.Border border)
             {
-                border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF1A1A1A"));
+                border.Background = Application.Current.Resources["BgDarkBrush"] as SolidColorBrush ?? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF1A1A1A"));
             }
         }
 

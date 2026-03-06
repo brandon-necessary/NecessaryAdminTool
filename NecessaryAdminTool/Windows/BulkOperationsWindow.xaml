@@ -68,6 +68,7 @@
                          Background="{DynamicResource BgLightBrush}"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          BorderBrush="{DynamicResource BorderDimBrush}"
+                         ToolTip="Select the operation to perform on all target computers"
                          SelectionChanged="CmbOperationType_SelectionChanged">
                     <ComboBoxItem Content="Ping Test" Tag="PingTest"/>
                     <ComboBoxItem Content="Restart Computers" Tag="RestartComputers"/>
@@ -103,13 +104,16 @@
                             BorderBrush="{DynamicResource BorderDimBrush}"
                             Padding="10"
                             VerticalScrollBarVisibility="Auto"
+                            ToolTip="Enter one computer hostname or IP address per line"
                             Text="Enter computer names (one per line)"/>
 
                     <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Top">
                         <Button x:Name="BtnImportFromCsv" Content="Import CSV" Width="120" Height="32"
-                               Margin="0,0,0,8" Click="BtnImportFromCsv_Click"/>
+                               Margin="0,0,0,8" Click="BtnImportFromCsv_Click"
+                               ToolTip="Import a list of computer hostnames from a CSV file"/>
                         <Button x:Name="BtnLoadFromAD" Content="Load from AD" Width="120" Height="32"
-                               Click="BtnLoadFromAD_Click"/>
+                               Click="BtnLoadFromAD_Click"
+                               ToolTip="Load computers from Active Directory based on the current domain/OU selection"/>
                     </StackPanel>
                 </Grid>
 
@@ -140,7 +144,8 @@
                         </Grid.ColumnDefinitions>
                         <Slider Grid.Column="0" x:Name="SliderThreads" Minimum="1" Maximum="50" Value="10"
                                TickFrequency="1" IsSnapToTickEnabled="True"
-                               VerticalAlignment="Center"/>
+                               VerticalAlignment="Center"
+                               ToolTip="Number of computers to process simultaneously (higher = faster but more network load)"/>
                         <TextBlock Grid.Column="1" x:Name="TxtThreadCount" Text="10" FontSize="14"
                                   Foreground="{DynamicResource TextPrimaryBrush}" Margin="10,0,0,0"
                                   VerticalAlignment="Center" Width="30"/>
@@ -154,7 +159,8 @@
                             Background="{DynamicResource BgLightBrush}"
                             Foreground="{DynamicResource TextPrimaryBrush}"
                             BorderBrush="{DynamicResource BorderDimBrush}"
-                            Padding="8,0"/>
+                            Padding="8,0"
+                            ToolTip="Maximum seconds to wait for each computer before marking it as timed out"/>
                 </StackPanel>
 
                 <!-- Retry Attempts -->
@@ -164,7 +170,8 @@
                             Background="{DynamicResource BgLightBrush}"
                             Foreground="{DynamicResource TextPrimaryBrush}"
                             BorderBrush="{DynamicResource BorderDimBrush}"
-                            Padding="8,0"/>
+                            Padding="8,0"
+                            ToolTip="Number of times to retry a failed operation before marking the computer as failed"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -262,6 +269,7 @@
                    Foreground="White"
                    BorderThickness="0"
                    Click="BtnExecute_Click"
+                   ToolTip="Execute the selected bulk operation on all target computers"
                    Margin="0,0,10,0"/>
 
             <Button Grid.Column="2" x:Name="BtnCancel" Content="Cancel" Width="120" Height="40"
@@ -271,6 +279,7 @@
                    BorderBrush="{DynamicResource BorderDimBrush}"
                    Click="BtnCancel_Click"
                    IsEnabled="False"
+                   ToolTip="Cancel the running operation"
                    Margin="0,0,10,0"/>
 
             <Button Grid.Column="3" x:Name="BtnExportCsv" Content="Export CSV" Width="120" Height="40"
@@ -280,6 +289,7 @@
                    BorderBrush="{DynamicResource BorderDimBrush}"
                    Click="BtnExportCsv_Click"
                    IsEnabled="False"
+                   ToolTip="Export operation results to a CSV file"
                    Margin="0,0,10,0"/>
 
             <Button Grid.Column="4" x:Name="BtnClose" Content="Close" Width="120" Height="40"
@@ -287,6 +297,7 @@
                    Background="{DynamicResource BgLightBrush}"
                    Foreground="{DynamicResource TextPrimaryBrush}"
                    BorderBrush="{DynamicResource BorderDimBrush}"
+                   ToolTip="Close this window"
                    Click="BtnClose_Click"/>
         </Grid>
     </Grid>
