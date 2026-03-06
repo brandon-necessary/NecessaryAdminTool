@@ -64,8 +64,7 @@ namespace NecessaryAdminTool.UI.Dialogs
 
             if (!FilterManager.ValidateCriteria(criteria))
             {
-                MessageBox.Show("One or more filter values are invalid. Please check RAM ranges and date values.",
-                    "Invalid Filter", MessageBoxButton.OK, MessageBoxImage.Warning);
+                NecessaryAdminTool.Managers.UI.ToastManager.ShowWarning("One or more filter values are invalid. Check RAM ranges and date values.");
                 return;
             }
 

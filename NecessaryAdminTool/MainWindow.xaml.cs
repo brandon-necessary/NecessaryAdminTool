@@ -2281,24 +2281,8 @@ namespace NecessaryAdminTool
                     Managers.UI.ToastManager.Initialize(ToastContainer);
                     LogManager.LogInfo("ToastManager initialized successfully");
 
-                    // Show welcome toast after brief delay
-                    Task.Delay(1000).ContinueWith(_ => {
-                        Dispatcher.Invoke(() => {
-                            Managers.UI.ToastManager.ShowSuccess(
-                                $"Welcome to {LogoConfig.PRODUCT_FULL_NAME} {LogoConfig.VERSION}",
-                                "View Docs",
-                                () => {
-                                    try {
-                                        var aboutWindow = new AboutWindow();
-                                        aboutWindow.Owner = this;
-                                        aboutWindow.ShowDialog();
-                                    }
-                                    catch (Exception ex) {
-                                        LogManager.LogError($"Failed to open About window: {ex.Message}");
-                                    }
-                                });
-                        });
-                    });
+                    // Show welcome toast after brief delay (async/await — no ContinueWith overhead)
+                    ShowWelcomeToastAsync();
                 }
 
                 // TAG: #EXTERNAL_TOOLS #PROCESS_TRACKING - Subscribe to tool status changes
@@ -2580,6 +2564,7 @@ namespace NecessaryAdminTool
             catch (Exception ex)
             {
                 LogManager.LogError("Failed to update Domain Information tab", ex);
+                Managers.UI.ToastManager.ShowWarning($"Domain info update failed: {ex.Message}", category: "status");
             }
         }
 
@@ -3680,7 +3665,11 @@ namespace NecessaryAdminTool
                            (x.DisplayOS ?? "").ToLower().Contains(q);
                 };
             }
-            catch (Exception ex) { LogManager.LogError("Filter failed", ex); }
+            catch (Exception ex)
+            {
+                LogManager.LogError("Filter failed", ex);
+                Managers.UI.ToastManager.ShowWarning("Search filter failed. Check logs for details.", category: "status");
+            }
         }
 
         private static DateTime _lastInventoryCheck = DateTime.MinValue;
@@ -10750,8 +10739,7 @@ if ($rebootPending) {
 
                 _allDeploymentResults = results;
                 var display = ApplyDeploymentView(results, TxtDeploymentSearch.Text);
-                foreach (var r in display) _deploymentResults.Add(r);
-                GridDeploymentResults.ItemsSource = _deploymentResults;
+                ReplaceDeploymentResults(display);
                 UpdateDeploymentTally(results); // tally always counts ALL runs, not just the filtered view
                 TxtDeploymentCount.Text = BuildDeploymentCountText(display.Count, results.Count);
                 LogManager.LogInfo($"LoadDeploymentResultsAsync() - SUCCESS - {results.Count} total runs, {display.Count} displayed from {csvPath}");
@@ -10912,6 +10900,19 @@ if ($rebootPending) {
             TxtTallyTotal.Text     = all.Count.ToString("N0");
         }
 
+        /// <summary>
+        /// Performance: replace _deploymentResults contents without firing N CollectionChanged events.
+        /// Disconnects ItemsSource → bulk replaces → reconnects for a single layout pass.
+        /// TAG: #PERFORMANCE
+        /// </summary>
+        private void ReplaceDeploymentResults(System.Collections.Generic.IEnumerable<DeploymentResult> items)
+        {
+            GridDeploymentResults.ItemsSource = null;
+            _deploymentResults.Clear();
+            foreach (var r in items) _deploymentResults.Add(r);
+            GridDeploymentResults.ItemsSource = _deploymentResults;
+        }
+
         private string BuildDeploymentCountText(int visible, int total)
         {
             if (_deploymentLatestPerPC)
@@ -10928,8 +10929,7 @@ if ($rebootPending) {
             LogManager.LogInfo($"ChkLatestPerPC_Changed() - LatestPerPC={_deploymentLatestPerPC}");
             if (_allDeploymentResults.Count == 0) return;
             var display = ApplyDeploymentView(_allDeploymentResults, TxtDeploymentSearch.Text);
-            _deploymentResults.Clear();
-            foreach (var r in display) _deploymentResults.Add(r);
+            ReplaceDeploymentResults(display);
             TxtDeploymentCount.Text = BuildDeploymentCountText(display.Count, _allDeploymentResults.Count);
         }
 
@@ -11224,19 +11224,7 @@ if ($rebootPending) {
                     return;
                 }
 
-                // Build selection list
-                var sb = new System.Text.StringBuilder();
-                sb.AppendLine("Available archives:");
-                for (int i = 0; i < archiveFiles.Length; i++)
-                    sb.AppendLine($"  {i + 1}. {Path.GetFileName(archiveFiles[i])}");
-                sb.AppendLine($"\nLoad all {archiveFiles.Length} archive(s)?");
-
-                var result = System.Windows.MessageBox.Show(
-                    sb.ToString(),
-                    "Load Archived Deployment Results",
-                    System.Windows.MessageBoxButton.YesNo,
-                    System.Windows.MessageBoxImage.Question);
-                if (result != System.Windows.MessageBoxResult.Yes) return;
+                Managers.UI.ToastManager.ShowInfo($"Loading {archiveFiles.Length} archive file(s)...", category: "status");
 
                 int totalLoaded = 0;
                 foreach (var archiveFile in archiveFiles)
@@ -11297,8 +11285,7 @@ if ($rebootPending) {
 
                 // Re-apply view filter with merged data
                 var display = ApplyDeploymentView(_allDeploymentResults, TxtDeploymentSearch.Text);
-                _deploymentResults.Clear();
-                foreach (var r in display) _deploymentResults.Add(r);
+                ReplaceDeploymentResults(display);
                 UpdateDeploymentTally(_allDeploymentResults);
                 TxtDeploymentCount.Text = BuildDeploymentCountText(display.Count, _allDeploymentResults.Count);
                 Managers.UI.ToastManager.ShowSuccess($"Loaded {totalLoaded} archived results from {archiveFiles.Length} archive(s).");
@@ -11317,8 +11304,7 @@ if ($rebootPending) {
             {
                 if (_allDeploymentResults == null || _allDeploymentResults.Count == 0) return;
                 var display = ApplyDeploymentView(_allDeploymentResults, TxtDeploymentSearch.Text);
-                _deploymentResults.Clear();
-                foreach (var r in display) _deploymentResults.Add(r);
+                ReplaceDeploymentResults(display);
                 TxtDeploymentCount.Text = BuildDeploymentCountText(display.Count, _allDeploymentResults.Count);
             }
             catch (Exception ex) { LogManager.LogError("DeploymentSearch filter failed", ex); }
@@ -11840,6 +11826,23 @@ if ($rebootPending) {
         /// Apply saved accent colors from settings
         /// TAG: #VERSION_7 #THEME_COLORS
         /// </summary>
+        private async void ShowWelcomeToastAsync()
+        {
+            await Task.Delay(1000).ConfigureAwait(true); // resume on UI thread
+            Managers.UI.ToastManager.ShowSuccess(
+                $"Welcome to {LogoConfig.PRODUCT_FULL_NAME} {LogoConfig.VERSION}",
+                "View Docs",
+                () => {
+                    try {
+                        var aboutWindow = new AboutWindow { Owner = this };
+                        aboutWindow.ShowDialog();
+                    }
+                    catch (Exception ex) {
+                        LogManager.LogError("Failed to open About window", ex);
+                    }
+                });
+        }
+
         private void ApplySavedAccentColors()
         {
             try
@@ -13615,16 +13618,11 @@ if ($rebootPending) {
                 {
                     LogManager.LogWarning($"[MMC] Snap-in not found: {mmcFile}");
                     var rsatName = GetRsatFeatureForMsc(mmcFile);
-                    var dlg = MessageBox.Show(
-                        $"The snap-in '{mmcFile}' was not found.\n\n" +
-                        $"This tool requires RSAT (Remote Server Administration Tools) to be installed.\n\n" +
-                        (rsatName != null ? $"Feature needed: {rsatName}\n\n" : "") +
-                        "Would you like to open Windows Optional Features to install RSAT?",
-                        $"Missing Tool: {selectedConsole}",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Warning);
-                    if (dlg == MessageBoxResult.Yes)
-                        Process.Start(new ProcessStartInfo("ms-settings:optionalfeatures") { UseShellExecute = true });
+                    string rsatMsg = rsatName != null ? $"Requires: {rsatName}. " : "";
+                    Managers.UI.ToastManager.ShowWarning(
+                        $"'{selectedConsole}' requires RSAT. {rsatMsg}Install via Optional Features.",
+                        "Install RSAT",
+                        () => Process.Start(new ProcessStartInfo("ms-settings:optionalfeatures") { UseShellExecute = true }));
                     return;
                 }
 
