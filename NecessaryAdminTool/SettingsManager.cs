@@ -705,15 +705,32 @@ namespace NecessaryAdminTool
         }
 
         // TAG: #HELPERS
-        private static List<string> LoadTargetHistory()
+        public static List<string> LoadTargetHistory()
         {
-            // Load from UserConfig.xml or custom storage
-            return new List<string>();
+            try
+            {
+                string raw = Properties.Settings.Default.RecentTargets;
+                if (string.IsNullOrEmpty(raw))
+                    return new List<string>();
+                return raw.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries)
+                          .Take(20)
+                          .ToList();
+            }
+            catch
+            {
+                return new List<string>();
+            }
         }
 
-        private static void SaveTargetHistory(List<string> history)
+        public static void SaveTargetHistory(List<string> history)
         {
-            // Save to UserConfig.xml or custom storage
+            try
+            {
+                var capped = (history ?? new List<string>()).Take(20).ToList();
+                Properties.Settings.Default.RecentTargets = string.Join("|", capped);
+                Properties.Settings.Default.Save();
+            }
+            catch { }
         }
 
         private static long GetLogSize()

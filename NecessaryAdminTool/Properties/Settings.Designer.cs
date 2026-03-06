@@ -524,5 +524,18 @@ namespace NecessaryAdminTool.Properties {
                 this["IsDarkMode"] = value;
             }
         }
+
+        // TAG: #CONFIGURABLE_OPTIONS #UI_PREFERENCES #CUSTOM_LOGO
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string CustomLogoPath {
+            get {
+                return ((string)(this["CustomLogoPath"]));
+            }
+            set {
+                this["CustomLogoPath"] = value;
+            }
+        }
     }
 }

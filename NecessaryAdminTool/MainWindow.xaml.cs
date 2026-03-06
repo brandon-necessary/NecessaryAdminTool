@@ -2248,9 +2248,16 @@ namespace NecessaryAdminTool
 
         // -- Startup & Shutdown --
 
+        // TAG: #CONNECTION_PROFILES - Instant profile apply without restart
+        public static event Action<ConnectionProfile> ProfileApplied;
+        public static void ApplyProfile(ConnectionProfile profile) => ProfileApplied?.Invoke(profile);
+
         public MainWindow()
         {
             InitializeComponent();
+
+            // Subscribe to instant profile apply events from OptionsWindow
+            MainWindow.ProfileApplied += OnProfileApplied;
 
             // TAG: #SUPERADMIN - Register secret keyboard shortcut for SuperAdmin window
             // Secret combo: Ctrl+Shift+Alt+S
@@ -10183,11 +10190,9 @@ if ($rebootPending) {
                     _highPriorityServices.Clear();
                     _mediumPriorityServices.Clear();
 
-                    // For now, put all services in essential - user can reorganize via config editor
-                    // TODO: Could add priority metadata to ServiceConfigItem for smart categorization
                     foreach (var svc in services)
                     {
-                        _essentialServices.Add(new GlobalServiceStatus
+                        var entry = new GlobalServiceStatus
                         {
                             ServiceName = svc.ServiceName,
                             Endpoint = svc.Endpoint,
@@ -10195,7 +10200,13 @@ if ($rebootPending) {
                             StatusColor = Brushes.Gray,
                             Latency = "-",
                             LatencyColor = Brushes.Gray
-                        });
+                        };
+                        switch (svc.Priority ?? "Essential")
+                        {
+                            case "High":   _highPriorityServices.Add(entry); break;
+                            case "Medium": _mediumPriorityServices.Add(entry); break;
+                            default:       _essentialServices.Add(entry); break;
+                        }
                     }
                 }
 
@@ -12975,6 +12986,51 @@ if ($rebootPending) {
         }
 
         /// <summary>
+        /// Handle instant profile apply from OptionsWindow — no restart required.
+        /// TAG: #CONNECTION_PROFILES
+        /// </summary>
+        private void OnProfileApplied(ConnectionProfile profile)
+        {
+            if (profile == null) return;
+            Dispatcher.Invoke(() =>
+            {
+                try
+                {
+                    // Find matching ComboBox item by DC hostname
+                    bool found = false;
+                    foreach (ComboBoxItem item in ComboDC.Items)
+                    {
+                        if (item.Tag?.ToString().Equals(profile.DomainController, StringComparison.OrdinalIgnoreCase) == true)
+                        {
+                            ComboDC.SelectedItem = item;
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    // If DC not in list, add it
+                    if (!found)
+                    {
+                        ComboDC.Items.Add(new ComboBoxItem
+                        {
+                            Content = profile.DomainController,
+                            Tag = profile.DomainController,
+                            Foreground = System.Windows.Media.Brushes.White
+                        });
+                        ComboDC.SelectedIndex = ComboDC.Items.Count - 1;
+                    }
+
+                    Managers.UI.ToastManager.ShowSuccess($"Profile '{profile.Name}' applied.");
+                    AppendTerminal($"[Connection Profile] ✔ Profile '{profile.Name}' applied instantly");
+                }
+                catch (Exception ex)
+                {
+                    LogManager.LogError("OnProfileApplied() - FAILED", ex);
+                }
+            });
+        }
+
+        /// <summary>
         /// Handle AD Object Browser selection changed to enable/disable Edit and Delete buttons
         /// TAG: #VERSION_7 #AD_MANAGEMENT
         /// </summary>
@@ -14841,13 +14897,12 @@ if ($rebootPending) {
 
                         if (serviceList != null && serviceList.Count > 0)
                         {
-                            // For now, put all saved services in essential category
-                            // TODO: Add priority metadata to saved config for proper categorization
                             foreach (var svc in serviceList)
                             {
                                 if (svc.ContainsKey("ServiceName") && svc.ContainsKey("Endpoint"))
                                 {
-                                    _essentialServices.Add(new GlobalServiceStatus
+                                    string priority = svc.ContainsKey("Priority") ? svc["Priority"]?.ToString() ?? "Essential" : "Essential";
+                                    var entry = new GlobalServiceStatus
                                     {
                                         ServiceName = svc["ServiceName"]?.ToString() ?? "Unknown",
                                         Endpoint = svc["Endpoint"]?.ToString() ?? "",
@@ -14855,7 +14910,13 @@ if ($rebootPending) {
                                         StatusColor = Brushes.Gray,
                                         Latency = "-",
                                         LatencyColor = Brushes.Gray
-                                    });
+                                    };
+                                    switch (priority)
+                                    {
+                                        case "High":   _highPriorityServices.Add(entry); break;
+                                        case "Medium": _mediumPriorityServices.Add(entry); break;
+                                        default:       _essentialServices.Add(entry); break;
+                                    }
                                 }
                             }
                             LogManager.LogInfo($"Loaded {serviceList.Count} services from configuration");
@@ -14934,11 +14995,11 @@ if ($rebootPending) {
         {
             try
             {
-                // Combine all three priority levels into one config
-                var allServices = _essentialServices
-                    .Concat(_highPriorityServices)
-                    .Concat(_mediumPriorityServices)
-                    .Select(s => new { s.ServiceName, s.Endpoint })
+                // Combine all three priority levels into one config, preserving priority
+                var allServices =
+                    _essentialServices.Select(s => new { s.ServiceName, s.Endpoint, Priority = "Essential" })
+                    .Concat(_highPriorityServices.Select(s => new { s.ServiceName, s.Endpoint, Priority = "High" }))
+                    .Concat(_mediumPriorityServices.Select(s => new { s.ServiceName, s.Endpoint, Priority = "Medium" }))
                     .ToList();
 
                 var serializer = new JavaScriptSerializer();
@@ -15091,16 +15152,36 @@ if ($rebootPending) {
                             // TAG: #USER_AGENT #DYNAMIC_VERSION
                             client.DefaultRequestHeaders.Add("User-Agent", $"NecessaryAdminTool-Monitor/{LogoConfig.USER_AGENT_VERSION}");
 
-                            var response = await client.GetAsync(service.Endpoint);
+                            var response = await client.GetAsync(service.Endpoint).ConfigureAwait(false);
                             stopwatch.Stop();
+
+                            // Parse Atlassian statuspage v2 JSON outside the UI thread
+                            // Schema: {"status": {"indicator": "none"|"minor"|"major"|"critical", ...}}
+                            string statusIndicator = "none";
+                            if (response.IsSuccessStatusCode)
+                            {
+                                try
+                                {
+                                    string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                                    if (!string.IsNullOrEmpty(body) && body.Contains("\"indicator\""))
+                                    {
+                                        var serializer = new System.Web.Script.Serialization.JavaScriptSerializer();
+                                        var root = serializer.Deserialize<System.Collections.Generic.Dictionary<string, object>>(body);
+                                        if (root != null && root.ContainsKey("status"))
+                                        {
+                                            var statusObj = root["status"] as System.Collections.Generic.Dictionary<string, object>;
+                                            statusIndicator = statusObj != null && statusObj.ContainsKey("indicator")
+                                                ? statusObj["indicator"]?.ToString() ?? "none" : "none";
+                                        }
+                                    }
+                                }
+                                catch { /* non-statuspage APIs — ignore parse errors */ }
+                            }
 
                             await Dispatcher.InvokeAsync(() =>
                             {
                                 if (response.IsSuccessStatusCode)
                                 {
-                                    // Successfully reached API - parse response if needed
-                                    service.Status = "🟢 Operational";
-                                    service.StatusColor = new SolidColorBrush(Color.FromRgb(0, 255, 0));
                                     service.Latency = $"{stopwatch.ElapsedMilliseconds} ms";
                                     service.LatencyColor = stopwatch.ElapsedMilliseconds < 500
                                         ? new SolidColorBrush(Color.FromRgb(0, 255, 0))
@@ -15108,8 +15189,25 @@ if ($rebootPending) {
                                             ? new SolidColorBrush(Color.FromRgb(255, 165, 0))
                                             : new SolidColorBrush(Color.FromRgb(255, 100, 100));
 
-                                    // TODO: Parse JSON response to detect incidents/degraded performance
-                                    // Each API has different schema - could be enhanced per-service
+                                    switch (statusIndicator)
+                                    {
+                                        case "minor":
+                                            service.Status = "🟡 Minor Incident";
+                                            service.StatusColor = new SolidColorBrush(Color.FromRgb(255, 165, 0));
+                                            break;
+                                        case "major":
+                                            service.Status = "🔴 Major Outage";
+                                            service.StatusColor = new SolidColorBrush(Color.FromRgb(255, 60, 60));
+                                            break;
+                                        case "critical":
+                                            service.Status = "🔴 Critical Outage";
+                                            service.StatusColor = new SolidColorBrush(Color.FromRgb(220, 30, 30));
+                                            break;
+                                        default:
+                                            service.Status = "🟢 Operational";
+                                            service.StatusColor = new SolidColorBrush(Color.FromRgb(0, 255, 0));
+                                            break;
+                                    }
                                 }
                                 else
                                 {
@@ -18253,8 +18351,15 @@ if ($rebootPending) {
                         BtnLoadFilterPreset_Click(null, null);
                         break;
                     case "filter_advanced":
-                        // TODO: Implement advanced filter dialog
-                        Managers.UI.ToastManager.ShowInfo("Advanced filters coming soon!", category: "status");
+                        var advDlg = new UI.Dialogs.AdvancedFilterDialog(Managers.FilterManager.CurrentFilter) { Owner = this };
+                        if (advDlg.ShowDialog() == true)
+                        {
+                            Managers.FilterManager.CurrentFilter = advDlg.Result ?? new Models.FilterCriteria();
+                            ApplyCurrentFilter();
+                            UpdateFilterButtons();
+                            if (advDlg.Result != null)
+                                Managers.UI.ToastManager.ShowSuccess("Advanced filter applied.", category: "status");
+                        }
                         break;
                     case "filter_clear":
                         BtnClearFilter_Click(null, null);

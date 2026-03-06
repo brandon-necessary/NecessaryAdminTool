@@ -155,5 +155,9 @@
     <Setting Name="IsDarkMode" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
+    <!-- TAG: #CONFIGURABLE_OPTIONS #UI_PREFERENCES #CUSTOM_LOGO -->
+    <Setting Name="CustomLogoPath" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
   </Settings>
 </SettingsFile>

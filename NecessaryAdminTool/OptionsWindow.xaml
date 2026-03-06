@@ -760,7 +760,8 @@
                                             <ColumnDefinition Width="60"/>
                                         </Grid.ColumnDefinitions>
                                         <Slider x:Name="SliderLogoSize" Grid.Column="0" Minimum="32" Maximum="128"
-                                                Value="64" TickFrequency="16" IsSnapToTickEnabled="False"/>
+                                                Value="64" TickFrequency="16" IsSnapToTickEnabled="False"
+                                                ValueChanged="SliderLogoSize_ValueChanged"/>
                                         <TextBox x:Name="TxtLogoSize" Grid.Column="1" Text="64" TextAlignment="Center"
                                                  Background="{DynamicResource BgDarkBrush}" Foreground="White"
                                                  BorderBrush="{DynamicResource BorderDimBrush}" Padding="4" Margin="8,0,0,0"/>

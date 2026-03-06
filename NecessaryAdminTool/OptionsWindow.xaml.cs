@@ -71,8 +71,7 @@ namespace NecessaryAdminTool
                 }
 
                 // Load target history from UserConfig
-                _targetHistory = new List<string>();
-                // TODO: Load from UserConfig.TargetHistory
+                _targetHistory = SettingsManager.LoadTargetHistory();
 
                 // Populate target history ListBox
                 if (ListTargetHistory != null)
@@ -134,6 +133,14 @@ namespace NecessaryAdminTool
                     string secondaryColor = Properties.Settings.Default.SecondaryAccentColor;
                     if (string.IsNullOrEmpty(secondaryColor)) secondaryColor = "#FFA1A1AA";
                     TxtSecondaryColor.Text = secondaryColor;
+                }
+
+                // Load custom logo path and preview
+                string savedLogoPath = Properties.Settings.Default.CustomLogoPath;
+                if (!string.IsNullOrEmpty(savedLogoPath) && File.Exists(savedLogoPath))
+                {
+                    if (TxtLogoPath != null) TxtLogoPath.Text = savedLogoPath;
+                    LoadLogoPreview(savedLogoPath);
                 }
 
                 // TAG: #VERSION_7 #CONNECTION_PROFILES - Load connection profiles
@@ -358,7 +365,7 @@ namespace NecessaryAdminTool
 
                 Properties.Settings.Default.Save();
 
-                // TODO: Save other settings (target history, etc.)
+                SettingsManager.SaveTargetHistory(_targetHistory);
 
                 // TAG: #AUTO_UPDATE_UI_ENGINE #USER_CONFIG #SETTINGS - Save toast notifications and keyboard shortcuts
                 SaveToastNotificationSettings();
@@ -929,8 +936,24 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 if (dialog.ShowDialog() == true)
                 {
                     TxtLogoPath.Text = dialog.FileName;
-                    // TODO: Load and display logo in preview
-                    // TODO: Copy logo to AppData for persistence
+                    try
+                    {
+                        var destDir = Path.Combine(
+                            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                            "NecessaryAdminTool", "CustomLogo");
+                        Directory.CreateDirectory(destDir);
+                        var destPath = Path.Combine(destDir, Path.GetFileName(dialog.FileName));
+                        File.Copy(dialog.FileName, destPath, overwrite: true);
+                        Properties.Settings.Default.CustomLogoPath = destPath;
+                        Properties.Settings.Default.Save();
+                        TxtLogoPath.Text = destPath;
+                        LoadLogoPreview(destPath);
+                    }
+                    catch (Exception copyEx)
+                    {
+                        LogManager.LogError("Logo copy failed", copyEx);
+                        ToastManager.ShowError("Failed to copy logo file.");
+                    }
                     ShowStatus($"Logo selected: {Path.GetFileName(dialog.FileName)}", MessageType.Success);
                     _hasUnsavedChanges = true;
                 }
@@ -939,6 +962,34 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             {
                 ShowStatus($"Error loading logo: {ex.Message}", MessageType.Error);
             }
+        }
+
+        private void LoadLogoPreview(string path)
+        {
+            if (string.IsNullOrEmpty(path) || !File.Exists(path) || LogoPreview == null) return;
+            try
+            {
+                var bmp = new System.Windows.Media.Imaging.BitmapImage();
+                bmp.BeginInit();
+                bmp.UriSource = new Uri(path, UriKind.Absolute);
+                bmp.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                bmp.EndInit();
+                var img = new System.Windows.Controls.Image { Source = bmp, Stretch = System.Windows.Media.Stretch.Uniform };
+                LogoPreview.Child = img;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("LoadLogoPreview() - FAILED", ex);
+            }
+        }
+
+        private void SliderLogoSize_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (LogoPreview == null) return;
+            double size = SliderLogoSize.Value;
+            LogoPreview.Width = size;
+            LogoPreview.Height = size;
+            if (TxtLogoSize != null) TxtLogoSize.Text = ((int)size).ToString();
         }
 
         /// <summary>
@@ -2113,9 +2164,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 Properties.Settings.Default.LastUser = profile.Username;
                 Properties.Settings.Default.Save();
 
-                ShowStatus($"✅ Profile '{profile.Name}' loaded. Restart or re-login to apply.", MessageType.Success);
-
-                // TODO: Trigger mainwindow to apply the profile immediately if possible
+                MainWindow.ApplyProfile(profile);
+                ShowStatus($"✅ Profile '{profile.Name}' applied.", MessageType.Success);
             }
             catch (Exception ex)
             {
@@ -3581,6 +3631,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
     {
         public string ServiceName { get; set; }
         public string Endpoint { get; set; }
+        /// <summary>Routing bucket: "Essential", "High", or "Medium". Defaults to "Essential".</summary>
+        public string Priority { get; set; } = "Essential";
     }
 
     // ConnectionProfile class removed - now using ConnectionProfile from ConnectionProfileManager.cs
