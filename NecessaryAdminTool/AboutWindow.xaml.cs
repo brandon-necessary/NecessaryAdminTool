@@ -123,7 +123,7 @@ namespace NecessaryAdminTool
                     var orig = btn.Background;
                     btn.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF1B4332")); // green flash
                     var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
-                    timer.Tick += (s, _) => { btn.Background = orig; timer.Stop(); };
+                    timer.Tick += (s, _) => { try { btn.Background = orig; } catch (Exception ex) { LogManager.LogError("Timer tick failed", ex); } finally { timer.Stop(); } };
                     timer.Start();
                 }
 
@@ -922,7 +922,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
                 // Hide after 3 seconds
                 var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
-                timer.Tick += (s, args) => { TxtConfigStatus.Visibility = Visibility.Collapsed; timer.Stop(); };
+                timer.Tick += (s, args) => { try { TxtConfigStatus.Visibility = Visibility.Collapsed; } catch (Exception ex) { LogManager.LogError("Timer tick failed", ex); } finally { timer.Stop(); } };
                 timer.Start();
 
                 LogManager.LogInfo("Global services configuration saved");

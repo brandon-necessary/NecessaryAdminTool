@@ -1489,9 +1489,16 @@ namespace NecessaryAdminTool
                     var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
                     timer.Tick += (ts, te) =>
                     {
-                        _txtStatus.Text = "Ready";
-                        _txtStatus.Foreground = new SolidColorBrush(Color.FromRgb(22, 198, 12)); // Back to green
-                        timer.Stop();
+                        try
+                        {
+                            _txtStatus.Text = "Ready";
+                            _txtStatus.Foreground = new SolidColorBrush(Color.FromRgb(22, 198, 12)); // Back to green
+                            timer.Stop();
+                        }
+                        catch (Exception tickEx)
+                        {
+                            LogManager.LogError("Terminal status reset timer tick failed", tickEx);
+                        }
                     };
                     timer.Start();
                 }
@@ -9529,6 +9536,7 @@ if ($rebootPending) {
         // TAG: #DC_DISCOVERY #MODULAR #CENTRALIZED_UPDATE
         private async void BtnRefreshDCs_Click(object sender, RoutedEventArgs e)
         {
+            BtnRefreshDCs.IsEnabled = false;
             try
             {
                 AppendTerminal("[DC Discovery] Manual refresh requested...");
@@ -9559,6 +9567,10 @@ if ($rebootPending) {
                 AppendTerminal($"[DC Discovery] Refresh failed: {ex.Message}", isError: true);
                 LogManager.LogError("Manual DC refresh failed", ex);
             }
+            finally
+            {
+                BtnRefreshDCs.IsEnabled = true;
+            }
         }
 
         /// <summary>
@@ -9566,6 +9578,7 @@ if ($rebootPending) {
         /// </summary>
         private async void BtnRefreshDCsFleet_Click(object sender, RoutedEventArgs e)
         {
+            BtnRefreshDCsFleet.IsEnabled = false;
             try
             {
                 AppendTerminal("[AD Fleet] Refreshing domain controllers for Fleet Inventory...");
@@ -9609,6 +9622,10 @@ if ($rebootPending) {
             {
                 AppendTerminal($"[AD Fleet] DC refresh failed: {ex.Message}", isError: true);
                 LogManager.LogError("Fleet DC refresh failed", ex);
+            }
+            finally
+            {
+                BtnRefreshDCsFleet.IsEnabled = true;
             }
         }
 
@@ -10134,6 +10151,7 @@ if ($rebootPending) {
         /// </summary>
         private async void BtnCheckUpdates_Click(object sender, RoutedEventArgs e)
         {
+            BtnCheckUpdates.IsEnabled = false;
             try
             {
                 LogManager.LogInfo("Manual update check initiated");
@@ -10143,6 +10161,10 @@ if ($rebootPending) {
             {
                 LogManager.LogError("Manual update check failed", ex);
                 Managers.UI.ToastManager.ShowError($"Failed to check for updates:\n\n{ex.Message}");
+            }
+            finally
+            {
+                BtnCheckUpdates.IsEnabled = true;
             }
         }
 
@@ -10204,6 +10226,8 @@ if ($rebootPending) {
         }
         private async void BtnSyncDB_Click(object sender, RoutedEventArgs e)
         {
+            var btnSyncDB = sender as System.Windows.Controls.Button;
+            if (btnSyncDB != null) btnSyncDB.IsEnabled = false;
             try
             {
                 List<PCInventory> inventoryCopy;
@@ -10270,6 +10294,10 @@ if ($rebootPending) {
             {
                 LogManager.LogError("BtnSyncDB_Click - FAILED", ex);
                 Managers.UI.ToastManager.ShowError($"Sync failed: {ex.Message}");
+            }
+            finally
+            {
+                if (btnSyncDB != null) btnSyncDB.IsEnabled = true;
             }
         }
 
@@ -11191,6 +11219,7 @@ if ($rebootPending) {
         // TAG: #DEPLOYMENT_RESULTS - Load archived CSV data and merge into grid
         private async void BtnLoadArchive_Click(object sender, RoutedEventArgs e)
         {
+            BtnLoadArchive.IsEnabled = false;
             try
             {
                 string archiveDir = Path.Combine(
@@ -11282,6 +11311,10 @@ if ($rebootPending) {
             {
                 Managers.UI.ToastManager.ShowError($"Failed to load archives: {ex.Message}");
                 LogManager.LogError("BtnLoadArchive_Click failed", ex);
+            }
+            finally
+            {
+                BtnLoadArchive.IsEnabled = true;
             }
         }
 
@@ -11806,19 +11839,26 @@ if ($rebootPending) {
         /// </summary>
         private async void ShowWelcomeToastAsync()
         {
-            await Task.Delay(1000).ConfigureAwait(true); // resume on UI thread
-            Managers.UI.ToastManager.ShowSuccess(
-                $"Welcome to {LogoConfig.PRODUCT_FULL_NAME} {LogoConfig.VERSION}",
-                "View Docs",
-                () => {
-                    try {
-                        var aboutWindow = new AboutWindow { Owner = this };
-                        aboutWindow.ShowDialog();
-                    }
-                    catch (Exception ex) {
-                        LogManager.LogError("Failed to open About window", ex);
-                    }
-                });
+            try
+            {
+                await Task.Delay(1000).ConfigureAwait(true); // resume on UI thread
+                Managers.UI.ToastManager.ShowSuccess(
+                    $"Welcome to {LogoConfig.PRODUCT_FULL_NAME} {LogoConfig.VERSION}",
+                    "View Docs",
+                    () => {
+                        try {
+                            var aboutWindow = new AboutWindow { Owner = this };
+                            aboutWindow.ShowDialog();
+                        }
+                        catch (Exception ex) {
+                            LogManager.LogError("Failed to open About window", ex);
+                        }
+                    });
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError("ShowWelcomeToastAsync() - FAILED", ex);
+            }
         }
 
         private void ApplySavedAccentColors()
@@ -11984,6 +12024,7 @@ if ($rebootPending) {
         /// </summary>
         private async void BtnRefreshADObjects_Click(object sender, RoutedEventArgs e)
         {
+            BtnRefreshADObjects.IsEnabled = false;
             try
             {
                 // Get selected domain controller - extract clean hostname from display string
@@ -12023,6 +12064,10 @@ if ($rebootPending) {
                 AppendTerminal($"[AD Management] ✖ Failed to refresh: {ex.Message}", isError: true);
                 LogManager.LogError("Failed to refresh AD Object Browser", ex);
                 Managers.UI.ToastManager.ShowError($"Failed to refresh AD Object Browser:\n\n{ex.Message}");
+            }
+            finally
+            {
+                BtnRefreshADObjects.IsEnabled = true;
             }
         }
 
@@ -13157,6 +13202,7 @@ if ($rebootPending) {
                 return;
             }
 
+            BtnCheckLockouts.IsEnabled = false;
             Mouse.OverrideCursor = Cursors.Wait;
             ShowBottomProgress($"Querying lockouts from {dc}...");
             AppendTerminal($"Querying lockout events from {dc}...");
@@ -13516,6 +13562,10 @@ if ($rebootPending) {
                 LogManager.LogError("Lockout check failed", ex);
                 Managers.UI.ToastManager.ShowError($"Error: {ex.Message}");
             }
+            finally
+            {
+                BtnCheckLockouts.IsEnabled = true;
+            }
         }
 
         // ############################################################################
@@ -13529,6 +13579,7 @@ if ($rebootPending) {
         /// </summary>
         private async void BtnOpenMMCConsole_Click(object sender, RoutedEventArgs e)
         {
+            BtnOpenMMCConsole.IsEnabled = false;
             try
             {
                 // Get selected console from ComboBox
@@ -13664,6 +13715,10 @@ if ($rebootPending) {
             {
                 LogManager.LogError("[MMC] Error in BtnOpenMMCConsole_Click", ex);
                 Managers.UI.ToastManager.ShowError($"Failed to open console: {ex.Message}");
+            }
+            finally
+            {
+                BtnOpenMMCConsole.IsEnabled = true;
             }
         }
 
@@ -14429,47 +14484,56 @@ if ($rebootPending) {
         /// </summary>
         private async void BtnAddPinnedDevice_Click(object sender, RoutedEventArgs e)
         {
-            if (_pinnedDevices.Count >= 10)
+            var btnAddPinned = sender as System.Windows.Controls.Button;
+            if (btnAddPinned != null) btnAddPinned.IsEnabled = false;
+            try
             {
-                Managers.UI.ToastManager.ShowWarning("Maximum of 10 pinned devices reached.");
-                return;
+                if (_pinnedDevices.Count >= 10)
+                {
+                    Managers.UI.ToastManager.ShowWarning("Maximum of 10 pinned devices reached.");
+                    return;
+                }
+
+                string input = TxtPinnedDeviceInput.Text.Trim();
+                if (string.IsNullOrWhiteSpace(input))
+                {
+                    Managers.UI.ToastManager.ShowWarning("Please enter a hostname or IP address.");
+                    return;
+                }
+
+                // Check if already exists
+                if (_pinnedDevices.Any(d => d.Input.Equals(input, StringComparison.OrdinalIgnoreCase)))
+                {
+                    Managers.UI.ToastManager.ShowInfo("This device is already pinned.");
+                    return;
+                }
+
+                var device = new PinnedDevice
+                {
+                    Input = input,
+                    Status = "Checking...",
+                    StatusColor = Brushes.Gray,
+                    ResolvedName = "...",
+                    ResolvedIP = "...",
+                    LastChecked = DateTime.Now.ToString("h:mm tt"),
+                    ResponseTimeColor = new SolidColorBrush(ThemeHelper.SecondaryColor)
+                };
+
+                lock (_pinnedDevicesLock)
+                {
+                    _pinnedDevices.Add(device);
+                }
+
+                TxtPinnedDeviceInput.Clear();
+                SavePinnedDevices();
+
+                // Check device status in background
+                await CheckPinnedDeviceStatus(device);
             }
-
-            string input = TxtPinnedDeviceInput.Text.Trim();
-            if (string.IsNullOrWhiteSpace(input))
+            finally
             {
-                Managers.UI.ToastManager.ShowWarning("Please enter a hostname or IP address.");
-                return;
+                if (btnAddPinned != null) btnAddPinned.IsEnabled = true;
             }
-
-            // Check if already exists
-            if (_pinnedDevices.Any(d => d.Input.Equals(input, StringComparison.OrdinalIgnoreCase)))
-            {
-                Managers.UI.ToastManager.ShowInfo("This device is already pinned.");
-                return;
-            }
-
-            var device = new PinnedDevice
-            {
-                Input = input,
-                Status = "Checking...",
-                StatusColor = Brushes.Gray,
-                ResolvedName = "...",
-                ResolvedIP = "...",
-                LastChecked = DateTime.Now.ToString("h:mm tt"),
-                ResponseTimeColor = new SolidColorBrush(ThemeHelper.SecondaryColor)
-            };
-
-            lock (_pinnedDevicesLock)
-            {
-                _pinnedDevices.Add(device);
-            }
-
-            TxtPinnedDeviceInput.Clear();
-            SavePinnedDevices();
-
-            // Check device status in background
-            await CheckPinnedDeviceStatus(device);
         }
 
         /// <summary>

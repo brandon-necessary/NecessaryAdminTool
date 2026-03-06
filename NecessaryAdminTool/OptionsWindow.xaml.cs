@@ -789,8 +789,8 @@ namespace NecessaryAdminTool
             };
             timer.Tick += (s, e) =>
             {
-                StatusMessage.Visibility = Visibility.Collapsed;
-                timer.Stop();
+                try { StatusMessage.Visibility = Visibility.Collapsed; timer.Stop(); }
+                catch (Exception ex) { LogManager.LogError("Timer tick failed", ex); timer.Stop(); }
             };
             timer.Start();
         }
@@ -1559,7 +1559,11 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
                 // Hide after 3 seconds
                 var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
-                timer.Tick += (s, args) => { TxtConfigStatus.Visibility = Visibility.Collapsed; timer.Stop(); };
+                timer.Tick += (s, args) =>
+                {
+                    try { TxtConfigStatus.Visibility = Visibility.Collapsed; timer.Stop(); }
+                    catch (Exception ex) { LogManager.LogError("Timer tick failed", ex); timer.Stop(); }
+                };
                 timer.Start();
 
                 ShowStatus("Global services configuration saved", MessageType.Success);
@@ -1731,6 +1735,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         /// </summary>
         private async void BtnImportPinnedCsv_Click(object sender, RoutedEventArgs e)
         {
+            var button = sender as Button;
+            if (button != null) button.IsEnabled = false;
             try
             {
                 var openFileDialog = new OpenFileDialog
@@ -1782,6 +1788,10 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             catch (Exception ex)
             {
                 ShowStatus($"❌ Failed to import CSV: {ex.Message}", MessageType.Error);
+            }
+            finally
+            {
+                if (button != null) button.IsEnabled = true;
             }
         }
 
@@ -2365,6 +2375,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         // TAG: #ASYNC_OPTIMIZATION - Made async to prevent UI blocking on file read
         private async void BtnImportBookmarks_Click(object sender, RoutedEventArgs e)
         {
+            var button = sender as Button;
+            if (button != null) button.IsEnabled = false;
             try
             {
                 var dialog = new OpenFileDialog
@@ -2406,11 +2418,17 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             {
                 ShowStatus($"Failed to import bookmarks: {ex.Message}", MessageType.Error);
             }
+            finally
+            {
+                if (button != null) button.IsEnabled = true;
+            }
         }
 
         // TAG: #ASYNC_OPTIMIZATION - Made async to prevent UI blocking on file write
         private async void BtnExportBookmarks_Click(object sender, RoutedEventArgs e)
         {
+            var button = sender as Button;
+            if (button != null) button.IsEnabled = false;
             try
             {
                 var dialog = new SaveFileDialog
@@ -2439,6 +2457,10 @@ runas /user:{adminUsername} /savecred ""{exePath}""
             {
                 ShowStatus($"Failed to export bookmarks: {ex.Message}", MessageType.Error);
             }
+            finally
+            {
+                if (button != null) button.IsEnabled = true;
+            }
         }
 
         // ═══════════════════════════════════════════════════════
@@ -2448,6 +2470,8 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         // TAG: #ASYNC_OPTIMIZATION - Made async to prevent UI blocking on file write
         private async void BtnExportAllSettings_Click(object sender, RoutedEventArgs e)
         {
+            var button = sender as Button;
+            if (button != null) button.IsEnabled = false;
             try
             {
                 var dialog = new SaveFileDialog
@@ -2501,11 +2525,17 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
                 ToastManager.ShowError($"Export failed:\n\n{ex.Message}");
             }
+            finally
+            {
+                if (button != null) button.IsEnabled = true;
+            }
         }
 
         // TAG: #ASYNC_OPTIMIZATION - Made async to prevent UI blocking on file read
         private void BtnImportAllSettings_Click(object sender, RoutedEventArgs e)
         {
+            var button = sender as Button;
+            if (button != null) button.IsEnabled = false;
             Managers.UI.ToastManager.ShowWarning(
                 "Import settings from a backup file?\n\n" +
                 "⚠️ WARNING: This will REPLACE your current settings!\n\n" +
@@ -2515,6 +2545,7 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 "Import", async () =>
                 {
                     await DoImportAllSettingsAsync();
+                    if (button != null) button.IsEnabled = true;
                 });
         }
 
@@ -2764,29 +2795,30 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         /// </summary>
         private async void BtnRefreshDbStats_Click(object sender, RoutedEventArgs e)
         {
+            var button = sender as Button;
+            if (button != null)
+            {
+                button.IsEnabled = false;
+                button.Content = "⏳ LOADING...";
+            }
             try
             {
-                var button = sender as Button;
-                if (button != null)
-                {
-                    button.IsEnabled = false;
-                    button.Content = "⏳ LOADING...";
-                }
-
                 await RefreshDatabaseStatisticsAsync();
 
                 ShowStatus("Database statistics refreshed", MessageType.Success);
-
-                if (button != null)
-                {
-                    button.Content = "🔄 REFRESH";
-                    button.IsEnabled = true;
-                }
             }
             catch (Exception ex)
             {
                 LogManager.LogError("Failed to refresh database stats", ex);
                 ShowStatus($"Failed to refresh stats: {ex.Message}", MessageType.Error);
+            }
+            finally
+            {
+                if (button != null)
+                {
+                    button.Content = "🔄 REFRESH";
+                    button.IsEnabled = true;
+                }
             }
         }
 
@@ -2795,6 +2827,12 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         /// </summary>
         private async void BtnBackupDatabase_Click(object sender, RoutedEventArgs e)
         {
+            var button = sender as Button;
+            if (button != null)
+            {
+                button.IsEnabled = false;
+                button.Content = "⏳ BACKING UP...";
+            }
             try
             {
                 var dialog = new SaveFileDialog
@@ -2806,13 +2844,6 @@ runas /user:{adminUsername} /savecred ""{exePath}""
 
                 if (dialog.ShowDialog() == true)
                 {
-                    var button = sender as Button;
-                    if (button != null)
-                    {
-                        button.IsEnabled = false;
-                        button.Content = "⏳ BACKING UP...";
-                    }
-
                     var dbPath = Properties.Settings.Default.DatabasePath;
                     var dbType = Properties.Settings.Default.DatabaseType;
 
@@ -2842,12 +2873,6 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                     ShowStatus($"Database backed up to: {Path.GetFileName(dialog.FileName)}", MessageType.Success);
                     // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
                     ToastManager.ShowSuccess($"Database backed up successfully!\n\nLocation: {dialog.FileName}");
-
-                    if (button != null)
-                    {
-                        button.Content = "💾 BACKUP";
-                        button.IsEnabled = true;
-                    }
                 }
             }
             catch (Exception ex)
@@ -2856,6 +2881,14 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 ShowStatus($"Backup failed: {ex.Message}", MessageType.Error);
                 // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
                 ToastManager.ShowError($"Failed to backup database:\n\n{ex.Message}");
+            }
+            finally
+            {
+                if (button != null)
+                {
+                    button.Content = "💾 BACKUP";
+                    button.IsEnabled = true;
+                }
             }
         }
 
@@ -2926,15 +2959,14 @@ runas /user:{adminUsername} /savecred ""{exePath}""
         /// </summary>
         private async void BtnOptimizeDatabase_Click(object sender, RoutedEventArgs e)
         {
+            var button = sender as Button;
+            if (button != null)
+            {
+                button.IsEnabled = false;
+                button.Content = "⏳ OPTIMIZING...";
+            }
             try
             {
-                var button = sender as Button;
-                if (button != null)
-                {
-                    button.IsEnabled = false;
-                    button.Content = "⏳ OPTIMIZING...";
-                }
-
                 var dbType = Properties.Settings.Default.DatabaseType;
 
                 if (dbType == "SQLite")
@@ -2966,12 +2998,6 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 ShowStatus("Database optimized successfully", MessageType.Success);
                 // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
                 ToastManager.ShowSuccess("Database optimized!\n\nOld data has been purged and the database has been compacted.");
-
-                if (button != null)
-                {
-                    button.Content = "⚡ OPTIMIZE";
-                    button.IsEnabled = true;
-                }
             }
             catch (Exception ex)
             {
@@ -2979,6 +3005,14 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 ShowStatus($"Optimization failed: {ex.Message}", MessageType.Error);
                 // TAG: #AUTO_UPDATE_UI_ENGINE #TOAST_NOTIFICATIONS
                 ToastManager.ShowError($"Failed to optimize database:\n\n{ex.Message}");
+            }
+            finally
+            {
+                if (button != null)
+                {
+                    button.Content = "⚡ OPTIMIZE";
+                    button.IsEnabled = true;
+                }
             }
         }
 
@@ -3351,23 +3385,27 @@ runas /user:{adminUsername} /savecred ""{exePath}""
                 int count = 0;
                 timer.Tick += (s, args) =>
                 {
-                    switch (count)
+                    try
                     {
-                        case 0:
-                            ToastManager.ShowSuccess("Success test toast - Operation completed successfully!");
-                            break;
-                        case 1:
-                            ToastManager.ShowInfo("Info test toast - Here is some useful information for you.");
-                            break;
-                        case 2:
-                            ToastManager.ShowWarning("Warning test toast - This action requires caution.");
-                            break;
-                        case 3:
-                            ToastManager.ShowError("Error test toast - Something went wrong, but it's just a test.");
-                            timer.Stop();
-                            break;
+                        switch (count)
+                        {
+                            case 0:
+                                ToastManager.ShowSuccess("Success test toast - Operation completed successfully!");
+                                break;
+                            case 1:
+                                ToastManager.ShowInfo("Info test toast - Here is some useful information for you.");
+                                break;
+                            case 2:
+                                ToastManager.ShowWarning("Warning test toast - This action requires caution.");
+                                break;
+                            case 3:
+                                ToastManager.ShowError("Error test toast - Something went wrong, but it's just a test.");
+                                timer.Stop();
+                                break;
+                        }
+                        count++;
                     }
-                    count++;
+                    catch (Exception ex) { LogManager.LogError("Timer tick failed", ex); timer.Stop(); }
                 };
 
                 timer.Start();

@@ -35,25 +35,25 @@ namespace NecessaryAdminTool.Data
             #if SQLITE_ENABLED
             using (var conn = new SQLiteConnection(_connectionString))
             {
-                await conn.OpenAsync();
+                await conn.OpenAsync().ConfigureAwait(false);
 
                 // Enable WAL mode for better concurrency
                 using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = "PRAGMA journal_mode=WAL;";
-                    await cmd.ExecuteNonQueryAsync();
+                    await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
                 }
 
                 // Create schema
-                await CreateSchemaAsync(conn);
+                await CreateSchemaAsync(conn).ConfigureAwait(false);
 
                 // Migrate existing databases — add new columns if missing (SQLite throws on duplicate ADD COLUMN)
-                await MigrateSchemaAsync(conn);
+                await MigrateSchemaAsync(conn).ConfigureAwait(false);
 
                 LogManager.LogInfo("SQLite database initialized with encryption");
             }
             #else
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             LogManager.LogWarning("SQLite not enabled - install System.Data.SQLite.Core NuGet package");
             #endif
         }
@@ -152,10 +152,10 @@ namespace NecessaryAdminTool.Data
             using (var cmd = conn.CreateCommand())
             {
                 cmd.CommandText = schema;
-                await cmd.ExecuteNonQueryAsync();
+                await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
             #else
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             #endif
         }
 
@@ -191,13 +191,13 @@ namespace NecessaryAdminTool.Data
                     using (var cmd = conn.CreateCommand())
                     {
                         cmd.CommandText = $"ALTER TABLE Computers {col}";
-                        await cmd.ExecuteNonQueryAsync();
+                        await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
                     }
                 }
                 catch { /* Column already exists — SQLite throws on duplicate ALTER */ }
             }
             #else
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             #endif
         }
 
@@ -208,13 +208,13 @@ namespace NecessaryAdminTool.Data
             #if SQLITE_ENABLED
             using (var conn = new SQLiteConnection(_connectionString))
             {
-                await conn.OpenAsync();
+                await conn.OpenAsync().ConfigureAwait(false);
                 using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = "SELECT * FROM Computers ORDER BY Hostname";
-                    using (var reader = await cmd.ExecuteReaderAsync())
+                    using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
                     {
-                        while (await reader.ReadAsync())
+                        while (await reader.ReadAsync().ConfigureAwait(false))
                         {
                             computers.Add(ReadComputerInfo(reader));
                         }
@@ -222,7 +222,7 @@ namespace NecessaryAdminTool.Data
                 }
             }
             #else
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             #endif
 
             return computers;
@@ -233,15 +233,15 @@ namespace NecessaryAdminTool.Data
             #if SQLITE_ENABLED
             using (var conn = new SQLiteConnection(_connectionString))
             {
-                await conn.OpenAsync();
+                await conn.OpenAsync().ConfigureAwait(false);
                 using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = "SELECT * FROM Computers WHERE Hostname = @hostname";
                     cmd.Parameters.AddWithValue("@hostname", hostname);
 
-                    using (var reader = await cmd.ExecuteReaderAsync())
+                    using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
                     {
-                        if (await reader.ReadAsync())
+                        if (await reader.ReadAsync().ConfigureAwait(false))
                         {
                             return ReadComputerInfo(reader);
                         }
@@ -249,7 +249,7 @@ namespace NecessaryAdminTool.Data
                 }
             }
             #else
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             #endif
 
             return null;
@@ -260,7 +260,7 @@ namespace NecessaryAdminTool.Data
             #if SQLITE_ENABLED
             using (var conn = new SQLiteConnection(_connectionString))
             {
-                await conn.OpenAsync();
+                await conn.OpenAsync().ConfigureAwait(false);
                 using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"
@@ -311,11 +311,11 @@ namespace NecessaryAdminTool.Data
                     cmd.Parameters.AddWithValue("@notes",       computer.Notes ?? "");
                     cmd.Parameters.AddWithValue("@json",        computer.RawDataJson ?? "");
 
-                    await cmd.ExecuteNonQueryAsync();
+                    await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
                 }
             }
             #else
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             #endif
         }
 
@@ -324,16 +324,16 @@ namespace NecessaryAdminTool.Data
             #if SQLITE_ENABLED
             using (var conn = new SQLiteConnection(_connectionString))
             {
-                await conn.OpenAsync();
+                await conn.OpenAsync().ConfigureAwait(false);
                 using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = "DELETE FROM Computers WHERE Hostname = @hostname";
                     cmd.Parameters.AddWithValue("@hostname", hostname);
-                    await cmd.ExecuteNonQueryAsync();
+                    await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
                 }
             }
             #else
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             #endif
         }
 
@@ -344,7 +344,7 @@ namespace NecessaryAdminTool.Data
             #if SQLITE_ENABLED
             using (var conn = new SQLiteConnection(_connectionString))
             {
-                await conn.OpenAsync();
+                await conn.OpenAsync().ConfigureAwait(false);
                 using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"
@@ -355,9 +355,9 @@ namespace NecessaryAdminTool.Data
                         ORDER BY Hostname";
                     cmd.Parameters.AddWithValue("@search", $"%{searchTerm}%");
 
-                    using (var reader = await cmd.ExecuteReaderAsync())
+                    using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
                     {
-                        while (await reader.ReadAsync())
+                        while (await reader.ReadAsync().ConfigureAwait(false))
                         {
                             computers.Add(ReadComputerInfo(reader));
                         }
@@ -365,7 +365,7 @@ namespace NecessaryAdminTool.Data
                 }
             }
             #else
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             #endif
 
             return computers;
@@ -448,7 +448,7 @@ namespace NecessaryAdminTool.Data
                 }
             }
             #else
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             #endif
             return tags;
         }
@@ -468,7 +468,7 @@ namespace NecessaryAdminTool.Data
                 }
             }
             #else
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             #endif
         }
 
@@ -487,7 +487,7 @@ namespace NecessaryAdminTool.Data
                 }
             }
             #else
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             #endif
         }
 
@@ -509,7 +509,7 @@ namespace NecessaryAdminTool.Data
                 }
             }
             #else
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             #endif
             return tags;
         }
@@ -543,7 +543,7 @@ namespace NecessaryAdminTool.Data
                 }
             }
             #else
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             #endif
             return null;
         }
@@ -568,7 +568,7 @@ namespace NecessaryAdminTool.Data
                 }
             }
             #else
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             #endif
         }
 
@@ -602,7 +602,7 @@ namespace NecessaryAdminTool.Data
                 }
             }
             #else
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             #endif
             return history;
         }
@@ -624,7 +624,7 @@ namespace NecessaryAdminTool.Data
                 }
             }
             #else
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             #endif
             return defaultValue;
         }
@@ -645,7 +645,7 @@ namespace NecessaryAdminTool.Data
                 }
             }
             #else
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             #endif
         }
 
@@ -678,7 +678,7 @@ namespace NecessaryAdminTool.Data
                 }
             }
             #else
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             #endif
             return scripts;
         }
@@ -702,7 +702,7 @@ namespace NecessaryAdminTool.Data
                 }
             }
             #else
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             #endif
         }
 
@@ -720,7 +720,7 @@ namespace NecessaryAdminTool.Data
                 }
             }
             #else
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             #endif
         }
 
@@ -751,7 +751,7 @@ namespace NecessaryAdminTool.Data
                 }
             }
             #else
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             #endif
             return bookmarks;
         }
@@ -774,7 +774,7 @@ namespace NecessaryAdminTool.Data
                 }
             }
             #else
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             #endif
         }
 
@@ -792,7 +792,7 @@ namespace NecessaryAdminTool.Data
                 }
             }
             #else
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             #endif
         }
 
@@ -802,15 +802,15 @@ namespace NecessaryAdminTool.Data
             #if SQLITE_ENABLED
             using (var conn = new SQLiteConnection(_connectionString))
             {
-                await conn.OpenAsync();
+                await conn.OpenAsync().ConfigureAwait(false);
                 using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = "PRAGMA optimize; VACUUM;";
-                    await cmd.ExecuteNonQueryAsync();
+                    await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
                 }
             }
             #else
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             #endif
         }
 
@@ -819,16 +819,16 @@ namespace NecessaryAdminTool.Data
             #if SQLITE_ENABLED
             using (var conn = new SQLiteConnection(_connectionString))
             {
-                await conn.OpenAsync();
+                await conn.OpenAsync().ConfigureAwait(false);
                 using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = "PRAGMA integrity_check;";
-                    var result = await cmd.ExecuteScalarAsync();
+                    var result = await cmd.ExecuteScalarAsync().ConfigureAwait(false);
                     return result?.ToString() == "ok";
                 }
             }
             #else
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             return true;
             #endif
         }
@@ -840,23 +840,23 @@ namespace NecessaryAdminTool.Data
             #if SQLITE_ENABLED
             using (var conn = new SQLiteConnection(_connectionString))
             {
-                await conn.OpenAsync();
+                await conn.OpenAsync().ConfigureAwait(false);
                 using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = "SELECT COUNT(*) FROM Computers";
-                    stats.TotalComputers = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+                    stats.TotalComputers = Convert.ToInt32(await cmd.ExecuteScalarAsync().ConfigureAwait(false));
 
                     cmd.CommandText = "SELECT COUNT(*) FROM ComputerTags";
-                    stats.TotalTags = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+                    stats.TotalTags = Convert.ToInt32(await cmd.ExecuteScalarAsync().ConfigureAwait(false));
 
                     cmd.CommandText = "SELECT COUNT(*) FROM ScanHistory";
-                    stats.TotalScans = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+                    stats.TotalScans = Convert.ToInt32(await cmd.ExecuteScalarAsync().ConfigureAwait(false));
 
                     cmd.CommandText = "SELECT COUNT(*) FROM Scripts";
-                    stats.TotalScripts = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+                    stats.TotalScripts = Convert.ToInt32(await cmd.ExecuteScalarAsync().ConfigureAwait(false));
 
                     cmd.CommandText = "SELECT COUNT(*) FROM Bookmarks";
-                    stats.TotalBookmarks = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+                    stats.TotalBookmarks = Convert.ToInt32(await cmd.ExecuteScalarAsync().ConfigureAwait(false));
                 }
             }
 
@@ -867,7 +867,7 @@ namespace NecessaryAdminTool.Data
                 stats.DatabaseSizeMB = fi.Length / (1024 * 1024);
             }
             #else
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             #endif
 
             return stats;
@@ -894,8 +894,8 @@ namespace NecessaryAdminTool.Data
                 using (var sourceConn = new SQLiteConnection(_connectionString))
                 using (var destConn = new SQLiteConnection($"Data Source={backupPath};Version=3;Password={_encryptionKey};"))
                 {
-                    await sourceConn.OpenAsync();
-                    await destConn.OpenAsync();
+                    await sourceConn.OpenAsync().ConfigureAwait(false);
+                    await destConn.OpenAsync().ConfigureAwait(false);
                     sourceConn.BackupDatabase(destConn, "main", "main", -1, null, 0);
                 }
 
@@ -904,7 +904,7 @@ namespace NecessaryAdminTool.Data
                 return true;
                 #else
                 LogManager.LogWarning("SqliteDataProvider.BackupDatabaseAsync() - SQLite not enabled");
-                return await Task.FromResult(false);
+                return await Task.FromResult(false).ConfigureAwait(false);
                 #endif
             }
             catch (Exception ex)
@@ -938,7 +938,7 @@ namespace NecessaryAdminTool.Data
                 return true;
                 #else
                 LogManager.LogWarning("SqliteDataProvider.RestoreDatabaseAsync() - SQLite not enabled");
-                return await Task.FromResult(false);
+                return await Task.FromResult(false).ConfigureAwait(false);
                 #endif
             }
             catch (Exception ex)

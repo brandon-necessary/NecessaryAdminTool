@@ -38,10 +38,10 @@ namespace NecessaryAdminTool.Data
                 // Open connection
                 var connectionString = $"Provider=Microsoft.ACE.OLEDB.12.0;Data Source={_databasePath};Persist Security Info=False;";
                 _connection = new OleDbConnection(connectionString);
-                await Task.Run(() => _connection.Open());
+                await Task.Run(() => _connection.Open()).ConfigureAwait(false);
 
                 // Create schema
-                await CreateSchemaAsync();
+                await CreateSchemaAsync().ConfigureAwait(false);
 
                 LogManager.LogInfo("Access database initialized successfully");
             }
@@ -84,7 +84,7 @@ namespace NecessaryAdminTool.Data
             try
             {
                 // Check if tables exist
-                var tables = await GetExistingTablesAsync();
+                var tables = await GetExistingTablesAsync().ConfigureAwait(false);
 
                 if (!tables.Contains("Computers"))
                 {
@@ -124,7 +124,7 @@ namespace NecessaryAdminTool.Data
                             CreatedDate DATETIME,
                             ModifiedDate DATETIME
                         )";
-                    await ExecuteNonQueryAsync(createComputersTable);
+                    await ExecuteNonQueryAsync(createComputersTable).ConfigureAwait(false);
                 }
 
                 if (!tables.Contains("ScanHistory"))
@@ -140,7 +140,7 @@ namespace NecessaryAdminTool.Data
                             DurationSeconds INTEGER,
                             Notes MEMO
                         )";
-                    await ExecuteNonQueryAsync(createScanHistoryTable);
+                    await ExecuteNonQueryAsync(createScanHistoryTable).ConfigureAwait(false);
                 }
 
                 if (!tables.Contains("Scripts"))
@@ -158,7 +158,7 @@ namespace NecessaryAdminTool.Data
                             ExecutionCount INTEGER,
                             LastExecuted DATETIME
                         )";
-                    await ExecuteNonQueryAsync(createScriptsTable);
+                    await ExecuteNonQueryAsync(createScriptsTable).ConfigureAwait(false);
                 }
 
                 if (!tables.Contains("Bookmarks"))
@@ -172,7 +172,7 @@ namespace NecessaryAdminTool.Data
                             Notes MEMO,
                             CreatedDate DATETIME
                         )";
-                    await ExecuteNonQueryAsync(createBookmarksTable);
+                    await ExecuteNonQueryAsync(createBookmarksTable).ConfigureAwait(false);
                 }
 
                 if (!tables.Contains("ComputerTags"))
@@ -183,7 +183,7 @@ namespace NecessaryAdminTool.Data
                             TagName TEXT(100),
                             CONSTRAINT PK_ComputerTags PRIMARY KEY (Hostname, TagName)
                         )";
-                    await ExecuteNonQueryAsync(createTagsTable);
+                    await ExecuteNonQueryAsync(createTagsTable).ConfigureAwait(false);
                 }
 
                 if (!tables.Contains("Settings"))
@@ -194,7 +194,7 @@ namespace NecessaryAdminTool.Data
                             SettingValue MEMO,
                             UpdatedAt DATETIME
                         )";
-                    await ExecuteNonQueryAsync(createSettingsTable);
+                    await ExecuteNonQueryAsync(createSettingsTable).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
@@ -239,7 +239,7 @@ namespace NecessaryAdminTool.Data
                         // Log but don't throw - database might be new
                         LogManager.LogWarning($"Could not retrieve Access schema (database might be new): {ex.Message}");
                     }
-                });
+                }).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -252,7 +252,7 @@ namespace NecessaryAdminTool.Data
         {
             using (var cmd = new OleDbCommand(query, _connection))
             {
-                await Task.Run(() => cmd.ExecuteNonQuery());
+                await Task.Run(() => cmd.ExecuteNonQuery()).ConfigureAwait(false);
             }
         }
 
@@ -916,7 +916,7 @@ namespace NecessaryAdminTool.Data
                 // Re-open connection
                 var connectionString = $"Provider=Microsoft.ACE.OLEDB.12.0;Data Source={_databasePath};Persist Security Info=False;";
                 _connection = new OleDbConnection(connectionString);
-                await Task.Run(() => _connection.Open());
+                await Task.Run(() => _connection.Open()).ConfigureAwait(false);
 
                 LogManager.LogInfo("AccessDataProvider.OptimizeDatabaseAsync() - SUCCESS");
             }
@@ -928,7 +928,7 @@ namespace NecessaryAdminTool.Data
                 {
                     var connectionString = $"Provider=Microsoft.ACE.OLEDB.12.0;Data Source={_databasePath};Persist Security Info=False;";
                     _connection = new OleDbConnection(connectionString);
-                    await Task.Run(() => _connection.Open());
+                    await Task.Run(() => _connection.Open()).ConfigureAwait(false);
                 }
                 catch (Exception reopenEx)
                 {
@@ -967,7 +967,7 @@ namespace NecessaryAdminTool.Data
             {
                 if (File.Exists(_databasePath))
                 {
-                    await Task.Run(() => File.Copy(_databasePath, backupPath, true));
+                    await Task.Run(() => File.Copy(_databasePath, backupPath, true)).ConfigureAwait(false);
                     LogManager.LogInfo($"Access database backed up to: {backupPath}");
                     return true;
                 }
@@ -987,13 +987,13 @@ namespace NecessaryAdminTool.Data
                 if (File.Exists(backupPath))
                 {
                     _connection?.Close();
-                    await Task.Run(() => File.Copy(backupPath, _databasePath, true));
+                    await Task.Run(() => File.Copy(backupPath, _databasePath, true)).ConfigureAwait(false);
                     LogManager.LogInfo($"Access database restored from: {backupPath}");
 
                     // Reconnect
                     var connectionString = $"Provider=Microsoft.ACE.OLEDB.12.0;Data Source={_databasePath};Persist Security Info=False;";
                     _connection = new OleDbConnection(connectionString);
-                    await Task.Run(() => _connection.Open());
+                    await Task.Run(() => _connection.Open()).ConfigureAwait(false);
 
                     return true;
                 }
